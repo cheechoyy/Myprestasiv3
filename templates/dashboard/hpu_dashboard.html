@@ -1,0 +1,458 @@
+<!DOCTYPE html>
+<html lang="ms">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pusat Kawalan HPU - MyPrestasi</title>
+    <!-- Fonts & Tailwind CSS CDN -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['Inter', 'sans-serif'] },
+                    colors: {
+                        rose: {
+                            50: '#fff1f2', 100: '#ffe4e6', 200: '#fecdd3',
+                            500: '#f43f5e', 600: '#e11d48', 700: '#be123c',
+                            800: '#9f1239', 900: '#881337', 950: '#4c0519',
+                        }
+                    },
+                    animation: {
+                        'fade-in': 'fadeIn 0.3s ease-out forwards',
+                    },
+                    keyframes: {
+                        fadeIn: {
+                            '0%': { opacity: '0', transform: 'translateY(10px)' },
+                            '100%': { opacity: '1', transform: 'translateY(0)' },
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-slate-50/50 font-sans text-slate-800 flex h-screen overflow-hidden m-0">
+
+    <!-- SIDEBAR HPU DEV (SaaS Style Hover-to-Expand) -->
+    <div class="group fixed top-0 left-0 h-full w-20 hover:w-72 bg-rose-950 text-white flex flex-col shadow-2xl transition-all duration-300 ease-in-out z-50 border-r border-rose-900/50 overflow-hidden">
+        
+        <!-- Logo Area -->
+        <div class="flex items-center h-24 px-6 border-b border-rose-900/60 whitespace-nowrap">
+            <svg class="w-8 h-8 shrink-0 text-rose-300 drop-shadow-md" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+            <div class="ml-4 opacity-0 group-hover:opacity-100 transition-opacity duration-300 ease-in-out">
+                <h2 class="font-black text-2xl tracking-tight text-white">HPU DEV</h2>
+                <p class="text-[10px] text-rose-300/80 font-bold tracking-widest uppercase">System Control</p>
+            </div>
+        </div>
+        
+        <!-- Navigation Links -->
+        <div class="flex flex-col py-6 px-3 gap-3 flex-grow whitespace-nowrap overflow-y-auto overflow-x-hidden">
+            <div class="text-[10px] font-extrabold text-rose-300/40 uppercase tracking-widest mb-1 px-3 opacity-0 group-hover:opacity-100 transition-opacity duration-300">Modul Teknikal</div>
+            
+            <button onclick="switchTab('users')" id="nav-users" class="nav-item bg-rose-900/80 text-rose-50 font-bold p-3 rounded-xl flex items-center gap-4 border border-rose-700/50 shadow-sm relative w-full text-left transition-all">
+                <div class="shrink-0 flex items-center justify-center w-8">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
+                </div>
+                <span class="opacity-0 group-hover:opacity-100 transition-opacity duration-300 text-sm">Pengurusan Pengguna</span>
+                <div class="active-indicator absolute left-0 top-1/2 -translate-y-1/2 w-1 h-8 bg-rose-400 rounded-r-full"></div>
+            </button>
+            
+            <button onclick="switchTab('db')" id="nav-db" class="nav-item hover:bg-rose-900/40 text-rose-200/70 hover:text-white font-semibold p-3 rounded-xl flex items-center gap-4 transition-all w-full text-left relative">
+                <div class="shrink-0 flex items-center justify-center w-8">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4m0 5c0 2.21-3.582 4-8 4s-8-1.79-8-4"/></svg>
+                </div>
+                <span class="opacity-0 group-hover:opacity-100 transition-opacity duration-300 text-sm">Pangkalan Data (DB)</span>
+                <div class="active-indicator hidden absolute left-0 top-1/2 -translate-y-1/2 w-1 h-8 bg-rose-400 rounded-r-full"></div>
+            </button>
+            
+            <button onclick="switchTab('settings')" id="nav-settings" class="nav-item hover:bg-rose-900/40 text-rose-200/70 hover:text-white font-semibold p-3 rounded-xl flex items-center gap-4 transition-all w-full text-left relative">
+                <div class="shrink-0 flex items-center justify-center w-8">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"/></svg>
+                </div>
+                <span class="opacity-0 group-hover:opacity-100 transition-opacity duration-300 text-sm">Tetapan Sistem</span>
+                <div class="active-indicator hidden absolute left-0 top-1/2 -translate-y-1/2 w-1 h-8 bg-rose-400 rounded-r-full"></div>
+            </button>
+        </div>
+
+        <!-- Logout Area -->
+        <div class="p-4 border-t border-rose-900/60 whitespace-nowrap">
+            <a href="{% url 'logout' %}" class="flex items-center gap-4 bg-rose-700 hover:bg-rose-600 text-white font-bold p-3 rounded-xl transition-all shadow-lg shadow-rose-950/50 overflow-hidden group/logout">
+                <div class="shrink-0 flex items-center justify-center w-8">
+                    <svg class="w-6 h-6 group-hover/logout:-translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/></svg>
+                </div>
+                <span class="opacity-0 group-hover:opacity-100 transition-opacity duration-300 text-sm">Log Keluar</span>
+            </a>
+        </div>
+    </div>
+
+    <!-- MAIN CONTENT (Fluid 100% Full Width) -->
+    <div class="flex-1 flex flex-col h-screen overflow-y-auto pl-20 bg-[url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI4IiBoZWlnaHQ9IjgiPgo8cmVjdCB3aWR0aD0iOCIgaGVpZ2h0PSI4IiBmaWxsPSIjZmZmZmZmIj48L3JlY3Q+CjxwYXRoIGQ9Ik0wIDBMOCA4Wk04IDBMMCA4WiIgc3Ryb2tlPSIjZmJmYmZiIiBzdHJva2Utd2lkdGg9IjEiPjwvcGF0aD4KPC9zdmc+')]">
+        
+        <div class="p-6 sm:p-10 lg:p-12 w-full min-w-full">
+            
+            <!-- HEADER -->
+            <div class="mb-10 flex flex-col md:flex-row md:items-end justify-between gap-4 w-full">
+                <div>
+                    <h1 class="text-3xl sm:text-4xl font-black text-slate-800 tracking-tight mb-2" id="page-title">Pusat Kawalan Utama</h1>
+                    <p class="text-slate-500 font-medium text-sm sm:text-base" id="page-subtitle">Uruskan akaun, peranan pengguna, dan selenggara sistem MyPrestasi.</p>
+                </div>
+                <div class="bg-white border border-slate-200 px-5 py-2.5 rounded-xl shadow-sm text-sm font-bold text-slate-600 flex items-center gap-3 shrink-0">
+                    <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                    Sistem Beroperasi (V4.2)
+                </div>
+            </div>
+
+            <!-- MESSAGES ALERT -->
+            {% if messages %}
+                <div class="mb-8 space-y-3 w-full">
+                    {% for message in messages %}
+                        <div class="px-5 py-4 rounded-xl font-bold text-sm flex items-center gap-3 shadow-sm {% if message.tags == 'error' %}bg-rose-50 text-rose-700 border border-rose-200{% else %}bg-emerald-50 text-emerald-700 border border-emerald-200{% endif %}">
+                            <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                            {{ message }}
+                        </div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+
+            <!-- SECTION 1: PENGURUSAN PENGGUNA (FLUID 12-COLUMNS GRID) -->
+            <div id="section-users" class="tab-section grid grid-cols-1 lg:grid-cols-12 gap-8 w-full animate-fade-in">
+                
+                <!-- KAD 1: BORANG DAFTAR PENGGUNA (4/12 LAJUR) -->
+                <div class="lg:col-span-5 xl:col-span-4 bg-white rounded-3xl p-8 shadow-xl shadow-slate-200/40 border border-slate-100 h-fit">
+                    <h2 class="text-xl font-black text-slate-800 mb-8 flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-xl bg-rose-50 text-rose-600 flex items-center justify-center shrink-0">
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"/></svg>
+                        </div>
+                        Daftar Akaun Baharu
+                    </h2>
+                    
+                    <form method="POST" class="space-y-6">
+                        {% csrf_token %}
+                        <input type="hidden" name="form_type" value="create_user">
+                        
+                        <div>
+                            <label class="block text-[11px] font-extrabold text-slate-500 uppercase tracking-widest mb-2">ID Pengguna (Username)</label>
+                            <input type="text" name="username" placeholder="cth: dr_azlan..." required class="w-full bg-slate-50 border-2 border-slate-200 rounded-xl px-4 py-3.5 text-sm font-semibold text-slate-800 focus:border-rose-500 focus:bg-white focus:ring-4 focus:ring-rose-500/10 outline-none transition-all placeholder:text-slate-400">
+                        </div>
+
+                        <div>
+                            <label class="block text-[11px] font-extrabold text-slate-500 uppercase tracking-widest mb-2">Kata Laluan</label>
+                            <input type="password" name="password" placeholder="••••••••" required class="w-full bg-slate-50 border-2 border-slate-200 rounded-xl px-4 py-3.5 text-sm font-semibold text-slate-800 focus:border-rose-500 focus:bg-white focus:ring-4 focus:ring-rose-500/10 outline-none transition-all placeholder:text-slate-400">
+                        </div>
+
+                        <div class="h-px w-full bg-slate-100 my-2"></div>
+
+                        <div>
+                            <label class="block text-[11px] font-extrabold text-slate-500 uppercase tracking-widest mb-2">Peranan (Role)</label>
+                            <div class="relative">
+                                <select name="role" class="w-full appearance-none bg-slate-50 border-2 border-slate-200 rounded-xl px-4 py-3.5 text-sm font-bold text-slate-700 focus:border-rose-500 focus:bg-white focus:ring-4 focus:ring-rose-500/10 outline-none transition-all cursor-pointer">
+                                    <option value="HOD">Ketua Jabatan / Pakar (HOD)</option>
+                                    <option value="STAFF">Pegawai Perubatan (MO)</option>
+                                    <option value="AUDITOR">Pegawai Audit Kualiti</option>
+                                </select>
+                                <div class="absolute inset-y-0 right-4 flex items-center pointer-events-none text-slate-400">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div>
+                            <label class="block text-[11px] font-extrabold text-slate-500 uppercase tracking-widest mb-2">Jabatan / Modul</label>
+                            <div class="relative">
+                                <select name="department" class="w-full appearance-none bg-slate-50 border-2 border-slate-200 rounded-xl px-4 py-3.5 text-sm font-bold text-slate-700 focus:border-rose-500 focus:bg-white focus:ring-4 focus:ring-rose-500/10 outline-none transition-all cursor-pointer">
+                                    <option value="CTS">Cardiothoracic Surgery (CTS)</option>
+                                    <option value="FMS">Family Medicine Specialist (FMS)</option>
+                                    <option value="PEDS">Pediatrics</option>
+                                    <option value="ONG">O&G</option>
+                                </select>
+                                <div class="absolute inset-y-0 right-4 flex items-center pointer-events-none text-slate-400">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+                                </div>
+                            </div>
+                        </div>
+
+                        <button type="submit" class="w-full flex justify-center gap-2 bg-rose-700 hover:bg-rose-900 text-white font-black text-base py-4 rounded-xl mt-2 transition-all duration-300 shadow-xl shadow-rose-700/20 hover:shadow-rose-900/40 hover:-translate-y-1">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"/></svg>
+                            Cipta Akaun Sistem
+                        </button>
+                    </form>
+                </div>
+
+                <!-- KAD 2: SENARAI PENGGUNA (8/12 LAJUR - FLUID & RESPONSIVE) -->
+                <div class="lg:col-span-7 xl:col-span-8 bg-white rounded-3xl shadow-xl shadow-slate-200/40 border border-slate-100 overflow-hidden flex flex-col min-h-[600px]">
+                    
+                    <div class="p-8 border-b border-slate-100 flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 bg-white">
+                        <div>
+                            <h2 class="text-xl font-black text-slate-800">Senarai Pengguna Aktif</h2>
+                            <p class="text-sm font-medium text-slate-500 mt-1">Pengurusan pangkalan data pengguna terkini.</p>
+                        </div>
+                        <span class="bg-rose-50 text-rose-700 border border-rose-200 text-xs font-black px-4 py-2 rounded-xl uppercase tracking-wider shrink-0">
+                            {{ users|length }} Rekod Dijumpai
+                        </span>
+                    </div>
+                    
+                    <div class="overflow-x-auto flex-grow bg-slate-50/30">
+                        <table class="w-full text-left border-collapse">
+                            <thead class="bg-slate-50 text-slate-500 text-[10px] uppercase font-black tracking-widest sticky top-0 z-10 shadow-sm">
+                                <tr>
+                                    <th class="px-8 py-5 border-b border-slate-200">ID Pengguna</th>
+                                    <th class="px-8 py-5 border-b border-slate-200">Peranan</th>
+                                    <th class="px-8 py-5 border-b border-slate-200">Jabatan</th>
+                                    <th class="px-8 py-5 border-b border-slate-200 text-center">Tindakan</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-slate-100">
+                                {% for u in users %}
+                                <tr class="hover:bg-white transition-colors group">
+                                    <td class="px-8 py-5">
+                                        <div class="flex items-center gap-3">
+                                            <div class="w-8 h-8 rounded-full bg-slate-200 text-slate-600 flex items-center justify-center text-xs font-bold shrink-0 uppercase">
+                                                {{ u.user.username|make_list|first }}
+                                            </div>
+                                            <span class="font-black text-slate-700 text-sm">{{ u.user.username }}</span>
+                                        </div>
+                                    </td>
+                                    <td class="px-8 py-5">
+                                        {% if u.role == 'HOD' %}
+                                            <span class="inline-flex items-center gap-1.5 bg-indigo-50 text-indigo-700 border border-indigo-200 px-3 py-1.5 rounded-lg text-[11px] font-black uppercase tracking-wider">
+                                                <span class="w-1.5 h-1.5 rounded-full bg-indigo-500"></span> HOD
+                                            </span>
+                                        {% elif u.role == 'HPU_ADMIN' %}
+                                            <span class="inline-flex items-center gap-1.5 bg-rose-50 text-rose-700 border border-rose-200 px-3 py-1.5 rounded-lg text-[11px] font-black uppercase tracking-wider">
+                                                <span class="w-1.5 h-1.5 rounded-full bg-rose-500"></span> HPU Dev
+                                            </span>
+                                        {% else %}
+                                            <span class="inline-flex items-center gap-1.5 bg-emerald-50 text-emerald-700 border border-emerald-200 px-3 py-1.5 rounded-lg text-[11px] font-black uppercase tracking-wider">
+                                                <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> MO
+                                            </span>
+                                        {% endif %}
+                                    </td>
+                                    <td class="px-8 py-5 font-bold text-slate-500 text-sm">{{ u.department }}</td>
+                                    <td class="px-8 py-5 text-center">
+                                        <div class="flex items-center justify-center gap-1.5">
+                                            <!-- Login As -->
+                                            <button onclick="alert('Fungsi Log Masuk Sebagai {{ u.user.username }} akan diaktifkan.')" class="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors" title="Log Masuk Sebagai">
+                                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+                                            </button>
+                                            <!-- Edit -->
+                                            <button onclick="openEditModal('{{ u.user.username }}', '{{ u.role }}', '{{ u.department }}')" class="p-2 text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors" title="Kemas Kini Profil">
+                                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+                                            </button>
+                                            <!-- Reset Password -->
+                                            <button onclick="alert('Fungsi Set Semula Kata Laluan untuk {{ u.user.username }} akan diaktifkan.')" class="p-2 text-slate-400 hover:text-amber-600 hover:bg-amber-50 rounded-lg transition-colors" title="Set Semula Kata Laluan">
+                                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"/></svg>
+                                            </button>
+                                            <!-- Delete -->
+                                            <button onclick="alert('Fungsi Padam Akaun {{ u.user.username }} akan diaktifkan.')" class="p-2 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors" title="Padam Akaun">
+                                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="4" class="px-8 py-16 text-center text-slate-400">
+                                        <svg class="w-16 h-16 mx-auto mb-4 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4"/></svg>
+                                        <div class="font-bold text-base">Tiada Pengguna Didaftarkan</div>
+                                        <div class="text-sm font-medium mt-1">Sila cipta akaun baharu menggunakan borang di sebelah kiri.</div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- SECTION 2: PANGKALAN DATA (DB) -->
+            <div id="section-db" class="tab-section hidden animate-fade-in">
+                <div class="bg-white rounded-3xl p-10 shadow-xl shadow-slate-200/40 border border-slate-100 flex flex-col items-center justify-center text-center h-[500px]">
+                    <div class="w-24 h-24 bg-rose-50 rounded-full flex items-center justify-center text-rose-600 mb-6">
+                        <svg class="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4m0 5c0 2.21-3.582 4-8 4s-8-1.79-8-4"/></svg>
+                    </div>
+                    <h2 class="text-2xl font-black text-slate-800 mb-2">Pangkalan Data (SQLite3)</h2>
+                    <p class="text-slate-500 font-medium mb-8 max-w-md">Uruskan sandaran (backup), eksport data, dan selenggara pangkalan data utama MyPrestasi.</p>
+                    
+                    <button onclick="alert('Fungsi muat turun db.sqlite3 sedang diaktifkan oleh developer.')" class="bg-rose-700 hover:bg-rose-900 text-white font-bold py-3.5 px-8 rounded-xl shadow-lg shadow-rose-700/20 hover:shadow-rose-900/40 transition-all flex items-center gap-3">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+                        Muat Turun Sandaran (Backup)
+                    </button>
+                </div>
+            </div>
+
+            <!-- SECTION 3: TETAPAN SISTEM -->
+            <div id="section-settings" class="tab-section hidden animate-fade-in">
+                <div class="bg-white rounded-3xl p-10 shadow-xl shadow-slate-200/40 border border-slate-100 h-[500px]">
+                    <h2 class="text-xl font-black text-slate-800 mb-8 flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-xl bg-slate-100 text-slate-600 flex items-center justify-center">
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                        </div>
+                        Konfigurasi Teknikal Global
+                    </h2>
+                    
+                    <div class="space-y-6 max-w-2xl">
+                        <div class="flex items-center justify-between p-5 border border-slate-200 rounded-2xl bg-slate-50/50">
+                            <div>
+                                <h3 class="font-bold text-slate-800 text-sm">Modul Penyelenggaraan (Maintenance Mode)</h3>
+                                <p class="text-xs text-slate-500 mt-1">Halang semua pengguna kecuali HPU Admin dari mengakses sistem.</p>
+                            </div>
+                            <button onclick="this.classList.toggle('bg-emerald-500'); this.classList.toggle('bg-slate-300');" class="w-12 h-6 bg-slate-300 rounded-full relative transition-colors duration-300 cursor-pointer">
+                                <div class="w-4 h-4 bg-white rounded-full absolute top-1 left-1 transition-transform duration-300 transform peer-checked:translate-x-6"></div>
+                            </button>
+                        </div>
+
+                        <div class="flex items-center justify-between p-5 border border-slate-200 rounded-2xl bg-slate-50/50">
+                            <div>
+                                <h3 class="font-bold text-slate-800 text-sm">Pendaftaran Automatik</h3>
+                                <p class="text-xs text-slate-500 mt-1">Benarkan pendaftaran melalui emel rasmi @moh.gov.my.</p>
+                            </div>
+                            <button onclick="this.classList.toggle('bg-emerald-500'); this.classList.toggle('bg-slate-300');" class="w-12 h-6 bg-emerald-500 rounded-full relative transition-colors duration-300 cursor-pointer">
+                                <div class="w-4 h-4 bg-white rounded-full absolute top-1 left-7 transition-transform duration-300"></div>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="mt-12 text-center text-xs font-semibold text-slate-400 pb-8">
+                Hak Cipta &copy; 2026 MyPrestasi HPU | Antaramuka SaaS Prestasi Tinggi
+            </div>
+            
+        </div>
+    </div>
+
+    <!-- MODAL KEMAS KINI PROFIL (Disembunyikan pada awalnya) -->
+    <div id="editProfileModal" class="fixed inset-0 z-[100] hidden flex items-center justify-center">
+        <!-- Latar Belakang Kabur -->
+        <div class="absolute inset-0 bg-slate-900/40 backdrop-blur-sm" onclick="closeEditModal()"></div>
+        
+        <!-- Kotak Modal -->
+        <div class="relative bg-white rounded-3xl shadow-2xl w-full max-w-md mx-4 overflow-hidden transform transition-all duration-300 scale-95 opacity-0" id="modalContent">
+            <div class="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
+                <h3 class="text-lg font-black text-slate-800 flex items-center gap-2">
+                    <span class="text-rose-600">✏️</span> Kemas Kini Profil
+                </h3>
+                <button onclick="closeEditModal()" class="text-slate-400 hover:text-rose-600 transition-colors">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                </button>
+            </div>
+            
+            <form method="POST" action="" class="p-6 space-y-5" id="editForm">
+                {% csrf_token %}
+                <input type="hidden" name="form_type" value="edit_user">
+                <!-- Kita hantar ID pengguna asal secara tersembunyi -->
+                <input type="hidden" name="original_username" id="edit_original_username">
+                
+                <div>
+                    <label class="block text-[11px] font-extrabold text-slate-500 uppercase tracking-widest mb-2">ID Pengguna (Baca Sahaja)</label>
+                    <input type="text" id="edit_username" name="new_username" readonly class="w-full bg-slate-100 border-2 border-slate-200 rounded-xl px-4 py-3 text-sm font-bold text-slate-500 outline-none cursor-not-allowed">
+                </div>
+
+                <div>
+                    <label class="block text-[11px] font-extrabold text-slate-500 uppercase tracking-widest mb-2">Peranan (Role)</label>
+                    <div class="relative">
+                        <select name="role" id="edit_role" class="w-full appearance-none bg-slate-50 border-2 border-slate-200 rounded-xl px-4 py-3 text-sm font-bold text-slate-700 focus:border-rose-500 focus:bg-white focus:ring-4 focus:ring-rose-500/10 outline-none transition-all cursor-pointer">
+                            <option value="HOD">Ketua Jabatan / Pakar (HOD)</option>
+                            <option value="STAFF">Pegawai Perubatan (MO)</option>
+                            <option value="AUDITOR">Pegawai Audit Kualiti</option>
+                        </select>
+                        <div class="absolute inset-y-0 right-4 flex items-center pointer-events-none text-slate-400">▼</div>
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-[11px] font-extrabold text-slate-500 uppercase tracking-widest mb-2">Jabatan / Modul</label>
+                    <div class="relative">
+                        <select name="department" id="edit_department" class="w-full appearance-none bg-slate-50 border-2 border-slate-200 rounded-xl px-4 py-3 text-sm font-bold text-slate-700 focus:border-rose-500 focus:bg-white focus:ring-4 focus:ring-rose-500/10 outline-none transition-all cursor-pointer">
+                            <option value="CTS">Cardiothoracic Surgery (CTS)</option>
+                            <option value="FMS">Family Medicine Specialist (FMS)</option>
+                            <option value="PEDS">Pediatrics</option>
+                            <option value="ONG">O&G</option>
+                        </select>
+                        <div class="absolute inset-y-0 right-4 flex items-center pointer-events-none text-slate-400">▼</div>
+                    </div>
+                </div>
+
+                <div class="pt-4 flex gap-3">
+                    <button type="button" onclick="closeEditModal()" class="flex-1 bg-white border-2 border-slate-200 hover:border-slate-300 hover:bg-slate-50 text-slate-600 font-bold text-sm py-3 rounded-xl transition-all">
+                        Batal
+                    </button>
+                    <button type="submit" class="flex-1 bg-rose-600 hover:bg-rose-700 text-white font-bold text-sm py-3 rounded-xl shadow-lg shadow-rose-600/20 transition-all">
+                        Simpan Perubahan
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- SCRIPT LOGIK SISTEM -->
+    <script>
+        // --- LOGIK MODAL EDIT ---
+        const modal = document.getElementById('editProfileModal');
+        const modalContent = document.getElementById('modalContent');
+
+        function openEditModal(username, role, dept) {
+            // Isikan data sedia ada ke dalam borang
+            document.getElementById('edit_original_username').value = username;
+            document.getElementById('edit_username').value = username;
+            document.getElementById('edit_role').value = role;
+            document.getElementById('edit_department').value = dept;
+
+            // Buka Modal dengan animasi
+            modal.classList.remove('hidden');
+            setTimeout(() => {
+                modalContent.classList.remove('scale-95', 'opacity-0');
+                modalContent.classList.add('scale-100', 'opacity-100');
+            }, 10);
+        }
+
+        function closeEditModal() {
+            // Tutup Modal dengan animasi
+            modalContent.classList.remove('scale-100', 'opacity-100');
+            modalContent.classList.add('scale-95', 'opacity-0');
+            setTimeout(() => {
+                modal.classList.add('hidden');
+            }, 300);
+        }
+        function switchTab(tabId) {
+            // 1. Sembunyikan semua tab content
+            document.querySelectorAll('.tab-section').forEach(el => {
+                el.classList.add('hidden');
+            });
+            
+            // 2. Tunjuk tab yang dipilih
+            document.getElementById('section-' + tabId).classList.remove('hidden');
+            
+            // 3. Reset semua butang sidebar ke styling tidak aktif (inactive)
+            const defaultClass = "nav-item hover:bg-rose-900/40 text-rose-200/70 hover:text-white font-semibold p-3 rounded-xl flex items-center gap-4 transition-all w-full text-left relative";
+            document.querySelectorAll('.nav-item').forEach(el => {
+                el.className = defaultClass;
+                // Sembunyikan bar merah (active indicator)
+                el.querySelector('.active-indicator').classList.add('hidden');
+            });
+            
+            // 4. Set butang yang ditekan sebagai aktif (active style)
+            const activeBtn = document.getElementById('nav-' + tabId);
+            activeBtn.className = "nav-item bg-rose-900/80 text-rose-50 font-bold p-3 rounded-xl flex items-center gap-4 border border-rose-700/50 shadow-sm relative w-full text-left transition-all";
+            activeBtn.querySelector('.active-indicator').classList.remove('hidden');
+
+            // 5. Ubah Tajuk Halaman Mengikut Tab
+            const titleEl = document.getElementById('page-title');
+            const subtitleEl = document.getElementById('page-subtitle');
+            
+            if(tabId === 'users') {
+                titleEl.textContent = 'Pusat Kawalan Utama';
+                subtitleEl.textContent = 'Uruskan akaun, peranan pengguna, dan selenggara sistem MyPrestasi.';
+            } else if (tabId === 'db') {
+                titleEl.textContent = 'Pangkalan Data';
+                subtitleEl.textContent = 'Pengurusan simpanan rekod dan arkib data sistem.';
+            } else if (tabId === 'settings') {
+                titleEl.textContent = 'Tetapan Modul';
+                subtitleEl.textContent = 'Ubah parameter dan kebenaran global aplikasi.';
+            }
+        }
+    </script>
+</body>
+</html>

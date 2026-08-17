@@ -1,0 +1,1692 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+
+    <title>MyPrestasi</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    </head>
+
+    <title>Staff Portal - MyPrestasi</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
+    <style>
+
+        /* --- JADUAL (TABLE) TEMA STAFF --- */
+        .staff-table { width: 100%; border-collapse: collapse; font-size: 13px; text-align: left; }
+        .staff-table th { padding: 12px 15px; color: #64748b; background-color: #f8f9fa; font-weight: 700; text-transform: uppercase; font-size: 11px; border-bottom: 2px solid #e2e8f0; }
+        .staff-table tr { border-bottom: 1px solid #f0f2f6; }
+        .staff-table tr:nth-child(even) { background-color: #fcfdfd; }
+        .staff-table tr:hover { background-color: #EFF6FF; transition: 0.2s; }
+        .staff-table td { padding: 12px 15px; color: #2b3674; font-weight: 500; }
+        .staff-table td i { color: #a3aed1; } /* Warna kelabu untuk teks N/A */
+
+        /* --- STATUS BADGES --- */
+        .status-badge { padding: 4px 8px; border-radius: 6px; font-size: 11px; font-weight: 700; display: inline-block; }
+        .bg-success { background-color: #D1FAE5; color: #16A34A; border: 1px solid #BBF7D0; }
+        .bg-warning { background-color: #FEF3C7; color: #D97706; border: 1px solid #FDE68A; }
+        .bg-danger { background-color: #FEE2E2; color: #DC2626; border: 1px solid #FECACA; }
+
+        /* --- TEMA SIDEBAR (DITAMBAH LOGIK COLLAPSE) --- */
+        .sidebar {
+            width: 280px;
+            background: white;
+            border-right: 1px solid #f0f2f6;
+            display: flex;
+            flex-direction: column;
+            padding: 20px;
+            box-sizing: border-box;
+            transition: width 0.3s ease; /* Animasi lancar */
+            position: relative; /* Penting untuk butang toggle */
+            z-index: 100;
+        }
+
+        /* KELAS BAHARU UNTUK STATE 'COLLAPSED' */
+        .sidebar.collapsed {
+            width: 80px; /* Lebar bila dilipat */
+            padding: 20px 10px; /* Kurangkan padding bila dilipat */
+        }
+
+        /* Sembunyikan teks bila dilipat */
+        .sidebar.collapsed .sidebar-logo h2,
+        .sidebar.collapsed .sidebar-logo p,
+        .sidebar.collapsed .sidebar-section-title,
+        .sidebar.collapsed .nav-btn span, /* Balut teks butang dengan <span> nanti */
+        .sidebar.collapsed .btn-logout span {
+            display: none;
+        }
+
+        /* Pusatkan ikon bila dilipat */
+        .sidebar.collapsed .nav-btn {
+            justify-content: center;
+            padding: 12px 0;
+        }
+        .sidebar.collapsed .btn-logout {
+            padding: 12px 0;
+        }
+
+        /* BUTANG TOGGLE DI SEMPADAN (BORDER) */
+        .sidebar-toggle {
+            position: absolute;
+            top: 30px;
+            right: -15px; /* Letak betul-betul di atas garisan border */
+            width: 30px;
+            height: 30px;
+            background-color: white;
+            border: 1px solid #e2e8f0;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            color: #64748b;
+            font-size: 14px;
+            transition: transform 0.3s ease, background-color 0.2s;
+            z-index: 101;
+        }
+
+        .sidebar-toggle:hover {
+            background-color: #f4f7fe;
+            color: #4318FF;
+        }
+
+        /* Pusingkan anak panah bila dilipat */
+        .sidebar.collapsed .sidebar-toggle {
+            transform: rotate(180deg);
+        }
+
+        body { margin: 0; font-family: 'Inter', sans-serif; background-color: #f4f7fe; display: flex; height: 100vh; overflow: hidden; }
+
+        /* --- TEMA SIDEBAR --- */
+        .sidebar { width: 280px; background: white; border-right: 1px solid #f0f2f6; display: flex; flex-direction: column; padding: 20px; box-sizing: border-box; }
+        .sidebar-logo { text-align: center; margin-bottom: 20px; padding-bottom: 15px; border-bottom: 1px solid #f0f2f6; }
+        .sidebar-logo img { margin-bottom: 10px; }
+        .sidebar-logo h2 { color: #1E3A8A; font-weight: 900; margin: 0; font-size: 22px; }
+        .sidebar-logo p { color: #a3aed1; font-size: 12px; font-weight: 600; margin: 0; }
+
+        .sidebar-section-title { font-size: 11px; font-weight: 800; color: #a3aed1; text-transform: uppercase; margin: 15px 0 10px 0; letter-spacing: 0.5px; padding-left: 5px;}
+        .nav-btn { display: flex; align-items: center; gap: 10px; padding: 12px 15px; background: white; border: 1px solid transparent; border-radius: 10px; color: #64748b; font-weight: 700; font-size: 14px; text-decoration: none; margin-bottom: 8px; transition: 0.2s; box-sizing: border-box;}
+        .nav-btn:hover { background-color: #f4f7fe; color: #2b3674; }
+        .nav-btn.active { background-color: #EFF6FF; color: #1E3A8A; border: 1px solid #1E3A8A; }
+        .btn-logout { background-color: #1E3A8A; color: white; border: none; padding: 12px; border-radius: 8px; font-weight: bold; text-align: center; margin-top: auto; display: flex; justify-content: center; transition: 0.2s;}
+        .btn-logout:hover { background-color: #0F172A; transform: translateY(-2px);}
+
+        /* --- MAIN CONTENT & TOP HEADER --- */
+        .main-content { flex: 1; padding: 35px; overflow-y: auto; padding-bottom: 80px; }
+
+        /* --- ANIMASI EFEK MASUK (ENTRANCE ANIMATIONS) --- */
+
+        /* 1. Update Tracker & Schedule (Dari Atas ke Bawah) */
+        @keyframes slideDownFade {
+            0% { opacity: 0; transform: translateY(-20px); }
+            100% { opacity: 1; transform: translateY(0); }
+        }
+        .animate-cascade > div {
+            opacity: 0;
+            animation: slideDownFade 0.6s ease-out forwards;
+        }
+        .animate-cascade > div:nth-child(1) { animation-delay: 0.1s; }
+        .animate-cascade > div:nth-child(2) { animation-delay: 0.3s; }
+        .animate-cascade > div:nth-child(3) { animation-delay: 0.5s; }
+        
+        .timeline-item {
+            opacity: 0;
+            animation: slideDownFade 0.5s ease-out forwards;
+        }
+        .timeline-item:nth-child(2) { animation-delay: 0.1s; }
+        .timeline-item:nth-child(3) { animation-delay: 0.2s; }
+        .timeline-item:nth-child(4) { animation-delay: 0.3s; }
+        .timeline-item:nth-child(5) { animation-delay: 0.4s; }
+        .timeline-item:nth-child(6) { animation-delay: 0.5s; }
+        .timeline-item:nth-child(7) { animation-delay: 0.6s; }
+        .timeline-item:nth-child(8) { animation-delay: 0.7s; }
+
+        /* 2. Holistic Spider Web (Mekar dari tengah) */
+        @keyframes bloomOut {
+            0% { opacity: 0; transform: scale(0.5); }
+            60% { transform: scale(1.05); }
+            100% { opacity: 1; transform: scale(1); }
+        }
+        .card-spider .js-plotly-plot {
+            animation: bloomOut 1.2s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+            opacity: 0;
+            transform-origin: center center;
+        }
+
+        /* 3. CUSUM Bar, Task Velocity & Productivity Trend (Sapu Kiri ke Kanan) */
+        @keyframes wipeRight {
+            0% { clip-path: polygon(0 0, 0 0, 0 100%, 0 100%); opacity: 0; }
+            100% { clip-path: polygon(0 0, 100% 0, 100% 100%, 0 100%); opacity: 1; }
+        }
+        .progress-bar {
+            animation: wipeRight 1.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+            transform-origin: left;
+        }
+        .card-area .js-plotly-plot {
+            animation: wipeRight 1.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+            opacity: 0;
+        }
+
+        /* 4. Donut & Gauge (Pusingan Circular) */
+        @keyframes growCircular {
+            0% { clip-path: circle(0% at 50% 50%); transform: scale(0.5); opacity: 0; }
+            100% { clip-path: circle(150% at 50% 50%); transform: scale(1); opacity: 1; }
+        }
+        .card-donut .js-plotly-plot,
+        .card-gauge .js-plotly-plot {
+            animation: growCircular 1.5s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+            opacity: 0;
+            transform-origin: center center;
+        }
+        
+        /* Besarkan sikit saiz bar CUSUM & Task Velocity */
+        .progress-bg { background: #e9ecef; border-radius: 10px; height: 16px; margin-top: 8px; overflow: hidden; } /* Ditukar dari 14px kepada 16px */
+
+        .top-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; }
+        .top-header-left h1 { font-size: 26px; color: #64748b; font-weight: 400; margin: 0 0 5px 0; }
+        .top-header-left h1 strong { color: #1E3A8A; font-weight: 800; }
+        .top-header-left p { color: #a3aed1; font-size: 14px; margin: 0; font-weight: 500; }
+
+        .top-header-right { display: flex; align-items: center; gap: 15px; }
+        .header-tool { background: white; border: 1px solid #e2e8f0; padding: 10px 18px; border-radius: 20px; font-size: 13px; color: #2b3674; font-weight: 600; display: flex; align-items: center; gap: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.02); cursor: pointer; transition: 0.2s;}
+        .header-tool:hover { border-color: #1E3A8A; }
+        .icon-btn { background: white; border: 1px solid #e2e8f0; width: 40px; height: 40px; border-radius: 50%; display: flex; justify-content: center; align-items: center; font-size: 16px; cursor: pointer; box-shadow: 0 2px 10px rgba(0,0,0,0.02); color: #64748b; transition: 0.2s;}
+        .icon-btn:hover { border-color: #1E3A8A; color: #1E3A8A; }
+        .header-avatar { width: 42px; height: 42px; border-radius: 50%; background: #1E3A8A; display: flex; justify-content: center; align-items: center; font-size: 20px; box-shadow: 0 2px 10px rgba(30,58,138,0.3); cursor: pointer; border: 2px solid white;}
+
+        /* --- FLOATING DROPDOWN MENU (INBOX & NOTIF) --- */
+        .dropdown-wrapper { position: relative; display: inline-block; }
+        .dropdown-menu { display: none; position: absolute; top: 50px; right: 0; background: white; min-width: 320px; box-shadow: 0 10px 30px rgba(0,0,0,0.08); border-radius: 12px; border: 1px solid #e2e8f0; z-index: 1000; overflow: hidden; text-align: left; }
+        .dropdown-menu.show { display: block; animation: fadeIn 0.2s; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
+        .dropdown-header { padding: 15px; border-bottom: 1px solid #e2e8f0; font-weight: 800; color: #1E3A8A; background: #f8f9fa; font-size: 14px;}
+        .dropdown-item { padding: 15px; border-bottom: 1px solid #f0f2f6; font-size: 13px; color: #64748b; cursor: pointer; transition: 0.2s; }
+        .dropdown-item:hover { background: #f4f7fe; }
+        .dropdown-item:last-child { border-bottom: none; }
+        .dropdown-item strong { color: #2b3674; font-size: 14px; display: block; margin-bottom: 3px;}
+        .dropdown-item .time { float: right; font-size: 11px; color: #a3aed1; font-weight: 600;}
+
+        /* --- CARDS & GRID --- */
+        .card { background: white; border-radius: 16px; padding: 25px; border: 1px solid #f0f2f6; box-shadow: 0 4px 15px rgba(0,0,0,0.03); margin-bottom: 20px; }
+        .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+        .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px; }
+        .metric-box { padding: 18px; border-radius: 12px; border: 1px solid #e2e8f0; margin-bottom: 12px; }
+        .metric-title { font-size: 11px; color: #64748b; font-weight: 700; text-transform: uppercase; }
+        .metric-val { font-size: 26px; font-weight: 800; color: #2b3674; margin-top: 5px; }
+
+        /* TABS STYLING (MODERN BUTTONS) */
+        .tabs-nav { display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; }
+        .tab-btn { flex: 1; background: white; border: 1px solid #f0f2f6; border-radius: 10px; height: 45px; display: flex; align-items: center; justify-content: center; gap: 8px; font-weight: 700; font-size: 13px; color: #2b3674; text-decoration: none; cursor: pointer; transition: 0.2s; box-sizing: border-box; white-space: nowrap; padding: 0 15px;}
+        .tab-btn:hover { border-color: #1E3A8A; color: #1E3A8A; transform: translateY(-2px);}
+        .tab-btn.active { border: 2px solid #1E3A8A; background: #EFF6FF; color: #1E3A8A; }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+
+        /* FORMS & INPUTS */
+        label { display: block; font-size: 13px; font-weight: 600; color: #2b3674; margin-top: 15px; margin-bottom: 8px; }
+        input[type="text"], input[type="number"], input[type="date"], input[type="datetime-local"], select, textarea, input[type="file"], input[type="email"], input[type="password"] { width: 100%; padding: 12px; border-radius: 8px; border: 1px solid #e2e8f0; box-sizing: border-box; font-family: 'Inter'; font-size: 14px; background-color: #f8f9fa; color: #2b3674;}
+        input[type="checkbox"], input[type="radio"] { margin-right: 8px; transform: scale(1.2); cursor: pointer; accent-color: #1E3A8A;}
+        .radio-group { display: flex; gap: 20px; align-items: center; margin-top: 5px; font-size: 14px; font-weight: 500; color: #2b3674;}
+        .checkbox-container { background: #f8f9fa; border: 1px solid #e2e8f0; padding: 15px; border-radius: 8px; margin-bottom: 10px; font-size: 14px; color: #2b3674;}
+        .submit-btn { width: 100%; background: #1E3A8A; color: white; border: none; padding: 14px; border-radius: 8px; font-weight: bold; margin-top: 25px; cursor: pointer; font-size: 15px; transition: 0.2s;}
+        .submit-btn:hover { background: #0F172A; }
+        .sub-menu { display: flex; gap: 15px; margin-bottom: 20px;}
+        .sm-radio { padding: 8px 15px; border-radius: 20px; background: #f0f2f6; color:#64748b; cursor: pointer; font-size: 13px; font-weight: bold; border: 1px solid transparent; transition: 0.2s;}
+        .sm-radio.active { background: #1E3A8A; border-color: #1E3A8A; color: white;}
+
+        /* Timeline Tracker */
+        .timeline-container { position: relative; padding-left: 30px; max-height: 400px; overflow-y: auto; }
+        .timeline-line { position: absolute; left: 10px; top: 0; bottom: 0; width: 2px; background: #e9ecef; }
+        .timeline-item { position: relative; margin-bottom: 12px; border: 1px solid #e9ecef; border-radius: 10px; padding: 12px; display: flex; justify-content: space-between; align-items: center; background: white; }
+        .timeline-dot { position: absolute; left: -26px; top: 50%; transform: translateY(-50%); width: 10px; height: 10px; border-radius: 50%; border: 2px solid white; box-shadow: 0 0 0 2px #e9ecef; }
+        .timeline-dot.done { background: #1E3A8A; box-shadow: 0 0 0 2px #1E3A8A; }
+        .timeline-dot.pending { background: #ff4b4b; box-shadow: 0 0 0 2px #ff4b4b; }
+        .ti-status { font-size: 11px; font-weight: bold; }
+        .ti-status.done { color: #1E3A8A; }
+        .ti-status.pending { color: #ff4b4b; }
+
+        .progress-bg { background: #e9ecef; border-radius: 10px; height: 14px; margin-top: 8px; overflow: hidden; }
+        .progress-bar { background: #3B82F6; height: 100%; border-radius: 10px; }
+        .custom-footer {
+            position: fixed;
+            left: 280px;
+            right: 0;
+            bottom: 0;
+            background: #f4f7fe;
+            text-align: center;
+            padding: 15px;
+            font-size: 13px;
+            color: #64748b;
+            border-top: 1px solid #e2e8f0;
+            z-index: 999;
+            transition: left 0.3s ease; /* Animasi lancar */
+        }
+
+        .sidebar.collapsed ~ .custom-footer {
+            left: 80px; /* Footer kembang ikut sidebar */
+        }
+
+        /* --- MODAL SETTINGS & TOGGLE SWITCH --- */
+        .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(15, 23, 42, 0.6); z-index: 2000; justify-content: center; align-items: center; backdrop-filter: blur(4px); }
+        .modal-content { background: white; width: 350px; border-radius: 12px; padding: 25px; box-shadow: 0 10px 25px rgba(0,0,0,0.2); position: relative; animation: slideDown 0.3s ease-out; }
+        @keyframes slideDown { from { opacity: 0; transform: translateY(-20px); } to { opacity: 1; transform: translateY(0); } }
+        .modal-close { position: absolute; top: 15px; right: 15px; cursor: pointer; font-size: 18px; color: #64748b; background: none; border: none; transition: 0.2s; }
+        .modal-close:hover { color: #ff4b4b; transform: scale(1.1); }
+        .switch { position: relative; display: inline-block; width: 46px; height: 24px; }
+        .switch input { opacity: 0; width: 0; height: 0; }
+        .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #cbd5e1; transition: .4s; border-radius: 34px; }
+        .slider:before { position: absolute; content: ""; height: 18px; width: 18px; left: 3px; bottom: 3px; background-color: white; transition: .4s; border-radius: 50%; box-shadow: 0 2px 4px rgba(0,0,0,0.2);}
+        input:checked + .slider { background-color: #1E3A8A; }
+        input:checked + .slider:before { transform: translateX(22px); }
+        .setting-item { display: flex; justify-content: space-between; align-items: center; padding: 15px 0; border-bottom: 1px solid #f0f2f6; }
+        
+       /* ==========================================
+           RESPONSIVE MOBILE DESIGN (SKRIN < 768px)
+           ========================================== */
+        @media (max-width: 768px) {
+            /* 1. Bebaskan 'body' dari sekatan ketinggian skrin (100vh) */
+            body {
+                display: block !important; /* Buang flexbox supaya susunan natural */
+                height: auto !important;
+                overflow-y: auto !important;
+            }
+
+            /* 2. Sidebar mengambil ruang penuh di atas */
+            .sidebar {
+                width: 100% !important;
+                height: auto !important;
+                position: relative !important;
+                border-right: none !important;
+                border-bottom: 2px solid #e2e8f0 !important;
+                padding-bottom: 20px !important;
+            }
+            .sidebar-toggle { display: none !important; }
+
+            /* 3. Main content mengembang secara bebas di bawah sidebar */
+            .main-content {
+                width: 100% !important;
+                height: auto !important;
+                overflow: visible !important;
+                padding: 15px !important;
+                padding-bottom: 80px !important; /* Ruang untuk footer */
+                box-sizing: border-box !important;
+            }
+
+            /* 4. Footer dipinkan kemas di bawah skrin telefon */
+            .custom-footer {
+                position: fixed !important;
+                left: 0 !important;
+                width: 100% !important;
+                bottom: 0 !important;
+                z-index: 9999 !important;
+            }
+
+            /* 5. Jadikan SEMUA kotak bertindih ke bawah (1 kolum) */
+            .grid-2, .grid-3, .grid-4, .modules-grid, .content-grid, .tabs-nav, .sub-modules-nav, .filter-row {
+                display: flex !important;
+                flex-direction: column !important;
+                gap: 15px !important;
+            }
+
+            /* 6. Betulkan kedudukan Profile / Butang di penjuru kanan atas */
+            .top-header-right {
+                position: relative !important;
+                top: 0 !important;
+                right: 0 !important;
+                margin-top: 15px !important;
+                justify-content: flex-start !important;
+                width: 100% !important;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="sidebar" id="mySidebar">
+        <div class="sidebar-toggle" onclick="toggleSidebar()">
+            ◀ </div>
+
+        <div class="sidebar-logo">
+            <img src="https://upload.wikimedia.org/wikipedia/commons/2/26/Coat_of_arms_of_Malaysia.svg" width="60" id="logoImg">
+            <h2>MyPrestasi</h2>
+            <p>Staff Portal</p>
+        </div>
+
+        <div class="sidebar-section-title">MAIN MENU</div>
+        <a href="?section=Dashboard" class="nav-btn {% if section == 'Dashboard' %}active{% endif %}">
+            🏠 <span>Dashboard</span>
+        </a>
+        <a href="?section=Performance" class="nav-btn {% if section == 'Performance' %}active{% endif %}">
+            📊 <span>My Performance</span>
+        </a>
+
+        <div class="sidebar-section-title">SELF DATA UPDATE</div>
+        <a href="?section=Clinical" class="nav-btn {% if section == 'Clinical' %}active{% endif %}">
+            🩺 <span>Clinical</span>
+        </a>
+        <a href="?section=Operational" class="nav-btn {% if section == 'Operational' %}active{% endif %}">
+            ⚙️ <span>Operational</span>
+        </a>
+        <a href="?section=Interpersonal" class="nav-btn {% if section == 'Interpersonal' %}active{% endif %}">
+            🤝 <span>Interpersonal</span>
+        </a>
+
+        <div class="sidebar-section-title" style="margin-top: 25px;">ACCOUNT</div>
+        <a href="#" class="nav-btn" onclick="openSettings(); return false;">
+            ⚙️ <span>Settings</span>
+        </a>
+        <a href="{% url 'logout' %}" class="btn-logout">
+            ↪ <span>Logout</span>
+        </a>
+    </div>
+
+    <div class="main-content">
+
+        <div class="top-header">
+            <div class="top-header-left">
+                {% if section == 'Dashboard' or section == 'Performance' %}
+                    <h1>Good Morning, <strong>{{ staff_name }}</strong></h1>
+                    <p>Your {{ section|lower }} summary and analysis for today.</p>
+                {% elif section == 'Profile' %}
+                    <h1>Update <strong>Profile</strong></h1>
+                    <p>Manage your personal data and account credentials.</p>
+                {% else %}
+                    <h1>Update Data: <strong>{{ section }} Excellence</strong></h1>
+                    <p>Please enter your latest records to be verified by the HOD.</p>
+                {% endif %}
+            </div>
+
+            <div class="top-header-right">
+                <div class="header-tool">{{ staff_dept }} Dept <span style="margin-left:8px; font-size:10px;">▼</span></div>
+                <div class="header-tool"><span style="margin-right:5px;">📅</span> {{ today_date }}</div>
+                <div class="icon-btn">🔍</div>
+
+                <div class="dropdown-wrapper">
+                    <div class="icon-btn" onclick="toggleDropdown('inboxDropdown')">✉️</div>
+                    <div class="dropdown-menu" id="inboxDropdown">
+                        <div class="dropdown-header">Inbox (2 New)</div>
+                        <div class="dropdown-item">
+                            <span class="time">13:27</span>
+                            <strong>👩‍🔬 Dr. Siti Nurhaliza</strong>
+                            Patient X referral attached. Can we discuss?
+                        </div>
+                        <div class="dropdown-item">
+                            <span class="time">08:12</span>
+                            <strong>👨‍⚕️ Dr. Ahmad Kamil</strong>
+                            RE: Shift swap this weekend. I agree.
+                        </div>
+                    </div>
+                </div>
+
+                <div class="dropdown-wrapper">
+                    <div class="icon-btn" onclick="toggleDropdown('notifDropdown')" style="position:relative;">
+                        🔔<span style="position:absolute; top:6px; right:8px; width:8px; height:8px; background:#ff4b4b; border-radius:50%; border: 2px solid white;"></span>
+                    </div>
+                    <div class="dropdown-menu" id="notifDropdown">
+                        <div class="dropdown-header">Notifications (1 Alert)</div>
+                        <div class="dropdown-item">
+                            <span class="time">14:03</span>
+                            <strong>🏥 Main Hospital Lab</strong>
+                            Lab results for Patient A are ready for review.
+                        </div>
+                    </div>
+                </div>
+
+                <div class="header-avatar" onclick="window.location.href='?section=Profile'" title="Update Profile" style="cursor: pointer;">👨‍⚕️</div>
+            </div>
+        </div>
+
+        {% if messages %}
+            {% for message in messages %}
+                <div style="background: #d4edda; color: #155724; padding: 15px; border-radius: 10px; margin-bottom: 20px; border: 1px solid #c3e6cb; font-size: 14px; font-weight: 500;">
+                    {{ message }}
+                </div>
+            {% endfor %}
+        {% endif %}
+
+        {% if section == 'Dashboard' %}
+            <h2 style="color: #1E3A8A; font-weight: 800; margin-bottom: 25px;">🩺 Medical Officer Dashboard</h2>
+
+            <div class="grid-3" style="margin-bottom: 20px;">
+
+                <div class="card" style="margin-bottom: 0;">
+                    <h3 style="color:#2b3674; margin-top:0; font-size:15px;">📅 Today's Schedule</h3>
+                    <div class="animate-cascade">
+                        <div style="background:#EFF6FF; padding:12px; border-radius:8px; margin-bottom:10px; font-size:12px; color:#1E3A8A;"><b>10:30 AM</b> | Grand Rounds (Ward 4)</div>
+                        <div style="background:#DBEAFE; padding:12px; border-radius:8px; margin-bottom:10px; font-size:12px; color:#1D4ED8;"><b>13:30 PM</b> | New Patient Exam</div>
+                        <div style="background:#BFDBFE; padding:12px; border-radius:8px; font-size:12px; color:#1E40AF;"><b>14:00 PM</b> | LMP Procedure</div>
+                    </div>
+                </div>
+
+                <div class="card card-donut" style="margin-bottom: 0; text-align: center; display:flex; flex-direction:column; justify-content:center;">
+                    <h3 style="color:#2b3674; margin-top:0; font-size:15px;">🍩 Patient Acuity Mix</h3>
+                    <div style="overflow:hidden; flex-grow:1;">{{ donut_html|safe }}</div>
+                    <p style="font-size: 10px; color:#a3aed1; margin:0; margin-top:5px;"><i>p-value < 0.05 (Sig. difference in critical ward)</i></p>
+                </div>
+
+                <div class="card" style="margin-bottom: 0; display:flex; flex-direction:column; justify-content:center;">
+                    <h3 style="color:#2b3674; margin-top:0; font-size:15px;">⚡ Task Velocity</h3>
+
+                    <div style="display:flex; justify-content:space-between; font-size:12px; font-weight:bold; color:#2b3674; margin-bottom:5px; margin-top:10px;">
+                        <span>Discharge Summaries</span><span style="color:#1E3A8A;">8/10 (80%)</span>
+                    </div>
+                    <div class="progress-bg" style="height:10px; margin-top:0; margin-bottom:20px;">
+                        <div class="progress-bar" style="width: 80%; background-color:#1E3A8A;"></div>
+                    </div>
+
+                    <div style="display:flex; justify-content:space-between; font-size:12px; font-weight:bold; color:#2b3674; margin-bottom:5px;">
+                        <span>Clinical Coding</span><span style="color:#3B82F6;">5/12 (41%)</span>
+                    </div>
+                    <div class="progress-bg" style="height:10px; margin-top:0; margin-bottom:15px;">
+                        <div class="progress-bar" style="width: 41%; background-color:#3B82F6;"></div>
+                    </div>
+
+                    <p style="font-size: 10px; color:#a3aed1; margin:0; text-align:center;"><i>95% CI [35%, 85%] for task completion rate</i></p>
+                </div>
+            </div>
+
+            <div class="grid-2">
+
+                <div class="card card-area" style="margin-bottom: 0;">
+                    <h3 style="color:#2b3674; margin-top:0; font-size:15px;">📈 6-Month Productivity Trend</h3>
+                    <div style="overflow:hidden;">{{ area_html|safe }}</div>
+                    <p style="font-size: 10px; color:#a3aed1; margin:0; text-align:center;"><i>Trend displays a steady upward trajectory (R² = 0.89)</i></p>
+                </div>
+
+                <div class="card card-gauge" style="margin-bottom: 0; text-align: center;">
+                    <h3 style="color:#2b3674; margin-top:0; font-size:15px;">🎯 Performance Index vs Target</h3>
+                    <div style="overflow:hidden;">{{ gauge_html|safe }}</div>
+                    <p style="font-size: 10px; color:#a3aed1; margin:0;"><i>KPI Target: 4.5 | Current: 4.2 (Standard Dev: ±0.3)</i></p>
+                </div>
+
+            </div>
+
+        {% elif section == 'Performance' %}
+
+            <div style="display: grid; grid-template-columns: 280px 1fr 1fr; gap: 20px;">
+
+                <div class="card" style="grid-row: span 2; margin-bottom: 0; display: flex; flex-direction: column;">
+                    <h3 style="color:#2b3674; margin-top:0;">📋 Update Tracker</h3>
+                    <p style="font-size:12px; color:#64748b; margin-top:-10px;">7/10 Modules Completed</p>
+
+                    <div class="timeline-container" style="flex-grow: 1; max-height: none; padding-right: 5px;">
+                        <div class="timeline-line"></div>
+                        <div class="timeline-item"><div class="timeline-dot done"></div><div class="ti-left"><div class="ti-title">Procedure Log</div></div><b class="ti-status done">Updated</b></div>
+                        <div class="timeline-item"><div class="timeline-dot done"></div><div class="ti-left"><div class="ti-title">CPD Claim</div></div><b class="ti-status done">Updated</b></div>
+                        <div class="timeline-item"><div class="timeline-dot pending"></div><div class="ti-left"><div class="ti-title">Doc. Audit</div></div><b class="ti-status pending">Pending</b></div>
+                        <div class="timeline-item"><div class="timeline-dot done"></div><div class="ti-left"><div class="ti-title">Policies</div></div><b class="ti-status done">Updated</b></div>
+                        <div class="timeline-item"><div class="timeline-dot done"></div><div class="ti-left"><div class="ti-title">Productivity</div></div><b class="ti-status done">Updated</b></div>
+                        <div class="timeline-item"><div class="timeline-dot pending"></div><div class="ti-left"><div class="ti-title">Innovation</div></div><b class="ti-status pending">Pending</b></div>
+                        <div class="timeline-item"><div class="timeline-dot done"></div><div class="ti-left"><div class="ti-title">Patient Exp.</div></div><b class="ti-status done">Updated</b></div>
+                        <div class="timeline-item"><div class="timeline-dot done"></div><div class="ti-left"><div class="ti-title">Emotional Intel.</div></div><b class="ti-status done">Updated</b></div>
+                        <div class="timeline-item"><div class="timeline-dot done"></div><div class="ti-left"><div class="ti-title">Teamwork</div></div><b class="ti-status done">Updated</b></div>
+                        <div class="timeline-item"><div class="timeline-dot pending"></div><div class="ti-left"><div class="ti-title">Mentorship</div></div><b class="ti-status pending">Pending</b></div>
+                    </div>
+                </div>
+
+                <div class="card card-spider" style="margin-bottom: 0; display:flex; flex-direction:column; justify-content:center; align-items:center;">
+                    <h3 style="color:#2b3674; margin-top:0;">Holistic Benchmark (10 Modules)</h3>
+                    <div style="width: 100%; display:flex; justify-content:center; overflow:hidden;">
+                        {{ radar_html|safe }}
+                    </div>
+                </div>
+
+                <div class="card" style="margin-bottom: 0; display:flex; flex-direction:column; justify-content:center;">
+                    <h3 style="color:#2b3674; margin-top:0;">⭐ Score Summary</h3>
+                    <div class="metric-box"><div class="metric-title">Clinical Excellence</div><div class="metric-val">85% <span style="font-size:14px; color:#2ecc71;">▲ Up 2%</span></div></div>
+                    <div class="metric-box"><div class="metric-title">Operational Output</div><div class="metric-val">92% <span style="font-size:14px; color:#2ecc71;">▲ Up 5%</span></div></div>
+                    <div class="metric-box" style="margin-bottom:0;"><div class="metric-title">Interpersonal Rating</div><div class="metric-val">High <span style="font-size:14px; color:#f1c40f;">▬ Unchanged</span></div></div>
+                </div>
+
+                <div class="card" style="margin-bottom: 0;">
+                    <h3 style="color:#2b3674; margin-top:0;">💡 Profile Insights</h3>
+                    <div style="background:#EFF6FF; padding:12px; border-radius:8px; margin-bottom:15px; border-left:4px solid #1E3A8A;">
+                        <strong style="color:#1E3A8A; font-size:13px;">💪 Key Strengths</strong>
+                        <p style="margin:5px 0 0 0; font-size:12px; color:#1E3A8A;">High productivity output and strong adherence to facility policies.</p>
+                    </div>
+                    <div style="background:#F8FAFC; padding:12px; border-radius:8px; border-left:4px solid #64748B;">
+                        <strong style="color:#475569; font-size:13px;">🎯 Focus Areas</strong>
+                        <p style="margin:5px 0 0 0; font-size:12px; color:#475569;">Consider submitting an Innovation proposal and logging Mentorship sessions.</p>
+                    </div>
+                </div>
+
+                <div class="card" style="margin-bottom: 0; display:flex; flex-direction:column;">
+                    <h3 style="color:#2b3674; margin-top:0;">📈 CUSUM Progress</h3>
+                    <div class="alert alert-info" style="font-size:12px; padding:10px; margin-bottom:15px;">Skills are consistent and stable based on last 20 procedures.</div>
+
+                    <div style="flex-grow: 1; display:flex; flex-direction:column; justify-content:center;">
+                        <label style="color:#2b3674; font-weight:700; font-size:13px; margin-bottom:5px;">Procedure Observation Consistency</label>
+                        <div style="display:flex; align-items:center; gap:10px; margin-bottom:20px;">
+                            <div class="progress-bg" style="margin-top:0; flex-grow:1;"><div class="progress-bar" style="width: 85%;"></div></div>
+                            <span style="font-size:12px; font-weight:bold; color:#2ecc71;">85%</span>
+                        </div>
+
+                        <label style="color:#2b3674; font-weight:700; font-size:13px; margin-bottom:5px;">Policy & Protocol Compliance</label>
+                        <div style="display:flex; align-items:center; gap:10px;">
+                            <div class="progress-bg" style="margin-top:0; flex-grow:1;"><div class="progress-bar" style="width: 95%;"></div></div>
+                            <span style="font-size:12px; font-weight:bold; color:#2ecc71;">95%</span>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+        {% elif section == 'Clinical' %}
+            <div style="background: white; border-left: 5px solid #1E3A8A; padding: 15px; border-radius: 8px; margin-bottom: 20px; border: 1px solid #e2e8f0; color: #2b3674;">
+                <b>Officer Name:</b> {{ staff_name }} <br><b>Department:</b> {{ staff_dept }} Department
+            </div>
+
+            <div class="tabs-nav">
+                <div class="tab-btn active" onclick="openTab(event, 'tab-preclerking')">👁️ Clinical Log (CUSUM)</div>
+                <div class="tab-btn" onclick="openTab(event, 'tab-cpd')">📚 CPD Claim</div>
+                <div class="tab-btn" onclick="openTab(event, 'tab-doc')">📝 Doc. Audit</div>
+                <div class="tab-btn" onclick="openTab(event, 'tab-policy')">📜 Policy Declaration</div>
+            </div>
+
+            <div class="card tab-content active" id="tab-preclerking" style="max-height: 65vh; overflow-y: auto;">
+                <h3 style="color:#2b3674; margin-top:0; border-bottom: 2px solid #e2e8f0; padding-bottom: 10px;">New Clinical / Procedural Record</h3>
+
+                <div style="margin-bottom: 20px;">
+                    <label style="margin-top:0; margin-bottom:10px; color:#64748b; font-size:12px;">Active Evaluation Module:</label>
+                    <div style="background: #e2e8f0; color: #1E3A8A; font-weight: 800; padding: 10px 15px; border-radius: 8px; display: inline-block;">
+                        {% if staff_dept == 'CTS' %} 🫀 Cardiothoracic Surgery (CTS) {% else %} 🩺 Family Medicine Specialist (FMS) {% endif %}
+                    </div>
+                </div>
+
+                {% if staff_dept == 'CTS' %}
+                <div id="form-cts" style="display:block;">
+                    <form method="POST">{% csrf_token %}<input type="hidden" name="form_type" value="skills_cts">
+
+                        <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; margin-bottom: 20px; border-left: 4px solid #4318FF;">
+                            <h4 style="margin: 0 0 15px 0; color: #4318FF; font-size: 14px;">General Information (CTS)</h4>
+                            <div class="grid-2">
+                                <div><label style="margin-top:0;">Hospital / Center <span style="color:red;">*</span></label>
+                                    <select required><option>Heart Center IJN</option><option>Hospital Utama</option></select>
+                                </div>
+                                <div><label style="margin-top:0;">Date Encounter / Admission <span style="color:red;">*</span></label>
+                                    <input type="date" required>
+                                </div>
+                            </div>
+                        </div>
+
+                        <h4 style="background: #E2E8FF; color: #4318FF; padding: 10px 15px; border-radius: 6px; margin-bottom: 15px; font-size: 13px;">SECTION 1 : PATIENT PARTICULARS</h4>
+                        <div class="grid-2">
+                            <div><label style="margin-top:0;">Patient Name <span style="color:red;">*</span></label><input type="text" required></div>
+                            <div><label style="margin-top:0;">MRN / IC Number <span style="color:red;">*</span></label><input type="text" required></div>
+                        </div>
+                        <div class="grid-3" style="margin-top: 15px;">
+                            <div><label style="margin-top:0;">Date of Birth <span style="color:red;">*</span></label><input type="date" required></div>
+                            <div>
+                                <label style="margin-top:0;">Gender <span style="color:red;">*</span></label>
+                                <div class="radio-group">
+                                    <label style="margin:0; font-weight:normal;"><input type="radio" name="gender_cts" value="Male" required> Male</label>
+                                    <label style="margin:0; font-weight:normal;"><input type="radio" name="gender_cts" value="Female"> Female</label>
+                                </div>
+                            </div>
+                            <div>
+                                <label style="margin-top:0;">Ethnic Group</label>
+                                <select><option>Malay</option><option>Chinese</option><option>Indian</option><option>Others</option></select>
+                            </div>
+                        </div>
+
+                        <h4 style="background: #E2E8FF; color: #4318FF; padding: 10px 15px; border-radius: 6px; margin-top: 30px; margin-bottom: 15px; font-size: 13px;">SECTION 2 : CARDIAC & MEDICAL HISTORY</h4>
+                        <div class="grid-2">
+                            <div>
+                                <label style="margin-top:0;">Primary Diagnosis <span style="color:red;">*</span></label>
+                                <select required>
+                                    <option>Coronary Artery Disease (CAD)</option>
+                                    <option>Valvular Heart Disease</option>
+                                    <option>Aortic Aneurysm / Dissection</option>
+                                    <option>Congenital Heart Defect</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label style="margin-top:0;">Previous Cardiac Intervention</label>
+                                <select>
+                                    <option>None</option>
+                                    <option>Previous PCI / Stenting</option>
+                                    <option>Previous CABG</option>
+                                    <option>Previous Valve Surgery</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <label style="margin-top: 20px;">Systemic Comorbidity (Crucial for EuroSCORE / CUSUM Risk Adjustment) <span style="color:red;">*</span></label>
+                        <div class="checkbox-container grid-3" style="border-left: 4px solid #f1c40f;">
+                            <label style="margin:0; font-weight:normal;"><input type="checkbox"> None</label>
+                            <label style="margin:0; font-weight:normal;"><input type="checkbox"> Diabetes (on Insulin)</label>
+                            <label style="margin:0; font-weight:normal;"><input type="checkbox"> Hypertension</label>
+                            <label style="margin:0; font-weight:normal;"><input type="checkbox"> Dyslipidaemia</label>
+                            <label style="margin:0; font-weight:normal;"><input type="checkbox"> Renal Impairment (Dialysis)</label>
+                            <label style="margin:0; font-weight:normal;"><input type="checkbox"> COPD / Asthma</label>
+                            <label style="margin:0; font-weight:normal;"><input type="checkbox"> Extracardiac Arteriopathy</label>
+                            <label style="margin:0; font-weight:normal;"><input type="checkbox"> Previous Stroke / TIA</label>
+                            <label style="margin:0; font-weight:normal;"><input type="checkbox"> Active Smoker</label>
+                        </div>
+
+                        <h4 style="background: #E2E8FF; color: #4318FF; padding: 10px 15px; border-radius: 6px; margin-top: 30px; margin-bottom: 15px; font-size: 13px;">SECTION 3 : PRE-OPERATIVE CLINICAL ASSESSMENT</h4>
+                        <table style="width: 100%; border-collapse: collapse; font-size: 13px; margin-bottom: 20px;">
+                            <tr style="background: #f8f9fa;">
+                                <th style="padding: 10px; border: 1px solid #e2e8f0; text-align: left; width: 30%;">Assessment Parameter</th>
+                                <th style="padding: 10px; border: 1px solid #e2e8f0; text-align: left;">Findings / Value</th>
+                            </tr>
+                            <tr>
+                                <td style="padding: 10px; border: 1px solid #e2e8f0; font-weight: 600;">Left Ventricular Ejection Fraction (LVEF) <span style="color:red;">*</span></td>
+                                <td style="padding: 10px; border: 1px solid #e2e8f0;"><input type="number" placeholder="e.g. 45" style="width: 50%;" required> %</td>
+                            </tr>
+                            <tr>
+                                <td style="padding: 10px; border: 1px solid #e2e8f0; font-weight: 600;">Coronary Anatomy (Angiogram)</td>
+                                <td style="padding: 10px; border: 1px solid #e2e8f0;">
+                                    <select style="width: 100%;"><option>Single Vessel Disease</option><option>Double Vessel Disease</option><option>Triple Vessel Disease (TVD)</option><option>Left Main Disease</option></select>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td style="padding: 10px; border: 1px solid #e2e8f0; font-weight: 600;">NYHA Functional Class</td>
+                                <td style="padding: 10px; border: 1px solid #e2e8f0;">
+                                    <div class="radio-group">
+                                        <label style="margin:0; font-weight:normal;"><input type="radio" name="nyha"> Class I</label>
+                                        <label style="margin:0; font-weight:normal;"><input type="radio" name="nyha"> Class II</label>
+                                        <label style="margin:0; font-weight:normal;"><input type="radio" name="nyha" checked> Class III</label>
+                                        <label style="margin:0; font-weight:normal;"><input type="radio" name="nyha"> Class IV</label>
+                                    </div>
+                                </td>
+                            </tr>
+                        </table>
+
+                        <div style="background: #fff3cd; color: #856404; padding: 15px; border-radius: 8px; border: 1px solid #ffeeba; font-size: 13px; margin-top: 20px;">
+                            <b>Note:</b> Accurate input of LVEF and comorbidities is required to calculate the expected mortality risk (Baseline) for your CUSUM performance curve.
+                        </div>
+
+                        <div style="display: flex; gap: 15px; margin-top: 25px;">
+                            <button type="button" class="submit-btn" style="background-color: #2b3674; margin-top: 0; width: 30%;">Save Draft</button>
+                            <button type="submit" class="submit-btn" style="background-color: #2b3674; margin-top: 0; flex-grow: 1;">Save & Add Operative Record (LIMA-LAD)</button>
+                        </div>
+                    </form>
+                </div>
+
+                {% else %}
+                <div id="form-fms" style="display:block;">
+                    <form method="POST">{% csrf_token %}<input type="hidden" name="form_type" value="skills_fms">
+
+                        <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; margin-bottom: 20px; border-left: 4px solid #4318FF;">
+                            <h4 style="margin: 0 0 15px 0; color: #4318FF; font-size: 14px;">General Information (FMS)</h4>
+                            <div class="grid-2">
+                                <div><label style="margin-top:0;">Clinic Location <span style="color:red;">*</span></label>
+                                    <select required><option>Klinik Kesihatan Medong</option><option>Klinik Kesihatan Bandar</option></select>
+                                </div>
+                                <div><label style="margin-top:0;">Date Encounter <span style="color:red;">*</span></label>
+                                    <input type="date" required>
+                                </div>
+                            </div>
+                        </div>
+
+                        <h4 style="background: #E2E8FF; color: #4318FF; padding: 10px 15px; border-radius: 6px; margin-bottom: 15px; font-size: 13px;">SECTION 1 : PATIENT PARTICULARS</h4>
+                        <div class="grid-2">
+                            <div><label style="margin-top:0;">Patient Name <span style="color:red;">*</span></label><input type="text" required></div>
+                            <div><label style="margin-top:0;">IC Number / MRN <span style="color:red;">*</span></label><input type="text" required></div>
+                        </div>
+                        <div class="grid-3" style="margin-top: 15px;">
+                            <div><label style="margin-top:0;">Date of Birth <span style="color:red;">*</span></label><input type="date" required></div>
+                            <div>
+                                <label style="margin-top:0;">Gender <span style="color:red;">*</span></label>
+                                <div class="radio-group">
+                                    <label style="margin:0; font-weight:normal;"><input type="radio" name="gender_fms" value="Male" required> Male</label>
+                                    <label style="margin:0; font-weight:normal;"><input type="radio" name="gender_fms" value="Female"> Female</label>
+                                </div>
+                            </div>
+                            <div>
+                                <label style="margin-top:0;">Ethnic Group</label>
+                                <select><option>Malay</option><option>Chinese</option><option>Indian</option><option>Others</option></select>
+                            </div>
+                        </div>
+
+                        <h4 style="background: #E2E8FF; color: #4318FF; padding: 10px 15px; border-radius: 6px; margin-top: 30px; margin-bottom: 15px; font-size: 13px;">SECTION 2 : CHRONIC DISEASE & LIFESTYLE RISKS</h4>
+                        <div class="grid-2">
+                            <div>
+                                <label style="margin-top:0;">Primary Chronic Disease Monitored <span style="color:red;">*</span></label>
+                                <select required>
+                                    <option>Type 2 Diabetes Mellitus (T2DM)</option>
+                                    <option>Hypertension</option>
+                                    <option>Asthma / COPD</option>
+                                    <option>Dyslipidaemia</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label style="margin-top:0;">Duration of Illness</label>
+                                <select>
+                                    <option>Newly Diagnosed (< 1 Year)</option>
+                                    <option>1 - 5 Years</option>
+                                    <option>> 5 Years</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <label style="margin-top: 20px;">Lifestyle Risk Factors & Comorbidities</label>
+                        <div class="checkbox-container grid-3" style="border-left: 4px solid #f1c40f;">
+                            <label style="margin:0; font-weight:normal;"><input type="checkbox"> None</label>
+                            <label style="margin:0; font-weight:normal;"><input type="checkbox"> Active Smoker</label>
+                            <label style="margin:0; font-weight:normal;"><input type="checkbox"> Obesity (BMI > 27.5)</label>
+                            <label style="margin:0; font-weight:normal;"><input type="checkbox"> Ischaemic Heart Disease</label>
+                            <label style="margin:0; font-weight:normal;"><input type="checkbox"> Chronic Kidney Disease (CKD)</label>
+                            <label style="margin:0; font-weight:normal;"><input type="checkbox"> Diabetic Retinopathy</label>
+                        </div>
+
+                        <h4 style="background: #E2E8FF; color: #4318FF; padding: 10px 15px; border-radius: 6px; margin-top: 30px; margin-bottom: 15px; font-size: 13px;">SECTION 3 : VITAL SIGNS & LAB READINGS</h4>
+                        <table style="width: 100%; border-collapse: collapse; font-size: 13px; margin-bottom: 20px;">
+                            <tr style="background: #f8f9fa;">
+                                <th style="padding: 10px; border: 1px solid #e2e8f0; text-align: left; width: 30%;">Clinical Parameter</th>
+                                <th style="padding: 10px; border: 1px solid #e2e8f0; text-align: left;">Latest Reading</th>
+                            </tr>
+                            <tr>
+                                <td style="padding: 10px; border: 1px solid #e2e8f0; font-weight: 600;">Blood Pressure (mmHg) <span style="color:red;">*</span></td>
+                                <td style="padding: 10px; border: 1px solid #e2e8f0;"><input type="text" placeholder="e.g. 135/85" style="width: 50%;" required></td>
+                            </tr>
+                            <tr>
+                                <td style="padding: 10px; border: 1px solid #e2e8f0; font-weight: 600;">HbA1c (%)</td>
+                                <td style="padding: 10px; border: 1px solid #e2e8f0;"><input type="number" step="0.1" placeholder="e.g. 7.2" style="width: 50%;"></td>
+                            </tr>
+                            <tr>
+                                <td style="padding: 10px; border: 1px solid #e2e8f0; font-weight: 600;">LDL Cholesterol (mmol/L)</td>
+                                <td style="padding: 10px; border: 1px solid #e2e8f0;"><input type="number" step="0.1" placeholder="e.g. 2.6" style="width: 50%;"></td>
+                            </tr>
+                        </table>
+
+                        <h4 style="background: #E2E8FF; color: #065f46; padding: 10px 15px; border-radius: 6px; margin-top:20px; font-size: 13px;">Outcome (CUSUM Evaluation)</h4>
+                        <div style="background: white; border: 1px solid #e2e8f0; padding: 15px; border-radius: 8px;">
+                            <label style="margin-top:0;">Did the patient achieve the clinical target? (e.g., HbA1c < 7.0%, BP < 140/90) <span style="color:red;">*</span></label>
+                            <div class="radio-group" style="margin-top: 10px;">
+                                <label style="margin:0; font-weight:normal; color:#2ecc71;"><b><input type="radio" name="target" value="Yes" required> Yes, Target Achieved</b></label>
+                                <label style="margin:0; font-weight:normal; color:#ff4b4b;"><b><input type="radio" name="target" value="No"> No, Target Not Achieved</b></label>
+                            </div>
+                        </div>
+
+                        <div style="display: flex; gap: 15px; margin-top: 25px;">
+                            <button type="button" class="submit-btn" style="background-color: #2b3674; margin-top: 0; width: 30%;">Save Draft</button>
+                            <button type="submit" class="submit-btn" style="background-color: #2b3674; margin-top: 0; flex-grow: 1;">Save FMS Clinical Record</button>
+                        </div>
+                    </form>
+                </div> {% endif %}
+
+            </div> <div class="card tab-content" id="tab-cpd">
+                <h3 style="color:#2b3674; margin-top:0; border-bottom: 1px solid #e2e8f0; padding-bottom: 10px;">📚 CPD / CME Management</h3>
+
+                <div class="grid-3" style="margin-bottom: 30px;">
+                    <div style="background: #EFF6FF; border: 1px solid #BFDBFE; padding: 15px; border-radius: 8px; border-left: 4px solid #1E3A8A;">
+                        <div style="font-size: 11px; color: #64748b; font-weight: bold; text-transform: uppercase;">Total Approved Points</div>
+                        <div style="font-size: 26px; font-weight: 900; color: #1E3A8A;">45 <span style="font-size:12px; color:#64748b; font-weight:normal;">/ 50 Target</span></div>
+                    </div>
+                    <div style="background: #FFFBEB; border: 1px solid #FEF08A; padding: 15px; border-radius: 8px; border-left: 4px solid #D97706;">
+                        <div style="font-size: 11px; color: #64748b; font-weight: bold; text-transform: uppercase;">Pending Verification</div>
+                        <div style="font-size: 26px; font-weight: 900; color: #D97706;">10</div>
+                    </div>
+                    <div style="background: #F0FDF4; border: 1px solid #BBF7D0; padding: 15px; border-radius: 8px; border-left: 4px solid #16A34A;">
+                        <div style="font-size: 11px; color: #64748b; font-weight: bold; text-transform: uppercase;">Annual Status</div>
+                        <div style="font-size: 18px; font-weight: 900; color: #16A34A; margin-top:8px;">On Track ✅</div>
+                    </div>
+                </div>
+
+                <div style="background: #f8f9fa; padding: 20px; border-radius: 12px; border: 1px solid #e2e8f0; margin-bottom: 35px;">
+                    <h4 style="color:#1E3A8A; margin-top:0; margin-bottom:15px;">➕ Submit New CPD Claim</h4>
+
+                    <form method="POST" enctype="multipart/form-data">
+                        {% csrf_token %}
+                        <input type="hidden" name="form_type" value="cpd">
+
+                        <div class="grid-2" style="margin-bottom: 15px;">
+                            <div>
+                                <label style="margin-top:0;">Program / Course Title <span style="color:red;">*</span></label>
+                                <input type="text" name="tajuk" placeholder="e.g. National Cardiology Conference" required style="background:white;">
+                            </div>
+                            <div>
+                                <label style="margin-top:0;">Event Category <span style="color:red;">*</span></label>
+                                <select name="category" required style="background:white;">
+                                    <option value="" disabled selected>Select Category...</option>
+                                    <option>A1 - Conference / Symposium</option>
+                                    <option>A2 - Seminar / Workshop</option>
+                                    <option>A3 - Hospital CME</option>
+                                    <option>A4 - E-Learning</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="grid-3" style="margin-bottom: 15px;">
+                            <div><label style="margin-top:0;">Start Date <span style="color:red;">*</span></label><input type="date" required style="background:white;"></div>
+                            <div><label style="margin-top:0;">End Date <span style="color:red;">*</span></label><input type="date" required style="background:white;"></div>
+                            <div><label style="margin-top:0;">Points Claimed <span style="color:red;">*</span></label><input type="number" name="mata" min="1" required style="background:white;"></div>
+                        </div>
+
+                        <div style="margin-bottom: 15px;">
+                            <label style="margin-top:0;">Upload Certificate (Proof of Attendance) <span style="color:red;">*</span></label>
+                            <input type="file" name="proof" accept=".pdf,.jpg,.png" style="background:white; border: 1px dashed #a3aed1; padding: 10px; cursor: pointer;" required>
+                            <span style="font-size:11px; color:#64748b; margin-left: 10px;">Only PDF, JPG, PNG (Max 5MB)</span>
+                        </div>
+
+                        <button type="submit" class="submit-btn" style="margin-top: 15px; background: #3B82F6;">📤 Submit CPD Claim</button>
+                    </form>
+                </div>
+
+                <h4 style="color:#2b3674; margin-top:0; margin-bottom:15px;">📜 CPD Claim History (2026)</h4>
+                <div style="overflow-x: auto; border: 1px solid #e2e8f0; border-radius: 8px;">
+                    <table class="staff-table">
+                        <thead>
+                            <tr>
+                                <th>Date Submitted</th>
+                                <th>Program Title</th>
+                                <th>Category</th>
+                                <th>Points</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>15 Mar 2026</td>
+                                <td>Advanced Life Support (ALS) Update</td>
+                                <td>A2 - Workshop</td>
+                                <td>10</td>
+                                <td><span class="status-badge bg-warning">⏳ Pending Review</span></td>
+                            </tr>
+                            <tr>
+                                <td>20 Feb 2026</td>
+                                <td>National Healthcare Symposium</td>
+                                <td>A1 - Conference</td>
+                                <td>20</td>
+                                <td><span class="status-badge bg-success">✅ Approved</span></td>
+                            </tr>
+                            <tr>
+                                <td>10 Jan 2026</td>
+                                <td>Weekly Hospital CME: Diabetes Management</td>
+                                <td>A3 - CME</td>
+                                <td>5</td>
+                                <td><span class="status-badge bg-success">✅ Approved</span></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+            </div>
+
+            <div class="card tab-content" id="tab-doc">
+                <h3 style="color:#2b3674; margin-top:0; border-bottom: 1px solid #e2e8f0; padding-bottom: 10px;">📝 Clinical Documentation Log</h3>
+
+                <div class="grid-3" style="margin-bottom: 25px;">
+                    <div style="background: white; border: 1px solid #e2e8f0; padding: 15px; border-radius: 8px; border-top: 4px solid #1E3A8A; box-shadow: 0 2px 5px rgba(0,0,0,0.02);">
+                        <div style="font-size: 11px; color: #64748b; font-weight: bold; text-transform: uppercase;">My Total Entries</div>
+                        <div style="font-size: 24px; font-weight: 900; color: #1E3A8A;">142 <span style="font-size:12px; font-weight:normal; color:#a3aed1;">Records</span></div>
+                    </div>
+                    <div style="background: white; border: 1px solid #e2e8f0; padding: 15px; border-radius: 8px; border-top: 4px solid #16A34A; box-shadow: 0 2px 5px rgba(0,0,0,0.02);">
+                        <div style="font-size: 11px; color: #64748b; font-weight: bold; text-transform: uppercase;">My On-Time Rate</div>
+                        <div style="font-size: 24px; font-weight: 900; color: #16A34A;">85% <span style="font-size:12px; font-weight:normal; color:#a3aed1;">Target: >80%</span></div>
+                    </div>
+                    <div style="background: white; border: 1px solid #e2e8f0; padding: 15px; border-radius: 8px; border-top: 4px solid #D97706; box-shadow: 0 2px 5px rgba(0,0,0,0.02);">
+                        <div style="font-size: 11px; color: #64748b; font-weight: bold; text-transform: uppercase;">Average Delay Time</div>
+                        <div style="font-size: 24px; font-weight: 900; color: #D97706;">1h 10m</div>
+                    </div>
+                </div>
+
+                <div style="background-color: #FFFBEB; color:#D97706; padding: 15px; border-radius: 8px; margin-bottom: 20px; font-size: 13px; border-left: 4px solid #D97706;">
+                    ⚠️ <b>Reminder:</b> Documentation must be completed within 24 hours of patient encounter. If delayed, justification is strictly required.
+                </div>
+
+                <div style="background: #f8f9fa; padding: 20px; border-radius: 12px; border: 1px solid #e2e8f0; margin-bottom: 30px;">
+                    <form method="POST">
+                        {% csrf_token %}
+                        <input type="hidden" name="form_type" value="doc">
+
+                        <div class="grid-2" style="margin-bottom: 15px;">
+                            <div>
+                                <label style="margin-top:0;">Patient ID / RN <span style="color:red;">*</span></label>
+                                <input type="text" name="patient_id" placeholder="e.g. RN123456" required style="background:white;">
+                            </div>
+                            <div>
+                                <label style="margin-top:0;">Encounter Type <span style="color:red;">*</span></label>
+                                <select required style="background:white;">
+                                    <option>Outpatient Consultation</option>
+                                    <option>Inpatient Admission (Clerking)</option>
+                                    <option>Discharge Summary</option>
+                                    <option>Emergency Red Zone</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="grid-2" style="margin-bottom: 15px;">
+                            <div>
+                                <label style="margin-top:0; color:#1E3A8A;">🕒 Encounter Date & Time <span style="color:red;">*</span></label>
+                                <input type="datetime-local" required style="background:white;">
+                            </div>
+                            <div>
+                                <label style="margin-top:0; color:#16A34A;">✅ Documentation Completion <span style="color:red;">*</span></label>
+                                <input type="datetime-local" required style="background:white;">
+                            </div>
+                        </div>
+
+                        <div style="background: white; border: 1px dashed #cbd5e1; padding: 15px; border-radius: 8px;">
+                            <label style="margin-top:0; color:#DC2626;">Delay Justification (Fill only if gap > 24 Hours)</label>
+                            <div class="grid-2">
+                                <select style="background:#f8f9fa;">
+                                    <option value="" disabled selected>Select Primary Reason...</option>
+                                    <option>High patient volume / Shortage of staff</option>
+                                    <option>Red Zone emergency case interference</option>
+                                    <option>System/Network down</option>
+                                    <option>Awaiting lab/radiology results</option>
+                                </select>
+                                <input type="text" placeholder="Additional remarks (Optional)..." style="background:#f8f9fa;">
+                            </div>
+                        </div>
+
+                        <button type="submit" class="submit-btn" style="margin-top: 20px;">💾 Save Documentation Record</button>
+                    </form>
+                </div>
+
+                <h4 style="color:#2b3674; margin-top:0; margin-bottom:15px;">📜 Recent Submissions</h4>
+                <div style="overflow-x: auto; border: 1px solid #e2e8f0; border-radius: 8px;">
+                    <table class="staff-table">
+                        <thead>
+                            <tr>
+                                <th>Patient ID</th>
+                                <th>Type</th>
+                                <th>Time Gap</th>
+                                <th>Justification</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>RN88210</td>
+                                <td>Outpatient</td>
+                                <td>4 Hours</td>
+                                <td><i style="color:#a3aed1;">N/A</i></td>
+                                <td><span class="status-badge bg-success">On-Time</span></td>
+                            </tr>
+                            <tr>
+                                <td>RN99302</td>
+                                <td>Admission</td>
+                                <td>28 Hours</td>
+                                <td>Red Zone emergency case</td>
+                                <td><span class="status-badge bg-danger">Delayed</span></td>
+                            </tr>
+                            <tr>
+                                <td>RN99115</td>
+                                <td>Discharge</td>
+                                <td>6 Hours</td>
+                                <td><i style="color:#a3aed1;">N/A</i></td>
+                                <td><span class="status-badge bg-success">On-Time</span></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+            </div>
+
+            <div class="card tab-content" id="tab-policy">
+                <h3 style="color:#2b3674; margin-top:0; border-bottom: 1px solid #e2e8f0; padding-bottom: 10px;">📜 Annual Policy & Clinical SOP Declaration</h3>
+
+                <div style="background-color: #EFF6FF; color:#1E3A8A; padding: 15px; border-radius: 8px; margin-bottom: 20px; font-size: 13px; border-left: 4px solid #1E3A8A;">
+                    ℹ️ <b>Self-Audit Requirement:</b> As part of the 2026 Clinical Governance, medical officers are required to complete this comprehensive 20-point self-assessment regarding Clinical Guidelines (e.g. Diabetes Management) before confirming the declaration.
+                </div>
+
+                <form method="POST">
+                    {% csrf_token %}
+                    <input type="hidden" name="form_type" value="policy">
+
+                    <div style="border: 1px solid #e2e8f0; padding: 20px; margin-bottom: 20px; border-radius: 12px; background: white; box-shadow: 0 2px 10px rgba(0,0,0,0.02);">
+                        <h4 style="color:#1E3A8A; margin-top:0; border-bottom: 1px solid #e2e8f0; padding-bottom: 10px;">A. Clinical Screening & Assessment</h4>
+
+                        <label class="input-label" style="margin-top: 10px;">1. Do you routinely assess for the following symptoms?</label>
+                        <div class="checkbox-container grid-3" style="border-left: 4px solid #1E3A8A; background: #F8FAFC;">
+                            <label style="margin:0; font-weight:normal;"><input type="checkbox" required> ASCVD symptoms</label>
+                            <label style="margin:0; font-weight:normal;"><input type="checkbox" required> Visual disturbances</label>
+                            <label style="margin:0; font-weight:normal;"><input type="checkbox" required> Neurological symptoms</label>
+                            <label style="margin:0; font-weight:normal;"><input type="checkbox" required> Renal-related symptoms</label>
+                            <label style="margin:0; font-weight:normal;"><input type="checkbox" required> History of foot problems</label>
+                            <label style="margin:0; font-weight:normal;"><input type="checkbox" required> Sexual dysfunction</label>
+                        </div>
+
+                        <label class="input-label">2. Are physical assessments consistently performed and documented?</label>
+                        <div class="checkbox-container grid-2" style="border-left: 4px solid #1E3A8A; background: #F8FAFC;">
+                            <label style="margin:0; font-weight:normal;"><input type="checkbox" required> BMI & waist circumference</label>
+                            <label style="margin:0; font-weight:normal;"><input type="checkbox" required> Eye assessment (retinopathy)</label>
+                            <label style="margin:0; font-weight:normal;"><input type="checkbox" required> Foot examination (ulcer risk)</label>
+                            <label style="margin:0; font-weight:normal;"><input type="checkbox" required> Peripheral neuropathy screening</label>
+                        </div>
+                    </div>
+
+                    <div style="border: 1px solid #e2e8f0; padding: 20px; margin-bottom: 20px; border-radius: 12px; background: white; box-shadow: 0 2px 10px rgba(0,0,0,0.02);">
+                        <h4 style="color:#1E3A8A; margin-top:0; border-bottom: 1px solid #e2e8f0; padding-bottom: 10px;">B. Risk Factors & Medication History</h4>
+
+                        <label class="input-label" style="margin-top: 10px;">3. Are the underlying risk factors thoroughly documented?</label>
+                        <div class="checkbox-container grid-2" style="border-left: 4px solid #3B82F6; background: #EFF6FF;">
+                            <label style="margin:0; font-weight:normal;"><input type="checkbox" required> Family history of metabolic disease</label>
+                            <label style="margin:0; font-weight:normal;"><input type="checkbox" required> Lifestyle risk factors (diet, smoking)</label>
+                            <label style="margin:0; font-weight:normal;"><input type="checkbox" required> Comorbid metabolic risks</label>
+                            <label style="margin:0; font-weight:normal;"><input type="checkbox" required> Relevant obstetric history</label>
+                        </div>
+
+                        <div class="grid-2" style="margin-top: 20px;">
+                            <div>
+                                <label class="input-label" style="margin-top:0;">4. Review of current medications performed?</label>
+                                <div class="radio-group">
+                                    <label style="font-weight:normal;"><input type="radio" name="q4" required> Yes</label>
+                                    <label style="font-weight:normal;"><input type="radio" name="q4"> No</label>
+                                </div>
+                            </div>
+                            <div>
+                                <label class="input-label" style="margin-top:0;">5. Medication adherence explicitly assessed?</label>
+                                <div class="radio-group">
+                                    <label style="font-weight:normal;"><input type="radio" name="q5" required> Yes</label>
+                                    <label style="font-weight:normal;"><input type="radio" name="q5"> No</label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="grid-2" style="margin-top: 20px;">
+                            <div>
+                                <label class="input-label" style="margin-top:0;">6. Use of complementary/alternative meds assessed?</label>
+                                <div class="radio-group">
+                                    <label style="font-weight:normal;"><input type="radio" name="q6" required> Yes</label>
+                                    <label style="font-weight:normal;"><input type="radio" name="q6"> No</label>
+                                </div>
+                            </div>
+                            <div>
+                                <label class="input-label" style="margin-top:0;">7. Social barriers to DM management evaluated?</label>
+                                <div class="radio-group">
+                                    <label style="font-weight:normal;"><input type="radio" name="q7" required> Yes</label>
+                                    <label style="font-weight:normal;"><input type="radio" name="q7"> No</label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="grid-2" style="margin-bottom: 20px;">
+                        <div style="border: 1px solid #e2e8f0; padding: 20px; border-radius: 12px; background: white; box-shadow: 0 2px 10px rgba(0,0,0,0.02);">
+                            <h4 style="color:#1E3A8A; margin-top:0; border-bottom: 1px solid #e2e8f0; padding-bottom: 10px;">C. Referrals & Follow-up</h4>
+                            <table class="staff-table" style="margin-bottom: 0; background:transparent;">
+                                <tr>
+                                    <td style="font-weight: 600; padding: 10px 0;">8. Patient referred for dilated retinal exam?</td>
+                                    <td style="padding: 10px 0;"><div class="radio-group" style="margin:0;"><label style="margin:0; font-weight:normal;"><input type="radio" name="q8" required> Yes</label><label style="margin:0; font-weight:normal;"><input type="radio" name="q8"> No</label></div></td>
+                                </tr>
+                                <tr>
+                                    <td style="font-weight: 600; padding: 10px 0;">9. Medical nutrition therapy (dietitian) arranged?</td>
+                                    <td style="padding: 10px 0;"><div class="radio-group" style="margin:0;"><label style="margin:0; font-weight:normal;"><input type="radio" name="q9" required> Yes</label><label style="margin:0; font-weight:normal;"><input type="radio" name="q9"> No</label></div></td>
+                                </tr>
+                                <tr>
+                                    <td style="font-weight: 600; padding: 10px 0; border-bottom: none;">10. DSMES education support arranged?</td>
+                                    <td style="padding: 10px 0; border-bottom: none;"><div class="radio-group" style="margin:0;"><label style="margin:0; font-weight:normal;"><input type="radio" name="q10" required> Yes</label><label style="margin:0; font-weight:normal;"><input type="radio" name="q10"> No</label></div></td>
+                                </tr>
+                            </table>
+                        </div>
+
+                        <div style="border: 1px solid #e2e8f0; padding: 20px; border-radius: 12px; background: white; box-shadow: 0 2px 10px rgba(0,0,0,0.02);">
+                            <h4 style="color:#1E3A8A; margin-top:0; border-bottom: 1px solid #e2e8f0; padding-bottom: 10px;">D. Laboratory & Diagnostics</h4>
+                            <table class="staff-table" style="margin-bottom: 0; background:transparent;">
+                                <tr>
+                                    <td style="font-weight: 600; padding: 10px 0;">11. HbA1c testing scheduled every 3-6 months?</td>
+                                    <td style="padding: 10px 0;"><div class="radio-group" style="margin:0;"><label style="margin:0; font-weight:normal;"><input type="radio" name="q11" required> Yes</label><label style="margin:0; font-weight:normal;"><input type="radio" name="q11"> No</label></div></td>
+                                </tr>
+                                <tr>
+                                    <td style="font-weight: 600; padding: 10px 0;">12. Annual screening for nephropathy (eGFR/ACR)?</td>
+                                    <td style="padding: 10px 0;"><div class="radio-group" style="margin:0;"><label style="margin:0; font-weight:normal;"><input type="radio" name="q12" required> Yes</label><label style="margin:0; font-weight:normal;"><input type="radio" name="q12"> No</label></div></td>
+                                </tr>
+                                <tr>
+                                    <td style="font-weight: 600; padding: 10px 0;">13. Baseline ECG for high ASCVD risk patients?</td>
+                                    <td style="padding: 10px 0;"><div class="radio-group" style="margin:0;"><label style="margin:0; font-weight:normal;"><input type="radio" name="q13" required> Yes</label><label style="margin:0; font-weight:normal;"><input type="radio" name="q13"> No</label></div></td>
+                                </tr>
+                            </table>
+                        </div>
+                    </div>
+
+                    <div style="border: 1px solid #e2e8f0; padding: 20px; margin-bottom: 30px; border-radius: 12px; background: white; box-shadow: 0 2px 10px rgba(0,0,0,0.02);">
+                        <h4 style="color:#1E3A8A; margin-top:0; border-bottom: 1px solid #e2e8f0; padding-bottom: 10px;">E. Treatment Targets & Preventive Care</h4>
+                        <table class="staff-table" style="margin-bottom: 0; background:transparent;">
+                            <tr>
+                                <td style="font-weight: 600; width: 70%; padding: 12px 10px;">14. Individualized glycemic targets discussed & agreed upon?</td>
+                                <td style="padding: 12px 10px;"><div class="radio-group" style="margin:0;"><label style="margin:0; font-weight:normal;"><input type="radio" name="q14" required> Yes</label><label style="margin:0; font-weight:normal;"><input type="radio" name="q14"> No</label></div></td>
+                            </tr>
+                            <tr>
+                                <td style="font-weight: 600; padding: 12px 10px;">15. Therapy escalated timely if targets are unmet after 3-6 months?</td>
+                                <td style="padding: 12px 10px;"><div class="radio-group" style="margin:0;"><label style="margin:0; font-weight:normal;"><input type="radio" name="q15" required> Yes</label><label style="margin:0; font-weight:normal;"><input type="radio" name="q15"> No</label></div></td>
+                            </tr>
+                            <tr>
+                                <td style="font-weight: 600; padding: 12px 10px;">16. Hypoglycemic episodes routinely screened during visits?</td>
+                                <td style="padding: 12px 10px;"><div class="radio-group" style="margin:0;"><label style="margin:0; font-weight:normal;"><input type="radio" name="q16" required> Yes</label><label style="margin:0; font-weight:normal;"><input type="radio" name="q16"> No</label></div></td>
+                            </tr>
+                            <tr>
+                                <td style="font-weight: 600; padding: 12px 10px;">17. Blood pressure aggressively optimized to guidelines?</td>
+                                <td style="padding: 12px 10px;"><div class="radio-group" style="margin:0;"><label style="margin:0; font-weight:normal;"><input type="radio" name="q17" required> Yes</label><label style="margin:0; font-weight:normal;"><input type="radio" name="q17"> No</label></div></td>
+                            </tr>
+                            <tr>
+                                <td style="font-weight: 600; padding: 12px 10px;">18. Statin therapy initiated based on CV risk assessment?</td>
+                                <td style="padding: 12px 10px;"><div class="radio-group" style="margin:0;"><label style="margin:0; font-weight:normal;"><input type="radio" name="q18" required> Yes</label><label style="margin:0; font-weight:normal;"><input type="radio" name="q18"> No</label></div></td>
+                            </tr>
+                            <tr>
+                                <td style="font-weight: 600; padding: 12px 10px;">19. Preventive vaccinations (e.g. Influenza) recommended?</td>
+                                <td style="padding: 12px 10px;"><div class="radio-group" style="margin:0;"><label style="margin:0; font-weight:normal;"><input type="radio" name="q19" required> Yes</label><label style="margin:0; font-weight:normal;"><input type="radio" name="q19"> No</label></div></td>
+                            </tr>
+                            <tr>
+                                <td style="font-weight: 600; padding: 12px 10px; border-bottom: none;">20. Overall, I feel confident in managing complex DM cases autonomously.</td>
+                                <td style="padding: 12px 10px; border-bottom: none;"><div class="radio-group" style="margin:0;"><label style="margin:0; font-weight:normal;"><input type="radio" name="q20" required> Yes</label><label style="margin:0; font-weight:normal;"><input type="radio" name="q20"> No</label></div></td>
+                            </tr>
+                        </table>
+                    </div>
+
+                    <div style="background: #f8f9fa; border: 1px dashed #a3aed1; padding: 20px; border-radius: 8px; margin-bottom: 20px;">
+                        <h4 style="color:#DC2626; margin-top:0; margin-bottom: 15px;">Final Declaration & Commitment</h4>
+                        <div class="checkbox-container" style="background: white; border: 1px solid #e2e8f0; margin-bottom: 0;">
+                            <label style="margin:0; font-weight:bold; color:#2b3674; display: flex; align-items: flex-start; gap: 10px; cursor: pointer;">
+                                <input type="checkbox" required style="margin-top: 3px;">
+                                <span>I hereby declare that the self-assessment above reflects my actual clinical practice. I have read, understood, and am fully committed to adhering to the National Clinical Practice Guidelines (CPG) 2026.</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <button type="submit" class="submit-btn" style="margin-top: 15px;">✍️ Submit Annual SOP Declaration</button>
+                </form>
+            </div>
+
+       
+
+        {% elif section == 'Operational' %}
+            <div style="background: white; border-left: 5px solid #39B8FF; padding: 15px; border-radius: 8px; margin-bottom: 20px; border: 1px solid #e2e8f0; color: #2b3674;"><b>Officer Name:</b> {{ staff_name }} <br><b>Department:</b> {{ staff_dept }} Department</div>
+
+            <div class="tabs-nav">
+                <div class="tab-btn active" onclick="openTab(event, 'tab-prod')">⏱️ Productivity & Efficiency</div>
+                <div class="tab-btn" onclick="openTab(event, 'tab-innov')">💡 Innovation & Problem Solving</div>
+            </div>
+
+            <div class="card tab-content active" id="tab-prod">
+                <h3 style="color:#2b3674; margin-top:0;">Daily Productivity Log</h3>
+                <form method="POST">{% csrf_token %}<input type="hidden" name="form_type" value="ops_prod">
+                    <div class="grid-2">
+                        <div><label>Date</label><input type="date" required></div>
+                        <div><label>Patients Cleared / Cases Handled</label><input type="number" required></div>
+                    </div>
+                    <button type="submit" class="submit-btn" style="background-color: #2b3674;">Save Productivity Data</button>
+                </form>
+            </div>
+<div class="card tab-content" id="tab-innov">
+                <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 20px;">
+                    <div>
+                        <h3 style="color:#2b3674; margin-top:0; margin-bottom: 5px;">💡 Innovation & Research Portfolio</h3>
+                        <p style="color:#64748b; font-size:13px; margin:0;">Log your research activities, drug trials, and publications here.</p>
+                    </div>
+                    
+                    <div style="background: #f8f9fa; border: 1px solid #e2e8f0; padding: 10px 15px; border-radius: 8px; display: flex; gap: 20px; align-items: center;">
+                        <div style="display: flex; align-items: center; gap: 8px;">
+                            <div style="width: 12px; height: 12px; background: #2ecc71; border-radius: 50%;"></div>
+                            <span style="font-size: 13px; font-weight: 600; color: #2b3674;">Active</span>
+                        </div>
+                        <div style="display: flex; align-items: center; gap: 8px;">
+                            <div style="width: 12px; height: 12px; background: #64748b; border-radius: 50%;"></div>
+                            <span style="font-size: 13px; font-weight: 600; color: #64748b;">Inactive</span>
+                        </div>
+                        <div style="border-left: 2px solid #e2e8f0; padding-left: 20px;">
+                            <span style="font-size: 12px; color: #64748b; font-weight: bold; text-transform: uppercase;">Active Projects:</span>
+                            <span style="font-size: 16px; font-weight: 900; color: #1E3A8A; margin-left: 5px;">2</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="grid-3" style="margin-bottom: 25px;">
+                    <div style="background: white; border: 1px solid #e2e8f0; padding: 15px; border-radius: 8px; border-left: 4px solid #1E3A8A; box-shadow: 0 2px 5px rgba(0,0,0,0.02);">
+                        <div style="font-size: 11px; color: #64748b; font-weight: bold; text-transform: uppercase;">Total Innov. Points</div>
+                        <div style="font-size: 24px; font-weight: 900; color: #1E3A8A;">120 <span style="font-size:12px; font-weight:normal; color:#a3aed1;">Pts</span></div>
+                    </div>
+                    <div style="background: white; border: 1px solid #e2e8f0; padding: 15px; border-radius: 8px; border-left: 4px solid #3B82F6; box-shadow: 0 2px 5px rgba(0,0,0,0.02);">
+                        <div style="font-size: 11px; color: #64748b; font-weight: bold; text-transform: uppercase;">Dept Rank</div>
+                        <div style="font-size: 24px; font-weight: 900; color: #3B82F6;">Top 15% <span style="font-size:12px; font-weight:normal; color:#a3aed1;">(4th/28)</span></div>
+                    </div>
+                    <div style="background: white; border: 1px solid #e2e8f0; padding: 15px; border-radius: 8px; border-left: 4px solid #05CD99; box-shadow: 0 2px 5px rgba(0,0,0,0.02);">
+                        <div style="font-size: 11px; color: #64748b; font-weight: bold; text-transform: uppercase;">Annual Target</div>
+                        <div style="font-size: 24px; font-weight: 900; color: #05CD99;">Achieved! <span style="font-size:12px; font-weight:normal; color:#a3aed1;">⭐</span></div>
+                    </div>
+                </div>
+
+                <div class="sub-menu" id="innov-selector">
+                    <div class="sm-radio active" onclick="switchInnov('research', this)">Research</div>
+                    <div class="sm-radio" onclick="switchInnov('trials', this)">Drug Trials</div>
+                    <div class="sm-radio" onclick="switchInnov('tech', this)">Technology Adaptation</div>
+                    <div class="sm-radio" onclick="switchInnov('pub', this)">Publication</div>
+                </div>
+                <hr style="border:0; border-top:1px solid #e2e8f0; margin-bottom: 25px;">
+
+                <div id="innov-research" style="display:block;">
+                    <form method="POST">{% csrf_token %}<input type="hidden" name="form_type" value="ops_innov">
+                        <div class="grid-2" style="margin-bottom: 15px;">
+                            <div><label style="margin-top:0;">Research Title <span style="color:red;">*</span></label><input type="text" placeholder="e.g. Prevalence of..." required style="background:white;"></div>
+                            <div><label style="margin-top:0;">NMRR ID (If applicable)</label><input type="text" placeholder="NMRR-XX-XXX-XXXXX" style="background:white;"></div>
+                        </div>
+                        <div style="margin-bottom: 20px;">
+                            <label style="margin-top:0;">Role / Status</label>
+                            <div class="radio-group" style="margin-top: 10px;">
+                                <label style="margin:0; font-weight:normal;"><input type="radio" name="res_role" checked> Principle Investigator (PI)</label>
+                                <label style="margin:0; font-weight:normal;"><input type="radio" name="res_role"> Co-Investigator</label>
+                            </div>
+                        </div>
+                        <button type="submit" class="submit-btn" style="background-color: #1E3A8A; margin-top:0;">💾 Save Research Log</button>
+                    </form>
+
+                    <h4 style="color:#2b3674; margin-top:35px; margin-bottom:15px; border-top: 1px dashed #cbd5e1; padding-top: 20px;">📜 My Research History</h4>
+                    <div style="overflow-x: auto; border: 1px solid #e2e8f0; border-radius: 8px;">
+                        <table class="staff-table" style="margin:0;">
+                            <thead><tr><th>Date</th><th>Title</th><th>NMRR ID</th><th>Role</th><th>Status</th></tr></thead>
+                            <tbody>
+                                <tr><td>12 Feb 2026</td><td>Prevalence of T2DM in...</td><td>NMRR-25-123</td><td>Principle Inv.</td><td><span class="status-badge bg-warning">Pending HOD</span></td></tr>
+                                <tr><td>05 Jan 2025</td><td>Retrospective study on...</td><td>NMRR-24-998</td><td>Co-Inv.</td><td><span class="status-badge bg-success">Verified</span></td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div id="innov-trials" style="display:none;">
+                    <form method="POST">{% csrf_token %}<input type="hidden" name="form_type" value="ops_innov">
+                        <div class="grid-2" style="margin-bottom: 15px;">
+                            <div><label style="margin-top:0;">CRC Log Number <span style="color:red;">*</span></label><input type="text" required style="background:white;"></div>
+                            <div><label style="margin-top:0;">Trial Phase</label>
+                                <select style="background:white;"><option>Phase I</option><option>Phase II</option><option>Phase III</option><option>Phase IV (Post-Market)</option></select>
+                            </div>
+                        </div>
+                        <div class="grid-2" style="margin-bottom: 20px;">
+                            <div><label style="margin-top:0;">Patient Recruitment Number</label><input type="number" placeholder="Total recruited..." style="background:white;"></div>
+                            <div>
+                                <label style="margin-top:0;">Recruitment Status</label>
+                                <div class="radio-group" style="margin-top: 10px;">
+                                    <label style="margin:0; font-weight:bold; color:#2ecc71;"><input type="radio" name="trial_stat" checked> Active</label>
+                                    <label style="margin:0; font-weight:bold; color:#ff4b4b;"><input type="radio" name="trial_stat"> Closed</label>
+                                </div>
+                            </div>
+                        </div>
+                        <button type="submit" class="submit-btn" style="background-color: #1E3A8A; margin-top:0;">💾 Save Trial Log</button>
+                    </form>
+
+                    <h4 style="color:#2b3674; margin-top:35px; margin-bottom:15px; border-top: 1px dashed #cbd5e1; padding-top: 20px;">📜 Active & Past Drug Trials</h4>
+                    <div style="overflow-x: auto; border: 1px solid #e2e8f0; border-radius: 8px;">
+                        <table class="staff-table" style="margin:0;">
+                            <thead><tr><th>Date Logged</th><th>CRC Log No.</th><th>Phase</th><th>Recruits</th><th>Status</th></tr></thead>
+                            <tbody>
+                                <tr><td>28 Jan 2026</td><td>CRC-26-001A</td><td>Phase III</td><td>12 Patients</td><td><span class="status-badge bg-success">Active</span></td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div id="innov-tech" style="display:none;">
+                    <form method="POST">{% csrf_token %}<input type="hidden" name="form_type" value="ops_innov">
+                        <div style="background: #EFF6FF; border: 1px solid #BFDBFE; padding: 15px; border-radius: 8px; margin-bottom: 20px; font-size: 13px; color: #1E3A8A;">
+                            ℹ️ Record your involvement in new hospital technologies (e.g. EMR systems, AI diagnostics, new surgical equipment).
+                        </div>
+                        <div class="grid-2" style="margin-bottom: 15px;">
+                            <div><label style="margin-top:0;">Technology / System Name <span style="color:red;">*</span></label><input type="text" required style="background:white;"></div>
+                            <div><label style="margin-top:0;">Date of Adoption</label><input type="date" style="background:white;"></div>
+                        </div>
+                        <div style="margin-bottom: 20px;">
+                            <label style="margin-top:0;">Proficiency Level</label>
+                            <div class="radio-group" style="margin-top: 10px;">
+                                <label style="margin:0; font-weight:normal;"><input type="radio" name="tech_lvl" checked> Amateur (Learning)</label>
+                                <label style="margin:0; font-weight:normal;"><input type="radio" name="tech_lvl"> Intermediate (Independent)</label>
+                                <label style="margin:0; font-weight:normal;"><input type="radio" name="tech_lvl"> Expert (Trainer)</label>
+                            </div>
+                        </div>
+                        <button type="submit" class="submit-btn" style="background-color: #1E3A8A; margin-top:0;">💾 Save Tech Adaptation Log</button>
+                    </form>
+
+                    <h4 style="color:#2b3674; margin-top:35px; margin-bottom:15px; border-top: 1px dashed #cbd5e1; padding-top: 20px;">🚀 My Tech Adoption Journey</h4>
+                    <div class="grid-3">
+                        <div style="background: white; border: 1px solid #e2e8f0; padding: 15px; border-radius: 8px; text-align:center; box-shadow: 0 2px 5px rgba(0,0,0,0.02);">
+                            <div style="font-size:28px; margin-bottom:5px;">💻</div>
+                            <div style="font-weight:bold; color:#1E3A8A; font-size:14px;">Hospital HIS/EMR</div>
+                            <div style="margin-top:10px; background:#e9ecef; border-radius:10px; height:8px; overflow:hidden;"><div style="background:#1E3A8A; width:100%; height:100%;"></div></div>
+                            <div style="font-size:11px; color:#1E3A8A; font-weight:bold; margin-top:8px;">Expert (Trainer)</div>
+                        </div>
+                        <div style="background: white; border: 1px solid #e2e8f0; padding: 15px; border-radius: 8px; text-align:center; box-shadow: 0 2px 5px rgba(0,0,0,0.02);">
+                            <div style="font-size:28px; margin-bottom:5px;">📠</div>
+                            <div style="font-weight:bold; color:#2b3674; font-size:14px;">New PACS System</div>
+                            <div style="margin-top:10px; background:#e9ecef; border-radius:10px; height:8px; overflow:hidden;"><div style="background:#3B82F6; width:66%; height:100%;"></div></div>
+                            <div style="font-size:11px; color:#3B82F6; font-weight:bold; margin-top:8px;">Intermediate</div>
+                        </div>
+                        <div style="background: white; border: 1px solid #e2e8f0; padding: 15px; border-radius: 8px; text-align:center; box-shadow: 0 2px 5px rgba(0,0,0,0.02);">
+                            <div style="font-size:28px; margin-bottom:5px;">🤖</div>
+                            <div style="font-weight:bold; color:#64748b; font-size:14px;">AI Triage Assist</div>
+                            <div style="margin-top:10px; background:#e9ecef; border-radius:10px; height:8px; overflow:hidden;"><div style="background:#05CD99; width:33%; height:100%;"></div></div>
+                            <div style="font-size:11px; color:#05CD99; font-weight:bold; margin-top:8px;">Amateur (Learning)</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="innov-pub" style="display:none;">
+                    <form method="POST">{% csrf_token %}<input type="hidden" name="form_type" value="ops_innov">
+                        <div class="grid-2" style="margin-bottom: 15px;">
+                            <div><label style="margin-top:0;">Name of Journal <span style="color:red;">*</span></label><input type="text" placeholder="e.g. MedJ Malaysia" required style="background:white;"></div>
+                            <div><label style="margin-top:0;">DOI (Digital Object Identifier) <span style="color:red;">*</span></label><input type="text" placeholder="10.xxxx/xxxxx" required style="background:white;"></div>
+                        </div>
+                        <div class="grid-2" style="margin-bottom: 20px;">
+                            <div><label style="margin-top:0;">Publication Title</label><input type="text" style="background:white;"></div>
+                            <div><label style="margin-top:0;">Year Published</label><input type="number" min="2000" max="2026" value="2026" style="background:white;"></div>
+                        </div>
+                        <button type="submit" class="submit-btn" style="background-color: #1E3A8A; margin-top:0;">💾 Save Publication Record</button>
+                    </form>
+
+                    <div class="grid-2" style="margin-top:35px; border-top: 1px dashed #cbd5e1; padding-top: 20px;">
+                        <div>
+                            <h4 style="color:#2b3674; margin-top:0; margin-bottom:15px;">📚 My Publications</h4>
+                            <div style="background: white; border: 1px solid #e2e8f0; border-radius: 8px; padding: 15px; margin-bottom:10px; box-shadow: 0 2px 5px rgba(0,0,0,0.02);">
+                                <div style="font-weight:bold; color:#1E3A8A; font-size:13px;">MedJ Malaysia (2025)</div>
+                                <div style="font-size:12px; color:#64748b; margin-top:3px; margin-bottom: 8px;">DOI: 10.1136/mmj.2025.01</div>
+                                <div><span class="status-badge bg-success">Verified</span></div>
+                            </div>
+                        </div>
+                        <div>
+                            <h4 style="color:#2b3674; margin-top:0; margin-bottom:15px;">🏆 Dept Leaderboard (2026)</h4>
+                            <div style="background: #FFFBEB; border: 1px solid #FDE68A; border-radius: 8px; padding: 15px;">
+                                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; border-bottom:1px dashed #FCD34D; padding-bottom:8px;">
+                                    <div style="font-weight:bold; color:#D97706; font-size:14px;">🥇 Dr. Chong Wei</div>
+                                    <div style="font-size:12px; font-weight:bold; background:#F59E0B; color:white; padding:4px 10px; border-radius:12px;">4 Pubs</div>
+                                </div>
+                                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; border-bottom:1px dashed #FCD34D; padding-bottom:8px;">
+                                    <div style="font-weight:bold; color:#64748b; font-size:14px;">🥈 Dr. Siti Fazura</div>
+                                    <div style="font-size:12px; font-weight:bold; background:#94A3B8; color:white; padding:4px 10px; border-radius:12px;">3 Pubs</div>
+                                </div>
+                                <div style="display:flex; justify-content:space-between; align-items:center;">
+                                    <div style="font-weight:bold; color:#b45309; font-size:14px;">🥉 {{ staff_name }} (You)</div>
+                                    <div style="font-size:12px; font-weight:bold; background:#D97706; color:white; padding:4px 10px; border-radius:12px;">1 Pubs</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        {% elif section == 'Interpersonal' %}
+            <div style="background: white; border-left: 5px solid #05CD99; padding: 15px; border-radius: 8px; margin-bottom: 20px; border: 1px solid #e2e8f0; color: #2b3674;"><b>Officer Name:</b> {{ staff_name }} <br><b>Department:</b> {{ staff_dept }}</div>
+
+            <div class="tabs-nav">
+                <div class="tab-btn active" onclick="openTab(event, 'tab-px')">😊 Patient Experience</div>
+                <div class="tab-btn" onclick="openTab(event, 'tab-ei')">🧠 Emotional Intel.</div>
+                <div class="tab-btn" onclick="openTab(event, 'tab-team')">👥 Teamwork</div>
+                <div class="tab-btn" onclick="openTab(event, 'tab-mentor')">🎓 Mentorship</div>
+            </div>
+
+            <div class="card tab-content active" id="tab-px">
+                <h3 style="color:#2b3674; margin-top:0;">Patient Feedback</h3>
+                <form method="POST">{% csrf_token %}<input type="hidden" name="form_type" value="int_px">
+                    <div class="grid-2">
+                        <div><label>Compliments/Appreciations Received</label><input type="number" value="0"></div>
+                        <div><label>Complaints/Reprimands Received</label><input type="number" value="0"></div>
+                    </div>
+                    <label>Summary of Patient Feedback</label><textarea rows="3"></textarea>
+                    <button type="submit" class="submit-btn" style="background-color: #2b3674;">Save Patient Experience Record</button>
+                </form>
+            </div>
+
+            <div class="card tab-content" id="tab-ei">
+                <h3 style="color:#2b3674; margin-top:0;">Emotional Intelligence (Self-Reflection)</h3>
+                <form method="POST">{% csrf_token %}<input type="hidden" name="form_type" value="int_ei">
+                    <label>Self-Reflection on Stress & Emotion Management</label><textarea rows="3"></textarea>
+                    <label>Improvement Steps</label><input type="text">
+                    <button type="submit" class="submit-btn" style="background-color: #2b3674;">Save Emotional Intel Record</button>
+                </form>
+            </div>
+
+            <div class="card tab-content" id="tab-team">
+                <h3 style="color:#2b3674; margin-top:0;">Teamwork & Collaboration</h3>
+                <div class="sub-menu">
+                    <div class="sm-radio active" onclick="switchTeamwork('mdt', this)">MDT & 360° Feedback</div>
+                    <div class="sm-radio" onclick="switchTeamwork('contrib', this)">Teamwork Contribution Points</div>
+                </div>
+                <hr style="border:0; border-top:1px solid #e2e8f0; margin-bottom: 20px;">
+
+                <div id="team-mdt" style="display:block;">
+                    <h4 style="color:#2b3674;">MDT Meeting Record</h4>
+                    <form method="POST">{% csrf_token %}<input type="hidden" name="form_type" value="int_team">
+                        <label>Activity Name / Meeting Case</label><input type="text" required>
+                        <label>Your Role in the Team</label><input type="text" required>
+                        <button type="submit" class="submit-btn" style="background-color: #2b3674;">Save Teamwork Record</button>
+                    </form>
+                </div>
+
+                <div id="team-contrib" style="display:none;">
+                    <h4 style="color:#2b3674;">Teamwork Contribution & Support</h4>
+                    <form method="POST">{% csrf_token %}<input type="hidden" name="form_type" value="int_team">
+                        <div class="checkbox-container">
+                            <label>Colleague Name (Dr. / Officer):</label>
+                            <select><option>Dr. Ahmad Kamil</option><option>Dr. Siti Nurhaliza</option></select>
+                            <label style="margin-top:20px;">Select Support Provided:</label>
+                            <div class="grid-3">
+                                <div><label style="font-weight:normal;"><input type="checkbox"> General Clinical (+1)</label></div>
+                                <div><label style="font-weight:normal;"><input type="checkbox"> Procedural (+2)</label></div>
+                                <div><label style="font-weight:normal;"><input type="checkbox"> Consultation (+1)</label></div>
+                            </div>
+                        </div>
+                        <button type="submit" class="submit-btn" style="background-color: #05CD99;">➕ Add Point</button>
+                    </form>
+                </div>
+            </div>
+
+            <div class="card tab-content" id="tab-mentor">
+                <h3 style="color:#2b3674; margin-top:0;">Mentorship Session</h3>
+                <form method="POST">{% csrf_token %}<input type="hidden" name="form_type" value="int_mentor">
+                    <label>Colleague's Name (Mentor/Mentee)</label><input type="text" required>
+                    <label>Session Date</label><input type="date" required>
+                    <label>Discussion Topic</label><textarea rows="3" required></textarea>
+                    <button type="submit" class="submit-btn" style="background-color: #2b3674;">Save Mentorship Log</button>
+                </form>
+            </div>
+
+        {% elif section == 'Profile' %}
+            <div class="card" style="width: 100%; box-sizing: border-box;">
+                <h3 style="color:#2b3674; margin-top:0; border-bottom: 2px solid #e2e8f0; padding-bottom: 15px;">⚙️ Profile & Account Settings</h3>
+
+                <div style="display: flex; align-items: center; gap: 20px; margin-bottom: 30px; margin-top: 20px;">
+                    <div style="width: 80px; height: 80px; border-radius: 50%; background: #1E3A8A; display: flex; justify-content: center; align-items: center; font-size: 40px; box-shadow: 0 4px 10px rgba(30,58,138,0.3);">👨‍⚕️</div>
+                    <div>
+                        <h4 style="margin: 0; color: #1E3A8A; font-size: 18px;">{{ staff_name }}</h4>
+                        <p style="margin: 5px 0 0 0; color: #64748b; font-size: 13px;">Medical Officer • {{ staff_dept }} Dept</p>
+                        <button style="margin-top: 10px; background: #f0f2f6; border: none; padding: 5px 15px; border-radius: 5px; font-size: 12px; font-weight: bold; color: #4318FF; cursor: pointer; transition: 0.2s;" onmouseover="this.style.background='#e2e8f0'" onmouseout="this.style.background='#f0f2f6'">Upload New Photo</button>
+                    </div>
+                </div>
+
+                <form method="POST">{% csrf_token %}<input type="hidden" name="form_type" value="settings">
+                    <h4 style="color:#2b3674; margin-top:10px;">Personal Information</h4>
+                    <div class="grid-2">
+                        <div>
+                            <label>Full Name</label>
+                            <input type="text" name="full_name" value="Dr. Aminah" required>
+                        </div>
+                        <div>
+                            <label>Staff ID / MMC Number</label>
+                            <input type="text" name="staff_id" value="MMC123456" readonly style="background-color: #e9ecef; cursor: not-allowed; color: #a3aed1;">
+                        </div>
+                    </div>
+
+                    <div class="grid-2">
+                        <div>
+                            <label>Email Address</label>
+                            <input type="email" name="email" value="dr.portal@myprestasi.gov.my" required>
+                        </div>
+                        <div>
+                            <label>Phone Number</label>
+                            <input type="text" name="phone" value="+6012-3456789">
+                        </div>
+                    </div>
+
+                    <h4 style="color:#2b3674; margin-top:30px; border-bottom: 1px solid #e2e8f0; padding-bottom: 10px;">Account Security</h4>
+                    <div class="grid-2">
+                        <div>
+                            <label>New Password</label>
+                            <input type="password" name="new_pass" placeholder="Leave blank to keep current password">
+                        </div>
+                        <div>
+                            <label>Confirm New Password</label>
+                            <input type="password" name="confirm_pass" placeholder="Re-type new password">
+                        </div>
+                    </div>
+
+                    <button type="submit" class="submit-btn" style="background-color: #1E3A8A; margin-top: 35px;">Save Profile Changes</button>
+                </form>
+            </div>
+        {% endif %}
+    </div>
+
+    <div class="custom-footer">Copyright © 2026 MyPrestasi HPU | National Health Facility</div>
+
+    <div class="modal-overlay" id="settingsModal">
+        <div class="modal-content" style="width: 400px;">
+            <button class="modal-close" onclick="closeSettings()">✖</button>
+            <h2 style="color: #1E3A8A; margin-top: 0; font-weight: 900;">⚙️ System Settings</h2>
+            <p style="color: #64748b; font-size: 13px; margin-bottom: 20px;">Manage your MyPrestasi environment preferences.</p>
+
+            <div class="setting-item" style="padding-top: 5px;">
+                <div style="width: 100%;">
+                    <strong style="color: #2b3674; font-size: 13px;">Language / Bahasa</strong>
+                    <select style="width: 100%; padding: 8px 12px; border-radius: 8px; border: 1px solid #e2e8f0; font-family: 'Inter'; font-size: 13px; background: #f8f9fa; margin-top: 5px;">
+                        <option>English (UK)</option>
+                        <option>Bahasa Melayu</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="setting-item">
+                <div style="width: 100%;">
+                    <strong style="color: #2b3674; font-size: 13px;">Timezone</strong>
+                    <select style="width: 100%; padding: 8px 12px; border-radius: 8px; border: 1px solid #e2e8f0; font-family: 'Inter'; font-size: 13px; background: #f8f9fa; margin-top: 5px;">
+                        <option>Asia/Kuala_Lumpur (MYT +08:00)</option>
+                        <option>Asia/Kuching (MYT +08:00)</option>
+                        <option>UTC (Coordinated Universal Time)</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="setting-item">
+                <div>
+                    <strong style="color: #2b3674; font-size: 13px;">Dark Mode</strong>
+                    <div style="font-size: 11px; color: #a3aed1; margin-top: 3px;">Toggle dark theme interface</div>
+                </div>
+                <label class="switch">
+                    <input type="checkbox" id="darkModeToggle">
+                    <span class="slider"></span>
+                </label>
+            </div>
+            
+            <button class="submit-btn" style="margin-top: 15px;" onclick="closeSettings()">Save Preferences</button>
+        </div>
+    </div>
+
+    <script>
+        // --- 1. LOGIK MODAL SETTINGS (TAMBAH INI!) ---
+        function openSettings() {
+            document.getElementById('settingsModal').style.display = 'flex';
+        }
+        function closeSettings() {
+            document.getElementById('settingsModal').style.display = 'none';
+        }
+        // LOGIK TABS
+        function openTab(evt, tabName) {
+            var i, tabcontent, tablinks;
+            tabcontent = document.getElementsByClassName("tab-content");
+            for (i = 0; i < tabcontent.length; i++) { tabcontent[i].style.display = "none"; }
+            tablinks = document.getElementsByClassName("tab-btn");
+            for (i = 0; i < tablinks.length; i++) { tablinks[i].className = tablinks[i].className.replace(" active", ""); }
+            document.getElementById(tabName).style.display = "block";
+            evt.currentTarget.className += " active";
+        }
+
+        // LOGIK SUB-MENU TEAMWORK
+        function switchTeamwork(view, element) {
+            document.getElementById('team-mdt').style.display = 'none';
+            document.getElementById('team-contrib').style.display = 'none';
+            var radios = document.getElementsByClassName('sm-radio');
+            for(var i=0; i<radios.length; i++){ radios[i].classList.remove('active'); }
+            document.getElementById('team-' + view).style.display = 'block';
+            element.classList.add('active');
+        }
+
+        // LOGIK FLOATING DROPDOWN (Inbox & Notifikasi)
+        function toggleDropdown(id) {
+            var dropdowns = document.getElementsByClassName("dropdown-menu");
+            for (var i = 0; i < dropdowns.length; i++) {
+                if (dropdowns[i].id !== id) {
+                    dropdowns[i].classList.remove('show');
+                }
+            }
+            document.getElementById(id).classList.toggle("show");
+        }
+
+        // LOGIK SUB-MENU INNOVATION
+        function switchInnov(view, element) {
+            // 1. Sembunyikan semua borang inovasi
+            document.getElementById('innov-research').style.display = 'none';
+            document.getElementById('innov-trials').style.display = 'none';
+            document.getElementById('innov-tech').style.display = 'none';
+            document.getElementById('innov-pub').style.display = 'none';
+            
+            // 2. Buang kelas 'active' dari semua butang sub-menu inovasi
+            var radios = document.getElementById('innov-selector').getElementsByClassName('sm-radio');
+            for(var i=0; i<radios.length; i++){ 
+                radios[i].classList.remove('active'); 
+            }
+            
+            // 3. Paparkan borang yang dipilih dan serlahkan butang
+            document.getElementById('innov-' + view).style.display = 'block';
+            element.classList.add('active');
+        }
+
+        // LOGIK TOGGLE BORANG CTS & FMS
+        function switchDeptForm(dept, element) {
+            // Sembunyikan semua borang
+            document.getElementById('form-cts').style.display = 'none';
+            document.getElementById('form-fms').style.display = 'none';
+
+            // Buang kelas 'active' dari semua butang pilihan jabatan
+            var radios = document.getElementById('dept-selector').getElementsByClassName('sm-radio');
+            for(var i=0; i<radios.length; i++){
+                radios[i].classList.remove('active');
+            }
+
+            // Paparkan borang yang dipilih dan serlahkan butang
+            document.getElementById('form-' + dept).style.display = 'block';
+            element.classList.add('active');
+        }
+
+        // Tutup dropdown jika klik di luar kotak
+        window.onclick = function(event) {
+            if (!event.target.closest('.dropdown-wrapper')) {
+                var dropdowns = document.getElementsByClassName("dropdown-menu");
+                for (var i = 0; i < dropdowns.length; i++) {
+                    dropdowns[i].classList.remove('show');
+                }
+            }
+        }
+        // LOGIK TOGGLE SIDEBAR (COLLAPSE/EXPAND)
+        function toggleSidebar() {
+            var sidebar = document.getElementById("mySidebar");
+            var logoImg = document.getElementById("logoImg");
+
+            // Toggle (tambah/buang) kelas 'collapsed'
+            sidebar.classList.toggle("collapsed");
+
+            // Kecilkan sedikit logo jika dilipat supaya tak cacat
+            if (sidebar.classList.contains("collapsed")) {
+                logoImg.style.width = "40px";
+            } else {
+                logoImg.style.width = "60px";
+            }
+        }
+
+        // Tutup dropdown dan modal jika klik di luar
+        window.onclick = function(event) {
+            if (!event.target.closest('.dropdown-wrapper') && !event.target.closest('.sidebar-toggle')) {
+                var dropdowns = document.getElementsByClassName("dropdown-menu");
+                for (var i = 0; i < dropdowns.length; i++) {
+                    dropdowns[i].classList.remove('show');
+                }
+            }
+            var modal = document.getElementById('settingsModal');
+            if (event.target == modal) {
+                modal.style.display = "none";
+            }
+        }
+    </script>
+
+</body>
+</html>

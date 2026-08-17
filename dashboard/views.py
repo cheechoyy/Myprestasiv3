@@ -1,0 +1,1440 @@
+from django.shortcuts import render, redirect
+from django.contrib.auth import authenticate, login, logout
+from django.contrib.auth.decorators import login_required
+from django.contrib import messages
+import pandas as pd
+import numpy as np          # <--- TAMBAH BARIS INI
+import plotly.express as px
+import plotly.graph_objects as go
+import folium
+import random
+import math
+import hashlib
+import urllib.parse
+from .mock_data import STATE_CENTERS, MOCK_KLINIK, generate_mock_doctors, MOCK_CUSUM_DATA
+
+
+def landing_page_view(request):
+    """
+    Paparan Landing Page Awam (Tema Merah Pastel)
+    """
+    # Jika pengguna sudah log masuk, terus bawa ke portal masing-masing
+    if request.user.is_authenticated or request.session.get('role') == 'staff':
+        if request.session.get('role') == 'staff':
+            return redirect('staff_dashboard')
+        return redirect('admin_dashboard')
+        
+    return render(request, 'dashboard/landing.html')
+
+# --- 2. LOGIK PENGURUSAN AKSES (LOGIN/LOGOUT DENGAN ROLE) ---
+def home_redirect(request):
+    return redirect('login')
+
+def login_view(request):
+    # Jika sudah log masuk, hantar ke portal masing-masing
+    if request.user.is_authenticated:
+        if request.user.is_superuser or getattr(request.user.profile, 'role', '') == 'HPU_ADMIN':
+            return redirect('hpu_dashboard') # Portal Dev / Tech
+        elif request.user.profile.role == 'HOD':
+            return redirect('admin_dashboard') # Portal HOD
+        elif request.user.profile.role == 'STAFF':
+            return redirect('staff_dashboard') # Portal Staff
+        elif request.user.profile.role == 'AUDITOR':
+            return redirect('audit_dashboard') # Portal Audit
+
+    if request.method == 'POST':
+        user_ic = request.POST.get('username', '').strip()
+        user_pass = request.POST.get('password', '').strip()
+
+        # Sistem Django Auth akan menyemak di dalam db.sqlite3
+        user = authenticate(request, username=user_ic, password=user_pass)
+        
+        if user is not None:
+            login(request, user)
+            
+            # PENGHALAAN AUTOMATIK BERDASARKAN ROLE
+            if user.is_superuser or getattr(user.profile, 'role', '') == 'HPU_ADMIN':
+                request.session['role'] = 'admin_hpu'
+                return redirect('hpu_dashboard')
+                
+            elif user.profile.role == 'HOD':
+                request.session['role'] = 'admin'
+                return redirect('admin_dashboard')
+                
+            elif user.profile.role == 'STAFF':
+                request.session['role'] = 'staff'
+                request.session['staff_dept'] = user.profile.department
+                return redirect('staff_dashboard')
+                
+        else:
+            messages.error(request, "❌ ID Pengguna atau Kata Laluan tidak sah.")
+
+    return render(request, 'dashboard/login.html')
+
+# Pastikan 'def' rapat ke dinding kiri!
+def logout_view(request):
+    logout(request)
+    # Buang role dari session apabila log keluar
+    if 'role' in request.session:
+        del request.session['role']
+    return redirect('login')
+
+
+# ---LOGIK ADMIN DASHBOARD ---
+@login_required(login_url='/login/')
+def admin_dashboard(request):
+
+    # 1. TAMBAH BARIS INI: Tangkap isyarat tab (Default: Dashboard)
+    section = request.GET.get('section', 'Dashboard')
+    
+    # 2. TAMBAH BARIS INI: Logik untuk paparkan mesej berjaya bila butang Save ditekan
+    if request.method == 'POST':
+        if request.POST.get('form_type') == 'settings':
+            messages.success(request, "✅ HOD Profile & Account Settings successfully updated.")
+            return redirect(request.path + '?section=Profile')
+        elif request.POST.get('form_type') == 'system_settings':
+            messages.success(request, "✅ System preferences successfully updated.")
+            return redirect(request.path + '?section=Settings')
+        
+    # === LOGIK SKOP HOD ===
+    hod_scope = getattr(request.user.profile, 'hod_scope', 'NATIONAL')
+    hod_state = getattr(request.user.profile, 'assigned_state', None)
+    hod_facility = getattr(request.user.profile, 'assigned_facility', None)
+
+    # 1. Tapis Negeri Berdasarkan Skop
+    if hod_scope in ['FACILITY', 'STATE'] and hod_state:
+        pilihan_negeri = hod_state # Paksa negeri
+    else:
+        pilihan_negeri = request.GET.get('state', 'All States')
+
+    if pilihan_negeri == "All States":
+        klinik_dipaparkan = MOCK_KLINIK
+    else:
+        klinik_dipaparkan = [k for k in MOCK_KLINIK if k.get("state") == pilihan_negeri]
+
+    senarai_klinik = [k['name'] for k in klinik_dipaparkan]
+    
+    # 2. Tapis Fasiliti Berdasarkan Skop
+    if hod_scope == 'FACILITY' and hod_facility:
+        pilihan_klinik = hod_facility # Paksa Fasiliti
+        klinik_dipaparkan = [k for k in klinik_dipaparkan if k.get("name") == pilihan_klinik]
+    else:
+        pilihan_klinik = request.GET.get('clinic')
+        if not pilihan_klinik or pilihan_klinik not in senarai_klinik:
+            pilihan_klinik = senarai_klinik[0] if senarai_klinik else None
+            
+    # Hantar maklumat skop ke template
+    is_facility_locked = (hod_scope == 'FACILITY')
+    is_state_locked = (hod_scope == 'STATE')
+
+    # --- TAMBAHAN BARU: PENGIRAAN STATISTIK DINAMIK ---
+    active_facilities = len(klinik_dipaparkan)
+    semua_markah = []
+    total_staff = 0
+    
+    for k in klinik_dipaparkan:
+        if 'doctors' in k:
+            total_staff += len(k['doctors'])
+            semua_markah.extend([doc['Current Score'] for doc in k['doctors']])
+            
+    avg_performance = int(sum(semua_markah) / len(semua_markah)) if semua_markah else 0
+    
+    import random
+    random.seed(total_staff)
+    evaluations_completed = total_staff * random.randint(3, 6)
+
+    # A. Peta Folium (Pergerakan Dinamik & Zum Sedikit)
+    
+    # Dapatkan titik tengah dan zum asal negeri tersebut dahulu
+    pusat = STATE_CENTERS.get(pilihan_negeri, STATE_CENTERS["All States"])
+    
+    if pilihan_klinik and pilihan_klinik != "All Clinics":
+        # Jika klinik spesifik dipilih, cari koordinatnya
+        klinik_target = next((k for k in klinik_dipaparkan if k["name"] == pilihan_klinik), None)
+        if klinik_target:
+            pusat_lat = klinik_target["lat"]
+            pusat_lon = klinik_target["lon"]
+            # ZUM SEDIKIT SAHAJA: Ambil zum asal negeri dan tambah 1 (atau tetapkan 10)
+            tahap_zoom = pusat["zoom"] + 1 
+        else:
+            pusat_lat, pusat_lon, tahap_zoom = pusat["lat"], pusat["lon"], pusat["zoom"]
+    else:
+        # Jika "All Clinics", kekal guna titik tengah negeri
+        pusat_lat, pusat_lon, tahap_zoom = pusat["lat"], pusat["lon"], pusat["zoom"]
+
+    # Bina Peta dengan pusat yang dikemas kini
+    m = folium.Map(location=[pusat_lat, pusat_lon], zoom_start=tahap_zoom, zoom_control=False, tiles='CartoDB positron')
+
+    # Plotkan titik-titik klinik
+    for k in klinik_dipaparkan:
+        state_encoded = urllib.parse.quote(pilihan_negeri)
+        clinic_encoded = urllib.parse.quote(k["name"])
+        
+        popup_content = f"""
+        <div style="font-family: 'Inter', sans-serif; text-align: center; width: 160px;">
+            <b style="color: #2b3674; font-size: 12px; display:block; margin-bottom:8px;">{k['name']}</b>
+            <a href="?state={state_encoded}&clinic={clinic_encoded}" target="_parent" 
+               style="background-color: #4318FF; color: white; padding: 6px 12px; border-radius: 6px; text-decoration: none; font-size: 11px; font-weight: bold; display: inline-block; box-shadow: 0 2px 4px rgba(0,0,0,0.2);">
+               👨‍⚕️ View Roster
+            </a>
+        </div>
+        """
+        
+        # LOGIK SERLAHAN: Jika ini klinik yang dipilih, tukar jadi MERAH
+        if k["name"] == pilihan_klinik:
+            warna_titik = "#ff4b4b"  # Merah
+            saiz_titik = 8           # Sedikit besar
+        else:
+            warna_titik = "#4318FF"  # Biru
+            saiz_titik = 5           # Kecil
+
+        folium.CircleMarker(
+            location=[k["lat"], k["lon"]],
+            radius=saiz_titik,
+            color="#ffffff",
+            weight=1.5,
+            fill=True,
+            fill_color=warna_titik,
+            fill_opacity=0.9,
+            tooltip=k["name"],
+            popup=folium.Popup(popup_content, max_width=200)
+        ).add_to(m)
+        
+    map_html = m._repr_html_()
+
+    # B. Senarai Staf (Roster) - Jadikan Boleh Diklik!
+    from django.urls import reverse
+    
+    if pilihan_klinik:
+        df_docs = generate_mock_doctors(pilihan_klinik)
+        
+        # Pautan ke Modul Klinikal
+        clinical_url = reverse('cts_module')
+        
+        # Tukar teks nama kepada tag <a> supaya boleh diklik
+        df_docs['Officer Name'] = df_docs['Officer Name'].apply(
+            lambda x: f"<a href='{clinical_url}?officer={urllib.parse.quote(x)}&clinic={urllib.parse.quote(pilihan_klinik)}&state={urllib.parse.quote(pilihan_negeri)}&tab=Skills' style='color:#be123c; font-weight:800; text-decoration:none;' onmouseover='this.style.textDecoration=\"underline\"' onmouseout='this.style.textDecoration=\"none\"'>🔍 {x}</a>"
+        )
+        
+        roster_html = df_docs.to_html(index=False, classes="roster-table", escape=False)
+    else:
+        roster_html = "<div style='text-align:center; padding: 20px; color:#a3aed1;'>No officers found for this state.</div>"
+
+    # Dapatkan nama dinamik untuk header
+    hod_name = f"{request.user.first_name} {request.user.last_name}".strip()
+    if not hod_name:
+        hod_name = request.user.username
+    
+    hod_facility_label = hod_facility if hod_scope == 'FACILITY' and hod_facility else "HPU Putrajaya"
+
+    # C. CARTA BAR (MENEGAK - Auto Resize)
+    senarai_modul = ["CTS", "FMS", "Peds", "O&G"] 
+    senarai_nilai = [120, 95, 60, 45]
+
+    fig_bar = go.Figure(data=[
+        go.Bar(
+            x=senarai_modul,  
+            y=senarai_nilai,  
+            text=senarai_nilai, 
+            textposition='auto', 
+            marker_color=["#4c0519", "#881337", "#be123c", "#f43f5e"] # <--- Tema Warna Rose
+        )
+    ])
+    
+    fig_bar.update_layout(
+        autosize=True,
+        height=240, 
+        margin=dict(l=30, r=20, t=20, b=30), 
+        bargap=0.4, 
+        showlegend=False, 
+        paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)',
+        xaxis=dict(fixedrange=True, showgrid=False, tickfont=dict(size=11)), 
+        yaxis=dict(fixedrange=True, showgrid=True, gridcolor='#ffe4e6') # Warna grid rose cair
+    )
+    bar_html = fig_bar.to_html(full_html=False, include_plotlyjs=False, config={'responsive': True})
+
+    # D. CARTA PIE
+    label_status = ["Outstanding", "Good", "Competent", "Needs Attention"]
+    nilai_status = [25, 45, 20, 10]
+    warna_status = ["#881337", "#be123c", "#fb7185", "#fecdd3"] # <--- Tema Warna Rose
+
+    fig_pie = go.Figure(data=[go.Pie(
+        labels=label_status, 
+        values=nilai_status, 
+        hole=0.6,
+        marker=dict(colors=warna_status, line=dict(color='#ffffff', width=2)),
+        textinfo='percent',
+        textposition='inside'
+    )])
+    
+    fig_pie.update_layout(
+        height=280,
+        margin=dict(t=0, l=0, r=0, b=0),
+        showlegend=False, 
+        paper_bgcolor='rgba(0,0,0,0)', 
+        plot_bgcolor='rgba(0,0,0,0)'
+    )
+    pie_html = fig_pie.to_html(full_html=False, include_plotlyjs=False)
+
+    # E. CARTA SUNBURST
+    data_nav = {
+        "labels": ["HPU", "Clinical<br>Excellence", "Operational", "Interpersonal<br>Excellence", "Skills", "Knowledge &<br>Capacity", "Policies &<br>Protocols", "Documentation", "Productivity &<br>Efficiency", "Innovation &<br>Problem Solving", "Patient<br>Experience", "Emotional<br>Intelligence", "Teamwork &<br>Collaboration", "Mentorship"],
+        "parents": ["", "HPU", "HPU", "HPU", "Clinical<br>Excellence", "Clinical<br>Excellence", "Clinical<br>Excellence", "Clinical<br>Excellence", "Operational", "Operational", "Interpersonal<br>Excellence", "Interpersonal<br>Excellence", "Interpersonal<br>Excellence", "Interpersonal<br>Excellence"],
+        "colors": ["Base", "Clinical", "Operational", "Interpersonal"] + ["Clinical"]*4 + ["Operational"]*2 + ["Interpersonal"]*4
+    }
+    color_map = {"Base": "#ffffff", "Clinical": "#881337", "Operational": "#be123c", "Interpersonal": "#fb7185"} # <--- Tema Warna Rose
+    fig_sunburst = px.sunburst(pd.DataFrame(data_nav), names='labels', parents='parents', color='colors', color_discrete_map=color_map)
+    
+    fig_sunburst.update_traces(
+        insidetextorientation='tangential', 
+        textinfo='label', 
+        textfont_size=12,
+        marker=dict(line=dict(color='#ffffff', width=2)) 
+    )
+    fig_sunburst.update_layout(
+        height=290,
+        margin=dict(t=0, l=0, r=0, b=0),
+        paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)'
+    )
+    sunburst_html = fig_sunburst.to_html(full_html=False, include_plotlyjs=False)
+
+    # F. CARTA HEATMAP
+    z_data = [
+        [85, 92, 78], 
+        [90, 88, 85], 
+        [60, 75, 80], 
+        [45, 65, 70]  
+    ]
+    x_labels = ['Clinical', 'Operational', 'Interpersonal']
+    y_labels = ['CTS', 'FMS', 'Peds', 'O&G']
+
+    fig_heat = go.Figure(data=go.Heatmap(
+        z=z_data, x=x_labels, y=y_labels,
+        colorscale='Reds', texttemplate="%{z}", # <--- Tukar kepada skala merah
+        showscale=False,
+        xgap=3, 
+        ygap=3  
+    ))
+    
+    fig_heat.update_layout(
+        autosize=True, 
+        height=260, 
+        margin=dict(l=50, r=20, t=35, b=20), 
+        paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)',
+        xaxis=dict(fixedrange=True, tickangle=0, tickfont=dict(size=9)),
+        yaxis=dict(fixedrange=True, tickfont=dict(size=10))
+    )
+    heatmap_html = fig_heat.to_html(full_html=False, include_plotlyjs=False, config={'responsive': True})
+
+    # Hantar data ke template (Diubahsuai supaya sejajar dengan fail HTML)
+    context = {
+        'section': section,
+        'map_html': map_html,
+        'roster_html': roster_html,
+        'bar_html': bar_html,
+        'pie_html': pie_html, 
+        'sunburst_html': sunburst_html,
+        'heatmap_html': heatmap_html,
+        'senarai_negeri': STATE_CENTERS.keys(),
+        'pilihan_negeri': pilihan_negeri,
+        'senarai_klinik': senarai_klinik,
+        'pilihan_klinik': pilihan_klinik,
+        'is_facility_locked': is_facility_locked,
+        'is_state_locked': is_state_locked,
+        'hod_scope': hod_scope,
+
+        'hod_name': hod_name,
+        'hod_facility_label': hod_facility_label,
+        'section': section,
+        
+        # --- DATA DINAMIK OVERVIEW STATISTIK ---
+        'active_facilities': active_facilities,
+        'total_staff': total_staff,
+        'avg_performance': avg_performance,
+        'evaluations_completed': evaluations_completed,
+    }
+    return render(request, 'dashboard/hod_dashboard.html', context)
+
+# --- LOGIK MODUL KLINIKAL (CTS) LENGKAP ---
+@login_required(login_url='/login/')
+def cts_view(request):
+    sub_module = request.GET.get('sub_module', 'Clinical')
+    active_tab = request.GET.get('tab', 'Skills')
+    dept = request.GET.get('dept', 'CTS')
+
+    # === LOGIK SKOP HOD ===
+    hod_scope = getattr(request.user.profile, 'hod_scope', 'NATIONAL')
+    hod_state = getattr(request.user.profile, 'assigned_state', None)
+    hod_facility = getattr(request.user.profile, 'assigned_facility', None)
+
+    # --- 1. TAPIS NEGERI ---
+    senarai_negeri = list(STATE_CENTERS.keys())
+    if hod_scope in ['FACILITY', 'STATE'] and hod_state:
+        pilihan_negeri = hod_state
+    else:
+        pilihan_negeri = request.GET.get('state', 'All States')
+
+    # --- 2. TAPIS KLINIK ---
+    if pilihan_negeri == "All States":
+        klinik_tersedia = MOCK_KLINIK
+    else:
+        klinik_tersedia = [k for k in MOCK_KLINIK if k["state"] == pilihan_negeri]
+
+    nama_klinik_list = [k["name"] for k in klinik_tersedia]
+    senarai_klinik = ["All Clinics"] + nama_klinik_list
+
+    if hod_scope == 'FACILITY' and hod_facility:
+        pilihan_klinik = hod_facility
+        # Tapis supaya senarai doktor hanya dari hospital ini
+        klinik_tersedia = [k for k in klinik_tersedia if k["name"] == pilihan_klinik]
+    else:
+        pilihan_klinik = request.GET.get('clinic', 'All Clinics')
+        if pilihan_klinik not in senarai_klinik:
+            pilihan_klinik = 'All Clinics'
+            
+    is_facility_locked = (hod_scope == 'FACILITY')
+    is_state_locked = (hod_scope == 'STATE')
+    
+    # Nama dan fasiliti HOD untuk Header
+    hod_name = f"{request.user.first_name} {request.user.last_name}".strip()
+    if not hod_name:
+        hod_name = request.user.username
+    hod_facility_label = hod_facility if hod_scope == 'FACILITY' and hod_facility else "HPU Putrajaya"
+
+    # --- 3. TAPIS DOKTOR & KIRA STATISTIK ---
+    senarai_doktor = []
+    semua_markah = [] 
+    
+    if pilihan_klinik == "All Clinics":
+        for k in klinik_tersedia:
+            df_docs = generate_mock_doctors(k['name'])
+            senarai_doktor.extend(df_docs['Officer Name'].tolist())
+            semua_markah.extend(df_docs['Current Score'].tolist()) # Tarik markah untuk kira purata
+    else:
+        df_docs = generate_mock_doctors(pilihan_klinik)
+        senarai_doktor.extend(df_docs['Officer Name'].tolist())
+        semua_markah.extend(df_docs['Current Score'].tolist())
+
+    # Buang nama pendua dan susun
+    senarai_doktor = list(set(senarai_doktor))
+    senarai_doktor.sort()
+
+    pilihan_doktor = request.GET.get('officer')
+    if not pilihan_doktor or pilihan_doktor not in senarai_doktor:
+        pilihan_doktor = senarai_doktor[0] if senarai_doktor else "Tiada Pegawai"
+
+    # --- PENGIRAAN STATISTIK DINAMIK ---
+    active_facilities = len(klinik_tersedia) if pilihan_klinik == "All Clinics" else 1
+    total_staff = len(senarai_doktor)
+    avg_performance = int(sum(semua_markah) / len(semua_markah)) if semua_markah else 0
+    
+    # Jana jumlah penilaian rawak berdasarkan bilangan staf
+    import random
+    random.seed(total_staff)
+    evaluations_completed = total_staff * random.randint(3, 6)
+
+    # Pembolehubah Carta (Perlu diisytiharkan di luar blok if/elif)
+    chart_html = ""
+    gauge_score_html = ""
+    gauge_peer_html = ""
+    time_chart_html = ""
+    history_html = ""
+    delayed_html = ""
+    
+    # TAMBAHKAN/GANTIKAN DENGAN BARIS INI:
+    cpd_text = ""
+    cpd_css_class = ""
+    peer_text = ""
+    peer_css_class = ""
+
+    # ==========================================
+    # TAB 1: SKILLS (CUSUM)
+    # ==========================================
+    if active_tab == 'Skills':
+        # Dapatkan nama tanpa nombor ID (Contoh: "Dr. Ah Meng (401)" -> "Dr. Ah Meng")
+        nama_asas = pilihan_doktor.split(" (")[0].strip() if " (" in pilihan_doktor else pilihan_doktor.strip()
+
+        fig = go.Figure()
+
+        if dept == 'FMS':
+            # ==========================================
+            # ANALISIS LONGITUDINAL (KAPLAN-MEIER & GEE TREN) - ENGLISH
+            # ==========================================
+        
+           # Ambil pilihan Quarter dari URL (Default: Q8 2025 jika baru buka)
+            pilihan_quarter = request.GET.get('quarter', 'Q8')
+            
+            # Pembolehubah awal (Default)
+            fms_total_patients, fms_kadar_kawalan = 0, 0
+            fms_p_value, fms_prestasi = "", ""
+            chart_km_html, chart_gee_html = "", ""
+            box_bg, box_border, box_text = "#f8f9fa", "#e2e8f0", "#2b3674"
+            
+            # 1. Jana Variasi Data Berdasarkan Nama Doktor + QUARTER PILIHAN
+            # Ini memastikan data berubah setiap kali HOD tukar Quarter!
+            seed_str = str(pilihan_doktor) + str(pilihan_quarter) + "FMS_GEE_UNIK"
+            seed_val = int(hashlib.md5(seed_str.encode('utf-8')).hexdigest(), 16) % (2**32 - 1)
+            np.random.seed(seed_val)
+            
+            # Hasilkan Skor Kemahiran unik untuk gabungan Doktor + Quarter
+            doc_skill = np.random.uniform(0, 100)
+            
+            if doc_skill >= 66:
+                prestasi = 'Excellent'
+                box_bg, box_border, box_text = '#EFF6FF', '#1E3A8A', '#1E3A8A'
+                base_drop = np.random.uniform(0.6, 0.9) 
+                fms_p_value = "< 0.001"
+            elif doc_skill >= 33:
+                prestasi = 'Moderate'
+                box_bg, box_border, box_text = '#DBEAFE', '#2563EB', '#1D4ED8'
+                base_drop = np.random.uniform(0.2, 0.45) 
+                fms_p_value = f"0.0{np.random.randint(11, 49)}" 
+            else:
+                prestasi = 'Needs Improvement'
+                box_bg, box_border, box_text = '#BFDBFE', '#60A5FA', '#2563EB' 
+                base_drop = np.random.uniform(-0.1, 0.1) 
+                fms_p_value = f"0.{np.random.randint(150, 600)}" 
+
+            n_pesakit = np.random.randint(50, 100)
+            bulan = [0, 3, 6, 9, 12] 
+            
+            time_noise = {3: np.random.uniform(-0.2, 0.2), 6: np.random.uniform(-0.2, 0.2), 
+                          9: np.random.uniform(-0.2, 0.2), 12: np.random.uniform(-0.2, 0.2)}
+
+            data = []
+            capai_target_count = 0
+            
+            for p in range(1, n_pesakit + 1):
+                hba1c = np.random.normal(9.5, 0.8) 
+                target_achieved = 0
+
+                for b in bulan:
+                    if b > 0:
+                        drop = np.random.normal(base_drop, 0.2) 
+                        hba1c = hba1c - drop + time_noise[b] 
+                    
+                    status_capai = 1 if hba1c < 7.0 else 0
+                    data.append({'Patient_ID': p, 'Bulan': b, 'HbA1c': max(4.5, hba1c), 'Target_Achieved': status_capai})
+                    
+                    if status_capai == 1 and target_achieved == 0:
+                        target_achieved = 1
+                        
+                if target_achieved == 1:
+                    capai_target_count += 1
+                    
+            df = pd.DataFrame(data)
+            
+            # 2. Pengiraan Metrik Kad Laporan
+            fms_kadar_kawalan = round((capai_target_count / n_pesakit) * 100, 1)
+            fms_total_patients = n_pesakit
+            fms_prestasi = prestasi
+            
+            # 2. Pengiraan Metrik Kad Laporan
+            fms_kadar_kawalan = round((capai_target_count / n_pesakit) * 100, 1)
+            fms_total_patients = n_pesakit
+            fms_prestasi = prestasi
+
+            # 3. LUKIS GRAF 1: KAPLAN-MEIER
+            km_x = [0, 3, 6, 9, 12]
+            if prestasi == 'Excellent': km_y = [0, 0.20, 0.55, 0.80, 0.92]
+            elif prestasi == 'Moderate': km_y = [0, 0.08, 0.30, 0.55, 0.70]
+            else: km_y = [0, 0.02, 0.08, 0.15, 0.22]
+            
+            km_y = [min(1.0, max(0.0, y + np.random.uniform(-0.03, 0.03))) if x > 0 else 0 for x, y in zip(km_x, km_y)]
+
+            fig_km = go.Figure()
+            fig_km.add_trace(go.Scatter(
+                x=km_x, y=km_y, mode='lines+markers', line_shape='hv',
+                line=dict(color='#1E3A8A', width=3), marker=dict(size=8, color='#3B82F6'),
+                name='Achievement Probability'
+            ))
+            fig_km.update_layout(
+                title=dict(text="<b>Kaplan-Meier Survival Analysis</b><br><span style='font-size:11px; color:#64748b;'>Probability of Achieving Target HbA1c < 7.0% Over Time</span>", font=dict(size=13, color="#2b3674")),
+                xaxis_title="Monitoring Time (Months)", yaxis_title="Probability",
+                yaxis=dict(tickformat='.0%', range=[0, 1.05]), height=300,
+                margin=dict(t=50, l=40, r=20, b=40), paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)'
+            )
+            chart_km_html = fig_km.to_html(full_html=False, include_plotlyjs=False)
+
+            # 4. LUKIS GRAF 2: TREND GEE (SPAGHETTI PLOT + MARGINAL MEAN)
+            df_agg = df.groupby('Bulan')['HbA1c'].agg(['mean', 'std']).reset_index()
+            # Simulasi purata klinik yang statik / naik sikit
+            clinic_avg = [9.5, 9.3 + np.random.uniform(-0.1,0.1), 9.0 + np.random.uniform(-0.1,0.1), 8.7 + np.random.uniform(-0.1,0.1), 8.4 + np.random.uniform(-0.1,0.1)] 
+            
+            fig_gee = go.Figure()
+            
+            # A. LUKIS SPAGHETTI PLOT (Latar Belakang - 15 Pesakit Rawak)
+            # Ini yang membezakan GEE dengan graf line biasa!
+            sample_patients = df['Patient_ID'].unique()[:15] 
+            for pid in sample_patients:
+                p_data = df[df['Patient_ID'] == pid]
+                fig_gee.add_trace(go.Scatter(
+                    x=p_data['Bulan'], y=p_data['HbA1c'], mode='lines',
+                    line=dict(color='gray', width=1), opacity=0.2,
+                    showlegend=False, hoverinfo='skip'
+                ))
+            
+            # B. LUKIS GARISAN GEE (Purata Marginal / Estimated Marginal Means)
+            line_color = '#1E3A8A' if prestasi == 'Excellent' else ('#3B82F6' if prestasi == 'Moderate' else '#93C5FD')
+            fig_gee.add_trace(go.Scatter(
+                x=df_agg['Bulan'], y=df_agg['mean'], mode='lines+markers',
+                line=dict(color=line_color, width=4), marker=dict(size=10),
+                error_y=dict(type='data', array=df_agg['std']/3, visible=True, color=line_color, thickness=2),
+                name=f"GEE Marginal Mean"
+            ))
+            
+            # C. LUKIS GARISAN PURATA KLINIK
+            fig_gee.add_trace(go.Scatter(
+                x=df_agg['Bulan'], y=clinic_avg, mode='lines+markers',
+                line=dict(color='#34495e', width=2, dash='dot'), marker=dict(size=6),
+                name="Clinic Benchmark"
+            ))
+            
+            fig_gee.add_hline(y=7.0, line_dash="solid", line_color="green", line_width=1, annotation_text="Target (<7.0%)")
+            
+            fig_gee.update_layout(
+                title=dict(text="<b>Longitudinal Trend (GEE Model)</b><br><span style='font-size:11px; color:#64748b;'>Individual Trajectories (Spaghetti) overlayed with Population-Averaged Mean</span>", font=dict(size=13, color="#2b3674")),
+                xaxis_title="Visit (Months)", yaxis_title="Mean HbA1c (%)",
+                height=300, margin=dict(t=50, l=40, r=20, b=40),
+                paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)',
+                yaxis=dict(range=[5.0, 12.0]),
+                legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1, font=dict(size=10))
+            )
+            chart_gee_html = fig_gee.to_html(full_html=False, include_plotlyjs=False)
+
+       # ==========================================
+        # TAMBAH BLOK 'ELSE' INI UNTUK CTS CUSUM LIMA-LAD
+        # ==========================================
+        else:
+            import random
+            
+            # KUNCI UTAMA: Jadikan nama doktor sebagai 'seed'. 
+            # Ini menjamin setiap doktor dapat graf unik, tapi graf itu kekal tak berubah bila di-refresh!
+            random.seed(pilihan_doktor)
+            
+            actual_scores = []
+            # Tentukan jenis 'skill' doktor secara rawak untuk mempelbagaikan bentuk graf
+            kategori_skill = random.choice(["Pakar", "Sederhana", "Lemah Awal"])
+            
+            if kategori_skill == "Pakar":
+                base_score = random.randint(75, 85)
+            elif kategori_skill == "Lemah Awal":
+                base_score = random.randint(60, 70)
+            else:
+                base_score = random.randint(68, 75)
+                
+            # Jana 20 markah prosedur (LIMA-LAD)
+            for i in range(20):
+                if kategori_skill == "Pakar":
+                    base_score += random.randint(-1, 3) # Pakar cepat capai 100
+                elif kategori_skill == "Lemah Awal":
+                    base_score += random.randint(0, 4)  # Mula rendah, tapi belajar mendadak
+                else:
+                    base_score += random.randint(0, 2)
+                    
+                base_score = min(100, max(0, base_score)) # Limit 0-100
+                actual_scores.append(base_score)
+
+            target_score = 80
+            procedures = list(range(1, 21))
+            cusum_values = []
+            current_cusum = 0
+            
+            # Kira variasi CUSUM
+            for score in actual_scores:
+                variation = score - target_score
+                current_cusum += variation
+                cusum_values.append(current_cusum)
+
+            fig.add_trace(go.Scatter(
+                x=procedures, y=cusum_values, mode='lines+markers',
+                name='CUSUM', line=dict(color='#1E3A8A', width=3), marker=dict(size=8, color='#3B82F6')
+            ))
+            
+            fig.add_hline(y=0, line_dash="dash", line_color="#93C5FD", annotation_text="Baseline KPI (80)")
+            fig.update_layout(
+                title=dict(text=f"<b>Analisis CUSUM: {pilihan_doktor}</b>", font=dict(size=13, color="#2b3674")),
+                margin=dict(t=35, l=0, r=0, b=0), 
+                height=250, 
+                paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)',
+                xaxis_title="Number of LIMA-LAD Procedures", yaxis_title="CUSUM Variation",
+                xaxis=dict(tickmode='linear', tick0=1, dtick=1)
+            )
+            
+            chart_html = fig.to_html(full_html=False, include_plotlyjs=False)
+
+    # ==========================================
+    # TAB 2: KNOWLEDGE (GAUGES & TABLE)
+    # ==========================================
+    elif active_tab == 'Knowledge':
+        import random
+        
+        # 1. Jana markah unik untuk setiap doktor (berubah ikut nama)
+        random.seed(pilihan_doktor)
+        cpd_score = random.randint(60, 98)
+        
+        # 2. Peer average ambil dari purata sebenar klinik (avg_performance)
+        peer_score = avg_performance if avg_performance > 0 else 75
+
+        # 3. Fungsi untuk tentukan teks dan warna status secara automatik
+        # 3. Fungsi untuk tentukan teks dan kelas CSS secara automatik
+        def get_status_info(score):
+            if score >= 85: return "🌟 Outstanding", "outstanding"
+            elif score >= 75: return "👍 Good", "good"
+            elif score >= 65: return "✅ Competent", "competent"
+            else: return "⚠️ Needs Attention", "needs-attention"
+
+        cpd_text, cpd_css_class = get_status_info(cpd_score)
+        peer_text, peer_css_class = get_status_info(peer_score)
+
+        # GAUGE DOKTOR INDIVIDU
+        fig_ind = go.Figure(go.Indicator(
+            mode = "gauge+number", value = cpd_score,
+            title = {'text': "Your Clinical Score (%)", 'font': {'size': 16, 'color': '#2b3674'}},
+            gauge = {
+                'axis': {'range': [0, 100]}, 'bar': {'color': "#2b3674", 'thickness': 0.15},
+                'steps': [{'range': [0, 65], 'color': "#BFDBFE"}, {'range': [65, 75], 'color': "#60A5FA"}, {'range': [75, 85], 'color': "#2563EB"}, {'range': [85, 100], 'color': "#1E3A8A"}]
+            }
+        ))
+        fig_ind.update_layout(height=260, margin=dict(t=40, b=10, l=30, r=30), paper_bgcolor='rgba(0,0,0,0)')
+        gauge_score_html = fig_ind.to_html(full_html=False, include_plotlyjs=False)
+
+        # GAUGE PURATA RAKAN SEKERJA (PEER)
+        fig_peer = go.Figure(go.Indicator(
+            mode = "gauge+number", value = peer_score,
+            title = {'text': "Peer Average (%)", 'font': {'size': 16, 'color': '#2b3674'}},
+            gauge = {
+                'axis': {'range': [0, 100]}, 'bar': {'color': "#2c3e50", 'thickness': 0.15},
+                'steps': [{'range': [0, 65], 'color': "rgba(191, 219, 254, 0.4)"}, {'range': [65, 75], 'color': "rgba(96, 165, 250, 0.4)"}, {'range': [75, 85], 'color': "rgba(37, 99, 235, 0.4)"}, {'range': [85, 100], 'color': "rgba(30, 58, 138, 0.4)"}]
+            }
+        ))
+        fig_peer.update_layout(height=260, margin=dict(t=40, b=10, l=30, r=30), paper_bgcolor='rgba(0,0,0,0)')
+        gauge_peer_html = fig_peer.to_html(full_html=False, include_plotlyjs=False)
+
+        # JADUAL SEJARAH (Topik dinamik mengikut FMS / CTS)
+        topik_2 = "Diabetes Management" if dept == "FMS" else "LIMA-LAD Technique"
+        history_df = pd.DataFrame({
+            "Date": ["20/02/2026", "12/02/2026", "05/01/2026"], 
+            "Category": ["CME", "Workshop", "Online Quiz"],
+            "Topic": ["Trauma Management", topik_2, "Medical Ethics"], 
+            "Marks": [min(100, cpd_score+2), min(100, cpd_score+5), max(0, cpd_score-4)]
+        })
+        history_html = history_df.to_html(index=False, classes="custom-table", escape=False)
+
+    # ==========================================
+    # TAB 3: DOCUMENTATION (BAR & TABLE)
+    # ==========================================
+    elif active_tab == 'Documentation':
+        # Guna PURE Graph Objects untuk Bar Mendatar Bertindan (Stacked Horizontal Bar)
+        fig_time = go.Figure()
+        
+        fig_time.add_trace(go.Bar(
+            y=["Patient Records"], x=[85], name="On-time", orientation='h',
+            marker=dict(color="#1E3A8A"), text="85%", textposition="inside", insidetextanchor="middle"
+        ))
+        fig_time.add_trace(go.Bar(
+            y=["Patient Records"], x=[10], name="Delayed", orientation='h',
+            marker=dict(color="#3B82F6"), text="10%", textposition="inside", insidetextanchor="middle"
+        ))
+        fig_time.add_trace(go.Bar(
+            y=["Patient Records"], x=[5], name="Overdue", orientation='h',
+            marker=dict(color="#93C5FD"), text="5%", textposition="inside", insidetextanchor="middle"
+        ))
+        
+        fig_time.update_layout(
+            barmode='stack', 
+            height=150, 
+            margin=dict(l=0, r=0, t=10, b=0),
+            paper_bgcolor='rgba(0,0,0,0)', 
+            plot_bgcolor='rgba(0,0,0,0)',
+            xaxis=dict(range=[0, 100], showgrid=False),
+            yaxis=dict(showgrid=False),
+            legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1)
+        )
+        time_chart_html = fig_time.to_html(full_html=False, include_plotlyjs=False)
+
+        # Jadual kekal sama
+        df_delayed = pd.DataFrame({
+            "Doctor": ["Dr. Ahmad", "Dr. Siti Fazura", "Dr. Chong Wei"],
+            "Count": [3, 2, 1],
+            "Delay (Avg)": ["5.5 Hours", "4.5 Hours", "8.0 Hours"],
+            "Reason": ["Shortage of staff in ward", "Red Zone emergency case", "System login delayed"]
+        })
+        delayed_html = df_delayed.to_html(index=False, classes="custom-table", escape=False)
+
+    context = {
+        'sub_module': sub_module,
+        'active_tab': active_tab,
+        'senarai_negeri': senarai_negeri,
+        'pilihan_negeri': pilihan_negeri,
+        'senarai_klinik': senarai_klinik,
+        'pilihan_klinik': pilihan_klinik,
+        'is_facility_locked': is_facility_locked,
+        'is_state_locked': is_state_locked,
+        'hod_scope': hod_scope,
+        'senarai_doktor': senarai_doktor,
+        'pilihan_doktor': pilihan_doktor,
+        'chart_html': chart_html,
+        'gauge_score_html': gauge_score_html,
+        'gauge_peer_html': gauge_peer_html,
+        'history_html': history_html,
+        'time_chart_html': time_chart_html,
+        'delayed_html': delayed_html,
+        # TAMBAH 4 BARIS INI
+        'cpd_text': cpd_text,
+        'cpd_css_class': cpd_css_class, # Tukar dari cpd_color
+        'peer_text': peer_text,
+        'peer_css_class': peer_css_class, # Tukar dari peer_color
+        'active_facilities': active_facilities,
+        'total_staff': total_staff,
+        'avg_performance': avg_performance,
+        'evaluations_completed': evaluations_completed,
+        'dept': dept,
+
+        # ... pastikan ia diletakkan di dalam block context = { ... }
+        'fms_total_patients': locals().get('fms_total_patients', 0),
+        'fms_kadar_kawalan': locals().get('fms_kadar_kawalan', 0),
+        'fms_p_value': locals().get('fms_p_value', ''),
+        'fms_prestasi': locals().get('fms_prestasi', ''),
+        'chart_km_html': locals().get('chart_km_html', ''),
+        'chart_gee_html': locals().get('chart_gee_html', ''),
+        'box_bg': locals().get('box_bg', '#f8f9fa'),       # <--- TAMBAH INI
+        'box_border': locals().get('box_border', '#e2e8f0'), # <--- TAMBAH INI
+        'box_text': locals().get('box_text', '#2b3674'),     # <--- TAMBAH INI
+        'pilihan_quarter': locals().get('pilihan_quarter', 'Q8'),
+        
+    }
+    return render(request, 'dashboard/clinical_view.html', context)
+# ==========================================
+# MODUL OPERASIONAL
+# ==========================================
+@login_required(login_url='/login/')
+def operational_view(request):
+    sub_module = request.GET.get('sub_module', 'Operational')
+    active_tab = request.GET.get('tab', 'Productivity')
+    dept = request.GET.get('dept', 'CTS')
+    
+    # === LOGIK SKOP HOD ===
+    hod_scope = getattr(request.user.profile, 'hod_scope', 'NATIONAL')
+    hod_state = getattr(request.user.profile, 'assigned_state', None)
+    hod_facility = getattr(request.user.profile, 'assigned_facility', None)
+
+    # --- 1. TAPIS NEGERI ---
+    senarai_negeri = list(STATE_CENTERS.keys())
+    if hod_scope in ['FACILITY', 'STATE'] and hod_state:
+        pilihan_negeri = hod_state
+    else:
+        pilihan_negeri = request.GET.get('state', 'All States')
+
+    # --- 2. TAPIS KLINIK ---
+    if pilihan_negeri == "All States":
+        klinik_tersedia = MOCK_KLINIK
+    else:
+        klinik_tersedia = [k for k in MOCK_KLINIK if k["state"] == pilihan_negeri]
+
+    nama_klinik_list = [k["name"] for k in klinik_tersedia]
+    senarai_klinik = ["All Clinics"] + nama_klinik_list
+
+    if hod_scope == 'FACILITY' and hod_facility:
+        pilihan_klinik = hod_facility
+        klinik_tersedia = [k for k in klinik_tersedia if k["name"] == pilihan_klinik]
+    else:
+        pilihan_klinik = request.GET.get('clinic', 'All Clinics')
+        if pilihan_klinik not in senarai_klinik:
+            pilihan_klinik = 'All Clinics'
+            
+    is_facility_locked = (hod_scope == 'FACILITY')
+    is_state_locked = (hod_scope == 'STATE')
+    
+    hod_name = f"{request.user.first_name} {request.user.last_name}".strip()
+    if not hod_name:
+        hod_name = request.user.username
+    hod_facility_label = hod_facility if hod_scope == 'FACILITY' and hod_facility else "HPU Putrajaya"
+
+    # --- 3. TAPIS DOKTOR & KIRA STATISTIK ---
+    senarai_doktor = []
+    semua_markah = [] 
+    
+    if pilihan_klinik == "All Clinics":
+        for k in klinik_tersedia:
+            df_docs = generate_mock_doctors(k['name'])
+            senarai_doktor.extend(df_docs['Officer Name'].tolist())
+            semua_markah.extend(df_docs['Current Score'].tolist())
+    else:
+        df_docs = generate_mock_doctors(pilihan_klinik)
+        senarai_doktor.extend(df_docs['Officer Name'].tolist())
+        semua_markah.extend(df_docs['Current Score'].tolist())
+
+    senarai_doktor = list(set(senarai_doktor))
+    senarai_doktor.sort()
+
+    pilihan_doktor = request.GET.get('officer')
+    if not pilihan_doktor or pilihan_doktor not in senarai_doktor:
+        pilihan_doktor = senarai_doktor[0] if senarai_doktor else "Tiada Pegawai"
+
+    # --- PENGIRAAN STATISTIK DINAMIK ---
+    active_facilities = len(klinik_tersedia) if pilihan_klinik == "All Clinics" else 1
+    total_staff = len(senarai_doktor)
+    avg_performance = int(sum(semua_markah) / len(semua_markah)) if semua_markah else 0
+    
+    import random
+    random.seed(total_staff)
+    evaluations_completed = total_staff * random.randint(3, 6)
+
+    # --- Pembolehubah Carta ---
+    area_chart_html = ""
+    radar_chart_html = ""
+
+    # 1. Tab Productivity (Area Chart)
+    if active_tab == 'Productivity':
+        
+        # 1. Masukkan data susunan tepat yang anda mahukan
+        pesakit_harian = [10, 20, 5, 35, 40, 25, 70]
+        tarikh_label = pd.date_range(start="2026-02-20", periods=7).strftime("%d %b").tolist()
+        
+        fig_area = go.Figure()
+        fig_area.add_trace(go.Scatter(
+            x=tarikh_label, 
+            y=pesakit_harian, 
+            mode='lines+markers',
+            fill='tozeroy', 
+            line=dict(color='#1E3A8A', width=3, shape='spline', smoothing=1.0),
+            marker=dict(size=8, color='#3B82F6'),
+            fillcolor='rgba(30, 58, 138, 0.2)',
+            name='Patients Cleared'
+        ))
+        
+        fig_area.update_layout(
+            height=280, 
+            margin=dict(l=0, r=0, t=10, b=0), 
+            paper_bgcolor='rgba(0,0,0,0)', 
+            plot_bgcolor='rgba(0,0,0,0)',
+            yaxis=dict(range=[0, 80]), # Tinggikan sikit dari 70 supaya graf tak langgar bumbung
+            xaxis_title="Date",               # <--- LABEL PAKSI X (Bawah)
+            yaxis_title="Patients Cleared",   # <--- LABEL PAKSI Y (Tepi)
+            xaxis=dict(showgrid=False)
+        )
+        area_chart_html = fig_area.to_html(full_html=False, include_plotlyjs=False)
+    # 2. Tab Innovation (PILIHAN 3: LOLLIPOP CHART)
+    elif active_tab == 'Innovation':
+        kategori = ['System Compliance', 'Proactive Thinking', 'Team Delegation', 'Crisis Response']
+        
+        random.seed(pilihan_doktor + "lollipop")
+        markah = [random.randint(65, 95) for _ in range(4)]
+
+        fig_pop = go.Figure()
+
+        # 1. Lukiskan tiang lolipop (garisan lurus)
+        for i in range(len(kategori)):
+            fig_pop.add_shape(
+                type='line',
+                x0=0, y0=kategori[i], x1=markah[i], y1=kategori[i],
+                line=dict(color='#3B82F6', width=4)
+            )
+
+        # 2. Lukiskan kepala lolipop (titik dan markah)
+        fig_pop.add_trace(go.Scatter(
+            x=markah, y=kategori,
+            mode='markers+text',
+            marker=dict(color='#1E3A8A', size=16, line=dict(color='white', width=2)),
+            text=markah,
+            textposition='middle right',
+            textfont=dict(color='#1E3A8A', size=13, weight='bold'),
+            hoverinfo='none'
+        ))
+
+        fig_pop.update_layout(
+            height=320, margin=dict(t=30, b=30, l=10, r=40),
+            paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)',
+            showlegend=False,
+            xaxis=dict(range=[0, 105], showgrid=True, gridcolor='#e2e8f0', title='Score (%)'),
+            yaxis=dict(showgrid=False, tickfont=dict(size=12, color='#2b3674', weight='bold'))
+        )
+        
+        radar_chart_html = fig_pop.to_html(full_html=False, include_plotlyjs=False)
+    context = {
+        'sub_module': sub_module,
+        'active_tab': active_tab,
+        'senarai_negeri': senarai_negeri,
+        'pilihan_negeri': pilihan_negeri,
+        'senarai_klinik': senarai_klinik,       
+        'pilihan_klinik': pilihan_klinik,       
+        'senarai_doktor': senarai_doktor,
+        'pilihan_doktor': pilihan_doktor,
+        'area_chart_html': area_chart_html,
+        'radar_chart_html': radar_chart_html,
+        # --- DATA STATISTIK BAR SISI ---
+        'active_facilities': active_facilities,
+        'total_staff': total_staff,
+        'avg_performance': avg_performance,
+        'evaluations_completed': evaluations_completed,
+        'dept': dept,
+        'is_facility_locked': is_facility_locked,
+        'is_state_locked': is_state_locked,
+        'hod_scope': hod_scope,
+        'hod_name': hod_name,
+        'hod_facility_label': hod_facility_label,
+    }
+    return render(request, 'dashboard/operational_view.html', context)
+
+# ==========================================
+# MODUL INTERPERSONAL
+# ==========================================
+@login_required(login_url='/login/')
+def interpersonal_view(request):
+    sub_module = request.GET.get('sub_module', 'Interpersonal')
+    active_tab = request.GET.get('tab', 'Patient')
+    dept = request.GET.get('dept', 'CTS')
+    
+    # === LOGIK SKOP HOD ===
+    hod_scope = getattr(request.user.profile, 'hod_scope', 'NATIONAL')
+    hod_state = getattr(request.user.profile, 'assigned_state', None)
+    hod_facility = getattr(request.user.profile, 'assigned_facility', None)
+
+    # --- 1. TAPIS NEGERI ---
+    senarai_negeri = list(STATE_CENTERS.keys())
+    if hod_scope in ['FACILITY', 'STATE'] and hod_state:
+        pilihan_negeri = hod_state
+    else:
+        pilihan_negeri = request.GET.get('state', 'All States')
+
+    # --- 2. TAPIS KLINIK ---
+    if pilihan_negeri == "All States":
+        klinik_tersedia = MOCK_KLINIK
+    else:
+        klinik_tersedia = [k for k in MOCK_KLINIK if k["state"] == pilihan_negeri]
+
+    nama_klinik_list = [k["name"] for k in klinik_tersedia]
+    senarai_klinik = ["All Clinics"] + nama_klinik_list
+
+    if hod_scope == 'FACILITY' and hod_facility:
+        pilihan_klinik = hod_facility
+        klinik_tersedia = [k for k in klinik_tersedia if k["name"] == pilihan_klinik]
+    else:
+        pilihan_klinik = request.GET.get('clinic', 'All Clinics')
+        if pilihan_klinik not in senarai_klinik:
+            pilihan_klinik = 'All Clinics'
+            
+    is_facility_locked = (hod_scope == 'FACILITY')
+    is_state_locked = (hod_scope == 'STATE')
+    
+    hod_name = f"{request.user.first_name} {request.user.last_name}".strip()
+    if not hod_name:
+        hod_name = request.user.username
+    hod_facility_label = hod_facility if hod_scope == 'FACILITY' and hod_facility else "HPU Putrajaya"
+
+    # --- 3. TAPIS DOKTOR & KIRA STATISTIK ---
+    senarai_doktor = []
+    semua_markah = [] 
+    
+    if pilihan_klinik == "All Clinics":
+        for k in klinik_tersedia:
+            df_docs = generate_mock_doctors(k['name'])
+            senarai_doktor.extend(df_docs['Officer Name'].tolist())
+            semua_markah.extend(df_docs['Current Score'].tolist()) # Tarik markah untuk kira purata
+    else:
+        df_docs = generate_mock_doctors(pilihan_klinik)
+        senarai_doktor.extend(df_docs['Officer Name'].tolist())
+        semua_markah.extend(df_docs['Current Score'].tolist())
+
+    senarai_doktor = list(set(senarai_doktor))
+    senarai_doktor.sort()
+
+    pilihan_doktor = request.GET.get('officer')
+    if not pilihan_doktor or pilihan_doktor not in senarai_doktor:
+        pilihan_doktor = senarai_doktor[0] if senarai_doktor else "Tiada Pegawai"
+
+    # --- PENGIRAAN STATISTIK DINAMIK ---
+    active_facilities = len(klinik_tersedia) if pilihan_klinik == "All Clinics" else 1
+    total_staff = len(senarai_doktor)
+    avg_performance = int(sum(semua_markah) / len(semua_markah)) if semua_markah else 0
+    
+    import random
+    random.seed(total_staff)
+    evaluations_completed = total_staff * random.randint(3, 6)
+
+    # --- PEMBOLEHUBAH HTML ---
+    radar_chart_html = ""
+    ei_chart_html = ""
+    team_360_html = ""
+    team_scatter_html = ""
+    
+    pts_gen, pts_proc, pts_cons = 0, 0, 0 # Pembolehubah untuk point breakdown
+
+    # 1. VISUALISASI UTAMA (PILIHAN 3: POLAR AREA / ROSE CHART)
+    kategori_radar = ['Patient Experience', 'Emotional Intelligence', 'Teamwork', 'Mentorship', 'Communication']
+    
+    import random
+    random.seed(pilihan_doktor + "softskills")
+    markah_radar = [random.randint(65, 95) for _ in range(5)]
+    
+    # 5 tona warna pelbagai untuk nampak menarik
+    warna_rose = ['#1E3A8A', '#3B82F6', '#60A5FA', '#93C5FD', "#979BD6"]
+
+    fig_rose = go.Figure()
+    fig_rose.add_trace(go.Barpolar(
+        r=markah_radar,
+        theta=kategori_radar,
+        marker_color=warna_rose,
+        marker_line_color='white',
+        marker_line_width=2,
+        opacity=0.85
+    ))
+
+    fig_rose.update_layout(
+        polar=dict(
+            radialaxis=dict(visible=True, range=[0, 100], showgrid=True, gridcolor='#e2e8f0'),
+            angularaxis=dict(showgrid=True, gridcolor='#e2e8f0', linecolor='#e2e8f0', tickfont=dict(size=11, color='#2b3674', weight='bold'), direction='clockwise')
+        ),
+        showlegend=False, height=320, margin=dict(t=30, b=30, l=30, r=30), paper_bgcolor='rgba(0,0,0,0)'
+    )
+    radar_chart_html = fig_rose.to_html(full_html=False, include_plotlyjs=False)
+    # 2. LOGIK TAB KANDUNGAN
+    if active_tab == 'EI':
+        import random
+        # Gunakan nama doktor sebagai seed supaya graf unik untuk setiap staf
+        random.seed(pilihan_doktor + "EI_Skills") 
+        
+        ei_comp = ["Self-Awareness", "Emotional Regulation", "Social Skills", "Empathy"]
+        ei_scores = [random.randint(65, 95) for _ in range(4)]
+        
+        # Berikan 4 warna berbeza (Tona Biru & Hijau MyPrestasi)
+        warna_palang = ['#93C5FD', '#05CD99', '#3B82F6', '#1E3A8A']
+        
+        fig_ei = go.Figure(go.Bar(
+            x=ei_scores, y=ei_comp, orientation='h', 
+            marker_color=warna_palang, # Gunakan senarai warna tadi
+            text=ei_scores, textposition='auto',
+            textfont=dict(color='white', weight='bold') # Putihkan teks supaya timbul
+        ))
+        fig_ei.update_layout(
+            height=220, margin=dict(t=10, b=10, l=0, r=0), 
+            paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)',
+            xaxis=dict(range=[0, 100], showgrid=False)
+        )
+        ei_chart_html = fig_ei.to_html(full_html=False, include_plotlyjs=False)
+
+    elif active_tab == 'Teamwork':
+        teamwork_view = request.GET.get('t_view', '360')
+        
+        if teamwork_view == '360':
+            np.random.seed(len(pilihan_doktor) + 20)
+            roles = ["Peers", "Support Staff", "Supervisors"]
+            fb_scores = [np.random.randint(80, 98) for _ in range(3)]
+            
+            fig_team = go.Figure(go.Bar(
+                x=roles, y=fb_scores, marker_color='#1E3A8A', text=fb_scores, textposition='auto'
+            ))
+            fig_team.update_layout(
+                height=220, margin=dict(t=20, b=20, l=0, r=0), 
+                paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)',
+                yaxis=dict(range=[0, 100])
+            )
+            team_360_html = fig_team.to_html(full_html=False, include_plotlyjs=False)
+            
+        elif teamwork_view == 'Log':
+            t_filter = request.GET.get('t_filter', 'Month')
+            np.random.seed(len(pilihan_doktor) + len(t_filter))
+            
+            if t_filter == 'Week':
+                dates = pd.date_range(start="2026-02-20", end="2026-02-26", freq='D')
+                num_dots = np.random.randint(5, 10)
+            elif t_filter == 'Month':
+                dates = pd.date_range(start="2026-02-01", end="2026-02-28", freq='D')
+                num_dots = np.random.randint(15, 25)
+            else: 
+                dates = pd.date_range(start="2025-03-01", end="2026-02-28", freq='5D')
+                num_dots = np.random.randint(30, 50)
+                
+            selected_dates = np.random.choice(dates, num_dots, replace=False)
+            categories = ["General Clinical", "Procedural", "Consultation"]
+            
+            # Guna markah 1 hingga 9 sahaja supaya titik lebih kemas seperti asal
+            df_contrib = pd.DataFrame({
+                "Date": selected_dates,
+                "Category": np.random.choice(categories, num_dots),
+                "Points": np.random.randint(1, 10, num_dots) 
+            }).sort_values("Date")
+            
+            # Darab dengan 5 untuk panel tepi supaya nampak markah keseluruhan yang logik
+            pts_gen = df_contrib[df_contrib['Category'] == 'General Clinical']['Points'].sum() * 5
+            pts_proc = df_contrib[df_contrib['Category'] == 'Procedural']['Points'].sum() * 5
+            pts_cons = df_contrib[df_contrib['Category'] == 'Consultation']['Points'].sum() * 5
+            
+            # Scatter Plot 
+            fig_scatter = go.Figure()
+            color_map = {"General Clinical": "#1E3A8A", "Procedural": "#3B82F6", "Consultation": "#93C5FD"}
+            
+            for cat in categories:
+                cat_df = df_contrib[df_contrib['Category'] == cat]
+                fig_scatter.add_trace(go.Scatter(
+                    x=cat_df['Date'], y=cat_df['Points'], mode='markers', name=cat,
+                    # KUNCI UTAMA: Saiz titik dikunci kepada saiz 8 (Bukan mengembang ikut markah)
+                    marker=dict(size=8, color=color_map[cat], line=dict(width=1, color='white'))
+                ))
+            
+            fig_scatter.update_layout(
+                height=260, margin=dict(l=0, r=0, t=30, b=0),
+                paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)',
+                yaxis_title="Points per Event",
+                # Paksa y-axis dari 0 hingga 10 supaya jaraknya teratur
+                yaxis=dict(range=[0, 10], showgrid=True, gridcolor='#e2e8f0'),
+                xaxis=dict(showgrid=False),
+                # Letak legend (petunjuk) di tengah-tengah atas seperti gambar lama
+                legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="center", x=0.5, font=dict(size=11))
+            )
+            team_scatter_html = fig_scatter.to_html(full_html=False, include_plotlyjs=False)
+
+    context = {
+        'sub_module': sub_module,
+        'active_tab': active_tab,
+        'senarai_negeri': senarai_negeri,
+        'pilihan_negeri': pilihan_negeri,
+        'senarai_klinik': senarai_klinik,      
+        'pilihan_klinik': pilihan_klinik,       
+        'senarai_doktor': senarai_doktor,
+        'pilihan_doktor': pilihan_doktor,
+        'radar_chart_html': radar_chart_html,
+        'ei_chart_html': ei_chart_html,
+        'team_360_html': team_360_html,
+        'team_scatter_html': team_scatter_html,
+        't_view': request.GET.get('t_view', '360'),
+        't_filter': request.GET.get('t_filter', 'Month'),
+        'pts_gen': pts_gen, 'pts_proc': pts_proc, 'pts_cons': pts_cons,
+        'active_facilities': active_facilities,
+        'total_staff': total_staff,
+        'avg_performance': avg_performance,
+        'evaluations_completed': evaluations_completed,
+        'dept': dept,
+        'is_facility_locked': is_facility_locked,
+        'is_state_locked': is_state_locked,
+        'hod_scope': hod_scope,
+        'hod_name': hod_name,
+        'hod_facility_label': hod_facility_label,
+        
+    }
+    return render(request, 'dashboard/interpersonal_view.html', context)
+
+# ==========================================
+# MODUL STAFF (MEDICAL OFFICER PORTAL)
+# ==========================================
+from django.contrib import messages
+from datetime import date
+import random # <--- PASTIKAN IMPORT INI ADA
+
+# ==========================================
+# MODUL STAFF (MEDICAL OFFICER PORTAL)
+# ==========================================
+# 1. PADAM ATAU HIDE BARIS INI:
+# @login_required(login_url='/login/')
+
+def staff_dashboard_view(request):
+    
+    # 2. TAMBAH SEMAKAN MANUAL INI: Jika bukan staff, tendang ke login
+    if request.session.get('role') != 'staff':
+        return redirect('login')
+
+    section = request.GET.get('section', 'Dashboard')
+    
+    if request.method == 'POST':
+        form_type = request.POST.get('form_type')
+    
+    if request.method == 'POST':
+        form_type = request.POST.get('form_type')
+        if form_type == 'skills':
+            messages.success(request, "✅ Procedure log successfully submitted and pending HOD verification.")
+        elif form_type == 'cpd':
+            mata = request.POST.get('mata', '0')
+            tajuk = request.POST.get('tajuk', 'Program')
+            messages.success(request, f"✅ Claim of {mata} CPD points for '{tajuk}' has been submitted to the HPU system.")
+        elif form_type == 'doc':
+            patient_id = request.POST.get('patient_id')
+            messages.success(request, f"✅ Documentation record for patient {patient_id} successfully submitted.")
+        elif form_type == 'policy':
+            messages.success(request, "✅ Your compliance declaration has been recorded in the database.")
+        elif form_type == 'ops_prod':
+            messages.success(request, "✅ Productivity data successfully recorded.")
+        elif form_type == 'ops_innov':
+            messages.success(request, "✅ Your innovation idea has been submitted to the system for evaluation.")
+        elif form_type == 'int_px':
+            messages.success(request, "✅ Patient experience record updated.")
+        elif form_type == 'int_ei':
+            messages.success(request, "✅ Emotional intelligence reflection log successfully recorded.")
+        elif form_type == 'int_team':
+            messages.success(request, "✅ Team collaboration data successfully recorded.")
+        elif form_type == 'int_mentor':
+            messages.success(request, "✅ Mentorship session log has been saved.")
+        elif form_type == 'settings':
+            messages.success(request, "✅ Profile & Account Settings successfully updated.")
+            
+        return redirect(f'/staff/?section={section}')
+
+    chart_html = ""
+    radar_html = "" 
+    donut_html = ""  # Tambah ini
+    gauge_html = ""  # Tambah ini
+    area_html = ""   # Tambah ini 
+    
+    if section == 'Dashboard':
+        # 1. DONUT CHART (Patient Acuity Mix)
+        fig_donut = go.Figure(go.Pie(
+            labels=["Critical (Red)", "Urgent (Yellow)", "Stable (Green)"], values=[15, 35, 50], hole=0.65,
+            marker=dict(colors=["#1E3A8A", "#3B82F6", "#93C5FD"]), textinfo='none'
+        ))
+        fig_donut.update_layout(height=190, margin=dict(t=0, b=0, l=0, r=0), showlegend=True, legend=dict(orientation="h", yanchor="bottom", y=-0.2, xanchor="center", x=0.5, font=dict(size=10)), paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)')
+        fig_donut.add_annotation(text="<b>100%</b><br>Capacity", x=0.5, y=0.5, font_size=14, showarrow=False)
+        donut_html = fig_donut.to_html(full_html=False, include_plotlyjs=False)
+
+        # 2. AREA CHART (Kaedah Alternatif: Menggunakan go.Scatter & fill='tozeroy')
+        
+        # Berikan senarai data secara terus (Direct Lists)
+        bulan_label = ["Sep", "Oct", "Nov", "Dec", "Jan", "Feb", "Mar", "Apr", "May", "Jun"]
+        # 1. Data diubah supaya ada turun naik yang realistik
+        output_data = [35, 52, 41, 68, 58, 80, 65, 88, 75, 96]
+
+        fig_area = go.Figure()
+        fig_area.add_trace(go.Scatter(
+            x=bulan_label, 
+            y=output_data, 
+            mode='lines+markers',
+            fill='tozeroy', 
+            # 2. Tambah shape='spline' untuk jadikan garisan melengkung licin (smooth curve)
+            line=dict(color='#39B8FF', width=4, shape='spline'),
+            marker=dict(size=8, color='#1E3A8A'),
+            fillcolor='rgba(57, 184, 255, 0.2)',
+            name='Tasks'
+        ))
+
+        fig_area.update_layout(
+            height=220, margin=dict(t=10, b=0, l=0, r=10), 
+            paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)', 
+            xaxis_title="", yaxis_title="Tasks Completed", 
+            xaxis=dict(showgrid=False), yaxis=dict(showgrid=True, gridcolor='#e2e8f0')
+        )
+        area_html = fig_area.to_html(full_html=False, include_plotlyjs=False)
+
+        # 3. GAUGE CHART (Performance Index vs Target)
+        fig_gauge = go.Figure(go.Indicator(
+            mode="gauge+number", value=4.2, number={'font':{'size':35, 'color':'#2b3674'}},
+            gauge={
+                'axis': {'range': [0, 5], 'tickwidth': 1, 'tickcolor': "#2b3674"}, 'bar': {'color': "#2b3674", 'thickness': 0.2},
+                'steps': [{'range': [0, 3], 'color': "rgba(255, 75, 75, 0.2)"}, {'range': [3, 4], 'color': "rgba(241, 196, 15, 0.2)"}, {'range': [4, 5], 'color': "rgba(46, 204, 113, 0.2)"}],
+                'threshold': {'line': {'color': "red", 'width': 4}, 'thickness': 0.75, 'value': 4.5}
+            }
+        ))
+        fig_gauge.update_layout(height=220, margin=dict(t=30, b=10, l=20, r=20), paper_bgcolor='rgba(0,0,0,0)')
+        gauge_html = fig_gauge.to_html(full_html=False, include_plotlyjs=False)
+
+    # --- PERFORMANCE TAB (Holistic Benchmark 10 Modul - SPIDER WEB) ---
+    elif section == 'Performance':
+        # 10 Modul mengikut senarai Tracker
+        categories = [
+            'Procedure Log', 'CPD Points', 'Doc. Audit', 'Policies', 
+            'Productivity', 'Innovation', 'Patient Exp.', 'Emotional Intel.', 
+            'Teamwork', 'Mentorship'
+        ]
+        scores = [85, 90, 75, 95, 92, 60, 88, 82, 90, 70]
+        
+        # Untuk Spider Web (Radar), kita perlu 'tutup' garisan poligon 
+        # dengan menambah titik pertama di hujung senarai
+        kategori_penuh = categories + [categories[0]]
+        markah_penuh = scores + [scores[0]]
+
+        fig_radar = go.Figure()
+        
+        # Plot garisan dan isian sarang labah-labah
+        fig_radar.add_trace(go.Scatterpolar(
+            r=markah_penuh,
+            theta=kategori_penuh,
+            fill='toself',
+            fillcolor='rgba(30, 58, 138, 0.4)', # Warna biru lutsinar
+            line=dict(color='#1E3A8A', width=3), # Garisan biru gelap tebal
+            marker=dict(size=8, color='#3B82F6', symbol='circle'),
+            hoverinfo='r+theta',
+            name='My Score'
+        ))
+        
+        fig_radar.update_layout(
+            polar=dict(
+                radialaxis=dict(
+                    visible=True, 
+                    range=[0, 100], 
+                    showgrid=True, 
+                    gridcolor='#e2e8f0', 
+                    tickfont=dict(size=10, color='#64748b'),
+                    angle=90 # Paksa nombor paksi menegak supaya kemas
+                ),
+                angularaxis=dict(
+                    showgrid=True, 
+                    gridcolor='#e2e8f0', 
+                    linecolor='#e2e8f0', 
+                    tickfont=dict(size=11, color='#2b3674', weight='bold')
+                ),
+                bgcolor='rgba(0,0,0,0)'
+            ), 
+            showlegend=False, 
+            height=380, # Tinggikan sikit supaya tidak terhimpit
+            margin=dict(t=40, b=40, l=60, r=60), 
+            paper_bgcolor='rgba(0,0,0,0)', 
+            plot_bgcolor='rgba(0,0,0,0)'
+        )
+        radar_html = fig_radar.to_html(full_html=False, include_plotlyjs=False)
+
+    # DUA BARIS INI TELAH DIKELUARKAN DARI BLOK ELIF (DITOLAK KE KIRI)
+    staff_name = request.session.get('staff_name', 'Dr. Portal')
+    staff_dept = request.session.get('staff_dept', 'Outpatient')
+  
+    context = {
+        'section': section,
+        'chart_html': chart_html,
+        'radar_html': radar_html,
+        'donut_html': donut_html,
+        'gauge_html': gauge_html,
+        'area_html': area_html,
+        'today_date': date.today().strftime('%d %B %Y'),
+        'clinical_score': 85,
+        'operational_score': 92,
+        'interpersonal_rating': "High",
+        # --- TAMBAHAN UNTUK PERSONALISASI ---
+        'staff_name': staff_name,
+        'staff_dept': staff_dept,
+    }
+    return render(request, 'dashboard/staff_dashboard.html', context)
+
+
+from django.contrib.auth.models import User
+from .models import UserProfile
+from django.http import HttpResponse
+
+@login_required(login_url='/login/')
+def hpu_dashboard(request):
+    """
+    Paparan Pusat Kawalan Khas untuk Admin HPU / Developer
+    """
+    if request.session.get('role') != 'admin_hpu':
+        return redirect('login')
+
+    # LOGIK MENDAFTAR PENGGUNA BAHARU
+    if request.method == 'POST' and request.POST.get('form_type') == 'create_user':
+        username = request.POST.get('username').strip()
+        password = request.POST.get('password').strip()
+        role = request.POST.get('role')
+        department = request.POST.get('department')
+
+        # Semak jika username sudah wujud
+        if User.objects.filter(username=username).exists():
+            messages.error(request, f"Ralat: ID Pengguna '{username}' sudah wujud di dalam sistem!")
+        else:
+            # Cipta User & Profil serentak
+            new_user = User.objects.create_user(username=username, password=password)
+            UserProfile.objects.create(user=new_user, role=role, department=department)
+            messages.success(request, f"✅ Akaun '{username}' ({role} - {department}) berjaya didaftarkan!")
+            return redirect('hpu_dashboard')
+
+    # Dapatkan senarai semua profil untuk dipaparkan di dalam jadual
+    all_users = UserProfile.objects.all().select_related('user').order_axis('-id') if hasattr(UserProfile.objects, 'order_axis') else UserProfile.objects.all().select_related('user').order_by('-id')
+
+    context = {
+        'users': all_users
+    }
+    return render(request, 'dashboard/hpu_dashboard.html', context)

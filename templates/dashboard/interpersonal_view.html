@@ -1,0 +1,401 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+
+    <title>MyPrestasi</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    </head>
+
+    <title>Interpersonal Module - MyPrestasi</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
+    <style>
+        body { margin: 0; font-family: 'Inter', sans-serif; background-color: #f4f7fe; display: flex; height: 100vh; overflow: hidden; }
+        .sidebar { width: 280px; background: white; border-right: 1px solid #f0f2f6; padding: 20px; padding-bottom: 80px; display: flex; flex-direction: column; overflow-y: auto;box-sizing: border-box; box-sizing: border-box;}
+        .sidebar-logo { text-align: center; margin-bottom: 20px; }
+        .sidebar-logo h2 { color: #1E3A8A; font-weight: 900; margin: 10px 0 0 0; font-size: 1.5rem; }
+        .sidebar-logo p { color: #a3aed1; font-size: 0.8rem; font-weight: 600; margin: 0; }
+        .btn-logout { background-color: #1E3A8A; color: white; padding: 12px; border-radius: 8px; text-decoration: none; font-weight: bold; text-align: center; margin-top: auto; display: block; transition: 0.2s;}
+        .btn-logout:hover { background-color: #0F172A; }
+        .btn-back { background-color: white; border: 1px solid #f0f2f6; color: #2b3674; padding: 12px; border-radius: 8px; text-decoration: none; font-weight: bold; text-align: center; margin-bottom: 10px; display: block;}
+
+        /* SIDEBAR PANEL STYLING */
+        .sidebar-section-title { font-size: 11px; font-weight: 800; color: #a3aed1; text-transform: uppercase; margin: 15px 0 10px 0; letter-spacing: 0.5px; }
+        .stat-card { background: white; border: 1px solid #f0f2f6; border-radius: 12px; padding: 12px; margin-bottom: 10px; display: flex; align-items: center; gap: 12px; box-shadow: 0 2px 4px rgba(0,0,0,0.02);}
+        .stat-icon { width: 35px; height: 35px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 16px; }
+        .stat-info { display: flex; flex-direction: column; }
+        .stat-val { font-size: 16px; font-weight: 800; color: #2b3674; line-height: 1.2;}
+        .stat-label { font-size: 10px; font-weight: 600; color: #a3aed1; }
+        .menu-btn { display: flex; align-items: center; gap: 10px; padding: 10px 12px; background: white; border: 1px solid #f0f2f6; border-radius: 10px; color: #2b3674; font-weight: 700; font-size: 13px; text-decoration: none; margin-bottom: 8px; transition: 0.2s;}
+        .menu-btn:hover { border-color: #39B8FF; color: #39B8FF; }
+
+        /* --- KEMAS KINI FIT-TO-SCREEN (DISAMAKAN DGN CLINICAL/OPERATIONAL) --- */
+        .main-content { flex: 1; padding: 10px 35px 60px 35px; overflow: hidden; display: flex; flex-direction: column; }
+        .page-header { flex-shrink: 0; }
+        .page-header h1 { color: #1E3A8A; font-weight: 800; font-size: 24px; margin: 0 0 5px 0; display: flex; align-items: center; gap: 10px;}
+        .page-header p { color: #64748b; font-size: 13px; margin: 0 0 10px 0; }
+
+        /* TEMA HIJAU UNTUK NAVIGASI SUB-MODUL (Saiz dipendekkan ke 40px) */
+        .sub-modules-nav { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; margin-bottom: 10px; flex-shrink: 0; }
+        .sm-btn { background: white; border: 1px solid #e2e8f0; border-radius: 12px; height: 40px; display: flex; align-items: center; justify-content: center; gap: 10px; font-weight: 800; font-size: 13px; color: #2b3674; text-decoration: none; box-shadow: 0 2px 5px rgba(0,0,0,0.02); transition: 0.2s;}
+        .sm-btn:hover { border-color: #1E3A8A; transform: translateY(-2px); }
+        .sm-btn.active { border: 2px solid #1E3A8A; background: #EFF6FF; color: #1E3A8A;}
+
+        /* FUNGSI SCROLL DALAMAN & KOTAK AUTO-RESIZE */
+        .content-card {
+            background: white;
+            border-radius: 16px;
+            padding: 15px 20px;
+            border: 1px solid #f0f2f6;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.03);
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            overflow-y: auto !important; /* KUNCI SCROLL BAWAH */
+            margin-bottom: 0;
+            min-height: 0;
+        }
+
+        .content-card::-webkit-scrollbar { width: 6px; }
+        .content-card::-webkit-scrollbar-thumb { background-color: #ced4da; border-radius: 10px; }
+
+        /* Dropdown Filter Dipadatkan */
+        .filter-row { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 15px; margin-bottom: 10px; flex-shrink: 0; }
+        .filter-group label { display: block; font-size: 12px; color: #64748b; margin-bottom: 5px; font-weight: 600;}
+        .filter-select { width: 100%; padding: 8px 12px; border-radius: 8px; border: 1px solid #e2e8f0; font-family: 'Inter'; font-size: 13px; background: #f8f9fa; color: #2b3674;}
+
+        /* TABS INTERPERSONAL (Saiz diselaraskan ke 45px) */
+        .tabs-nav { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 15px; flex-shrink: 0; }
+        .tab-btn {
+            background: white; border: 1px solid #f0f2f6; border-radius: 10px; height: 45px;
+            display: flex; align-items: center; justify-content: center; gap: 8px;
+            font-weight: 700; font-size: 13px; color: #2b3674; text-decoration: none; transition: 0.2s;
+        }
+        .tab-btn:hover { border-color: #1E3A8A; color: #1E3A8A; }
+        .tab-btn.active { border: 2px solid #1E3A8A; background: #EFF6FF; color: #1E3A8A; }
+        .tab-btn span { font-size: 16px; }
+
+        /* FORM ELEMENTS (HIJAU) */
+        .input-label { font-weight: 700; color: #2b3674; font-size: 14px; margin-top: 20px; margin-bottom: 10px; display: block;}
+        .custom-slider { width: 100%; margin-bottom: 20px; accent-color: #1E3A8A;}
+        .custom-textarea { width: 100%; height: 80px; padding: 15px; border-radius: 10px; border: 1px solid #e2e8f0; font-family: 'Inter'; font-size: 14px; margin-bottom: 20px;}
+        .btn-save { background-color: #1E3A8A; color: white; border: none; border-radius: 8px; padding: 12px 25px; font-weight: bold; font-size: 14px; cursor: pointer; display: block; width: 100%; transition: 0.2s;}
+        .btn-save:hover { background-color: #0F172A; }
+
+        .sub-menu { display: flex; gap: 15px; margin-bottom: 20px;}
+        .sm-radio { padding: 8px 15px; border-radius: 20px; background: #f0f2f6; color:#64748b; text-decoration: none; font-size: 13px; font-weight: bold;}
+        .sm-radio.active { background: #1E3A8A; color: white;}
+
+        /* FOOTER ADMIN DASHBOARD */
+        .custom-footer {
+            position: fixed;
+            left: 280px; /* Tarik supaya ia bermula tepat di sebelah kanan sidebar */
+            right: 0;
+            bottom: 0;
+            background-color: #f4f7fe;
+            color: #64748b;
+            text-align: center;
+            padding: 15px 0;
+            font-size: 13px;
+            font-weight: 600;
+            border-top: 1px solid #e2e8f0;
+            z-index: 999;
+        }
+
+        /* ==========================================
+           RESPONSIVE MOBILE DESIGN (SKRIN < 768px)
+           ========================================== */
+        @media (max-width: 768px) {
+            /* 1. Bebaskan 'body' dari sekatan ketinggian skrin (100vh) */
+            body {
+                display: block !important; /* Buang flexbox supaya susunan natural */
+                height: auto !important;
+                overflow-y: auto !important;
+            }
+
+            /* 2. Sidebar mengambil ruang penuh di atas */
+            .sidebar {
+                width: 100% !important;
+                height: auto !important;
+                position: relative !important;
+                border-right: none !important;
+                border-bottom: 2px solid #e2e8f0 !important;
+                padding-bottom: 20px !important;
+            }
+            .sidebar-toggle { display: none !important; }
+
+            /* 3. Main content mengembang secara bebas di bawah sidebar */
+            .main-content {
+                width: 100% !important;
+                height: auto !important;
+                overflow: visible !important;
+                padding: 15px !important;
+                padding-bottom: 80px !important; /* Ruang untuk footer */
+                box-sizing: border-box !important;
+            }
+
+            /* 4. Footer dipinkan kemas di bawah skrin telefon */
+            .custom-footer {
+                position: fixed !important;
+                left: 0 !important;
+                width: 100% !important;
+                bottom: 0 !important;
+                z-index: 9999 !important;
+            }
+
+            /* 5. Jadikan SEMUA kotak bertindih ke bawah (1 kolum) */
+            .grid-2, .grid-3, .grid-4, .modules-grid, .content-grid, .tabs-nav, .sub-modules-nav, .filter-row {
+                display: flex !important;
+                flex-direction: column !important;
+                gap: 15px !important;
+            }
+
+            /* 6. Betulkan kedudukan Profile / Butang di penjuru kanan atas */
+            .top-header-right {
+                position: relative !important;
+                top: 0 !important;
+                right: 0 !important;
+                margin-top: 15px !important;
+                justify-content: flex-start !important;
+                width: 100% !important;
+            }
+        }
+
+        /* --- ANIMASI GRAF SAPUAN KE KANAN (WIPE RIGHT) --- */
+        @keyframes wipeRight {
+            0% { clip-path: polygon(0 0, 0 0, 0 100%, 0 100%); opacity: 0; }
+            100% { clip-path: polygon(0 0, 100% 0, 100% 100%, 0 100%); opacity: 1; }
+        }
+
+        .card-ei-bar .js-plotly-plot {
+            animation: wipeRight 1.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+            opacity: 0; /* Sembunyikan sebelum animasi mula */
+        }
+
+        /* --- Fix Masalah Footer (Memastikan ia melekat di bawah) --- */
+        .main-content {
+            display: flex;
+            flex-direction: column;
+            min-height: calc(100vh - 70px); /* Pastikan content memenuhi skrin */
+        }
+        .content-body {
+            flex-grow: 1; /* Tolak footer ke bawah */
+        }
+        .custom-footer {
+            margin-top: 20px;
+        }
+
+        /* --- ANIMASI GRAF (Grow/Bloom) --- */
+        @keyframes growCircular {
+            0% { clip-path: circle(0% at 50% 50%); transform: scale(0.5); opacity: 0; }
+            100% { clip-path: circle(150% at 50% 50%); transform: scale(1); opacity: 1; }
+        }
+        .card-radar .js-plotly-plot {
+            animation: growCircular 1.5s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+            opacity: 0;
+            transform-origin: center center;
+        }
+
+        /* --- METRIC CARDS CSS (😊 Patient Exp.) --- */
+        .metric-cards-container { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 20px; }
+        .metric-card { background: white; border: 1px solid #e2e8f0; border-radius: 8px; padding: 15px; display: flex; align-items: center; gap: 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.02); }
+        .metric-card-icon { font-size: 20px; background: #DBEAFE; color: #1E3A8A; width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; }
+        .metric-card-title { font-size: 11px; color: #64748b; font-weight: bold; text-transform: uppercase; margin: 0; }
+        .metric-card-value { font-size: 20px; font-weight: 900; color: #2b3674; margin: 2px 0; }
+        .metric-card-trend { font-size: 11px; font-weight: 600; }
+
+        /* --- COMMENTS LOG CSS --- */
+        .comments-container { background: #f8f9fa; border: 1px solid #e2e8f0; border-radius: 8px; padding: 15px; }
+        .comment-bubble { background: white; border: 1px solid #e2e8f0; border-radius: 8px; padding: 10px; margin-bottom: 8px; font-size: 12px; }
+        .comment-header { display: flex; justify-content: space-between; margin-bottom: 5px; color: #64748b; font-size: 11px; }
+
+    </style>
+</head>
+<body>
+    <div class="sidebar">
+        <div class="sidebar-logo">
+            <img src="https://upload.wikimedia.org/wikipedia/commons/2/26/Coat_of_arms_of_Malaysia.svg" width="60" id="logoImg">
+            <h2>MyPrestasi</h2>
+            <p>Admin Portal</p>
+        </div>
+
+        <div class="sidebar-section-title">📊 OVERALL STATISTICS</div>
+
+        <div class="stat-card">
+            <div class="stat-icon" style="background: #E0F2FE; color:#0284C7;">🏥</div>
+            <div class="stat-info"><span class="stat-val">{{ active_facilities }}</span><span class="stat-label">Active Facilities</span></div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon" style="background: #DBEAFE; color:#1D4ED8;">👨‍⚕️</div>
+            <div class="stat-info"><span class="stat-val">{{ total_staff }}</span><span class="stat-label">Total Staff</span></div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon" style="background: #BFDBFE; color:#1E40AF;">📈</div>
+            <div class="stat-info"><span class="stat-val">{{ avg_performance }}%</span><span class="stat-label">Average Performance</span></div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon" style="background: #93C5FD; color:#1E3A8A;">✅</div>
+            <div class="stat-info"><span class="stat-val">{{ evaluations_completed }}</span><span class="stat-label">Evaluations Completed</span></div>
+        </div>
+
+        <div class="sidebar-section-title">⚙️ ADMINISTRATION MENU</div>
+        <a href="#" class="menu-btn">⚙️ Settings</a>
+        <a href="#" class="menu-btn">📄 Reports</a>
+
+        <div style="margin-top: auto;">
+            <a href="{% url 'admin_dashboard' %}" class="btn-back">← Back to Dashboard</a>
+            <a href="{% url 'logout' %}" class="btn-logout">↪ Logout</a>
+        </div>
+    </div>
+
+    <div class="main-content">
+        <div class="page-header">
+            <h1 style="font-size: 22px; margin-bottom: 0;">
+                {% if dept == 'FMS' %}
+                    🏥 Family Medicine Specialist (FMS)
+                {% else %}
+                    ⚕️ Cardiothoracic Surgery (CTS)
+                {% endif %}
+            </h1>
+        </div>
+        <p style="color:#64748b; margin-bottom: 10px; font-size: 13px;">Please select an evaluation sub-module below:</p>
+
+        <div class="sub-modules-nav" style="margin-bottom: 10px;">
+            <a href="{% url 'cts_module' %}?dept={{ dept }}&state={{ pilihan_negeri }}&clinic={{ pilihan_klinik }}&officer={{ pilihan_doktor }}" class="sm-btn">🩺 Clinical Excellence</a>
+            <a href="{% url 'operational_module' %}?dept={{ dept }}&state={{ pilihan_negeri }}&clinic={{ pilihan_klinik }}&officer={{ pilihan_doktor }}" class="sm-btn">⚙️ Operational</a>
+            <a href="{% url 'interpersonal_module' %}?dept={{ dept }}&state={{ pilihan_negeri }}&clinic={{ pilihan_klinik }}&officer={{ pilihan_doktor }}" class="sm-btn active">🤝 Interpersonal Excellence</a>
+        </div>
+
+        <div class="page-header">
+            <h1 style="font-size: 20px; margin-bottom: 0;">🤝 Interpersonal Excellence</h1>
+            <p style="margin-bottom: 5px; color: #64748b; font-size: 13px;">Evaluation page for patient experience (PSQ-18), teamwork, and leadership.</p>
+        </div>
+        <hr style="border:0; border-top:1px solid #e2e8f0; margin-bottom: 10px;">
+
+        <div class="content-card">
+            <form method="GET">
+                <input type="hidden" name="dept" value="{{ dept }}">
+
+                <input type="hidden" name="tab" value="{{ active_tab }}">
+                <div class="filter-row">
+                    <div class="filter-group">
+                        <label>Select state:</label>
+                        <select name="state" class="filter-select" onchange="this.form.submit()">
+                            {% for state in senarai_negeri %}<option value="{{ state }}" {% if state == pilihan_negeri %}selected{% endif %}>{{ state }}</option>{% endfor %}
+                        </select>
+                    </div>
+                    <div class="filter-group">
+                        <label>Select Clinic:</label>
+                        <select name="clinic" class="filter-select" onchange="this.form.submit()">
+                            {% for klinik in senarai_klinik %}<option value="{{ klinik }}" {% if klinik == pilihan_klinik %}selected{% endif %}>{{ klinik }}</option>{% endfor %}
+                        </select>
+                    </div>
+                    <div class="filter-group">
+                        <label>Select Medical Officer:</label>
+                        <select name="officer" class="filter-select" onchange="this.form.submit()">
+                            {% for doc in senarai_doktor %}<option value="{{ doc }}" {% if doc == pilihan_doktor %}selected{% endif %}>{{ doc }}</option>{% endfor %}
+                        </select>
+                    </div>
+                </div>
+            </form>
+
+            <div style="background-color: #f8f9fa; padding: 10px 20px; border-radius: 8px; margin-bottom: 20px; font-size: 15px; color: #2b3674;">
+                Evaluation Session: <b>{{ pilihan_doktor }}</b>
+            </div>
+
+            <div class="tabs-nav" style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 20px;">
+                <a href="?dept={{ dept }}&state={{ pilihan_negeri }}&clinic={{ pilihan_klinik }}&officer={{ pilihan_doktor }}&tab=Patient" class="tab-btn {% if active_tab == 'Patient' %}active{% endif %}" style="height: 45px; font-size: 13px;">😊 Patient Exp.</a>
+                <a href="?dept={{ dept }}&state={{ pilihan_negeri }}&clinic={{ pilihan_klinik }}&officer={{ pilihan_doktor }}&tab=EI" class="tab-btn {% if active_tab == 'EI' %}active{% endif %}" style="height: 45px; font-size: 13px;">🧠 Emotional Intel.</a>
+                <a href="?dept={{ dept }}&state={{ pilihan_negeri }}&clinic={{ pilihan_klinik }}&officer={{ pilihan_doktor }}&tab=Teamwork" class="tab-btn {% if active_tab == 'Teamwork' %}active{% endif %}" style="height: 45px; font-size: 13px;">👥 Teamwork</a>
+                <a href="?dept={{ dept }}&state={{ pilihan_negeri }}&clinic={{ pilihan_klinik }}&officer={{ pilihan_doktor }}&tab=Mentorship" class="tab-btn {% if active_tab == 'Mentorship' %}active{% endif %}" style="height: 45px; font-size: 13px;">🎓 Mentorship</a>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 35% 62%; gap: 3%; align-items: start;">
+                
+                <div style="background: white; border: 1px solid #e2e8f0; border-radius: 12px; padding: 20px; box-shadow: 0 2px 10px rgba(0,0,0,0.02); display: flex; flex-direction: column; justify-content: center; align-items: center;">
+                    <h4 style="color:#2b3674; margin-top:0; text-align: center;">📊 Soft Skills Profile</h4>
+                    <div class="card-radar" style="width: 100%; margin-top: -10px;">
+                        {{ radar_chart_html|safe }}
+                    </div>
+                    <p style="font-size: 11px; color: #a3aed1; text-align: center; margin-bottom: 0;">Evaluation page for patient experience (PSQ-18), teamwork, and leadership.</p>
+                </div>
+
+                <div style="background: white; border: 1px solid #e2e8f0; border-radius: 12px; padding: 20px; box-shadow: 0 2px 10px rgba(0,0,0,0.02); display: flex; flex-direction: column;">
+                    
+                    <div style="flex-grow: 1; overflow-y: auto; padding-right: 5px;">
+                        
+                        {% if active_tab == 'Patient' %}
+                            <h3 style="color:#2b3674; margin-top:0;">1. Patient Experience (PSQ-18)</h3>
+                            <div style="background-color: #e0f2fe; color:#0369a1; padding: 12px; border-radius: 8px; margin-bottom: 20px; font-size: 13px;">ℹ️ Based on patient feedback forms collected monthly.</div>
+                            <label class="input-label">Average Patient Satisfaction Score</label>
+                            <input type="range" class="custom-slider" min="0" max="100" value="88">
+                            <label class="input-label">Key Patient Comments</label>
+                            <textarea class="custom-textarea" placeholder="Example: The doctor was very friendly..."></textarea>
+                            <button class="btn-save">Save PSQ-18 Score</button>
+
+                        {% elif active_tab == 'EI' %}
+                            <h3 style="color:#2b3674; margin-top:0;">2. Emotional Intelligence (EI)</h3>
+                            <h5 style="color:#2b3674; margin-bottom: 5px;">Component Breakdown</h5>
+                            <div class="card-ei-bar" style="margin-bottom: 20px;">{{ ei_chart_html|safe }}</div>
+                            <label class="input-label" style="margin-top:0;">Self-Awareness & Emotional Management</label>
+                            <input type="range" class="custom-slider" min="0" max="100" value="85" style="margin-bottom: 10px;">
+                            <label class="input-label" style="margin-top:0;">Empathy towards Colleagues</label>
+                            <input type="range" class="custom-slider" min="0" max="100" value="80" style="margin-bottom: 15px;">
+                            <button class="btn-save">Save EI Score</button>
+
+                        {% elif active_tab == 'Teamwork' %}
+                            <h3 style="color:#2b3674; margin-top:0; margin-bottom: 15px;">3. Teamwork & Collaboration</h3>
+                            <div class="sub-menu">
+                                <a href="?state={{ pilihan_negeri }}&clinic={{ pilihan_klinik }}&officer={{ pilihan_doktor }}&tab=Teamwork&t_view=360" class="sm-radio {% if t_view == '360' %}active{% endif %}">360° Feedback</a>
+                                <a href="?state={{ pilihan_negeri }}&clinic={{ pilihan_klinik }}&officer={{ pilihan_doktor }}&tab=Teamwork&t_view=Log" class="sm-radio {% if t_view == 'Log' %}active{% endif %}">Contribution Log</a>
+                            </div>
+
+                            {% if t_view == '360' %}
+                                <div style="margin-bottom: 20px;">{{ team_360_html|safe }}</div>
+                                <label class="input-label" style="margin-top:0;">Level of Team Contribution</label>
+                                <select class="filter-select" style="margin-bottom:20px; background:white;"><option>Passive</option><option>Active</option><option>Highly Proactive</option><option>Team Leader</option></select>
+                                <button class="btn-save">Save Teamwork Score</button>
+
+                            {% elif t_view == 'Log' %}
+                                <div class="sub-menu" style="margin-bottom: 10px;">
+                                    <a href="?state={{ pilihan_negeri }}&clinic={{ pilihan_klinik }}&officer={{ pilihan_doktor }}&tab=Teamwork&t_view=Log&t_filter=Year" class="sm-radio {% if t_filter == 'Year' %}active{% endif %}" style="padding: 4px 10px; font-size: 11px;">Year</a>
+                                    <a href="?state={{ pilihan_negeri }}&clinic={{ pilihan_klinik }}&officer={{ pilihan_doktor }}&tab=Teamwork&t_view=Log&t_filter=Month" class="sm-radio {% if t_filter == 'Month' %}active{% endif %}" style="padding: 4px 10px; font-size: 11px;">Month</a>
+                                    <a href="?state={{ pilihan_negeri }}&clinic={{ pilihan_klinik }}&officer={{ pilihan_doktor }}&tab=Teamwork&t_view=Log&t_filter=Week" class="sm-radio {% if t_filter == 'Week' %}active{% endif %}" style="padding: 4px 10px; font-size: 11px;">Week</a>
+                                </div>
+                                <div style="display:grid; grid-template-columns: 2fr 1fr; gap: 10px;">
+                                    <div>{{ team_scatter_html|safe }}</div>
+                                    <div style="display: flex; flex-direction: column; justify-content: center;">
+                                        <div style="background-color:#f8f9fa; border-left:4px solid #1E3A8A; padding:8px; border-radius:4px; margin-bottom:8px; display:flex; justify-content:space-between; align-items:center;">
+                                            <span style="font-size:11px;">General</span><b style="font-size:12px; color:#2b3674;">{{ pts_gen }} <span style="font-size:9px; color:gray;">/ 100</span></b>
+                                        </div>
+                                        <div style="background-color:#f8f9fa; border-left:4px solid #3B82F6; padding:8px; border-radius:4px; margin-bottom:8px; display:flex; justify-content:space-between; align-items:center;">
+                                            <span style="font-size:11px;">Procedure</span><b style="font-size:12px; color:#2b3674;">{{ pts_proc }} <span style="font-size:9px; color:gray;">/ 100</span></b>
+                                        </div>
+                                        <div style="background-color:#f8f9fa; border-left:4px solid #93C5FD; padding:8px; border-radius:4px; display:flex; justify-content:space-between; align-items:center;">
+                                            <span style="font-size:11px;">Consult</span><b style="font-size:12px; color:#2b3674;">{{ pts_cons }} <span style="font-size:9px; color:gray;">/ 100</span></b>
+                                        </div>
+                                    </div>
+                                </div>
+                            {% endif %}
+
+                        {% elif active_tab == 'Mentorship' %}
+                            <h3 style="color:#2b3674; margin-top:0;">4. Mentorship & Guidance</h3>
+                            <label class="input-label">Number of Staff Mentored (Mentees)</label>
+                            <input type="number" class="filter-select" min="0" value="2" style="background:white; width: 100px; margin-bottom: 20px;">
+                            <label class="input-label">Mentorship Effectiveness Score</label>
+                            <input type="range" class="custom-slider" min="0" max="100" value="90">
+                            <button class="btn-save">Save Mentorship Score</button>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+            
+        <div class="custom-footer">
+            Copyright © 2026 MyPrestasi HPU | National Health Facility
+        </div>
+    </body>
+</html>
