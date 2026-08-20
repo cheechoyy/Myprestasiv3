@@ -1,3 +1,4 @@
+{% load static %}
 <!DOCTYPE html>
 <html lang="ms">
 <head>
@@ -49,10 +50,17 @@
 
     <!-- NAVIGASI -->
     <nav class="fixed top-0 left-0 right-0 z-50 bg-white/90 backdrop-blur-md border-b border-rose-100 px-6 lg:px-12 py-4 flex justify-between items-center transition-all">
-        <div class="flex items-center gap-3">
-            <img src="https://upload.wikimedia.org/wikipedia/commons/2/26/Coat_of_arms_of_Malaysia.svg" alt="Jata Negara" class="h-10 w-auto hover:scale-105 transition-transform duration-300">
-            <span class="font-black text-2xl text-rose-900 tracking-tight">MyPrestasi</span>
-        </div>
+        <!-- Susunan Logo Bersebelahan (Boleh Diklik) -->
+        <a href="/" class="flex items-center gap-4 group cursor-pointer" title="Laman Utama MyPrestasi">
+            <!-- Logo Jata Negara -->
+            <img src="https://upload.wikimedia.org/wikipedia/commons/2/26/Coat_of_arms_of_Malaysia.svg" alt="Jata Negara" class="h-10 md:h-12 w-auto transition-transform duration-300 group-hover:scale-105">
+            
+            <!-- Garisan Pemisah -->
+            <div class="h-8 md:h-10 w-[2px] bg-rose-800/20 rounded-full transition-colors duration-300 group-hover:bg-rose-500/40"></div>
+            
+            <!-- Logo MyPrestasi -->
+            <img src="{% static 'images/myprestasi-logo-nobg.png' %}" alt="Logo MyPrestasi" class="h-8 md:h-10 w-auto transition-transform duration-300 group-hover:scale-105">
+        </a>
         <a href="{% url 'login' %}" class="inline-flex items-center gap-2 bg-rose-700 hover:bg-rose-900 text-white font-semibold text-sm px-6 py-2.5 rounded-full shadow-lg shadow-rose-900/20 hover:shadow-rose-900/40 hover:-translate-y-0.5 transition-all duration-300">
             Log Masuk Sistem
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>

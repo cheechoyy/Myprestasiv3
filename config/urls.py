@@ -11,7 +11,7 @@ urlpatterns = [
     path('hpu-portal/', views.hpu_dashboard, name='hpu_dashboard'),
     
     path('staff/', views.staff_dashboard_view, name='staff_dashboard'), 
-    path('admin-portal/', views.admin_dashboard, name='admin_dashboard'),
+    path('hod-portal/', views.hod_dashboard, name='hod_dashboard'),
     path('cts-module/', views.cts_view, name='cts_module'),
     path('operational-module/', views.operational_view, name='operational_module'),
     path('interpersonal-module/', views.interpersonal_view, name='interpersonal_module'),

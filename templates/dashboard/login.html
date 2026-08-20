@@ -1,3 +1,4 @@
+{% load static %}
 <!DOCTYPE html>
 <html lang="ms">
 <head>
@@ -72,9 +73,17 @@
 
             <!-- Kandungan Kiri -->
             <div class="inner-content relative z-10 max-w-2xl mx-auto w-full">
-                <div class="flex items-center gap-6 mb-10">
-                    <img src="https://upload.wikimedia.org/wikipedia/commons/2/26/Coat_of_arms_of_Malaysia.svg" alt="Jata Negara" class="h-20 lg:h-24 w-auto drop-shadow-md">
-                </div>
+                <!-- Susunan Logo Bersebelahan (BOLEH DIKLIK) -->
+                <a href="/" class="flex items-center gap-6 mb-10 group cursor-pointer inline-flex" title="Kembali ke Laman Utama">
+                    <!-- Logo Jata Negara -->
+                    <img src="https://upload.wikimedia.org/wikipedia/commons/2/26/Coat_of_arms_of_Malaysia.svg" alt="Jata Negara" class="h-20 lg:h-24 w-auto drop-shadow-md transition-transform duration-300 group-hover:scale-105">
+                    
+                    <!-- Garisan Pemisah -->
+                    <div class="h-16 lg:h-20 w-0.5 bg-rose-800/20 rounded-full transition-colors duration-300 group-hover:bg-rose-500/40"></div>
+                    
+                    <!-- Logo MyPrestasi -->
+                    <img src="{% static 'images/myprestasi-logo-nobg.png' %}" alt="Logo MyPrestasi" class="h-16 lg:h-20 w-auto drop-shadow-md transition-transform duration-300 group-hover:scale-105">
+                </a>
                 
                 <h1 class="text-5xl lg:text-6xl font-black text-rose-950 tracking-tight mb-4 leading-tight">MYPRESTASI</h1>
                 <p class="text-lg lg:text-xl font-bold text-rose-700/80 mb-12 uppercase tracking-widest">Portal Penilaian & Pemantauan Fasiliti Kesihatan</p>

@@ -1,7 +1,7 @@
+{% load static %}
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ms">
 <head>
-    <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 
@@ -13,118 +13,114 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
     <script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
     <style>
-        body { margin: 0; font-family: 'Inter', sans-serif; background-color: #f4f7fe; display: flex; height: 100vh; overflow: hidden; }
-        .sidebar { width: 280px; background: white; border-right: 1px solid #f0f2f6; padding: 20px; padding-bottom: 80px; display: flex; flex-direction: column; overflow-y: auto;box-sizing: border-box;}
-        .sidebar-logo { text-align: center; margin-bottom: 20px; }
-        .sidebar-logo h2 { color: #1E3A8A; font-weight: 900; margin: 10px 0 0 0; font-size: 1.5rem; }
-        .sidebar-logo p { color: #a3aed1; font-size: 0.8rem; font-weight: 600; margin: 0; }
-        .btn-logout { background-color: #1E3A8A; color: white; padding: 12px; border-radius: 8px; text-decoration: none; font-weight: bold; text-align: center; margin-top: auto; display: block; transition: 0.2s;}
-        .btn-logout:hover { background-color: #0F172A; }
-        .btn-back { background-color: white; border: 1px solid #f0f2f6; color: #2b3674; padding: 12px; border-radius: 8px; text-decoration: none; font-weight: bold; text-align: center; margin-bottom: 10px; display: block;}
+        /* TEMA WARNA DNA BAHARU (ROSE & BURGUNDY) */
+        body { margin: 0; font-family: 'Inter', sans-serif; background-color: #fff1f2; display: flex; height: 100vh; overflow: hidden; }
+        
+        .sidebar {
+            width: 80px; height: 100vh; position: fixed; top: 0; left: 0;
+            background: white; border-right: 1px solid #ffe4e6;
+            padding: 20px 14px; padding-bottom: 30px; display: flex; flex-direction: column;
+            overflow-x: hidden; overflow-y: auto; box-sizing: border-box;
+            transition: width 0.35s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.35s ease;
+            z-index: 1000;
+        }
 
-        /* --- KEMAS KINI FIT-TO-SCREEN (DISAMAKAN DGN CLINICAL) --- */
-        .main-content { flex: 1; padding: 10px 35px 60px 35px; overflow: hidden; display: flex; flex-direction: column; }
+        .sidebar:hover { width: 280px; box-shadow: 10px 0 30px rgba(190, 18, 60, 0.08); }
+        .sidebar:hover ~ .main-content { margin-left: 280px; }
+        .sidebar:hover ~ .custom-footer { left: 280px; }
+
+        .hide-on-collapse { opacity: 0; white-space: nowrap; pointer-events: none; transition: opacity 0.25s ease; }
+        .sidebar:hover .hide-on-collapse { opacity: 1; pointer-events: auto; }
+
+        .sidebar-logo { display: flex; align-items: center; gap: 14px; margin-bottom: 25px; padding: 0 4px; min-height: 50px; text-decoration: none; cursor: pointer; }
+        .sidebar-logo img { width: 42px !important; height: auto !important; flex-shrink: 0; filter: drop-shadow(0 2px 4px rgba(136, 19, 55, 0.1)); }
+        .sidebar-logo-text h2 { color: #881337; font-weight: 900; margin: 0; font-size: 1.3rem; letter-spacing: -0.5px;}
+        .sidebar-logo-text p { color: #f43f5e; font-size: 0.75rem; font-weight: 800; margin: 0; text-transform: uppercase; letter-spacing: 1px;}
+
+        /* SIDEBAR KPI & MENU CARDS */
+        .stat-card, .kpi-card { background: white; border: 1px solid #ffe4e6; border-radius: 12px; padding: 7px; display: flex; align-items: center; margin-bottom: 10px; box-shadow: 0 2px 5px rgba(190, 18, 60, 0.03); min-height: 52px; box-sizing: border-box; width: 100%; }
+        .stat-icon, .kpi-icon { width: 36px; height: 36px; border-radius: 10px; background: #fff1f2; display: flex; justify-content: center; align-items: center; flex-shrink: 0; }
+        .stat-info, .kpi-text { margin-left: 12px; display: flex; flex-direction: column; }
+        .stat-val, .kpi-text h3 { margin: 0; font-size: 15px; font-weight: 900; color: #881337; line-height: 1.2; }
+        .stat-label, .kpi-text p { margin: 0; font-size: 10px; font-weight: 700; color: #f43f5e; text-transform: uppercase; }
+
+        .nav-btn, .menu-btn, .btn-menu { background: white; border: 1px solid #ffe4e6; border-radius: 12px; padding: 7px; font-weight: 700; color: #881337; margin-bottom: 8px; text-align: left; display: flex; align-items: center; text-decoration: none; transition: 0.2s; min-height: 52px; box-sizing: border-box; width: 100%; }
+        .nav-btn:hover, .menu-btn:hover, .btn-menu:hover { background: #fff1f2; border-color: #be123c; }
+        .btn-menu-icon { width: 36px; height: 36px; border-radius: 10px; background: #fff1f2; display: flex; justify-content: center; align-items: center; flex-shrink: 0; }
+
+        .btn-back { background-color: white; border: 1px solid #ffe4e6; color: #be123c; padding: 7px; border-radius: 12px; text-decoration: none; font-weight: bold; display: flex; align-items: center; margin-bottom: 10px; transition: 0.2s; min-height: 52px; box-sizing: border-box; width: 100%; }
+        .btn-back:hover { border-color: #be123c; background-color: #fff1f2; }
+        .btn-logout { background-color: #be123c; color: white; padding: 7px; border-radius: 12px; text-decoration: none; font-weight: bold; display: flex; align-items: center; margin-top: auto; transition: 0.3s; box-shadow: 0 4px 10px rgba(190, 18, 60, 0.2); min-height: 52px; box-sizing: border-box; width: 100%; }
+        .btn-logout:hover { background-color: #881337; transform: translateY(-2px); }
+
+        .sidebar-section-title { font-size: 11px; font-weight: 800; color: #fb7185; text-transform: uppercase; margin: 15px 0 10px 4px; letter-spacing: 0.5px; }
+
+        /* MAIN CONTENT LAYOUT */
+        .main-content { flex: 1; margin-left: 80px; padding: 10px 35px 60px 35px; overflow: hidden; display: flex; flex-direction: column; transition: margin-left 0.35s ease; }
         .page-header { flex-shrink: 0; }
-        .page-header h1 { color: #1E3A8A; font-weight: 800; font-size: 24px; margin: 0 0 5px 0; display: flex; align-items: center; gap: 10px;}
-        .page-header p { color: #64748b; font-size: 13px; margin: 0 0 10px 0; }
+        .page-header h1 { color: #881337; font-weight: 900; font-size: 24px; margin: 0 0 5px 0; display: flex; align-items: center; gap: 10px; letter-spacing: -0.5px; }
+        .page-header p { color: #f43f5e; font-size: 13px; margin: 0 0 10px 0; font-weight: 600; }
 
-        /* SIDEBAR PANEL STYLING */
-        .sidebar-section-title { font-size: 11px; font-weight: 800; color: #a3aed1; text-transform: uppercase; margin: 15px 0 10px 0; letter-spacing: 0.5px; }
-        .stat-card { background: white; border: 1px solid #f0f2f6; border-radius: 12px; padding: 12px; margin-bottom: 10px; display: flex; align-items: center; gap: 12px; box-shadow: 0 2px 4px rgba(0,0,0,0.02);}
-        .stat-icon { width: 35px; height: 35px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 16px; }
-        .stat-info { display: flex; flex-direction: column; }
-        .stat-val { font-size: 16px; font-weight: 800; color: #2b3674; line-height: 1.2;}
-        .stat-label { font-size: 10px; font-weight: 600; color: #a3aed1; }
-        .menu-btn { display: flex; align-items: center; gap: 10px; padding: 10px 12px; background: white; border: 1px solid #f0f2f6; border-radius: 10px; color: #2b3674; font-weight: 700; font-size: 13px; text-decoration: none; margin-bottom: 8px; transition: 0.2s;}
-        .menu-btn:hover { border-color: #39B8FF; color: #39B8FF; }
-
-        /* NAVIGASI SUB-MODUL (Biru Gelap) */
+        /* NAVIGASI SUB-MODUL */
         .sub-modules-nav { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; margin-bottom: 10px; flex-shrink: 0; }
-        .sm-btn { background: white; border: 1px solid #e2e8f0; border-radius: 12px; height: 40px; display: flex; align-items: center; justify-content: center; gap: 10px; font-weight: 800; font-size: 13px; color: #2b3674; text-decoration: none; box-shadow: 0 2px 5px rgba(0,0,0,0.02); transition: 0.2s;}
-        .sm-btn:hover { border-color: #1E3A8A; transform: translateY(-2px); }
-        .sm-btn.active { border: 2px solid #1E3A8A; background: #EFF6FF; color: #1E3A8A;}
+        .sm-btn { background: white; border: 1px solid #ffe4e6; border-radius: 12px; height: 40px; display: flex; align-items: center; justify-content: center; gap: 10px; font-weight: 800; font-size: 13px; color: #881337; text-decoration: none; box-shadow: 0 2px 5px rgba(190, 18, 60, 0.02); transition: 0.2s; }
+        .sm-btn:hover { border-color: #be123c; transform: translateY(-2px); }
+        .sm-btn.active { border: 2px solid #be123c; background: #fff1f2; color: #be123c; }
 
-        /* FUNGSI SCROLL DALAMAN & KOTAK AUTO-RESIZE */
+        /* CONTENT CARD */
         .content-card {
-            background: white;
-            border-radius: 16px;
-            padding: 15px 20px;
-            border: 1px solid #f0f2f6;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.03);
-            flex-grow: 1;
-            display: flex;
-            flex-direction: column;
-            overflow-y: auto !important;  /* KUNCI SCROLL BAWAH */
-            margin-bottom: 0;
-            min-height: 0;
+            background: white; border-radius: 16px; padding: 15px 20px;
+            border: 1px solid #ffe4e6; box-shadow: 0 4px 12px rgba(190, 18, 60, 0.03);
+            flex-grow: 1; display: flex; flex-direction: column;
+            overflow-y: auto !important; margin-bottom: 0; min-height: 0;
         }
 
         .content-card::-webkit-scrollbar { width: 6px; }
-        .content-card::-webkit-scrollbar-thumb { background-color: #ced4da; border-radius: 10px; }
+        .content-card::-webkit-scrollbar-thumb { background-color: #fecdd3; border-radius: 10px; }
 
-        /* Dropdown Filter Dipadatkan */
         .filter-row { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 15px; margin-bottom: 10px; flex-shrink: 0; }
-        .filter-group label { display: block; font-size: 12px; color: #64748b; margin-bottom: 5px; font-weight: 600;}
-        .filter-select { width: 100%; padding: 8px 12px; border-radius: 8px; border: 1px solid #e2e8f0; font-family: 'Inter'; font-size: 13px; background: #f8f9fa; color: #2b3674;}
+        .filter-group label { display: block; font-size: 12px; color: #be123c; margin-bottom: 5px; font-weight: 700; }
+        .filter-select { width: 100%; padding: 8px 12px; border-radius: 8px; border: 1px solid #ffe4e6; font-family: 'Inter'; font-size: 13px; background: #fff1f2; color: #881337; font-weight: 600; }
+        .filter-select:focus { outline: none; border-color: #be123c; background: white; box-shadow: 0 0 0 2px rgba(190, 18, 60, 0.1); }
 
-        /* TABS OPERASIONAL (Dikecilkan Sama Seperti Clinical) */
-        .tabs-nav {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 10px;
-            margin-bottom: 15px;
-            flex-shrink: 0;
-        }
-        .tab-btn {
-            background: white;
-            border: 1px solid #e2e8f0;
-            border-radius: 10px;
-            height: 45px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
-            font-weight: 700;
-            font-size: 13px;
-            color: #2b3674;
-            text-decoration: none;
-            transition: 0.2s;
-        }
-        .tab-btn:hover { border-color: #1E3A8A; color: #1E3A8A; }
-        .tab-btn.active { border: 2px solid #1E3A8A; background: #EFF6FF; color: #1E3A8A; }
+        /* TABS OPERASIONAL */
+        .tabs-nav { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 15px; flex-shrink: 0; }
+        .tab-btn { background: white; border: 1px solid #ffe4e6; border-radius: 10px; height: 45px; display: flex; align-items: center; justify-content: center; gap: 8px; font-weight: 800; font-size: 13px; color: #881337; text-decoration: none; transition: 0.2s; }
+        .tab-btn:hover { border-color: #be123c; color: #be123c; background: #fff1f2; }
+        .tab-btn.active { border: 2px solid #be123c; background: #fff1f2; color: #be123c; }
 
-        /* FORM ELEMENTS */
-        .input-label { font-weight: 700; color: #2b3674; font-size: 14px; margin-top: 20px; margin-bottom: 10px; display: block;}
-        .custom-slider { width: 100%; margin-bottom: 20px; accent-color: #1E3A8A;}
-        .custom-textarea { width: 100%; height: 80px; padding: 15px; border-radius: 10px; border: 1px solid #e2e8f0; box-sizing: border-box; font-family: 'Inter'; font-size: 14px; margin-bottom: 20px;}
-        .btn-save { background-color: #1E3A8A; color: white; border: none; border-radius: 8px; padding: 12px 25px; font-weight: bold; font-size: 14px; cursor: pointer; display: block; width: 100%; transition: 0.2s;}
-        .btn-save:hover { background-color: #0F172A; }
+        /* FORM ELEMENTS & METRICS */
+        .input-label { font-weight: 800; color: #881337; font-size: 14px; margin-top: 20px; margin-bottom: 10px; display: block; }
+        .custom-slider { width: 100%; margin-bottom: 20px; accent-color: #be123c; }
+        .custom-textarea { width: 100%; height: 80px; padding: 15px; border-radius: 10px; border: 1px solid #ffe4e6; box-sizing: border-box; font-family: 'Inter'; font-size: 14px; margin-bottom: 20px; color: #881337; }
+        .btn-save { background-color: #be123c; color: white; border: none; border-radius: 8px; padding: 12px 25px; font-weight: bold; font-size: 14px; cursor: pointer; display: block; width: 100%; transition: 0.2s; }
+        .btn-save:hover { background-color: #881337; }
 
-        /* METRIC CARDS (Productivity) */
-        .eval-card { border: 1px solid #f0f2f6; border-radius: 12px; padding: 20px; margin-bottom: 20px; background: white;}
+        .eval-card { border: 1px solid #ffe4e6; border-radius: 12px; padding: 20px; margin-bottom: 20px; background: white; }
         .grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; }
         .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 30px; }
-        .metric-label { font-size: 11px; color: #A3AED0; text-transform: uppercase; font-weight: bold;}
-        .metric-value { font-size: 24px; font-weight: 700; color: #1E3A8A; line-height: 1.2; margin: 5px 0;}
-        .metric-trend-up { font-size: 11px; color: #05CD99; font-weight: bold; }
-        .metric-trend-down { font-size: 11px; color: #FF4B4B; font-weight: bold; }
+        .metric-label { font-size: 11px; color: #be123c; text-transform: uppercase; font-weight: 800; }
+        .metric-value { font-size: 24px; font-weight: 900; color: #881337; line-height: 1.2; margin: 5px 0; }
+        .metric-trend-up { font-size: 11px; color: #16a34a; font-weight: bold; }
+        .metric-trend-down { font-size: 11px; color: #be123c; font-weight: bold; }
 
-        .radio-group { display: flex; gap: 15px; margin-bottom: 20px; font-size: 14px; color: #2b3674;}
+        .radio-group { display: flex; gap: 15px; margin-bottom: 20px; font-size: 14px; color: #881337; font-weight: 600; }
 
         /* FOOTER ADMIN DASHBOARD */
         .custom-footer {
             position: fixed;
-            left: 280px; /* Tarik supaya ia bermula tepat di sebelah kanan sidebar */
+            left: 80px; /* Mula dari saiz sidebar yang ditutup */
             right: 0;
             bottom: 0;
-            background-color: #f4f7fe;
-            color: #64748b;
+            background-color: white;
+            color: #881337;
             text-align: center;
             padding: 15px 0;
             font-size: 13px;
             font-weight: 600;
-            border-top: 1px solid #e2e8f0;
+            border-top: 1px solid #ffe4e6;
             z-index: 999;
+            transition: left 0.35s ease;
         }
 
         /* --- ANIMASI GRAF SAPUAN KE KANAN (WIPE RIGHT) --- */
@@ -199,67 +195,122 @@
     </style>
 </head>
 <body>
-    <div class="sidebar">
-        <div class="sidebar-logo">
-            <img src="https://upload.wikimedia.org/wikipedia/commons/2/26/Coat_of_arms_of_Malaysia.svg" width="60" id="logoImg">
-            <h2>MyPrestasi</h2>
-            <p>Admin Portal</p>
+    <!-- SIDEBAR HOVER-TO-EXPAND -->
+    <div class="sidebar" id="mySidebar">
+        <!-- Logo Boleh Diklik untuk Kembali ke Dashboard -->
+        <a href="?section=Dashboard" class="sidebar-logo" style="text-decoration: none; cursor: pointer; display: flex; align-items: center; min-height: 50px; margin-bottom: 20px;" title="Kembali ke Dashboard">
+            <img src="{% static 'images/myprestasi-logo-nobg.png' %}" alt="Logo MyPrestasi" style="width: 42px; height: auto; flex-shrink: 0; filter: drop-shadow(0 2px 4px rgba(136, 19, 55, 0.1)); transition: transform 0.2s;" onmouseover="this.style.transform='scale(1.08)'" onmouseout="this.style.transform='scale(1)'">
+            <div class="sidebar-logo-text hide-on-collapse" style="margin-left: 12px;">
+                <h2>MyPrestasi</h2>
+                <p>HOD-PORTAL</p>
+            </div>
+        </a>
+
+        <div class="sidebar-section-title hide-on-collapse">OVERALL STATISTICS</div>
+        
+        <!-- KPI 1: Active Facilities (Hospital & Medical Cross) -->
+        <div class="stat-card" title="Active Facilities">
+            <div class="stat-icon text-rose-700">
+                <svg style="width: 20px; height: 20px; color: #be123c;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5m0 0v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4M12 7v4m-2-2h4"/></svg>
+            </div>
+            <div class="stat-info hide-on-collapse"><span class="stat-val">{{ active_facilities }}</span><span class="stat-label">Active Facilities</span></div>
         </div>
 
-        <div class="sidebar-section-title">📊 OVERALL STATISTICS</div>
-
-        <div class="stat-card">
-            <div class="stat-icon" style="background: #E0F2FE; color:#0284C7;">🏥</div>
-            <div class="stat-info"><span class="stat-val">{{ active_facilities }}</span><span class="stat-label">Active Facilities</span></div>
+        <!-- KPI 2: Total Staff (Clinical Officers) -->
+        <div class="stat-card" title="Total Staff">
+            <div class="stat-icon text-rose-700">
+                <svg style="width: 20px; height: 20px; color: #be123c;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
+            </div>
+            <div class="stat-info hide-on-collapse"><span class="stat-val">{{ total_staff }}</span><span class="stat-label">Total Staff</span></div>
         </div>
 
-        <div class="stat-card">
-            <div class="stat-icon" style="background: #DBEAFE; color:#1D4ED8;">👨‍⚕️</div>
-            <div class="stat-info"><span class="stat-val">{{ total_staff }}</span><span class="stat-label">Total Staff</span></div>
+        <!-- KPI 3: Avg Performance (ECG Heartbeat Pulse Line) -->
+        <div class="stat-card" title="Average Performance">
+            <div class="stat-icon text-rose-700">
+                <svg style="width: 20px; height: 20px; color: #be123c;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+            </div>
+            <div class="stat-info hide-on-collapse"><span class="stat-val">{{ avg_performance }}%</span><span class="stat-label">Avg Performance</span></div>
         </div>
 
-        <div class="stat-card">
-            <div class="stat-icon" style="background: #BFDBFE; color:#1E40AF;">📈</div>
-            <div class="stat-info"><span class="stat-val">{{ avg_performance }}%</span><span class="stat-label">Average Performance</span></div>
+        <!-- KPI 4: Evaluations Done (Clinical Clipboard Audit) -->
+        <div class="stat-card" title="Evaluations Done">
+            <div class="stat-icon text-rose-700">
+                <svg style="width: 20px; height: 20px; color: #be123c;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/></svg>
+            </div>
+            <div class="stat-info hide-on-collapse"><span class="stat-val">{{ evaluations_completed }}</span><span class="stat-label">Evaluations Done</span></div>
         </div>
 
-        <div class="stat-card">
-            <div class="stat-icon" style="background: #93C5FD; color:#1E3A8A;">✅</div>
-            <div class="stat-info"><span class="stat-val">{{ evaluations_completed }}</span><span class="stat-label">Evaluations Completed</span></div>
-        </div>
+        <div class="sidebar-section-title hide-on-collapse" style="margin-top: 15px;">ADMINISTRATION MENU</div>
+        
+        <!-- Settings Button -->
+        <a href="#" class="btn-menu" title="Settings">
+            <div class="btn-menu-icon">
+                <svg style="width: 20px; height: 20px; color: #be123c;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+            </div>
+            <span class="hide-on-collapse" style="margin-left: 12px;">Settings</span>
+        </a>
 
-        <div class="sidebar-section-title">⚙️ ADMINISTRATION MENU</div>
-        <a href="#" class="menu-btn">⚙️ Settings</a>
-        <a href="#" class="menu-btn">📄 Reports</a>
+        <!-- Reports Button -->
+        <a href="#" class="btn-menu" title="Reports">
+            <div class="btn-menu-icon">
+                <svg style="width: 20px; height: 20px; color: #be123c;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+            </div>
+            <span class="hide-on-collapse" style="margin-left: 12px;">Reports</span>
+        </a>
 
-        <div style="margin-top: auto;">
-            <a href="{% url 'admin_dashboard' %}" class="btn-back">← Back to Dashboard</a>
-            <a href="{% url 'logout' %}" class="btn-logout">↪ Logout</a>
+        <div style="margin-top: auto; display: flex; flex-direction: column; gap: 8px;">
+            <a href="{% url 'hod_dashboard' %}" class="btn-back" title="Back to Dashboard">
+                <div class="btn-menu-icon">
+                    <svg style="width: 20px; height: 20px; color: #be123c;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
+                </div>
+                <span class="hide-on-collapse" style="margin-left: 12px;">Back to Dashboard</span>
+            </a>
+
+            <!-- Logout Button -->
+            <a href="{% url 'logout' %}" class="btn-logout" title="Logout">
+                <div class="btn-menu-icon" style="background: rgba(255,255,255,0.2);">
+                    <svg style="width: 20px; height: 20px; color: white;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/></svg>
+                </div>
+                <span class="hide-on-collapse" style="margin-left: 12px;">Logout</span>
+            </a>
         </div>
     </div> <div class="main-content">
 
         <div class="page-header">
-            <h1 style="font-size: 22px; margin-bottom: 0;">
+            <h1 style="font-size: 24px; margin-bottom: 0; display: flex; align-items: center; gap: 10px;">
+                <svg style="width: 26px; height: 26px; color: #be123c;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"/></svg>
                 {% if dept == 'FMS' %}
-                    🏥 Family Medicine Specialist (FMS)
+                    Family Medicine Specialist (FMS)
                 {% else %}
-                    ⚕️ Cardiothoracic Surgery (CTS)
+                    Cardiothoracic Surgery (CTS)
                 {% endif %}
             </h1>
         </div>
-        <p style="color:#64748b; margin-bottom: 10px; font-size: 13px;">Please select an evaluation sub-module below:</p>
+        <p style="color:#f43f5e; margin-bottom: 10px; font-size: 13px; font-weight: 600;">Please select an evaluation sub-module below:</p>
 
         <div class="sub-modules-nav" style="margin-bottom: 10px;">
-            <a href="{% url 'cts_module' %}?dept={{ dept }}&state={{ pilihan_negeri }}&clinic={{ pilihan_klinik }}&officer={{ pilihan_doktor }}" class="sm-btn">🩺 Clinical Excellence</a>
-            <a href="{% url 'operational_module' %}?dept={{ dept }}&state={{ pilihan_negeri }}&clinic={{ pilihan_klinik }}&officer={{ pilihan_doktor }}" class="sm-btn active">⚙️ Operational </a>
-            <a href="{% url 'interpersonal_module' %}?dept={{ dept }}&state={{ pilihan_negeri }}&clinic={{ pilihan_klinik }}&officer={{ pilihan_doktor }}" class="sm-btn">🤝 Interpersonal Excellence</a>
+            <a href="{% url 'cts_module' %}?dept={{ dept }}&state={{ pilihan_negeri }}&clinic={{ pilihan_klinik }}&officer={{ pilihan_doktor }}" class="sm-btn">
+                <svg style="width: 18px; height: 18px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.5 12.75l6 6 9-13.5M9 12l2.25 2.25L15 9m-6 12a9 9 0 110-18 9 9 0 010 18z"/></svg>
+                Clinical Excellence
+            </a>
+            <a href="{% url 'operational_module' %}?dept={{ dept }}&state={{ pilihan_negeri }}&clinic={{ pilihan_klinik }}&officer={{ pilihan_doktor }}" class="sm-btn active">
+                <svg style="width: 18px; height: 18px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                Operational
+            </a>
+            <a href="{% url 'interpersonal_module' %}?dept={{ dept }}&state={{ pilihan_negeri }}&clinic={{ pilihan_klinik }}&officer={{ pilihan_doktor }}" class="sm-btn">
+                <svg style="width: 18px; height: 18px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
+                Interpersonal Excellence
+            </a>
         </div>
 
         <div class="page-header">
-            <h1 style="font-size: 22px; margin-bottom: 0;">⚙️ Operational Evaluation</h1>
-            <p style="margin-bottom: 5px; color: #64748b; font-size: 13px;">Monitoring system for productivity, clinic flow, and operational efficiency.</p>
+            <h1 style="font-size: 22px; margin-bottom: 0; display: flex; align-items: center; gap: 8px;">
+                <svg style="width: 22px; height: 22px; color: #be123c;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                Operational Evaluation
+            </h1>
+            <p style="margin-bottom: 5px; color: #f43f5e; font-size: 13px; font-weight: 600;">Monitoring system for productivity, clinic flow, and operational efficiency.</p>
         </div>
-        <hr style="border:0; border-top:1px solid #e2e8f0; margin-bottom: 10px;">
+        <hr style="border:0; border-top:1px solid #ffe4e6; margin-bottom: 10px;">
 
         <div class="content-card">
             <form method="GET">
@@ -288,17 +339,23 @@
                 </div>
             </form>
 
-            <div style="background-color: #f8f9fa; padding: 15px 20px; border-radius: 8px; margin-bottom: 30px; font-size: 15px; color: #2b3674;">
+            <div style="background-color: #fff1f2; padding: 15px 20px; border-radius: 8px; margin-bottom: 20px; font-size: 15px; color: #881337; border: 1px solid #ffe4e6;">
                 Evaluation Session: <b>{{ pilihan_doktor }}</b>
             </div>
 
             <div class="tabs-nav">
-                <a href="?dept={{ dept }}&state={{ pilihan_negeri }}&clinic={{ pilihan_klinik }}&officer={{ pilihan_doktor }}&tab=Productivity" class="tab-btn {% if active_tab == 'Productivity' %}active{% endif %}">🚀 Productivity & Efficiency</a>
-                <a href="?dept={{ dept }}&state={{ pilihan_negeri }}&clinic={{ pilihan_klinik }}&officer={{ pilihan_doktor }}&tab=Innovation" class="tab-btn {% if active_tab == 'Innovation' %}active{% endif %}">💡 Innovation & Problem Solving</a>
+                <a href="?dept={{ dept }}&state={{ pilihan_negeri }}&clinic={{ pilihan_klinik }}&officer={{ pilihan_doktor }}&tab=Productivity" class="tab-btn {% if active_tab == 'Productivity' %}active{% endif %}">
+                    <svg style="width: 16px; height: 16px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                    Productivity & Efficiency
+                </a>
+                <a href="?dept={{ dept }}&state={{ pilihan_negeri }}&clinic={{ pilihan_klinik }}&officer={{ pilihan_doktor }}&tab=Innovation" class="tab-btn {% if active_tab == 'Innovation' %}active{% endif %}">
+                    <svg style="width: 16px; height: 16px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/></svg>
+                    Innovation & Problem Solving
+                </a>
             </div>
 
             {% if active_tab == 'Productivity' %}
-                <h3 style="color:#2b3674; margin-bottom: 20px;">1. Productivity & Efficiency Metrics</h3>
+                <h3 style="color:#881337; margin-bottom: 20px; font-weight: 800;">1. Productivity & Efficiency Metrics</h3>
 
                 <div class="eval-card grid-4">
                     <div><div class="metric-label">Avg Patients/Day</div><div class="metric-value">42</div><div class="metric-trend-up">↑ +5 vs last month</div></div>
@@ -309,13 +366,19 @@
 
                 <div class="grid-2" style="grid-template-columns: 1.5fr 1fr; padding-bottom: 30px;">
                     <div>
-                        <h4 style="color:#2b3674;">📊 Patient Clearance Trend (Last 7 Days)</h4>
-                        <div style="border:1px solid #e2e8f0; border-radius: 12px; padding: 10px;">
+                        <h4 style="color:#881337; display: flex; align-items: center; gap: 8px;">
+                            <svg style="width: 18px; height: 18px; color: #be123c;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 8v8m-4-5v5m-4-2v2m-2 4h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+                            Patient Clearance Trend (Last 7 Days)
+                        </h4>
+                        <div style="border:1px solid #ffe4e6; border-radius: 12px; padding: 10px;">
                             {{ area_chart_html|safe }}
                         </div>
                     </div>
                     <div>
-                        <h4 style="color:#2b3674;">🎯 Supervisor Evaluation</h4>
+                        <h4 style="color:#881337; display: flex; align-items: center; gap: 8px;">
+                            <svg style="width: 18px; height: 18px; color: #be123c;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                            Supervisor Evaluation
+                        </h4>
                         <label class="input-label" style="margin-top:0;">Time Management & Punctuality</label>
                         <input type="range" class="custom-slider" min="0" max="100" value="85">
 
@@ -325,22 +388,26 @@
                         <label class="input-label">Resource Utilization</label>
                         <input type="range" class="custom-slider" min="0" max="100" value="75">
 
-                        <button class="btn-save" style="margin-top: 20px;">💾 Save Productivity Score</button>
+                        <button class="btn-save" style="margin-top: 20px; display: flex; align-items: center; justify-content: center; gap: 8px;">
+                            <svg style="width: 18px; height: 18px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"/></svg>
+                            Save Productivity Score
+                        </button>
                     </div>
                 </div>
 
             {% elif active_tab == 'Innovation' %}
-                <h3 style="color:#2b3674;">2. Innovation & Problem Solving</h3>
-                <div style="background-color: #EFF6FF; color:#1E3A8A; padding: 15px; border-radius: 8px; margin-bottom: 20px; font-size: 14px; border: 1px solid #BFDBFE;">
-                    ℹ️ Evaluate the officer's ability to handle crises, propose system improvements, and execute operational tasks efficiently.
+                <h3 style="color:#881337; font-weight: 800;">2. Innovation & Problem Solving</h3>
+                <div style="background-color: #fff1f2; color:#881337; padding: 15px; border-radius: 8px; margin-bottom: 20px; font-size: 14px; border: 1px solid #ffe4e6; display: flex; align-items: center; gap: 8px;">
+                    <svg style="width: 18px; height: 18px; color: #be123c; flex-shrink: 0;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                    <span>Evaluate the officer's ability to handle crises, propose system improvements, and execute operational tasks efficiently.</span>
                 </div>
 
                 <div class="grid-2" style="padding-bottom: 30px;">
-                    <div class="eval-card" style="margin-bottom:0;">
-                        <h4 style="color:#2b3674; margin-top:0;">Continuous Quality Improvement (CQI)</h4>
-                        <p style="font-size:14px; color:#64748b;">Does the officer actively participate in or lead CQI / Lean Healthcare projects?</p>
+                    <div class="eval-card" style="margin-bottom:0; background: white; border: 1px solid #ffe4e6; border-radius: 12px; box-shadow: 0 4px 12px rgba(190, 18, 60, 0.03);">
+                        <h4 style="color:#881337; margin-top:0;">Continuous Quality Improvement (CQI)</h4>
+                        <p style="font-size:13px; color:#be123c; font-weight: 600;">Does the officer actively participate in or lead CQI / Lean Healthcare projects?</p>
 
-                        <div class="radio-group">
+                        <div class="radio-group" style="color: #881337;">
                             <label><input type="radio" name="cqi" checked> Lead/Initiator</label>
                             <label><input type="radio" name="cqi"> Active Member</label>
                             <label><input type="radio" name="cqi"> Passive Participant</label>
@@ -353,9 +420,9 @@
                         <label class="input-label">Impact of the Project</label>
                         <input type="range" class="custom-slider" min="0" max="100" value="85">
 
-                        <hr style="border:0; border-top:1px solid #e2e8f0; margin: 20px 0;">
+                        <hr style="border:0; border-top:1px solid #ffe4e6; margin: 20px 0;">
 
-                        <h4 style="color:#2b3674;">Crisis Management</h4>
+                        <h4 style="color:#881337;">Crisis Management</h4>
                         <label class="input-label">Ability to handle Code Blue / Emergency</label>
                         <input type="range" class="custom-slider" min="0" max="100" value="88">
 
@@ -363,21 +430,39 @@
                         <input type="range" class="custom-slider" min="0" max="100" value="80">
                     </div>
 
-                    <div class="eval-card" style="margin-bottom:0;">
-                        <h4 style="color:#2b3674; margin-top:0;">Operational Skill Profiling</h4>
+                    <div class="eval-card" style="margin-bottom:0; background: white; border: 1px solid #ffe4e6; border-radius: 12px; box-shadow: 0 4px 12px rgba(190, 18, 60, 0.03);">
+                        <h4 style="color:#881337; margin-top:0;">Operational Skill Profiling</h4>
                         <div style="margin-bottom: 20px;">
                             {{ radar_chart_html|safe }}
                         </div>
                         <label class="input-label">HOD Comments on Innovation:</label>
                         <textarea class="custom-textarea" placeholder="Enter comments here..."></textarea>
 
-                        <button class="btn-save">💾 Save Innovation Score</button>
+                        <button class="btn-save" style="display: flex; align-items: center; justify-content: center; gap: 8px;">
+                            <svg style="width: 18px; height: 18px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
+                            Save Innovation Score
+                        </button>
                     </div>
                 </div>
             {% endif %}
 
-        </div> </div> <div class="custom-footer">
+        </div> 
+    
+    <div class="custom-footer">
         Copyright © 2026 MyPrestasi HPU | National Health Facility
     </div>
+
+    <script>
+        // KAWALAN DYNAMIC AUTO-RESIZE CARTA APABILA SIDEBAR HOVER
+        const sidebar = document.getElementById('mySidebar');
+        if (sidebar) {
+            sidebar.addEventListener('mouseenter', () => {
+                setTimeout(() => { window.dispatchEvent(new Event('resize')); }, 360);
+            });
+            sidebar.addEventListener('mouseleave', () => {
+                setTimeout(() => { window.dispatchEvent(new Event('resize')); }, 360);
+            });
+        }
+    </script>
 </body>
 </html>

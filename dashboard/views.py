@@ -22,7 +22,7 @@ def landing_page_view(request):
     if request.user.is_authenticated or request.session.get('role') == 'staff':
         if request.session.get('role') == 'staff':
             return redirect('staff_dashboard')
-        return redirect('admin_dashboard')
+        return redirect('hod_dashboard')
         
     return render(request, 'dashboard/landing.html')
 
@@ -36,7 +36,7 @@ def login_view(request):
         if request.user.is_superuser or getattr(request.user.profile, 'role', '') == 'HPU_ADMIN':
             return redirect('hpu_dashboard') # Portal Dev / Tech
         elif request.user.profile.role == 'HOD':
-            return redirect('admin_dashboard') # Portal HOD
+            return redirect('hod_dashboard') # Portal HOD
         elif request.user.profile.role == 'STAFF':
             return redirect('staff_dashboard') # Portal Staff
         elif request.user.profile.role == 'AUDITOR':
@@ -59,7 +59,7 @@ def login_view(request):
                 
             elif user.profile.role == 'HOD':
                 request.session['role'] = 'admin'
-                return redirect('admin_dashboard')
+                return redirect('hod_dashboard')
                 
             elif user.profile.role == 'STAFF':
                 request.session['role'] = 'staff'
@@ -82,7 +82,7 @@ def logout_view(request):
 
 # ---LOGIK ADMIN DASHBOARD ---
 @login_required(login_url='/login/')
-def admin_dashboard(request):
+def hod_dashboard(request):
 
     # 1. TAMBAH BARIS INI: Tangkap isyarat tab (Default: Dashboard)
     section = request.GET.get('section', 'Dashboard')
@@ -545,13 +545,13 @@ def cts_view(request):
             fig_km = go.Figure()
             fig_km.add_trace(go.Scatter(
                 x=km_x, y=km_y, mode='lines+markers', line_shape='hv',
-                line=dict(color='#1E3A8A', width=3), marker=dict(size=8, color='#3B82F6'),
+                line=dict(color='#881337', width=3), marker=dict(size=8, color='#be123c'),
                 name='Achievement Probability'
             ))
             fig_km.update_layout(
-                title=dict(text="<b>Kaplan-Meier Survival Analysis</b><br><span style='font-size:11px; color:#64748b;'>Probability of Achieving Target HbA1c < 7.0% Over Time</span>", font=dict(size=13, color="#2b3674")),
+                title=dict(text="<b>Kaplan-Meier Survival Analysis</b><br><span style='font-size:11px; color:#f43f5e;'>Probability of Achieving Target HbA1c < 7.0% Over Time</span>", font=dict(size=13, color="#881337")),
                 xaxis_title="Monitoring Time (Months)", yaxis_title="Probability",
-                yaxis=dict(tickformat='.0%', range=[0, 1.05]), height=300,
+                yaxis=dict(tickformat='.0%', range=[0, 1.05], gridcolor='#ffe4e6'), xaxis=dict(gridcolor='#ffe4e6'), height=300,
                 margin=dict(t=50, l=40, r=20, b=40), paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)'
             )
             chart_km_html = fig_km.to_html(full_html=False, include_plotlyjs=False)
@@ -575,7 +575,7 @@ def cts_view(request):
                 ))
             
             # B. LUKIS GARISAN GEE (Purata Marginal / Estimated Marginal Means)
-            line_color = '#1E3A8A' if prestasi == 'Excellent' else ('#3B82F6' if prestasi == 'Moderate' else '#93C5FD')
+            line_color = '#881337' if prestasi == 'Excellent' else ('#be123c' if prestasi == 'Moderate' else '#fb7185')
             fig_gee.add_trace(go.Scatter(
                 x=df_agg['Bulan'], y=df_agg['mean'], mode='lines+markers',
                 line=dict(color=line_color, width=4), marker=dict(size=10),
@@ -586,19 +586,19 @@ def cts_view(request):
             # C. LUKIS GARISAN PURATA KLINIK
             fig_gee.add_trace(go.Scatter(
                 x=df_agg['Bulan'], y=clinic_avg, mode='lines+markers',
-                line=dict(color='#34495e', width=2, dash='dot'), marker=dict(size=6),
+                line=dict(color='#9f1239', width=2, dash='dot'), marker=dict(size=6),
                 name="Clinic Benchmark"
             ))
             
-            fig_gee.add_hline(y=7.0, line_dash="solid", line_color="green", line_width=1, annotation_text="Target (<7.0%)")
+            fig_gee.add_hline(y=7.0, line_dash="solid", line_color="#16a34a", line_width=1, annotation_text="Target (<7.0%)")
             
             fig_gee.update_layout(
-                title=dict(text="<b>Longitudinal Trend (GEE Model)</b><br><span style='font-size:11px; color:#64748b;'>Individual Trajectories (Spaghetti) overlayed with Population-Averaged Mean</span>", font=dict(size=13, color="#2b3674")),
+                title=dict(text="<b>Longitudinal Trend (GEE Model)</b><br><span style='font-size:11px; color:#f43f5e;'>Individual Trajectories (Spaghetti) overlayed with Population-Averaged Mean</span>", font=dict(size=13, color="#881337")),
                 xaxis_title="Visit (Months)", yaxis_title="Mean HbA1c (%)",
                 height=300, margin=dict(t=50, l=40, r=20, b=40),
                 paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)',
-                yaxis=dict(range=[5.0, 12.0]),
-                legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1, font=dict(size=10))
+                yaxis=dict(range=[5.0, 12.0], gridcolor='#ffe4e6'), xaxis=dict(gridcolor='#ffe4e6'),
+                legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1, font=dict(size=10, color='#881337'))
             )
             chart_gee_html = fig_gee.to_html(full_html=False, include_plotlyjs=False)
 
@@ -648,17 +648,17 @@ def cts_view(request):
 
             fig.add_trace(go.Scatter(
                 x=procedures, y=cusum_values, mode='lines+markers',
-                name='CUSUM', line=dict(color='#1E3A8A', width=3), marker=dict(size=8, color='#3B82F6')
+                name='CUSUM', line=dict(color='#881337', width=3), marker=dict(size=8, color='#be123c')
             ))
             
-            fig.add_hline(y=0, line_dash="dash", line_color="#93C5FD", annotation_text="Baseline KPI (80)")
+            fig.add_hline(y=0, line_dash="dash", line_color="#fecdd3", annotation_text="Baseline KPI (80)")
             fig.update_layout(
-                title=dict(text=f"<b>Analisis CUSUM: {pilihan_doktor}</b>", font=dict(size=13, color="#2b3674")),
+                title=dict(text=f"<b>Analisis CUSUM: {pilihan_doktor}</b>", font=dict(size=13, color="#881337")),
                 margin=dict(t=35, l=0, r=0, b=0), 
                 height=250, 
                 paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)',
                 xaxis_title="Number of LIMA-LAD Procedures", yaxis_title="CUSUM Variation",
-                xaxis=dict(tickmode='linear', tick0=1, dtick=1)
+                xaxis=dict(tickmode='linear', tick0=1, dtick=1, gridcolor='#ffe4e6'), yaxis=dict(gridcolor='#ffe4e6')
             )
             
             chart_html = fig.to_html(full_html=False, include_plotlyjs=False)
@@ -687,25 +687,29 @@ def cts_view(request):
         cpd_text, cpd_css_class = get_status_info(cpd_score)
         peer_text, peer_css_class = get_status_info(peer_score)
 
-        # GAUGE DOKTOR INDIVIDU
+        # GAUGE DOKTOR INDIVIDU (TEMA ROSE)
         fig_ind = go.Figure(go.Indicator(
             mode = "gauge+number", value = cpd_score,
-            title = {'text': "Your Clinical Score (%)", 'font': {'size': 16, 'color': '#2b3674'}},
+            title = {'text': "Your Clinical Score (%)", 'font': {'size': 16, 'color': '#881337'}},
+            number = {'font': {'color': '#881337'}},
             gauge = {
-                'axis': {'range': [0, 100]}, 'bar': {'color': "#2b3674", 'thickness': 0.15},
-                'steps': [{'range': [0, 65], 'color': "#BFDBFE"}, {'range': [65, 75], 'color': "#60A5FA"}, {'range': [75, 85], 'color': "#2563EB"}, {'range': [85, 100], 'color': "#1E3A8A"}]
+                'axis': {'range': [0, 100], 'tickfont': {'color': '#881337'}}, 
+                'bar': {'color': "#881337", 'thickness': 0.15},
+                'steps': [{'range': [0, 65], 'color': "#fecdd3"}, {'range': [65, 75], 'color': "#fb7185"}, {'range': [75, 85], 'color': "#f43f5e"}, {'range': [85, 100], 'color': "#be123c"}]
             }
         ))
         fig_ind.update_layout(height=260, margin=dict(t=40, b=10, l=30, r=30), paper_bgcolor='rgba(0,0,0,0)')
         gauge_score_html = fig_ind.to_html(full_html=False, include_plotlyjs=False)
 
-        # GAUGE PURATA RAKAN SEKERJA (PEER)
+        # GAUGE PURATA RAKAN SEKERJA (PEER TEMA ROSE)
         fig_peer = go.Figure(go.Indicator(
             mode = "gauge+number", value = peer_score,
-            title = {'text': "Peer Average (%)", 'font': {'size': 16, 'color': '#2b3674'}},
+            title = {'text': "Peer Average (%)", 'font': {'size': 16, 'color': '#881337'}},
+            number = {'font': {'color': '#881337'}},
             gauge = {
-                'axis': {'range': [0, 100]}, 'bar': {'color': "#2c3e50", 'thickness': 0.15},
-                'steps': [{'range': [0, 65], 'color': "rgba(191, 219, 254, 0.4)"}, {'range': [65, 75], 'color': "rgba(96, 165, 250, 0.4)"}, {'range': [75, 85], 'color': "rgba(37, 99, 235, 0.4)"}, {'range': [85, 100], 'color': "rgba(30, 58, 138, 0.4)"}]
+                'axis': {'range': [0, 100], 'tickfont': {'color': '#881337'}}, 
+                'bar': {'color': "#be123c", 'thickness': 0.15},
+                'steps': [{'range': [0, 65], 'color': "rgba(254, 205, 211, 0.5)"}, {'range': [65, 75], 'color': "rgba(251, 113, 133, 0.5)"}, {'range': [75, 85], 'color': "rgba(244, 63, 94, 0.5)"}, {'range': [85, 100], 'color': "rgba(190, 18, 60, 0.5)"}]
             }
         ))
         fig_peer.update_layout(height=260, margin=dict(t=40, b=10, l=30, r=30), paper_bgcolor='rgba(0,0,0,0)')
@@ -730,15 +734,15 @@ def cts_view(request):
         
         fig_time.add_trace(go.Bar(
             y=["Patient Records"], x=[85], name="On-time", orientation='h',
-            marker=dict(color="#1E3A8A"), text="85%", textposition="inside", insidetextanchor="middle"
+            marker=dict(color="#881337"), text="85%", textposition="inside", insidetextanchor="middle"
         ))
         fig_time.add_trace(go.Bar(
             y=["Patient Records"], x=[10], name="Delayed", orientation='h',
-            marker=dict(color="#3B82F6"), text="10%", textposition="inside", insidetextanchor="middle"
+            marker=dict(color="#f43f5e"), text="10%", textposition="inside", insidetextanchor="middle"
         ))
         fig_time.add_trace(go.Bar(
             y=["Patient Records"], x=[5], name="Overdue", orientation='h',
-            marker=dict(color="#93C5FD"), text="5%", textposition="inside", insidetextanchor="middle"
+            marker=dict(color="#fecdd3"), text="5%", textposition="inside", insidetextanchor="middle"
         ))
         
         fig_time.update_layout(
@@ -898,9 +902,9 @@ def operational_view(request):
             y=pesakit_harian, 
             mode='lines+markers',
             fill='tozeroy', 
-            line=dict(color='#1E3A8A', width=3, shape='spline', smoothing=1.0),
-            marker=dict(size=8, color='#3B82F6'),
-            fillcolor='rgba(30, 58, 138, 0.2)',
+            line=dict(color='#be123c', width=3, shape='spline', smoothing=1.0),
+            marker=dict(size=8, color='#881337', line=dict(color='white', width=2)),
+            fillcolor='rgba(190, 18, 60, 0.15)',
             name='Patients Cleared'
         ))
         
@@ -909,9 +913,10 @@ def operational_view(request):
             margin=dict(l=0, r=0, t=10, b=0), 
             paper_bgcolor='rgba(0,0,0,0)', 
             plot_bgcolor='rgba(0,0,0,0)',
-            yaxis=dict(range=[0, 80]), # Tinggikan sikit dari 70 supaya graf tak langgar bumbung
-            xaxis_title="Date",               # <--- LABEL PAKSI X (Bawah)
-            yaxis_title="Patients Cleared",   # <--- LABEL PAKSI Y (Tepi)
+            font=dict(color="#881337"),
+            yaxis=dict(range=[0, 80], gridcolor='#ffe4e6'), 
+            xaxis_title="Date",               
+            yaxis_title="Patients Cleared",   
             xaxis=dict(showgrid=False)
         )
         area_chart_html = fig_area.to_html(full_html=False, include_plotlyjs=False)
@@ -929,26 +934,27 @@ def operational_view(request):
             fig_pop.add_shape(
                 type='line',
                 x0=0, y0=kategori[i], x1=markah[i], y1=kategori[i],
-                line=dict(color='#3B82F6', width=4)
+                line=dict(color='#fecdd3', width=4)
             )
 
         # 2. Lukiskan kepala lolipop (titik dan markah)
         fig_pop.add_trace(go.Scatter(
             x=markah, y=kategori,
             mode='markers+text',
-            marker=dict(color='#1E3A8A', size=16, line=dict(color='white', width=2)),
+            marker=dict(color='#be123c', size=16, line=dict(color='white', width=2)),
             text=markah,
             textposition='middle right',
-            textfont=dict(color='#1E3A8A', size=13, weight='bold'),
+            textfont=dict(color='#881337', size=13, weight='bold'),
             hoverinfo='none'
         ))
 
         fig_pop.update_layout(
             height=320, margin=dict(t=30, b=30, l=10, r=40),
             paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)',
+            font=dict(color="#881337"),
             showlegend=False,
-            xaxis=dict(range=[0, 105], showgrid=True, gridcolor='#e2e8f0', title='Score (%)'),
-            yaxis=dict(showgrid=False, tickfont=dict(size=12, color='#2b3674', weight='bold'))
+            xaxis=dict(range=[0, 105], showgrid=True, gridcolor='#ffe4e6', title=dict(text='Score (%)', font=dict(color='#881337'))),
+            yaxis=dict(showgrid=False, tickfont=dict(size=12, color='#881337', weight='bold'))
         )
         
         radar_chart_html = fig_pop.to_html(full_html=False, include_plotlyjs=False)
@@ -1068,8 +1074,8 @@ def interpersonal_view(request):
     random.seed(pilihan_doktor + "softskills")
     markah_radar = [random.randint(65, 95) for _ in range(5)]
     
-    # 5 tona warna pelbagai untuk nampak menarik
-    warna_rose = ['#1E3A8A', '#3B82F6', '#60A5FA', '#93C5FD', "#979BD6"]
+    # 5 tona warna pelbagai untuk nampak menarik (TEMA ROSE KORPORAT)
+    warna_rose = ['#881337', '#be123c', '#e11d48', '#fb7185', '#fecdd3']
 
     fig_rose = go.Figure()
     fig_rose.add_trace(go.Barpolar(
@@ -1098,8 +1104,8 @@ def interpersonal_view(request):
         ei_comp = ["Self-Awareness", "Emotional Regulation", "Social Skills", "Empathy"]
         ei_scores = [random.randint(65, 95) for _ in range(4)]
         
-        # Berikan 4 warna berbeza (Tona Biru & Hijau MyPrestasi)
-        warna_palang = ['#93C5FD', '#05CD99', '#3B82F6', '#1E3A8A']
+        # Berikan 4 warna berbeza (Tona Rose MyPrestasi)
+        warna_palang = ['#fecdd3', '#fda4af', '#e11d48', '#881337']
         
         fig_ei = go.Figure(go.Bar(
             x=ei_scores, y=ei_comp, orientation='h', 
@@ -1123,7 +1129,7 @@ def interpersonal_view(request):
             fb_scores = [np.random.randint(80, 98) for _ in range(3)]
             
             fig_team = go.Figure(go.Bar(
-                x=roles, y=fb_scores, marker_color='#1E3A8A', text=fb_scores, textposition='auto'
+                x=roles, y=fb_scores, marker_color='#be123c', text=fb_scores, textposition='auto'
             ))
             fig_team.update_layout(
                 height=220, margin=dict(t=20, b=20, l=0, r=0), 
@@ -1163,7 +1169,7 @@ def interpersonal_view(request):
             
             # Scatter Plot 
             fig_scatter = go.Figure()
-            color_map = {"General Clinical": "#1E3A8A", "Procedural": "#3B82F6", "Consultation": "#93C5FD"}
+            color_map = {"General Clinical": "#881337", "Procedural": "#e11d48", "Consultation": "#fb7185"}
             
             for cat in categories:
                 cat_df = df_contrib[df_contrib['Category'] == cat]
@@ -1279,45 +1285,37 @@ def staff_dashboard_view(request):
         # 1. DONUT CHART (Patient Acuity Mix)
         fig_donut = go.Figure(go.Pie(
             labels=["Critical (Red)", "Urgent (Yellow)", "Stable (Green)"], values=[15, 35, 50], hole=0.65,
-            marker=dict(colors=["#1E3A8A", "#3B82F6", "#93C5FD"]), textinfo='none'
+            marker=dict(colors=["#881337", "#be123c", "#fecdd3"]), textinfo='none' # Tema Rose
         ))
         fig_donut.update_layout(height=190, margin=dict(t=0, b=0, l=0, r=0), showlegend=True, legend=dict(orientation="h", yanchor="bottom", y=-0.2, xanchor="center", x=0.5, font=dict(size=10)), paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)')
         fig_donut.add_annotation(text="<b>100%</b><br>Capacity", x=0.5, y=0.5, font_size=14, showarrow=False)
         donut_html = fig_donut.to_html(full_html=False, include_plotlyjs=False)
 
-        # 2. AREA CHART (Kaedah Alternatif: Menggunakan go.Scatter & fill='tozeroy')
-        
-        # Berikan senarai data secara terus (Direct Lists)
+        # 2. AREA CHART (Trend Productivity)
         bulan_label = ["Sep", "Oct", "Nov", "Dec", "Jan", "Feb", "Mar", "Apr", "May", "Jun"]
-        # 1. Data diubah supaya ada turun naik yang realistik
         output_data = [35, 52, 41, 68, 58, 80, 65, 88, 75, 96]
 
         fig_area = go.Figure()
         fig_area.add_trace(go.Scatter(
-            x=bulan_label, 
-            y=output_data, 
-            mode='lines+markers',
-            fill='tozeroy', 
-            # 2. Tambah shape='spline' untuk jadikan garisan melengkung licin (smooth curve)
-            line=dict(color='#39B8FF', width=4, shape='spline'),
-            marker=dict(size=8, color='#1E3A8A'),
-            fillcolor='rgba(57, 184, 255, 0.2)',
+            x=bulan_label, y=output_data, mode='lines+markers', fill='tozeroy', 
+            line=dict(color='#be123c', width=4, shape='spline'),
+            marker=dict(size=8, color='#881337'),
+            fillcolor='rgba(190, 18, 60, 0.2)', # Tema Rose
             name='Tasks'
         ))
 
         fig_area.update_layout(
-            height=220, margin=dict(t=10, b=0, l=0, r=10), 
-            paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)', 
+            height=220, margin=dict(t=10, b=0, l=0, r=10), paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)', 
             xaxis_title="", yaxis_title="Tasks Completed", 
-            xaxis=dict(showgrid=False), yaxis=dict(showgrid=True, gridcolor='#e2e8f0')
+            xaxis=dict(showgrid=False), yaxis=dict(showgrid=True, gridcolor='#ffe4e6')
         )
         area_html = fig_area.to_html(full_html=False, include_plotlyjs=False)
 
-        # 3. GAUGE CHART (Performance Index vs Target)
+        # 3. GAUGE CHART (Performance Index)
         fig_gauge = go.Figure(go.Indicator(
-            mode="gauge+number", value=4.2, number={'font':{'size':35, 'color':'#2b3674'}},
+            mode="gauge+number", value=4.2, number={'font':{'size':35, 'color':'#881337'}},
             gauge={
-                'axis': {'range': [0, 5], 'tickwidth': 1, 'tickcolor': "#2b3674"}, 'bar': {'color': "#2b3674", 'thickness': 0.2},
+                'axis': {'range': [0, 5], 'tickwidth': 1, 'tickcolor': "#881337"}, 'bar': {'color': "#881337", 'thickness': 0.2},
                 'steps': [{'range': [0, 3], 'color': "rgba(255, 75, 75, 0.2)"}, {'range': [3, 4], 'color': "rgba(241, 196, 15, 0.2)"}, {'range': [4, 5], 'color': "rgba(46, 204, 113, 0.2)"}],
                 'threshold': {'line': {'color': "red", 'width': 4}, 'thickness': 0.75, 'value': 4.5}
             }
@@ -1327,56 +1325,28 @@ def staff_dashboard_view(request):
 
     # --- PERFORMANCE TAB (Holistic Benchmark 10 Modul - SPIDER WEB) ---
     elif section == 'Performance':
-        # 10 Modul mengikut senarai Tracker
-        categories = [
-            'Procedure Log', 'CPD Points', 'Doc. Audit', 'Policies', 
-            'Productivity', 'Innovation', 'Patient Exp.', 'Emotional Intel.', 
-            'Teamwork', 'Mentorship'
-        ]
+        categories = ['Procedure Log', 'CPD Points', 'Doc. Audit', 'Policies', 'Productivity', 'Innovation', 'Patient Exp.', 'Emotional Intel.', 'Teamwork', 'Mentorship']
         scores = [85, 90, 75, 95, 92, 60, 88, 82, 90, 70]
         
-        # Untuk Spider Web (Radar), kita perlu 'tutup' garisan poligon 
-        # dengan menambah titik pertama di hujung senarai
         kategori_penuh = categories + [categories[0]]
         markah_penuh = scores + [scores[0]]
 
         fig_radar = go.Figure()
-        
-        # Plot garisan dan isian sarang labah-labah
         fig_radar.add_trace(go.Scatterpolar(
-            r=markah_penuh,
-            theta=kategori_penuh,
-            fill='toself',
-            fillcolor='rgba(30, 58, 138, 0.4)', # Warna biru lutsinar
-            line=dict(color='#1E3A8A', width=3), # Garisan biru gelap tebal
-            marker=dict(size=8, color='#3B82F6', symbol='circle'),
-            hoverinfo='r+theta',
-            name='My Score'
+            r=markah_penuh, theta=kategori_penuh, fill='toself',
+            fillcolor='rgba(190, 18, 60, 0.25)', # Warna Merah Rose Lutsinar
+            line=dict(color='#881337', width=3), # Garisan Burgundy
+            marker=dict(size=8, color='#be123c', symbol='circle'),
+            hoverinfo='r+theta', name='My Score'
         ))
         
         fig_radar.update_layout(
             polar=dict(
-                radialaxis=dict(
-                    visible=True, 
-                    range=[0, 100], 
-                    showgrid=True, 
-                    gridcolor='#e2e8f0', 
-                    tickfont=dict(size=10, color='#64748b'),
-                    angle=90 # Paksa nombor paksi menegak supaya kemas
-                ),
-                angularaxis=dict(
-                    showgrid=True, 
-                    gridcolor='#e2e8f0', 
-                    linecolor='#e2e8f0', 
-                    tickfont=dict(size=11, color='#2b3674', weight='bold')
-                ),
-                bgcolor='rgba(0,0,0,0)'
+                bgcolor='rgba(255, 241, 242, 0.5)', # Latar belakang bulatan Rose cair
+                radialaxis=dict(visible=True, range=[0, 100], showgrid=True, gridcolor='#fecdd3', tickfont=dict(size=10, color='#881337'), angle=90),
+                angularaxis=dict(showgrid=True, gridcolor='#fecdd3', linecolor='#fecdd3', tickfont=dict(size=11, color='#881337', weight='bold'))
             ), 
-            showlegend=False, 
-            height=380, # Tinggikan sikit supaya tidak terhimpit
-            margin=dict(t=40, b=40, l=60, r=60), 
-            paper_bgcolor='rgba(0,0,0,0)', 
-            plot_bgcolor='rgba(0,0,0,0)'
+            showlegend=False, height=380, margin=dict(t=40, b=40, l=60, r=60), paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)'
         )
         radar_html = fig_radar.to_html(full_html=False, include_plotlyjs=False)
 
