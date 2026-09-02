@@ -1408,3 +1408,98 @@ def hpu_dashboard(request):
         'users': all_users
     }
     return render(request, 'dashboard/hpu_dashboard.html', context)
+
+# ==========================================
+# OVERALL ANALYTICS (DRILL-DOWN FASA 1)
+# ==========================================
+@login_required(login_url='/login/')
+def overall_analytics_view(request):
+    """
+    Paparan khas untuk perincian mendalam 4 Kad Overall Statistics.
+    Menerima parameter URL '?type=facilities|staff|performance|evaluations'
+    """
+    analytic_type = request.GET.get('type', 'facilities')
+
+    # === LOGIK SKOP HOD ===
+    hod_scope = getattr(request.user.profile, 'hod_scope', 'NATIONAL')
+    hod_state = getattr(request.user.profile, 'assigned_state', None)
+    hod_facility = getattr(request.user.profile, 'assigned_facility', None)
+
+    # --- TAPIS NEGERI ---
+    senarai_negeri = list(STATE_CENTERS.keys())
+    if hod_scope in ['FACILITY', 'STATE'] and hod_state:
+        pilihan_negeri = hod_state
+    else:
+        pilihan_negeri = request.GET.get('state', 'All States')
+
+    if pilihan_negeri == "All States":
+        klinik_dipaparkan = MOCK_KLINIK
+    else:
+        klinik_dipaparkan = [k for k in MOCK_KLINIK if k.get("state") == pilihan_negeri]
+
+    # --- TAPIS KLINIK ---
+    senarai_klinik = [k['name'] for k in klinik_dipaparkan]
+    if hod_scope == 'FACILITY' and hod_facility:
+        pilihan_klinik = hod_facility
+        klinik_dipaparkan = [k for k in klinik_dipaparkan if k.get("name") == pilihan_klinik]
+    else:
+        pilihan_klinik = request.GET.get('clinic', 'All Clinics')
+        if pilihan_klinik != 'All Clinics' and pilihan_klinik in senarai_klinik:
+            klinik_dipaparkan = [k for k in klinik_dipaparkan if k.get("name") == pilihan_klinik]
+        else:
+            pilihan_klinik = 'All Clinics'
+
+    is_facility_locked = (hod_scope == 'FACILITY')
+    is_state_locked = (hod_scope == 'STATE')
+    
+    hod_name = f"{request.user.first_name} {request.user.last_name}".strip() or request.user.username
+    hod_facility_label = hod_facility if hod_scope == 'FACILITY' and hod_facility else "HPU Putrajaya"
+
+    # --- KUMPUL DATA MENTAH UNTUK STATISTIK & JADUAL PERINCIAN ---
+    active_facilities = len(klinik_dipaparkan) if pilihan_klinik == 'All Clinics' else 1
+    semua_markah = []
+    senarai_doktor_lengkap = []
+    
+    for k in klinik_dipaparkan:
+        df_docs = generate_mock_doctors(k['name'])
+        for _, doc in df_docs.iterrows():
+            senarai_doktor_lengkap.append({
+                'name': doc['Officer Name'],
+                'clinic': k['name'],
+                'state': k.get('state', pilihan_negeri),
+                'score': doc['Current Score'],
+                'status': doc['Status']
+            })
+            semua_markah.append(doc['Current Score'])
+            
+    total_staff = len(senarai_doktor_lengkap)
+    avg_performance = int(sum(semua_markah) / len(semua_markah)) if semua_markah else 0
+    
+    import random
+    random.seed(total_staff)
+    evaluations_completed = total_staff * random.randint(3, 6)
+
+    context = {
+        'analytic_type': analytic_type,
+        'senarai_negeri': senarai_negeri,
+        'pilihan_negeri': pilihan_negeri,
+        'senarai_klinik': ["All Clinics"] + senarai_klinik,
+        'pilihan_klinik': pilihan_klinik,
+        'is_facility_locked': is_facility_locked,
+        'is_state_locked': is_state_locked,
+        'hod_scope': hod_scope,
+        'hod_name': hod_name,
+        'hod_facility_label': hod_facility_label,
+        
+        # Data Sidebar
+        'active_facilities': active_facilities,
+        'total_staff': total_staff,
+        'avg_performance': avg_performance,
+        'evaluations_completed': evaluations_completed,
+        
+        # Data Mentah Untuk Dibedah di Fasa 2 (HTML)
+        'klinik_dipaparkan': klinik_dipaparkan,
+        'senarai_doktor_lengkap': senarai_doktor_lengkap,
+    }
+
+    return render(request, 'dashboard/overall_analytics.html', context)

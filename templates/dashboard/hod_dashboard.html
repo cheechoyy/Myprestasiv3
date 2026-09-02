@@ -254,49 +254,49 @@
 
         <div class="section-title hide-on-collapse">OVERALL STATISTICS</div>
         
-        <!-- KPI 1: Active Facilities (Hospital & Medical Cross) -->
-        <div class="kpi-card" title="Active Facilities">
+        <!-- KPI 1: Active Facilities -->
+        <a href="{% url 'overall_analytics' %}?type=facilities&state={{ pilihan_negeri }}&clinic={{ pilihan_klinik }}" class="kpi-card" title="Active Facilities" style="text-decoration:none; cursor:pointer; transition:0.2s;" onmouseover="this.style.borderColor='#be123c'; this.style.backgroundColor='#fff1f2';" onmouseout="this.style.borderColor='#ffe4e6'; this.style.backgroundColor='white';">
             <div class="kpi-icon">
                 <svg style="width: 20px; height: 20px; color: #be123c;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5m0 0v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4M12 7v4m-2-2h4"/></svg>
             </div>
             <div class="kpi-text hide-on-collapse">
-                <h3>{{ active_facilities }}</h3>
-                <p>Active Facilities</p>
+                <h3 style="color:#881337;">{{ active_facilities }}</h3>
+                <p style="color:#f43f5e;">Active Facilities</p>
             </div>
-        </div>
+        </a>
 
-        <!-- KPI 2: Total Staff (Clinical Officers) -->
-        <div class="kpi-card" title="Total Staff">
+        <!-- KPI 2: Total Staff -->
+        <a href="{% url 'overall_analytics' %}?type=staff&state={{ pilihan_negeri }}&clinic={{ pilihan_klinik }}" class="kpi-card" title="Total Staff" style="text-decoration:none; cursor:pointer; transition:0.2s;" onmouseover="this.style.borderColor='#be123c'; this.style.backgroundColor='#fff1f2';" onmouseout="this.style.borderColor='#ffe4e6'; this.style.backgroundColor='white';">
             <div class="kpi-icon">
                 <svg style="width: 20px; height: 20px; color: #be123c;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
             </div>
             <div class="kpi-text hide-on-collapse">
-                <h3>{{ total_staff }}</h3>
-                <p>Total Staff</p>
+                <h3 style="color:#881337;">{{ total_staff }}</h3>
+                <p style="color:#f43f5e;">Total Staff</p>
             </div>
-        </div>
+        </a>
 
-        <!-- KPI 3: Avg Performance (ECG Heartbeat Pulse Line) -->
-        <div class="kpi-card" title="Average Performance">
+        <!-- KPI 3: Avg Performance -->
+        <a href="{% url 'overall_analytics' %}?type=performance&state={{ pilihan_negeri }}&clinic={{ pilihan_klinik }}" class="kpi-card" title="Average Performance" style="text-decoration:none; cursor:pointer; transition:0.2s;" onmouseover="this.style.borderColor='#be123c'; this.style.backgroundColor='#fff1f2';" onmouseout="this.style.borderColor='#ffe4e6'; this.style.backgroundColor='white';">
             <div class="kpi-icon">
                 <svg style="width: 20px; height: 20px; color: #be123c;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
             </div>
             <div class="kpi-text hide-on-collapse">
-                <h3>{{ avg_performance }}%</h3>
-                <p>Avg Performance</p>
+                <h3 style="color:#881337;">{{ avg_performance }}%</h3>
+                <p style="color:#f43f5e;">Avg Performance</p>
             </div>
-        </div>
+        </a>
 
-        <!-- KPI 4: Evaluations Done (Clinical Clipboard Audit) -->
-        <div class="kpi-card" title="Evaluations Done">
+        <!-- KPI 4: Evaluations Done -->
+        <a href="{% url 'overall_analytics' %}?type=evaluations&state={{ pilihan_negeri }}&clinic={{ pilihan_klinik }}" class="kpi-card" title="Evaluations Done" style="text-decoration:none; cursor:pointer; transition:0.2s;" onmouseover="this.style.borderColor='#be123c'; this.style.backgroundColor='#fff1f2';" onmouseout="this.style.borderColor='#ffe4e6'; this.style.backgroundColor='white';">
             <div class="kpi-icon">
-                <svg style="width: 20px; height: 20px; color: #be123c;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/></svg>
+                <svg style="width: 20px; height: 20px; color: #be123c;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/></svg>
             </div>
             <div class="kpi-text hide-on-collapse">
-                <h3>{{ evaluations_completed }}</h3>
-                <p>Evaluations Done</p>
+                <h3 style="color:#881337;">{{ evaluations_completed }}</h3>
+                <p style="color:#f43f5e;">Evaluations Done</p>
             </div>
-        </div>
+        </a>
 
         <div class="section-title hide-on-collapse" style="margin-top: 15px;">ADMINISTRATION MENU</div>
         

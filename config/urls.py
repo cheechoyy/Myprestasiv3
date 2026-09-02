@@ -15,5 +15,9 @@ urlpatterns = [
     path('cts-module/', views.cts_view, name='cts_module'),
     path('operational-module/', views.operational_view, name='operational_module'),
     path('interpersonal-module/', views.interpersonal_view, name='interpersonal_module'),
+    
+    # --- LALUAN BAHARU UNTUK DRILL-DOWN ANALISIS ---
+    path('overall-analytics/', views.overall_analytics_view, name='overall_analytics'),
+    
     path('logout/', views.logout_view, name='logout'),
 ]

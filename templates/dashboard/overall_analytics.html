@@ -1,0 +1,376 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="ms">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Overall Analytics - MyPrestasi</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <style>
+        /* TEMA WARNA DNA BAHARU (ROSE & BURGUNDY) */
+        body { margin: 0; font-family: 'Inter', sans-serif; background-color: #fff1f2; display: flex; height: 100vh; overflow: hidden; }
+        
+        /* SIDEBAR STYLING */
+        .sidebar {
+            width: 80px; height: 100vh; position: fixed; top: 0; left: 0;
+            background: white; border-right: 1px solid #ffe4e6;
+            padding: 20px 14px; padding-bottom: 30px; display: flex; flex-direction: column;
+            overflow-x: hidden; overflow-y: auto; box-sizing: border-box;
+            transition: width 0.35s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.35s ease;
+            z-index: 1000;
+        }
+
+        .sidebar:hover { width: 280px; box-shadow: 10px 0 30px rgba(190, 18, 60, 0.08); }
+        .sidebar:hover ~ .main-content { margin-left: 280px; }
+        .sidebar:hover ~ .custom-footer { left: 280px; }
+
+        .hide-on-collapse { opacity: 0; white-space: nowrap; pointer-events: none; transition: opacity 0.25s ease; }
+        .sidebar:hover .hide-on-collapse { opacity: 1; pointer-events: auto; }
+
+        .sidebar-logo { display: flex; align-items: center; gap: 14px; margin-bottom: 25px; padding: 0 4px; min-height: 50px; text-decoration: none; cursor: pointer; }
+        .sidebar-logo img { width: 42px !important; height: auto !important; flex-shrink: 0; filter: drop-shadow(0 2px 4px rgba(136, 19, 55, 0.1)); }
+        .sidebar-logo-text h2 { color: #881337; font-weight: 900; margin: 0; font-size: 1.3rem; letter-spacing: -0.5px;}
+        .sidebar-logo-text p { color: #f43f5e; font-size: 0.75rem; font-weight: 800; margin: 0; text-transform: uppercase; letter-spacing: 1px;}
+
+        /* KAD KPI BOLEH DIKLIK (DRILL-DOWN) */
+        .kpi-card { 
+            background: white; border: 1px solid #ffe4e6; border-radius: 12px; padding: 7px; display: flex; align-items: center; margin-bottom: 10px; box-shadow: 0 2px 5px rgba(190, 18, 60, 0.03); min-height: 52px; box-sizing: border-box; width: 100%; text-decoration: none; transition: 0.2s;
+        }
+        .kpi-card:hover { border-color: #be123c; background: #fff1f2; transform: translateY(-2px); box-shadow: 0 6px 15px rgba(190, 18, 60, 0.1); }
+        .kpi-card.active { border: 2px solid #be123c; background: #fff1f2; }
+        
+        .kpi-icon { width: 36px; height: 36px; border-radius: 10px; background: #fff1f2; display: flex; justify-content: center; align-items: center; flex-shrink: 0; color: #be123c; }
+        .kpi-card.active .kpi-icon { background: #be123c; color: white; }
+        
+        .kpi-text { margin-left: 12px; display: flex; flex-direction: column; }
+        .kpi-text h3 { margin: 0; font-size: 15px; font-weight: 900; color: #881337; line-height: 1.2; }
+        .kpi-text p { margin: 0; font-size: 10px; font-weight: 700; color: #f43f5e; text-transform: uppercase; }
+
+        .sidebar-section-title { font-size: 11px; font-weight: 800; color: #fb7185; text-transform: uppercase; margin: 15px 0 10px 4px; letter-spacing: 0.5px; }
+
+        /* BUTANG MENU */
+        .btn-menu { background: white; border: 1px solid #ffe4e6; border-radius: 12px; padding: 7px; font-weight: 700; color: #881337; margin-bottom: 8px; text-align: left; display: flex; align-items: center; text-decoration: none; transition: 0.2s; min-height: 52px; box-sizing: border-box; width: 100%; }
+        .btn-menu:hover { background: #fff1f2; border-color: #be123c; }
+        .btn-menu-icon { width: 36px; height: 36px; border-radius: 10px; background: #fff1f2; display: flex; justify-content: center; align-items: center; flex-shrink: 0; }
+
+        .btn-back { background-color: white; border: 1px solid #ffe4e6; color: #be123c; padding: 7px; border-radius: 12px; text-decoration: none; font-weight: bold; display: flex; align-items: center; margin-bottom: 10px; transition: 0.2s; min-height: 52px; box-sizing: border-box; width: 100%; }
+        .btn-back:hover { border-color: #be123c; background: #fff1f2; }
+        .btn-logout { background-color: #be123c; color: white; padding: 7px; border-radius: 12px; text-decoration: none; font-weight: bold; display: flex; align-items: center; margin-top: auto; transition: 0.3s; box-shadow: 0 4px 10px rgba(190, 18, 60, 0.2); min-height: 52px; box-sizing: border-box; width: 100%; }
+        .btn-logout:hover { background-color: #881337; transform: translateY(-2px); }
+
+        /* MAIN CONTENT LAYOUT */
+        .main-content { flex: 1; margin-left: 80px; padding: 20px 35px 60px 35px; overflow-y: auto; display: flex; flex-direction: column; transition: margin-left 0.35s ease; min-height: calc(100vh - 70px); }
+        .page-header { flex-shrink: 0; margin-bottom: 20px; border-bottom: 1px solid #ffe4e6; padding-bottom: 15px;}
+        .page-header h1 { color: #881337; font-weight: 900; font-size: 24px; margin: 0 0 5px 0; display: flex; align-items: center; gap: 10px; letter-spacing: -0.5px; }
+        .page-header p { color: #f43f5e; font-size: 13px; margin: 0; font-weight: 600; }
+
+        /* CONTENT CARDS & TABLES */
+        .content-card { background: white; border-radius: 16px; padding: 20px; border: 1px solid #ffe4e6; box-shadow: 0 4px 12px rgba(190, 18, 60, 0.03); margin-bottom: 20px; }
+        
+        .custom-table { width: 100%; border-collapse: collapse; font-size: 13px; text-align: left; }
+        .custom-table th { padding: 12px 10px; color: white; background-color: #be123c; font-weight: 800; text-transform: uppercase; font-size: 11px; letter-spacing: 0.5px; }
+        .custom-table tr:nth-child(even) { background-color: #fff1f2; }
+        .custom-table tr:hover { background-color: #ffe4e6; transition: 0.2s; } 
+        .custom-table td { padding: 12px 10px; border-bottom: 1px solid #fecdd3; color: #881337; font-weight: 600; }
+
+        .status-badge { padding: 4px 10px; border-radius: 6px; font-size: 11px; font-weight: 800; display: inline-block; text-transform: uppercase; }
+        .status-excellent { background-color: #D1FAE5; color: #16A34A; border: 1px solid #BBF7D0; }
+        .status-moderate { background-color: #FEF3C7; color: #D97706; border: 1px solid #FDE68A; }
+        .status-needs-attention { background-color: #FEE2E2; color: #DC2626; border: 1px solid #FECACA; }
+
+        .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
+
+        /* FOOTER ADMIN DASHBOARD */
+        .custom-footer {
+            position: fixed; left: 80px; right: 0; bottom: 0; background-color: white; color: #881337; text-align: center; padding: 15px 0; font-size: 13px; font-weight: 600; border-top: 1px solid #ffe4e6; z-index: 999; transition: left 0.35s ease;
+        }
+        
+        @keyframes fadeUp {
+            0% { opacity: 0; transform: translateY(20px); }
+            100% { opacity: 1; transform: translateY(0); }
+        }
+        .animate-up { animation: fadeUp 0.6s ease-out forwards; }
+    </style>
+</head>
+<body>
+
+    <!-- SIDEBAR HOVER-TO-EXPAND -->
+    <div class="sidebar" id="mySidebar">
+        <!-- Logo -->
+        <a href="{% url 'hod_dashboard' %}?section=Dashboard" class="sidebar-logo">
+            <img src="{% static 'images/myprestasi-logo-nobg.png' %}" alt="Logo MyPrestasi">
+            <div class="sidebar-logo-text hide-on-collapse">
+                <h2>MyPrestasi</h2>
+                <p>HOD-PORTAL</p>
+            </div>
+        </a>
+
+        <div class="sidebar-section-title hide-on-collapse">DRILL-DOWN ANALYTICS</div>
+        
+        <!-- KPI 1: Active Facilities -->
+        <a href="?type=facilities&state={{ pilihan_negeri }}&clinic={{ pilihan_klinik }}" class="kpi-card {% if analytic_type == 'facilities' %}active{% endif %}" title="Active Facilities">
+            <div class="kpi-icon">
+                <svg style="width: 20px; height: 20px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5m0 0v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4M12 7v4m-2-2h4"/></svg>
+            </div>
+            <div class="kpi-text hide-on-collapse">
+                <h3>{{ active_facilities }}</h3>
+                <p>Active Facilities</p>
+            </div>
+        </a>
+
+        <!-- KPI 2: Total Staff -->
+        <a href="?type=staff&state={{ pilihan_negeri }}&clinic={{ pilihan_klinik }}" class="kpi-card {% if analytic_type == 'staff' %}active{% endif %}" title="Total Staff">
+            <div class="kpi-icon">
+                <svg style="width: 20px; height: 20px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
+            </div>
+            <div class="kpi-text hide-on-collapse">
+                <h3>{{ total_staff }}</h3>
+                <p>Total Staff</p>
+            </div>
+        </a>
+
+        <!-- KPI 3: Avg Performance -->
+        <a href="?type=performance&state={{ pilihan_negeri }}&clinic={{ pilihan_klinik }}" class="kpi-card {% if analytic_type == 'performance' %}active{% endif %}" title="Average Performance">
+            <div class="kpi-icon">
+                <svg style="width: 20px; height: 20px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+            </div>
+            <div class="kpi-text hide-on-collapse">
+                <h3>{{ avg_performance }}%</h3>
+                <p>Avg Performance</p>
+            </div>
+        </a>
+
+        <!-- KPI 4: Evaluations Done -->
+        <a href="?type=evaluations&state={{ pilihan_negeri }}&clinic={{ pilihan_klinik }}" class="kpi-card {% if analytic_type == 'evaluations' %}active{% endif %}" title="Evaluations Done">
+            <div class="kpi-icon">
+                <svg style="width: 20px; height: 20px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 012-2h2a2 2 0 012 2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/></svg>
+            </div>
+            <div class="kpi-text hide-on-collapse">
+                <h3>{{ evaluations_completed }}</h3>
+                <p>Evaluations Done</p>
+            </div>
+        </a>
+
+        <div style="margin-top: auto; display: flex; flex-direction: column; gap: 8px;">
+            <a href="{% url 'hod_dashboard' %}?section=Dashboard" class="btn-back" title="Back to Dashboard">
+                <div class="btn-menu-icon">
+                    <svg style="width: 20px; height: 20px; color: #be123c;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
+                </div>
+                <span class="hide-on-collapse" style="margin-left: 12px;">Back to Dashboard</span>
+            </a>
+            <a href="{% url 'logout' %}" class="btn-logout" title="Logout">
+                <div class="btn-menu-icon" style="background: rgba(255,255,255,0.2);">
+                    <svg style="width: 20px; height: 20px; color: white;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/></svg>
+                </div>
+                <span class="hide-on-collapse" style="margin-left: 12px;">Logout</span>
+            </a>
+        </div>
+    </div>
+
+    <!-- MAIN CONTENT -->
+    <div class="main-content animate-up">
+        
+        <!-- DYNAMIC HEADER -->
+        <div class="page-header">
+            {% if analytic_type == 'facilities' %}
+                <h1>
+                    <svg style="width: 28px; height: 28px; color: #be123c;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5m0 0v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4M12 7v4m-2-2h4"/></svg>
+                    Facilities Registry
+                </h1>
+                <p>Overview of all active facilities within your administrative scope.</p>
+            {% elif analytic_type == 'staff' %}
+                <h1>
+                    <svg style="width: 28px; height: 28px; color: #be123c;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
+                    Medical Officer Directory
+                </h1>
+                <p>Complete roster and allocation of medical officers in your jurisdiction.</p>
+            {% elif analytic_type == 'performance' %}
+                <h1>
+                    <svg style="width: 28px; height: 28px; color: #be123c;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+                    Performance Distribution
+                </h1>
+                <p>Analytical breakdown of officer scores and competency levels.</p>
+            {% elif analytic_type == 'evaluations' %}
+                <h1>
+                    <svg style="width: 28px; height: 28px; color: #be123c;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 012-2h2a2 2 0 012 2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/></svg>
+                    Audit & Evaluation Logs
+                </h1>
+                <p>Historical audit trail of completed clinical and operational evaluations.</p>
+            {% endif %}
+        </div>
+
+        <div style="background-color: #fff1f2; padding: 12px 20px; border-radius: 8px; margin-bottom: 20px; font-size: 14px; color: #881337; border: 1px solid #ffe4e6; display: flex; gap: 15px;">
+            <div><b>Filter State:</b> {{ pilihan_negeri }}</div>
+            <div>|</div>
+            <div><b>Filter Facility:</b> {{ pilihan_klinik }}</div>
+        </div>
+
+        <!-- CONTENT 1: FACILITIES -->
+        {% if analytic_type == 'facilities' %}
+        <div class="content-card">
+            <h3 style="color:#881337; margin-top:0; border-bottom: 1px solid #ffe4e6; padding-bottom: 10px;">Registered Facilities List</h3>
+            <div style="overflow-x: auto;">
+                <table class="custom-table">
+                    <thead>
+                        <tr>
+                            <th>No.</th>
+                            <th>Facility Name</th>
+                            <th>State</th>
+                            <th>Status (HIS/EMR)</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for k in klinik_dipaparkan %}
+                        <tr>
+                            <td>{{ forloop.counter }}</td>
+                            <td style="color:#be123c; font-weight:800;">{{ k.name }}</td>
+                            <td>{{ k.state|default:pilihan_negeri }}</td>
+                            <td><span class="status-badge status-excellent">Active</span></td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="4" style="text-align:center; padding: 20px; color:#f43f5e;">No facilities found for this filter.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- CONTENT 2: STAFF -->
+        {% elif analytic_type == 'staff' %}
+        <div class="content-card">
+            <h3 style="color:#881337; margin-top:0; border-bottom: 1px solid #ffe4e6; padding-bottom: 10px;">Assigned Medical Officers</h3>
+            <div style="overflow-x: auto;">
+                <table class="custom-table">
+                    <thead>
+                        <tr>
+                            <th>Officer Name</th>
+                            <th>Assigned Facility</th>
+                            <th>Current Score</th>
+                            <th>Status</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for doc in senarai_doktor_lengkap %}
+                        <tr>
+                            <td style="color:#be123c; font-weight:800;">{{ doc.name }}</td>
+                            <td>{{ doc.clinic }}</td>
+                            <td><b>{{ doc.score }}%</b></td>
+                            <td>
+                                {% if doc.status == 'Outstanding' %}
+                                    <span class="status-badge status-excellent">{{ doc.status }}</span>
+                                {% elif doc.status == 'Good' or doc.status == 'Competent' %}
+                                    <span class="status-badge status-moderate">{{ doc.status }}</span>
+                                {% else %}
+                                    <span class="status-badge status-needs-attention">{{ doc.status }}</span>
+                                {% endif %}
+                            </td>
+                            <td><a href="{% url 'cts_module' %}?state={{ doc.state|urlencode }}&clinic={{ doc.clinic|urlencode }}&officer={{ doc.name|urlencode }}" style="background: #be123c; color: white; padding: 6px 12px; border-radius: 6px; text-decoration: none; font-size: 11px; font-weight: bold;">Evaluate</a></td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="5" style="text-align:center; padding: 20px; color:#f43f5e;">No medical officers found for this filter.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- CONTENT 3: PERFORMANCE -->
+        {% elif analytic_type == 'performance' %}
+        <div class="grid-3" style="margin-bottom: 20px;">
+            <div style="background: white; border: 1px solid #ffe4e6; padding: 20px; border-radius: 12px; border-left: 4px solid #16A34A; box-shadow: 0 4px 10px rgba(190,18,60,0.03);">
+                <div style="font-size: 11px; color: #15803d; font-weight: bold; text-transform: uppercase;">Top Tier (>85%)</div>
+                <div style="font-size: 28px; font-weight: 900; color: #16A34A; margin-top: 5px;">24 <span style="font-size:12px; font-weight:normal; color:#15803d;">Officers</span></div>
+            </div>
+            <div style="background: white; border: 1px solid #ffe4e6; padding: 20px; border-radius: 12px; border-left: 4px solid #D97706; box-shadow: 0 4px 10px rgba(190,18,60,0.03);">
+                <div style="font-size: 11px; color: #b45309; font-weight: bold; text-transform: uppercase;">Core Tier (65-84%)</div>
+                <div style="font-size: 28px; font-weight: 900; color: #D97706; margin-top: 5px;">{{ total_staff }} <span style="font-size:12px; font-weight:normal; color:#b45309;">Officers</span></div>
+            </div>
+            <div style="background: white; border: 1px solid #ffe4e6; padding: 20px; border-radius: 12px; border-left: 4px solid #DC2626; box-shadow: 0 4px 10px rgba(190,18,60,0.03);">
+                <div style="font-size: 11px; color: #b91c1c; font-weight: bold; text-transform: uppercase;">Support Tier (<65%)</div>
+                <div style="font-size: 28px; font-weight: 900; color: #DC2626; margin-top: 5px;">2 <span style="font-size:12px; font-weight:normal; color:#b91c1c;">Officers</span></div>
+            </div>
+        </div>
+        
+        <div class="content-card">
+            <h3 style="color:#881337; margin-top:0; border-bottom: 1px solid #ffe4e6; padding-bottom: 10px;">Department Leaderboard</h3>
+            <div style="overflow-x: auto;">
+                <table class="custom-table">
+                    <thead>
+                        <tr>
+                            <th>Rank</th>
+                            <th>Officer Name</th>
+                            <th>Assigned Facility</th>
+                            <th>Total Score</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for doc in senarai_doktor_lengkap|slice:":5" %}
+                        <tr>
+                            <td>#{{ forloop.counter }}</td>
+                            <td style="color:#be123c; font-weight:800;">{{ doc.name }}</td>
+                            <td>{{ doc.clinic }}</td>
+                            <td><b>{{ doc.score }}%</b></td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- CONTENT 4: EVALUATIONS -->
+        {% elif analytic_type == 'evaluations' %}
+        <div class="content-card">
+            <h3 style="color:#881337; margin-top:0; border-bottom: 1px solid #ffe4e6; padding-bottom: 10px;">Recent Evaluation Audit Log</h3>
+            <div style="overflow-x: auto;">
+                <table class="custom-table">
+                    <thead>
+                        <tr>
+                            <th>Date / Time</th>
+                            <th>Evaluated Officer</th>
+                            <th>Module</th>
+                            <th>HOD Reviewer</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>Today, 10:30 AM</td>
+                            <td style="color:#be123c; font-weight:800;">Dr. Siti Nurhaliza</td>
+                            <td>Clinical Skills (CUSUM)</td>
+                            <td>{{ hod_name }}</td>
+                            <td><span class="status-badge status-excellent">Verified</span></td>
+                        </tr>
+                        <tr>
+                            <td>Yesterday, 14:15 PM</td>
+                            <td style="color:#be123c; font-weight:800;">Dr. Ahmad Kamil</td>
+                            <td>Operational (Productivity)</td>
+                            <td>{{ hod_name }}</td>
+                            <td><span class="status-badge status-excellent">Verified</span></td>
+                        </tr>
+                        <tr>
+                            <td>24 Aug 2026</td>
+                            <td style="color:#be123c; font-weight:800;">Dr. Chong Wei</td>
+                            <td>Interpersonal (Teamwork)</td>
+                            <td>System Auto-Log</td>
+                            <td><span class="status-badge status-moderate">Pending Review</span></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            <button style="background: white; border: 2px dashed #fecdd3; color: #be123c; padding: 12px; border-radius: 8px; font-weight: bold; width: 100%; margin-top: 15px; cursor: pointer;">Load More Audit Logs...</button>
+        </div>
+        {% endif %}
+
+    </div>
+
+    <div class="custom-footer">
+        Copyright © 2026 MyPrestasi HPU | National Health Facility
+    </div>
+
+</body>
+</html>
