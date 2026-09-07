@@ -323,6 +323,49 @@
                 width: 100% !important;
             }
         }
+
+        /* ==========================================
+           AURA-PULSE AI FLOATING CHATBOT STYLES
+           ========================================== */
+        .aura-fab {
+            position: fixed; bottom: 25px; right: 25px; width: 56px; height: 56px;
+            border-radius: 50%; background: linear-gradient(135deg, #be123c 0%, #881337 100%);
+            color: white; border: 2px solid white; box-shadow: 0 6px 20px rgba(136, 19, 55, 0.35);
+            display: flex; justify-content: center; align-items: center; cursor: pointer;
+            z-index: 9999; transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+        .aura-fab:hover { transform: scale(1.1) rotate(5deg); box-shadow: 0 10px 25px rgba(136, 19, 55, 0.5); }
+        .aura-badge { position: absolute; top: -2px; right: -2px; width: 14px; height: 14px; background: #16a34a; border: 2px solid white; border-radius: 50%; }
+
+        .aura-chat-window {
+            display: none; position: fixed; bottom: 90px; right: 25px; width: 370px; height: 500px;
+            background: white; border-radius: 18px; border: 1px solid #ffe4e6;
+            box-shadow: 0 12px 35px rgba(136, 19, 55, 0.18); z-index: 9998; flex-direction: column;
+            overflow: hidden; animation: slideUpAura 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        @keyframes slideUpAura { from { opacity: 0; transform: translateY(20px) scale(0.95); } to { opacity: 1; transform: translateY(0) scale(1); } }
+
+        .aura-header {
+            background: linear-gradient(135deg, #881337 0%, #be123c 100%); color: white;
+            padding: 15px 18px; display: flex; align-items: center; justify-content: space-between;
+        }
+        .aura-body { flex: 1; padding: 15px; overflow-y: auto; background: #fff1f2; display: flex; flex-direction: column; gap: 12px; }
+        .aura-body::-webkit-scrollbar { width: 5px; }
+        .aura-body::-webkit-scrollbar-thumb { background: #fecdd3; border-radius: 10px; }
+
+        .aura-msg { max-width: 82%; padding: 10px 14px; border-radius: 12px; font-size: 12px; line-height: 1.4; font-weight: 500; }
+        .aura-msg.bot { background: white; color: #881337; border: 1px solid #ffe4e6; align-self: flex-start; border-bottom-left-radius: 2px; box-shadow: 0 2px 6px rgba(190, 18, 60, 0.04); }
+        .aura-msg.user { background: #be123c; color: white; align-self: flex-end; border-bottom-right-radius: 2px; }
+
+        .aura-footer { padding: 12px; background: white; border-top: 1px solid #ffe4e6; display: flex; gap: 8px; align-items: center; }
+        .aura-input { flex: 1; padding: 10px 12px; border-radius: 8px; border: 1px solid #ffe4e6; font-size: 12px; font-family: 'Inter'; background: #fff1f2; color: #881337; outline: none; }
+        .aura-input:focus { border-color: #be123c; background: white; }
+        .aura-send-btn { background: #be123c; color: white; border: none; padding: 10px 14px; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 12px; }
+        .aura-send-btn:hover { background: #881337; }
+
+        .aura-chips { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 6px; }
+        .aura-chip { background: #fff1f2; border: 1px solid #fecdd3; color: #be123c; padding: 5px 10px; border-radius: 15px; font-size: 10px; font-weight: 700; cursor: pointer; transition: 0.2s; }
+        .aura-chip:hover { background: #be123c; color: white; }
     </style>
 </head>
 <body>
@@ -474,12 +517,156 @@
         {% endif %}
 
         {% if section == 'Dashboard' %}
-            <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 25px;">
-                <!-- Ikon Korporat yang Bersih menggantikan Emoji -->
-                <div style="width: 35px; height: 35px; background: #fff1f2; border: 1px solid #ffe4e6; border-radius: 8px; display: flex; align-items: center; justify-content: center;">
-                    <svg class="w-5 h-5 text-rose-700" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px;">
+                <div style="display: flex; align-items: center; gap: 12px;">
+                    <div style="width: 35px; height: 35px; background: #fff1f2; border: 1px solid #ffe4e6; border-radius: 8px; display: flex; align-items: center; justify-content: center;">
+                        <svg style="width: 20px; height: 20px; color: #be123c;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
+                    </div>
+                    <h2 style="color: #881337; font-weight: 900; margin: 0; letter-spacing: -0.5px;">Medical Officer Dashboard</h2>
                 </div>
-                <h2 style="color: #881337; font-weight: 900; margin: 0; letter-spacing: -0.5px;">Medical Officer Dashboard</h2>
+            </div>
+
+            <!-- KAD HERO: AI PERFORMANCE COACH & DIAGNOSTIC ENGINE (DINAMIK RISK TIER) -->
+            {% if ai_risk_tier == 'RED' %}
+            <div style="background: linear-gradient(135deg, #ffffff 0%, #fff1f2 100%); border: 1px solid #fecdd3; border-left: 5px solid #be123c; border-radius: 16px; padding: 22px 25px; margin-bottom: 25px; box-shadow: 0 4px 15px rgba(190, 18, 60, 0.05);">
+                <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 20px;">
+                    <div style="flex: 1;">
+                        <div style="display: inline-flex; align-items: center; gap: 6px; background: #ffe4e6; color: #be123c; padding: 4px 10px; border-radius: 20px; font-size: 11px; font-weight: 800; text-transform: uppercase; margin-bottom: 10px;">
+                            <span>🤖 AI Evaluator Diagnostic</span>
+                            <span>•</span>
+                            <span style="color: #9f1239;">Action Needed</span>
+                        </div>
+                        <h3 style="margin: 0 0 8px 0; color: #881337; font-weight: 900; font-size: 18px; letter-spacing: -0.3px;">{{ ai_alert_title }}</h3>
+                        <p style="margin: 0 0 15px 0; color: #be123c; font-size: 13px; font-weight: 600; line-height: 1.5;">{{ ai_alert_msg }}</p>
+                        <div style="display: flex; gap: 12px; margin-bottom: 15px; flex-wrap: wrap;">
+                            <div style="background: white; border: 1px solid #ffe4e6; padding: 6px 12px; border-radius: 8px; font-size: 12px; color: #881337; font-weight: 700;">
+                                <span style="color: #16a34a;">✓</span> Clinical: {{ score_clinical }}%
+                            </div>
+                            <div style="background: #fee2e2; border: 1px solid #fecaca; padding: 6px 12px; border-radius: 8px; font-size: 12px; color: #dc2626; font-weight: 800;">
+                                <span>⚠️</span> Ops Coding: {{ score_ops_coding }}% (Lag)
+                            </div>
+                            <div style="background: white; border: 1px solid #ffe4e6; padding: 6px 12px; border-radius: 8px; font-size: 12px; color: #881337; font-weight: 700;">
+                                <span style="color: #16a34a;">✓</span> Interpersonal: {{ score_interpersonal }}%
+                            </div>
+                        </div>
+                    </div>
+                    <div style="display: flex; flex-direction: column; gap: 10px; min-width: 220px; align-self: center;">
+                        <button onclick="openSelfCoachingModal()" style="background: #be123c; color: white; border: none; padding: 12px 18px; border-radius: 10px; font-weight: 800; font-size: 13px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; box-shadow: 0 4px 12px rgba(190, 18, 60, 0.25);">
+                            <svg style="width: 18px; height: 18px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+                            {{ ai_action_text }}
+                        </button>
+                    </div>
+                </div>
+            </div>
+            {% elif ai_risk_tier == 'YELLOW' %}
+            <div style="background: linear-gradient(135deg, #ffffff 0%, #fffbeb 100%); border: 1px solid #fef3c7; border-left: 5px solid #d97706; border-radius: 16px; padding: 22px 25px; margin-bottom: 25px; box-shadow: 0 4px 15px rgba(217, 119, 6, 0.05);">
+                <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 20px;">
+                    <div style="flex: 1;">
+                        <div style="display: inline-flex; align-items: center; gap: 6px; background: #fef3c7; color: #d97706; padding: 4px 10px; border-radius: 20px; font-size: 11px; font-weight: 800; text-transform: uppercase; margin-bottom: 10px;">
+                            <span>🤖 AI Evaluator Diagnostic</span>
+                            <span>•</span>
+                            <span>Caution</span>
+                        </div>
+                        <h3 style="margin: 0 0 8px 0; color: #92400e; font-weight: 900; font-size: 18px; letter-spacing: -0.3px;">{{ ai_alert_title }}</h3>
+                        <p style="margin: 0 0 15px 0; color: #b45309; font-size: 13px; font-weight: 600; line-height: 1.5;">{{ ai_alert_msg }}</p>
+                        <div style="display: flex; gap: 12px; margin-bottom: 15px; flex-wrap: wrap;">
+                            <div style="background: white; border: 1px solid #fef3c7; padding: 6px 12px; border-radius: 8px; font-size: 12px; color: #92400e; font-weight: 700;">
+                                <span style="color: #16a34a;">✓</span> Clinical: {{ score_clinical }}%
+                            </div>
+                            <div style="background: #fef3c7; border: 1px solid #fde68a; padding: 6px 12px; border-radius: 8px; font-size: 12px; color: #d97706; font-weight: 800;">
+                                <span>⚠️</span> Ops Coding: {{ score_ops_coding }}%
+                            </div>
+                            <div style="background: white; border: 1px solid #fef3c7; padding: 6px 12px; border-radius: 8px; font-size: 12px; color: #92400e; font-weight: 700;">
+                                <span style="color: #16a34a;">✓</span> Interpersonal: {{ score_interpersonal }}%
+                            </div>
+                        </div>
+                    </div>
+                    <div style="display: flex; flex-direction: column; gap: 10px; min-width: 220px; align-self: center;">
+                        <button onclick="openSelfCoachingModal()" style="background: #d97706; color: white; border: none; padding: 12px 18px; border-radius: 10px; font-weight: 800; font-size: 13px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; box-shadow: 0 4px 12px rgba(217, 119, 6, 0.25);">
+                            <svg style="width: 18px; height: 18px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+                            {{ ai_action_text }}
+                        </button>
+                    </div>
+                </div>
+            </div>
+            {% else %}
+            <div style="background: linear-gradient(135deg, #ffffff 0%, #f0fdf4 100%); border: 1px solid #bbf7d0; border-left: 5px solid #16a34a; border-radius: 16px; padding: 22px 25px; margin-bottom: 25px; box-shadow: 0 4px 15px rgba(22, 163, 74, 0.05);">
+                <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 20px;">
+                    <div style="flex: 1;">
+                        <div style="display: inline-flex; align-items: center; gap: 6px; background: #d1fae5; color: #16a34a; padding: 4px 10px; border-radius: 20px; font-size: 11px; font-weight: 800; text-transform: uppercase; margin-bottom: 10px;">
+                            <span>🤖 AI Evaluator Diagnostic</span>
+                            <span>•</span>
+                            <span>On Track</span>
+                        </div>
+                        <h3 style="margin: 0 0 8px 0; color: #14532d; font-weight: 900; font-size: 18px; letter-spacing: -0.3px;">{{ ai_alert_title }}</h3>
+                        <p style="margin: 0 0 15px 0; color: #15803d; font-size: 13px; font-weight: 600; line-height: 1.5;">{{ ai_alert_msg }}</p>
+                        <div style="display: flex; gap: 12px; margin-bottom: 15px; flex-wrap: wrap;">
+                            <div style="background: white; border: 1px solid #bbf7d0; padding: 6px 12px; border-radius: 8px; font-size: 12px; color: #14532d; font-weight: 700;">
+                                <span style="color: #16a34a;">✓</span> Clinical: {{ score_clinical }}%
+                            </div>
+                            <div style="background: white; border: 1px solid #bbf7d0; padding: 6px 12px; border-radius: 8px; font-size: 12px; color: #14532d; font-weight: 700;">
+                                <span style="color: #16a34a;">✓</span> Ops Coding: {{ score_ops_coding }}%
+                            </div>
+                            <div style="background: white; border: 1px solid #bbf7d0; padding: 6px 12px; border-radius: 8px; font-size: 12px; color: #14532d; font-weight: 700;">
+                                <span style="color: #16a34a;">✓</span> Interpersonal: {{ score_interpersonal }}%
+                            </div>
+                        </div>
+                    </div>
+                    <div style="display: flex; flex-direction: column; gap: 10px; min-width: 220px; align-self: center;">
+                        <button onclick="alert('Membuka laluan pembangunan bakat & fast-track...')" style="background: #16a34a; color: white; border: none; padding: 12px 18px; border-radius: 10px; font-weight: 800; font-size: 13px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; box-shadow: 0 4px 12px rgba(22, 163, 74, 0.25);">
+                            <svg style="width: 18px; height: 18px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"/></svg>
+                            {{ ai_action_text }}
+                        </button>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- PROMOTION READINESS METER & CAREER PROGRESSION WIDGET -->
+            <div style="background: white; border: 1px solid #ffe4e6; border-radius: 16px; padding: 20px 25px; margin-bottom: 25px; box-shadow: 0 4px 12px rgba(190, 18, 60, 0.03);">
+                <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #ffe4e6; padding-bottom: 12px; margin-bottom: 15px;">
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                        <div style="width: 36px; height: 36px; background: #fff1f2; border: 1px solid #ffe4e6; border-radius: 10px; display: flex; justify-content: center; align-items: center;">
+                            <svg style="width: 20px; height: 20px; color: #be123c;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/></svg>
+                        </div>
+                        <div>
+                            <h3 style="margin: 0; color: #881337; font-weight: 900; font-size: 15px;">Promotion Readiness Index (PRI)</h3>
+                            <span style="font-size: 11px; color: #f43f5e; font-weight: 600;">Target Track: Medical Officer UD44 → {{ next_grade }}</span>
+                        </div>
+                    </div>
+                    <span style="background: #fff1f2; color: {{ promotion_color }}; border: 1px solid #ffe4e6; padding: 6px 14px; border-radius: 20px; font-size: 12px; font-weight: 800;">
+                        {{ promotion_tier }}
+                    </span>
+                </div>
+
+                <div style="display: flex; align-items: center; gap: 25px; flex-wrap: wrap;">
+                    <div style="min-width: 140px; text-align: center; border-right: 1px solid #ffe4e6; padding-right: 20px;">
+                        <div style="font-size: 32px; font-weight: 900; color: #881337;">{{ pri_score }}<span style="font-size: 16px; color: #f43f5e;">%</span></div>
+                        <div style="font-size: 11px; color: #be123c; font-weight: 700; text-transform: uppercase;">Composite Score</div>
+                    </div>
+
+                    <div style="flex: 1; min-width: 260px;">
+                        <div style="display: flex; justify-content: space-between; font-size: 12px; font-weight: 700; color: #881337; margin-bottom: 6px;">
+                            <span>Progress to Fast-Track Eligibility (85% Threshold)</span>
+                            <span style="color: {{ promotion_color }};">{{ pri_score }}/100</span>
+                        </div>
+                        <div style="background: #fff1f2; height: 12px; border-radius: 10px; overflow: hidden; border: 1px solid #ffe4e6;">
+                            <div style="background: {{ promotion_color }}; width: {{ pri_score }}%; height: 100%; border-radius: 10px; transition: width 1s ease;"></div>
+                        </div>
+                    </div>
+
+                    <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                        <div style="background: #fff1f2; padding: 8px 12px; border-radius: 8px; font-size: 11px; color: #881337; font-weight: 700;">
+                            <span style="color: #16a34a;">✓</span> Clinical CUSUM (40%)
+                        </div>
+                        <div style="background: #fff1f2; padding: 8px 12px; border-radius: 8px; font-size: 11px; color: #881337; font-weight: 700;">
+                            {% if score_ops_coding >= 75 %}<span style="color: #16a34a;">✓</span>{% else %}<span style="color: #be123c;">⚠️</span>{% endif %} Ops Velocity (30%)
+                        </div>
+                        <div style="background: #fff1f2; padding: 8px 12px; border-radius: 8px; font-size: 11px; color: #881337; font-weight: 700;">
+                            <span style="color: #16a34a;">✓</span> Interpersonal 360° (20%)
+                        </div>
+                    </div>
+                </div>
             </div>
 
             <div class="grid-3" style="margin-bottom: 20px;">
@@ -1963,6 +2150,278 @@
                     window.dispatchEvent(new Event('resize')); 
                 }, 360);
             });
+        }
+    </script>
+
+<!-- MODAL AI SELF-COACHING HUB -->
+    <div class="modal-overlay" id="aiSelfCoachingModal">
+        <div class="modal-content" style="width: 600px; max-width: 92%; border-radius: 16px; padding: 25px;">
+            <button class="modal-close" onclick="closeSelfCoachingModal()">✕</button>
+            
+            <div style="display: flex; align-items: center; gap: 12px; border-bottom: 1px solid #ffe4e6; padding-bottom: 15px; margin-bottom: 15px;">
+                <div style="width: 42px; height: 42px; border-radius: 12px; background: #be123c; color: white; display: flex; justify-content: center; align-items: center; font-size: 20px; font-weight: 900;">
+                    🤖
+                </div>
+                <div>
+                    <h3 style="margin: 0; color: #881337; font-weight: 900; font-size: 18px;">AI Self-Coaching & Remediation Plan</h3>
+                    <p style="margin: 2px 0 0 0; color: #f43f5e; font-size: 12px; font-weight: 700;">Personalized Performance Boost for {{ staff_name }}</p>
+                </div>
+            </div>
+
+            <!-- STEP 1: AI DIAGNOSTIC BREAKDOWN -->
+            <div style="background: #fff1f2; padding: 14px; border-radius: 10px; border: 1px solid #ffe4e6; margin-bottom: 15px;">
+                <b style="color: #881337; font-size: 12px; text-transform: uppercase; display: block; margin-bottom: 6px;">🎯 Identified Performance Gap:</b>
+                <div style="font-size: 13px; color: #be123c; font-weight: 600; line-height: 1.4;">
+                    Coding backlog is currently at <b>5/12 tasks (41%)</b>. Completing 4 more coding entries today will elevate your Operational Index back to <b>>80% Target</b>.
+                </div>
+            </div>
+
+            <!-- STEP 2: ACTIONABLE STEPS -->
+            <b style="color: #881337; font-size: 13px; font-weight: 800; display: block; margin-bottom: 10px;">Recommended Self-Correction Steps:</b>
+            
+            <div style="display: flex; flex-direction: column; gap: 10px; margin-bottom: 20px;">
+                <div style="border: 1px solid #ffe4e6; padding: 12px; border-radius: 10px; background: white; display: flex; align-items: center; justify-content: space-between;">
+                    <div>
+                        <strong style="color: #881337; font-size: 13px; display: block;">1. Smart Prioritization Matrix</strong>
+                        <span style="font-size: 11px; color: #f43f5e;">Batch-process 5 pending ICD-10 coding entries in 15 mins.</span>
+                    </div>
+                    <a href="?section=Operational" style="background: #be123c; color: white; padding: 6px 12px; border-radius: 6px; text-decoration: none; font-size: 11px; font-weight: bold;">Launch Task</a>
+                </div>
+
+                <div style="border: 1px solid #ffe4e6; padding: 12px; border-radius: 10px; background: white; display: flex; align-items: center; justify-content: space-between;">
+                    <div>
+                        <strong style="color: #881337; font-size: 13px; display: block;">2. Micro-Learning Refresher (5-Min)</strong>
+                        <span style="font-size: 11px; color: #f43f5e;">Quick Guide: Rapid Clinical Coding in EHR Environment.</span>
+                    </div>
+                    <button type="button" onclick="openMicroLearningModal()" style="background: white; border: 1px solid #be123c; color: #be123c; padding: 6px 12px; border-radius: 6px; font-size: 11px; font-weight: bold; cursor: pointer;">Start Refresher</button>
+                </div>
+            </div>
+
+            <form method="POST" style="margin: 0;">
+                {% csrf_token %}
+                <input type="hidden" name="form_type" value="complete_coaching">
+                <div style="display: flex; gap: 10px;">
+                    <button type="submit" style="flex: 1; background: #be123c; color: white; border: none; padding: 12px; border-radius: 8px; font-weight: bold; font-size: 13px; cursor: pointer;">Acknowledge & Apply Plan</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        function openSelfCoachingModal() {
+            document.getElementById('aiSelfCoachingModal').style.display = 'flex';
+        }
+        function closeSelfCoachingModal() {
+            document.getElementById('aiSelfCoachingModal').style.display = 'none';
+        }
+    </script>
+
+    <!-- MODAL AI MICRO-LEARNING (5-MIN REFRESHER) -->
+    <div class="modal-overlay" id="microLearningModal" style="z-index: 10000;">
+        <div class="modal-content" style="width: 580px; max-width: 92%; border-radius: 16px; padding: 25px;">
+            <button class="modal-close" onclick="closeMicroLearningModal()">✕</button>
+
+            <!-- HEADER -->
+            <div style="display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid #ffe4e6; padding-bottom: 15px; margin-bottom: 20px;">
+                <div style="display: flex; align-items: center; gap: 12px;">
+                    <div style="width: 40px; height: 40px; border-radius: 10px; background: #be123c; color: white; display: flex; justify-content: center; align-items: center; font-size: 18px; font-weight: 900;">
+                        🎓
+                    </div>
+                    <div>
+                        <h3 style="margin: 0; color: #881337; font-weight: 900; font-size: 16px;">AI Micro-Learning Refresher</h3>
+                        <p style="margin: 2px 0 0 0; color: #f43f5e; font-size: 12px; font-weight: 700;">Topic: Rapid Clinical Coding in EHR Environment</p>
+                    </div>
+                </div>
+                <span id="microStepBadge" style="background: #fff1f2; color: #be123c; border: 1px solid #ffe4e6; padding: 4px 10px; border-radius: 12px; font-size: 11px; font-weight: 800;">Step 1 of 3</span>
+            </div>
+
+            <!-- STEP 1: KEY CPG & ICD-10 RULE -->
+            <div id="microStep1">
+                <div style="background: #fff1f2; padding: 15px; border-radius: 12px; border-left: 4px solid #be123c; margin-bottom: 20px;">
+                    <h4 style="margin: 0 0 8px 0; color: #881337; font-size: 14px;">📌 Rule 1: High-Frequency ICD-10 Diagnostic Codes</h4>
+                    <p style="margin: 0; color: #9f1239; font-size: 12px; line-height: 1.5; font-weight: 500;">
+                        Proper ICD-10 coding directly impacts clinic operational metrics and national health reporting. Always document primary diagnosis with specific sub-types:
+                    </p>
+                    <ul style="margin: 10px 0 0 0; padding-left: 20px; font-size: 12px; color: #881337; line-height: 1.6;">
+                        <li><b>E11.9</b> — Type 2 Diabetes Mellitus without complications</li>
+                        <li><b>I10</b> — Essential (primary) Hypertension</li>
+                        <li><b>E78.5</b> — Hyperlipidemia, unspecified</li>
+                    </ul>
+                </div>
+                <button type="button" onclick="goMicroStep(2)" style="width: 100%; background: #be123c; color: white; border: none; padding: 12px; border-radius: 8px; font-weight: bold; font-size: 13px; cursor: pointer;">Next: EHR Shortcuts & Templates →</button>
+            </div>
+
+            <!-- STEP 2: EHR SHORTCUTS -->
+            <div id="microStep2" style="display: none;">
+                <div style="background: #fff1f2; padding: 15px; border-radius: 12px; border-left: 4px solid #be123c; margin-bottom: 20px;">
+                    <h4 style="margin: 0 0 8px 0; color: #881337; font-size: 14px;">⚡ Smart EHR Time-Saving Macros</h4>
+                    <p style="margin: 0; color: #9f1239; font-size: 12px; line-height: 1.5; font-weight: 500;">
+                        Speed up documentation velocity by 60% using pre-configured clinical macros in the Outpatient Clerking Module:
+                    </p>
+                    <div style="margin-top: 10px; background: white; padding: 10px; border-radius: 8px; border: 1px solid #ffe4e6; font-size: 12px; color: #881337;">
+                        • Type <code>.dm2</code> → Auto-populates T2DM monitoring template (BP, HbA1c, Fundoscopy status).<br>
+                        • Type <code>.dis</code> → Auto-populates Discharge Summary checklist.
+                    </div>
+                </div>
+                <div style="display: flex; gap: 10px;">
+                    <button type="button" onclick="goMicroStep(1)" style="width: 30%; background: #ffe4e6; color: #be123c; border: none; padding: 12px; border-radius: 8px; font-weight: bold; font-size: 13px; cursor: pointer;">← Back</button>
+                    <button type="button" onclick="goMicroStep(3)" style="width: 70%; background: #be123c; color: white; border: none; padding: 12px; border-radius: 8px; font-weight: bold; font-size: 13px; cursor: pointer;">Next: Knowledge Check →</button>
+                </div>
+            </div>
+
+            <!-- STEP 3: KNOWLEDGE CHECK (QUIZ) -->
+            <div id="microStep3" style="display: none;">
+                <div style="background: #fff1f2; padding: 15px; border-radius: 12px; border: 1px solid #ffe4e6; margin-bottom: 20px;">
+                    <h4 style="margin: 0 0 10px 0; color: #881337; font-size: 14px;">❓ Quick Quiz (1 Question):</h4>
+                    <p style="margin: 0 0 12px 0; color: #881337; font-size: 13px; font-weight: 600;">
+                        Which ICD-10 code represents Type 2 Diabetes Mellitus without complications?
+                    </p>
+                    <div style="display: flex; flex-direction: column; gap: 8px;">
+                        <label style="background: white; padding: 10px; border-radius: 8px; border: 1px solid #ffe4e6; margin: 0; font-size: 12px; cursor: pointer; color: #881337;">
+                            <input type="radio" name="microQuiz" value="E10.9"> E10.9 (Type 1 Diabetes)
+                        </label>
+                        <label style="background: white; padding: 10px; border-radius: 8px; border: 1px solid #ffe4e6; margin: 0; font-size: 12px; cursor: pointer; color: #881337;">
+                            <input type="radio" name="microQuiz" value="E11.9"> E11.9 (Type 2 Diabetes without complications)
+                        </label>
+                        <label style="background: white; padding: 10px; border-radius: 8px; border: 1px solid #ffe4e6; margin: 0; font-size: 12px; cursor: pointer; color: #881337;">
+                            <input type="radio" name="microQuiz" value="I10"> I10 (Essential Hypertension)
+                        </label>
+                    </div>
+                </div>
+                <div style="display: flex; gap: 10px;">
+                    <button type="button" onclick="goMicroStep(2)" style="width: 30%; background: #ffe4e6; color: #be123c; border: none; padding: 12px; border-radius: 8px; font-weight: bold; font-size: 13px; cursor: pointer;">← Back</button>
+                    <button type="button" onclick="submitMicroQuiz()" style="width: 70%; background: #be123c; color: white; border: none; padding: 12px; border-radius: 8px; font-weight: bold; font-size: 13px; cursor: pointer;">Submit & Claim +5 CPD Points 🎉</button>
+                </div>
+            </div>
+
+            <!-- SUCCESS STATE -->
+            <div id="microStepSuccess" style="display: none; text-align: center; padding: 10px 0;">
+                <div style="font-size: 48px; margin-bottom: 10px;">🎉</div>
+                <h3 style="margin: 0 0 8px 0; color: #16a34a; font-weight: 900; font-size: 18px;">Refresher Completed!</h3>
+                <p style="margin: 0 0 15px 0; color: #15803d; font-size: 13px; font-weight: 600;">
+                    You have earned <b>+5 CPD Points</b> for completing this AI Micro-Learning module.
+                </p>
+                <button type="button" onclick="closeMicroLearningModal()" style="background: #be123c; color: white; border: none; padding: 12px 25px; border-radius: 8px; font-weight: bold; font-size: 13px; cursor: pointer;">Return to Dashboard</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function openMicroLearningModal() {
+            document.getElementById('microLearningModal').style.display = 'flex';
+            goMicroStep(1);
+        }
+
+        function closeMicroLearningModal() {
+            document.getElementById('microLearningModal').style.display = 'none';
+        }
+
+        function goMicroStep(stepNum) {
+            document.getElementById('microStep1').style.display = stepNum === 1 ? 'block' : 'none';
+            document.getElementById('microStep2').style.display = stepNum === 2 ? 'block' : 'none';
+            document.getElementById('microStep3').style.display = stepNum === 3 ? 'block' : 'none';
+            document.getElementById('microStepSuccess').style.display = 'none';
+            document.getElementById('microStepBadge').innerText = 'Step ' + stepNum + ' of 3';
+        }
+
+        function submitMicroQuiz() {
+            var selected = document.querySelector('input[name="microQuiz"]:checked');
+            if (!selected) {
+                alert('Please select an answer to complete the quiz.');
+                return;
+            }
+            if (selected.value === 'E11.9') {
+                document.getElementById('microStep3').style.display = 'none';
+                document.getElementById('microStepSuccess').style.display = 'block';
+                document.getElementById('microStepBadge').innerText = 'Completed';
+            } else {
+                alert('Incorrect code selected. Hint: E11.9 represents Type 2 Diabetes without complications.');
+            }
+        }
+    </script>
+
+    <!-- FLOATING ACTION BUTTON (FAB) AURA-PULSE AI -->
+    <div class="aura-fab" onclick="toggleAuraPulse()" title="Ask AURA-Pulse AI">
+        <svg style="width: 28px; height: 28px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12h3l2-4 3 8 2-4h3"/></svg>
+        <span class="aura-badge"></span>
+    </div>
+
+    <!-- WINDOW CHATBOT AURA-PULSE AI -->
+    <div class="aura-chat-window" id="auraChatWindow">
+        <div class="aura-header">
+            <div style="display: flex; align-items: center; gap: 10px;">
+                <div style="width: 32px; height: 32px; background: rgba(255,255,255,0.2); border-radius: 8px; display: flex; justify-content: center; align-items: center;">
+                    <svg style="width: 20px; height: 20px; color: white;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/></svg>
+                </div>
+                <div>
+                    <strong style="font-size: 14px; display: block; line-height: 1.1;">AURA-Pulse AI</strong>
+                    <span style="font-size: 10px; opacity: 0.85; font-weight: 500;">Remediation & Clinical Assistant</span>
+                </div>
+            </div>
+            <button onclick="toggleAuraPulse()" style="background: none; border: none; color: white; font-size: 18px; cursor: pointer; font-weight: bold;">✕</button>
+        </div>
+
+        <div class="aura-body" id="auraChatBody">
+            <div class="aura-msg bot">
+                <b>Greetings, {{ staff_name }}! 👋</b><br>
+                I am <b>AURA-Pulse</b>, your AI assistant. Is there any CPG guideline or Task Velocity issue I can assist you with today?
+                
+                <div class="aura-chips">
+                    <span class="aura-chip" onclick="quickAskAura('How to boost Clinical Coding score?')">💡 Assist Task Velocity</span>
+                    <span class="aura-chip" onclick="quickAskAura('Summarize 2026 Diabetes CPG')">📖 Review 2026 CPG</span>
+                    <span class="aura-chip" onclick="quickAskAura('My Self-Coaching status?')">⚡ Coaching Status</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="aura-footer">
+            <input type="text" id="auraInput" class="aura-input" placeholder="Ask AURA-Pulse a question..." onkeypress="if(event.key==='Enter') sendAuraMessage()">
+            <button class="aura-send-btn" onclick="sendAuraMessage()">Send</button>
+        </div>
+    </div>
+
+    <script>
+        function toggleAuraPulse() {
+            var chat = document.getElementById('auraChatWindow');
+            chat.style.display = (chat.style.display === 'flex') ? 'none' : 'flex';
+        }
+
+        function quickAskAura(text) {
+            document.getElementById('auraInput').value = text;
+            sendAuraMessage();
+        }
+
+        function sendAuraMessage() {
+            var input = document.getElementById('auraInput');
+            var msg = input.value.trim();
+            if (!msg) return;
+
+            var body = document.getElementById('auraChatBody');
+
+            var userDiv = document.createElement('div');
+            userDiv.className = 'aura-msg user';
+            userDiv.innerText = msg;
+            body.appendChild(userDiv);
+            input.value = '';
+
+            setTimeout(function() {
+                var botDiv = document.createElement('div');
+                botDiv.className = 'aura-msg bot';
+                
+                var lowerMsg = msg.toLowerCase();
+                if (lowerMsg.includes('coding') || lowerMsg.includes('velocity')) {
+                    botDiv.innerHTML = "<b>AURA-Pulse:</b> To clear your <i>Clinical Coding</i> backlog, use the batch matrix in the <b>Operational</b> tab. Completing 4 entries today will elevate your score to <b>>80% Target</b>.";
+                } else if (lowerMsg.includes('cpg') || lowerMsg.includes('diabetes')) {
+                    botDiv.innerHTML = "<b>AURA-Pulse:</b> According to <b>T2DM CPG 2026</b>, periodic retinal screening referrals are mandatory every 12 months for stable patients, or immediately if HbA1c > 8.5%.";
+                } else {
+                    botDiv.innerHTML = "<b>AURA-Pulse:</b> I have recorded your query. The system is synchronizing your 3-Pillar data in the background.";
+                }
+
+                body.appendChild(botDiv);
+                body.scrollTop = body.scrollHeight;
+            }, 600);
+
+            body.scrollTop = body.scrollHeight;
         }
     </script>
 

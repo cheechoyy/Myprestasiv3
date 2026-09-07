@@ -90,6 +90,17 @@
             100% { opacity: 1; transform: translateY(0); }
         }
         .animate-up { animation: fadeUp 0.6s ease-out forwards; }
+
+        /* MODAL PROFIL KOGNITIF */
+        .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(136, 19, 55, 0.5); z-index: 2000; justify-content: center; align-items: center; backdrop-filter: blur(4px); }
+        .modal-card { background: white; width: 550px; max-width: 90%; border-radius: 16px; padding: 25px; box-shadow: 0 20px 40px rgba(136, 19, 55, 0.2); border: 1px solid #ffe4e6; position: relative; animation: fadeUp 0.3s ease-out; }
+        .modal-close { position: absolute; top: 15px; right: 15px; cursor: pointer; font-size: 20px; color: #f43f5e; background: none; border: none; font-weight: bold; }
+        .modal-close:hover { color: #be123c; }
+        
+        .cog-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-top: 15px; }
+        .cog-metric { background: #fff1f2; padding: 10px 12px; border-radius: 8px; border-left: 3px solid #be123c; }
+        .cog-metric-title { font-size: 10px; font-weight: 800; color: #f43f5e; text-transform: uppercase; }
+        .cog-metric-val { font-size: 14px; font-weight: 900; color: #881337; margin-top: 2px; }
     </style>
 </head>
 <body>
@@ -199,10 +210,16 @@
             {% endif %}
         </div>
 
-        <div style="background-color: #fff1f2; padding: 12px 20px; border-radius: 8px; margin-bottom: 20px; font-size: 14px; color: #881337; border: 1px solid #ffe4e6; display: flex; gap: 15px;">
-            <div><b>Filter State:</b> {{ pilihan_negeri }}</div>
-            <div>|</div>
-            <div><b>Filter Facility:</b> {{ pilihan_klinik }}</div>
+        <div style="background-color: #fff1f2; padding: 10px 18px; border-radius: 10px; margin-bottom: 20px; font-size: 13px; color: #881337; border: 1px solid #ffe4e6; display: inline-flex; align-items: center; gap: 15px;">
+            <div style="display: flex; align-items: center; gap: 6px;">
+                <svg style="width: 15px; height: 15px; color: #be123c;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                <span><b>State:</b> {{ pilihan_negeri }}</span>
+            </div>
+            <span style="color: #fecdd3;">|</span>
+            <div style="display: flex; align-items: center; gap: 6px;">
+                <svg style="width: 15px; height: 15px; color: #be123c;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5m0 0v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4M12 7v4m-2-2h4"/></svg>
+                <span><b>Facility:</b> {{ pilihan_klinik }}</span>
+            </div>
         </div>
 
         <!-- CONTENT 1: FACILITIES -->
@@ -265,6 +282,9 @@
                                     <span class="status-badge status-moderate">{{ doc.status }}</span>
                                 {% else %}
                                     <span class="status-badge status-needs-attention">{{ doc.status }}</span>
+                                    <span style="font-size: 10px; color: #be123c; font-weight: 800; display: block; margin-top: 3px; font-style: italic;">
+                                        ⚡ AI Self-Coaching Active
+                                    </span>
                                 {% endif %}
                             </td>
                             <td><a href="{% url 'cts_module' %}?state={{ doc.state|urlencode }}&clinic={{ doc.clinic|urlencode }}&officer={{ doc.name|urlencode }}" style="background: #be123c; color: white; padding: 6px 12px; border-radius: 6px; text-decoration: none; font-size: 11px; font-weight: bold;">Evaluate</a></td>
@@ -279,25 +299,28 @@
             </div>
         </div>
 
-        <!-- CONTENT 3: PERFORMANCE -->
+        <!-- CONTENT 3: PERFORMANCE & PROMOTION SHORTLIST -->
         {% elif analytic_type == 'performance' %}
         <div class="grid-3" style="margin-bottom: 20px;">
             <div style="background: white; border: 1px solid #ffe4e6; padding: 20px; border-radius: 12px; border-left: 4px solid #16A34A; box-shadow: 0 4px 10px rgba(190,18,60,0.03);">
-                <div style="font-size: 11px; color: #15803d; font-weight: bold; text-transform: uppercase;">Top Tier (>85%)</div>
-                <div style="font-size: 28px; font-weight: 900; color: #16A34A; margin-top: 5px;">24 <span style="font-size:12px; font-weight:normal; color:#15803d;">Officers</span></div>
+                <div style="font-size: 11px; color: #15803d; font-weight: bold; text-transform: uppercase;">Tier 1: Fast-Track (PRI ≥ 85%)</div>
+                <div style="font-size: 28px; font-weight: 900; color: #16A34A; margin-top: 5px;">24 <span style="font-size:12px; font-weight:normal; color:#15803d;">Eligible Candidates</span></div>
             </div>
             <div style="background: white; border: 1px solid #ffe4e6; padding: 20px; border-radius: 12px; border-left: 4px solid #D97706; box-shadow: 0 4px 10px rgba(190,18,60,0.03);">
-                <div style="font-size: 11px; color: #b45309; font-weight: bold; text-transform: uppercase;">Core Tier (65-84%)</div>
-                <div style="font-size: 28px; font-weight: 900; color: #D97706; margin-top: 5px;">{{ total_staff }} <span style="font-size:12px; font-weight:normal; color:#b45309;">Officers</span></div>
+                <div style="font-size: 11px; color: #b45309; font-weight: bold; text-transform: uppercase;">Tier 2: On-Track (PRI 70-84%)</div>
+                <div style="font-size: 28px; font-weight: 900; color: #D97706; margin-top: 5px;">{{ total_staff }} <span style="font-size:12px; font-weight:normal; color:#b45309;">Time-Based Officers</span></div>
             </div>
             <div style="background: white; border: 1px solid #ffe4e6; padding: 20px; border-radius: 12px; border-left: 4px solid #DC2626; box-shadow: 0 4px 10px rgba(190,18,60,0.03);">
-                <div style="font-size: 11px; color: #b91c1c; font-weight: bold; text-transform: uppercase;">Support Tier (<65%)</div>
-                <div style="font-size: 28px; font-weight: 900; color: #DC2626; margin-top: 5px;">2 <span style="font-size:12px; font-weight:normal; color:#b91c1c;">Officers</span></div>
+                <div style="font-size: 11px; color: #b91c1c; font-weight: bold; text-transform: uppercase;">Tier 3: Remediation (PRI < 70%)</div>
+                <div style="font-size: 28px; font-weight: 900; color: #DC2626; margin-top: 5px;">2 <span style="font-size:12px; font-weight:normal; color:#b91c1c;">Self-Coaching Active</span></div>
             </div>
         </div>
-        
+
         <div class="content-card">
-            <h3 style="color:#881337; margin-top:0; border-bottom: 1px solid #ffe4e6; padding-bottom: 10px;">Department Leaderboard</h3>
+            <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #ffe4e6; padding-bottom: 10px; margin-bottom: 15px;">
+                <h3 style="color:#881337; margin:0;">🌟 Executive Talent & Promotion Shortlist (PRI Matrix)</h3>
+                <span style="font-size: 11px; background: #fff1f2; color: #be123c; padding: 4px 10px; border-radius: 12px; font-weight: 800; border: 1px solid #ffe4e6;">Automated AI Ranking</span>
+            </div>
             <div style="overflow-x: auto;">
                 <table class="custom-table">
                     <thead>
@@ -305,16 +328,36 @@
                             <th>Rank</th>
                             <th>Officer Name</th>
                             <th>Assigned Facility</th>
-                            <th>Total Score</th>
+                            <th>PRI Score</th>
+                            <th>Promotion Eligibility Status</th>
+                            <th>HOD Action</th>
                         </tr>
                     </thead>
                     <tbody>
                         {% for doc in senarai_doktor_lengkap|slice:":5" %}
                         <tr>
                             <td>#{{ forloop.counter }}</td>
-                            <td style="color:#be123c; font-weight:800;">{{ doc.name }}</td>
+                            <td>
+                                <a href="{% url 'officer_profile' %}?officer={{ doc.name|urlencode }}&clinic={{ doc.clinic|urlencode }}&state={{ doc.state|urlencode }}" style="color:#be123c; font-weight:800; text-decoration:none; cursor:pointer;" onmouseover="this.style.textDecoration='underline'" onmouseout="this.style.textDecoration='none'">
+                                    🧠 {{ doc.name }}
+                                </a>
+                            </td>
                             <td>{{ doc.clinic }}</td>
-                            <td><b>{{ doc.score }}%</b></td>
+                            <td><b style="color: #881337; font-size: 14px;">{{ doc.score }}%</b></td>
+                            <td>
+                                {% if doc.score >= 85 %}
+                                    <span class="status-badge status-excellent">Tier 1: Fast-Track (UD48)</span>
+                                {% elif doc.score >= 70 %}
+                                    <span class="status-badge status-moderate">Tier 2: On-Track (Time-Based)</span>
+                                {% else %}
+                                    <span class="status-badge status-needs-attention">Tier 3: Action Required</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <a href="{% url 'officer_profile' %}?officer={{ doc.name|urlencode }}&clinic={{ doc.clinic|urlencode }}&state={{ doc.state|urlencode }}" style="background: #be123c; color: white; padding: 6px 12px; border-radius: 6px; text-decoration: none; font-size: 11px; font-weight: bold; display: inline-block;">
+                                    Print Dossier PDF
+                                </a>
+                            </td>
                         </tr>
                         {% endfor %}
                     </tbody>
@@ -371,6 +414,91 @@
     <div class="custom-footer">
         Copyright © 2026 MyPrestasi HPU | National Health Facility
     </div>
+
+<!-- MODAL PROFIL KOGNITIF MO -->
+    <div class="modal-overlay" id="cognitiveModal">
+        <div class="modal-card">
+            <button class="modal-close" onclick="closeCognitiveModal()">✕</button>
+            <div style="display: flex; align-items: center; gap: 12px; border-bottom: 1px solid #ffe4e6; padding-bottom: 12px;">
+                <div style="width: 45px; height: 42px; border-radius: 50%; background: #be123c; color: white; display: flex; justify-content: center; align-items: center; font-weight: 900; font-size: 18px;">
+                    🧠
+                </div>
+                <div>
+                    <h3 id="modalDocName" style="margin: 0; color: #881337; font-weight: 900; font-size: 18px;">Dr. Officer Name</h3>
+                    <p id="modalDocSub" style="margin: 2px 0 0 0; color: #f43f5e; font-size: 11px; font-weight: 700;">MO • Klinik Kesihatan Medong</p>
+                </div>
+            </div>
+
+            <div style="margin-top: 15px;">
+                <b style="color: #881337; font-size: 12px; text-transform: uppercase;">Cognitive & Competency Radar 360°</b>
+                <div id="modalPlotlyRadar" style="width: 100%; height: 210px;"></div>
+            </div>
+
+            <div class="cog-grid">
+                <div class="cog-metric">
+                    <div class="cog-metric-title">Emotional Intelligence (EI)</div>
+                    <div class="cog-metric-val" id="modalEI">High Self-Regulation (88%)</div>
+                </div>
+                <div class="cog-metric">
+                    <div class="cog-metric-title">Crisis Response & SOP</div>
+                    <div class="cog-metric-val" id="modalCrisis">Active Lead (92%)</div>
+                </div>
+            </div>
+
+            <div style="background: #fff1f2; padding: 10px; border-radius: 8px; margin-top: 12px; font-size: 11px; color: #881337; border: 1px solid #fecdd3;">
+                <b>💡 HOD Cognitive Note:</b> Officer demonstrates strong clinical decision-making and low CUSUM error margin. Recommended for mentorship roles.
+            </div>
+
+            <div style="margin-top: 15px; display: flex; gap: 10px;">
+                <a id="modalFullEvalLink" href="#" style="background: #be123c; color: white; padding: 10px; border-radius: 8px; text-decoration: none; font-weight: bold; font-size: 12px; flex: 1; text-align: center;">Go to Full Assessment</a>
+                <button onclick="closeCognitiveModal()" style="background: white; border: 1px solid #ffe4e6; color: #881337; padding: 10px; border-radius: 8px; font-weight: bold; font-size: 12px; cursor: pointer;">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function openCognitiveModal(name, score, grade, status, clinic) {
+            document.getElementById('modalDocName').innerText = name;
+            document.getElementById('modalDocSub').innerText = grade + " • " + clinic + " (Score: " + score + "%)";
+            document.getElementById('cognitiveModal').style.display = 'flex';
+
+            // Pautan terus ke penilaian penuh
+            var evalUrl = "{% url 'cts_module' %}?officer=" + encodeURIComponent(name) + "&clinic=" + encodeURIComponent(clinic);
+            document.getElementById('modalFullEvalLink').href = evalUrl;
+
+            // Plotly Radar Chart Dinamik untuk Profil Kognitif
+            var categories = ['Clinical Skill', 'CPD Knowledge', 'Doc Quality', 'Emotional Intel', 'Teamwork'];
+            var mockScore = parseInt(score) || 80;
+            var values = [mockScore, Math.min(100, mockScore + 5), Math.max(50, mockScore - 10), Math.min(100, mockScore + 2), mockScore];
+            
+            var data = [{
+                type: 'scatterpolar',
+                r: values.concat([values[0]]),
+                theta: categories.concat([categories[0]]),
+                fill: 'toself',
+                fillcolor: 'rgba(190, 18, 60, 0.2)',
+                line: { color: '#be123c', width: 2 },
+                marker: { size: 6, color: '#881337' }
+            }];
+
+            var layout = {
+                polar: {
+                    radialaxis: { visible: true, range: [0, 100], tickfont: { size: 8 } },
+                    angularaxis: { tickfont: { size: 9, color: '#881337', weight: 'bold' } }
+                },
+                margin: { t: 20, b: 20, l: 30, r: 30 },
+                paper_bgcolor: 'rgba(0,0,0,0)',
+                plot_bgcolor: 'rgba(0,0,0,0)',
+                showlegend: false
+            };
+
+            Plotly.newPlot('modalPlotlyRadar', data, layout, {displayModeBar: false});
+        }
+
+        function closeCognitiveModal() {
+            document.getElementById('cognitiveModal').style.display = 'none';
+        }
+    </script>
 
 </body>
 </html>

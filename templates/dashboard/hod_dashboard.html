@@ -187,16 +187,22 @@
 
         .content-grid {
             display: grid; grid-template-columns: 48% 26% minmax(0, 1fr);
-            grid-template-areas: "map pie bar" "roster heatmap sunburst";
+            grid-template-areas: "action action kpi" "roster heatmap sunburst";
             grid-template-rows: 1fr 1fr; gap: 15px; flex-grow: 1; min-height: 0; min-width: 0; width: 100%;
         }
 
-        .card-map { grid-area: map; display: flex; flex-direction: column; min-height: 0; min-width: 0; overflow: hidden; }
-        .card-pie { grid-area: pie; display: flex; flex-direction: column; min-height: 0; min-width: 0; overflow: hidden; }
-        .card-bar { grid-area: bar; display: flex; flex-direction: column; min-height: 0; min-width: 0; overflow: hidden; }
+        .card-action { grid-area: action; display: flex; flex-direction: column; min-height: 0; min-width: 0; overflow: hidden; }
+        .card-kpi { grid-area: kpi; display: flex; flex-direction: column; min-height: 0; min-width: 0; overflow: hidden; }
         .card-roster { grid-area: roster; display: flex; flex-direction: column; min-height: 0; min-width: 0; overflow: hidden; }
         .card-heatmap { grid-area: heatmap; display: flex; flex-direction: column; min-height: 0; min-width: 0; overflow: hidden; }
-        .card-sunburst { grid-area: sunburst; display: flex; flex-direction: column; min-height: 0; min-width: 0; overflow: hidden; }
+        .card-sunburst { grid-area: sunburst; display: flex; flex-direction: column; min-height: 0; min-width: 0; overflow: hidden; cursor: pointer; }
+        
+        .alert-item { background: #fff1f2; border-left: 4px solid #be123c; border-radius: 8px; padding: 10px 14px; margin-bottom: 8px; display: flex; align-items: center; justify-content: space-between; }
+        .alert-item.urgent { border-left-color: #e11d48; background: #ffe4e6; }
+        .alert-title { font-size: 12px; font-weight: 800; color: #881337; margin: 0; }
+        .alert-desc { font-size: 11px; color: #f43f5e; margin: 2px 0 0 0; font-weight: 600; }
+        .btn-action-xs { background: #be123c; color: white; border: none; padding: 5px 10px; border-radius: 6px; font-size: 10px; font-weight: 800; text-decoration: none; transition: 0.2s; }
+        .btn-action-xs:hover { background: #881337; }
 
         .card { background: white; border-radius: 16px; border: 1px solid #ffe4e6; box-shadow: 0 4px 12px rgba(190, 18, 60, 0.03); padding: 15px; box-sizing: border-box; }
         .card-title { font-size: 14px; font-weight: 800; color: #881337; margin: 0 0 10px 0; flex-shrink: 0; display: flex; align-items: center; justify-content: space-between; gap: 8px;}
@@ -414,54 +420,63 @@
             </div>
 
             <div class="content-grid">
-                <!-- Card 1: Facility Map -->
-                <div class="card card-map">
-                    <div class="card-title flex items-center justify-between">
+                <!-- Card 1: Action Center & Red Flag Triage -->
+                <div class="card card-action">
+                    <div class="card-title">
                         <span class="flex items-center gap-2">
-                            <svg style="width: 18px; height: 18px; flex-shrink: 0;" class="text-rose-700" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
-                            Facility Map
+                            <svg style="width: 18px; height: 18px; color: #be123c;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+                            HOD Action Center (Red Flags & Triage)
                         </span>
-                        <form method="GET" style="display:flex; gap:5px; width: 55%;">
-                            {% if pilihan_klinik %}<input type="hidden" name="clinic" value="{{ pilihan_klinik }}">{% endif %}
-                            <select name="state" class="filter-select" style="margin:0;" onchange="this.form.submit()" {% if is_state_locked or is_facility_locked %}disabled style="opacity: 0.7; cursor: not-allowed;"{% endif %}>
-                                {% for state in senarai_negeri %}
-                                    <option value="{{ state }}" {% if state == pilihan_negeri %}selected{% endif %}>{{ state }}</option>
-                                {% endfor %}
-                            </select>
-                        </form>
+                        <span style="font-size: 11px; background: #be123c; color: white; padding: 2px 8px; border-radius: 12px; font-weight: 800;">3 Action Needed</span>
                     </div>
-                    <div style="flex-grow: 1; border-radius: 12px; overflow: hidden; border: 1px solid #ffe4e6; display:flex;">
-                        <div style="width:100%; height:100%;">{{ map_html|safe }}</div>
+                    <div style="flex-grow: 1; overflow-y: auto; padding-right: 2px;">
+                        <div class="alert-item urgent">
+                            <div>
+                                <p class="alert-title">🚨 CUSUM Breach Warning</p>
+                                <p class="alert-desc">Dr. Ramesh Lee breached safety control limit in LIMA-LAD Procedure.</p>
+                            </div>
+                            <a href="{% url 'cts_module' %}?officer=Dr.%20Ramesh%20Lee&tab=Skills" class="btn-action-xs">Review Case</a>
+                        </div>
+                        <div class="alert-item" style="border-left-color: #16a34a; background: #f0fdf4;">
+                            <div>
+                                <p class="alert-title" style="color: #14532d;">🌟 Fast-Track Candidates (PRI ≥ 85%)</p>
+                                <p class="alert-desc" style="color: #15803d;">AI shortlisted 24 Officers eligible for Fast-Track UD48 promotion.</p>
+                            </div>
+                            <a href="{% url 'overall_analytics' %}?type=performance" class="btn-action-xs" style="background: #16a34a;">View Shortlist</a>
+                        </div>
+                        <div class="alert-item">
+                            <div>
+                                <p class="alert-title">⏳ Pending Approval Log</p>
+                                <p class="alert-desc">8 Procedure logs & 3 CPD claims require your validation.</p>
+                            </div>
+                            <a href="{% url 'overall_analytics' %}?type=evaluations" class="btn-action-xs">Approve All</a>
+                        </div>
+                        <div class="alert-item">
+                            <div>
+                                <p class="alert-title">⚠️ SOP Documentation Drop</p>
+                                <p class="alert-desc">Clinic Outpatient records timeliness dropped below 80% target.</p>
+                            </div>
+                            <a href="{% url 'cts_module' %}?tab=Documentation" class="btn-action-xs">View Audit</a>
+                        </div>
                     </div>
                 </div>
 
-                <!-- Card 2: Competency -->
-                <div class="card card-pie">
+                <!-- Card 2: Department KPI Target vs Actual -->
+                <div class="card card-kpi">
                     <h3 class="card-title flex items-center justify-center gap-2">
-                        <svg style="width: 18px; height: 18px; flex-shrink: 0;" class="text-rose-700" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 3.055A9.001 9.001 0 1020.945 13H11V3.055z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.488 9H15V3.512A9.025 9.025 0 0120.488 9z"/></svg>
-                        Competency
+                        <svg style="width: 18px; height: 18px; color: #be123c;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
+                        Department Monthly KPI
                     </h3>
                     <div style="flex-grow:1; width:100%; height:100%; overflow:hidden;">
-                        {{ pie_html|safe }}
+                        {{ dept_kpi_html|safe }}
                     </div>
                 </div>
 
-                <!-- Card 3: Evaluations -->
-                <div class="card card-bar">
-                    <h3 class="card-title flex items-center justify-center gap-2">
-                        <svg style="width: 18px; height: 18px; flex-shrink: 0;" class="text-rose-700" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
-                        Evaluations
-                    </h3>
-                    <div style="flex-grow:1; width:100%; height:100%; overflow:hidden;">
-                        {{ bar_html|safe }}
-                    </div>
-                </div>
-
-                <!-- Card 4: Medical Officers -->
+                <!-- Card 3: Medical Officers Roster -->
                 <div class="card card-roster">
                     <div class="card-title flex items-center justify-between">
                         <span class="flex items-center gap-2">
-                            <svg style="width: 18px; height: 18px; flex-shrink: 0;" class="text-rose-700" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
+                            <svg style="width: 18px; height: 18px; color: #be123c;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
                             Medical Officers
                         </span>
                         <form method="GET" style="width: 50%;">
@@ -478,28 +493,28 @@
                     </div>
                 </div>
 
-                <!-- Card 5: Heatmap -->
+                <!-- Card 4: MO Competency Heatmap -->
                 <div class="card card-heatmap">
                     <h3 class="card-title flex items-center justify-center gap-2">
-                        <svg style="width: 18px; height: 18px; flex-shrink: 0;" class="text-rose-700" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 18.657A8 8 0 016.343 7.343S7 9 9 10c0-2 1-4 4-6 0 3 3 3 3 6 1-1 2-2 2-3.657a8 8 0 01.657 12.314z"/></svg>
-                        Heatmap
+                        <svg style="width: 18px; height: 18px; color: #be123c;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 18.657A8 8 0 016.343 7.343S7 9 9 10c0-2 1-4 4-6 0 3 3 3 3 6 1-1 2-2 2-3.657a8 8 0 01.657 12.314z"/></svg>
+                        MO Competency Matrix
                     </h3>
                     <div style="flex-grow:1; width:100%; height:100%; overflow:hidden;">
-                        {{ heatmap_html|safe }}
+                        {{ mo_heatmap_html|safe }}
                     </div>
                 </div>
 
-                <!-- Card 6: Framework -->
-                <div class="card card-sunburst">
+                <!-- Card 5: Dynamic Sunburst Framework -->
+                <div class="card card-sunburst" title="Click any sector to jump to module">
                     <h3 class="card-title flex items-center justify-center gap-2">
-                        <svg style="width: 18px; height: 18px; flex-shrink: 0;" class="text-rose-700" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 10l-2 1m0 0l-2-1m2 1v2.5M20 7l-2 1m2-1l-2-1m2 1v2.5M14 4l-2-1-2 1M4 7l2-1M4 7l2 1M4 7v2.5M12 21l-2-1m2 1l2-1m-2 1v-2.5M6 18l-2-1v-2.5M18 18l2-1v-2.5"/></svg>
-                        Framework
+                        <svg style="width: 18px; height: 18px; color: #be123c;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 10l-2 1m0 0l-2-1m2 1v2.5M20 7l-2 1m2-1l-2-1m2 1v2.5M14 4l-2-1-2 1M4 7l2-1M4 7l2 1M4 7v2.5M12 21l-2-1m2 1l2-1m-2 1v-2.5M6 18l-2-1v-2.5M18 18l2-1v-2.5"/></svg>
+                        Framework (Click to Navigate)
                     </h3>
                     <div style="flex-grow:1; width:100%; height:100%; overflow:hidden;">
                         {{ sunburst_html|safe }}
                     </div>
                 </div>
-            </div> 
+            </div>
             
         {% elif section == 'Profile' %}
             <div class="card" style="width: 100%; box-sizing: border-box;">
@@ -646,6 +661,27 @@
         sidebar.addEventListener('mouseleave', () => {
             setTimeout(() => { window.dispatchEvent(new Event('resize')); }, 360);
         });
-    </script>
+
+        // Event Listener untuk Navigasi Klik Carta Sunburst (Framework)
+        document.addEventListener("DOMContentLoaded", function() {
+            setTimeout(function() {
+                var sunburstCard = document.querySelector('.card-sunburst .js-plotly-plot');
+                if (sunburstCard) {
+                    sunburstCard.on('plotly_click', function(data) {
+                        if (data.points && data.points.length > 0) {
+                            var label = data.points[0].label.replace(/<br>/g, ' ');
+                            
+                            if (label.includes('Clinical') || label.includes('Skills') || label.includes('Knowledge') || label.includes('Policies') || label.includes('Documentation')) {
+                                window.location.href = "{% url 'cts_module' %}?dept=CTS&tab=Skills";
+                            } else if (label.includes('Operational') || label.includes('Productivity') || label.includes('Innovation')) {
+                                window.location.href = "{% url 'operational_module' %}?dept=CTS&tab=Productivity";
+                            } else if (label.includes('Interpersonal') || label.includes('Patient') || label.includes('Emotional') || label.includes('Teamwork') || label.includes('Mentorship')) {
+                                window.location.href = "{% url 'interpersonal_module' %}?dept=CTS&tab=Patient";
+                            }
+                        }
+                    });
+                }
+            }, 1000);
+        });
 </body>
 </html>

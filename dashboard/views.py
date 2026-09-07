@@ -143,198 +143,104 @@ def hod_dashboard(request):
     random.seed(total_staff)
     evaluations_completed = total_staff * random.randint(3, 6)
 
-    # A. Peta Folium (Pergerakan Dinamik & Zum Sedikit)
-    
-    # Dapatkan titik tengah dan zum asal negeri tersebut dahulu
-    pusat = STATE_CENTERS.get(pilihan_negeri, STATE_CENTERS["All States"])
-    
-    if pilihan_klinik and pilihan_klinik != "All Clinics":
-        # Jika klinik spesifik dipilih, cari koordinatnya
-        klinik_target = next((k for k in klinik_dipaparkan if k["name"] == pilihan_klinik), None)
-        if klinik_target:
-            pusat_lat = klinik_target["lat"]
-            pusat_lon = klinik_target["lon"]
-            # ZUM SEDIKIT SAHAJA: Ambil zum asal negeri dan tambah 1 (atau tetapkan 10)
-            tahap_zoom = pusat["zoom"] + 1 
-        else:
-            pusat_lat, pusat_lon, tahap_zoom = pusat["lat"], pusat["lon"], pusat["zoom"]
-    else:
-        # Jika "All Clinics", kekal guna titik tengah negeri
-        pusat_lat, pusat_lon, tahap_zoom = pusat["lat"], pusat["lon"], pusat["zoom"]
-
-    # Bina Peta dengan pusat yang dikemas kini
-    m = folium.Map(location=[pusat_lat, pusat_lon], zoom_start=tahap_zoom, zoom_control=False, tiles='CartoDB positron')
-
-    # Plotkan titik-titik klinik
-    for k in klinik_dipaparkan:
-        state_encoded = urllib.parse.quote(pilihan_negeri)
-        clinic_encoded = urllib.parse.quote(k["name"])
-        
-        popup_content = f"""
-        <div style="font-family: 'Inter', sans-serif; text-align: center; width: 160px;">
-            <b style="color: #2b3674; font-size: 12px; display:block; margin-bottom:8px;">{k['name']}</b>
-            <a href="?state={state_encoded}&clinic={clinic_encoded}" target="_parent" 
-               style="background-color: #4318FF; color: white; padding: 6px 12px; border-radius: 6px; text-decoration: none; font-size: 11px; font-weight: bold; display: inline-block; box-shadow: 0 2px 4px rgba(0,0,0,0.2);">
-               👨‍⚕️ View Roster
-            </a>
-        </div>
-        """
-        
-        # LOGIK SERLAHAN: Jika ini klinik yang dipilih, tukar jadi MERAH
-        if k["name"] == pilihan_klinik:
-            warna_titik = "#ff4b4b"  # Merah
-            saiz_titik = 8           # Sedikit besar
-        else:
-            warna_titik = "#4318FF"  # Biru
-            saiz_titik = 5           # Kecil
-
-        folium.CircleMarker(
-            location=[k["lat"], k["lon"]],
-            radius=saiz_titik,
-            color="#ffffff",
-            weight=1.5,
-            fill=True,
-            fill_color=warna_titik,
-            fill_opacity=0.9,
-            tooltip=k["name"],
-            popup=folium.Popup(popup_content, max_width=200)
-        ).add_to(m)
-        
-    map_html = m._repr_html_()
-
-    # B. Senarai Staf (Roster) - Jadikan Boleh Diklik!
+    # A. Senarai Staf (Roster)
     from django.urls import reverse
     
     if pilihan_klinik:
         df_docs = generate_mock_doctors(pilihan_klinik)
-        
-        # Pautan ke Modul Klinikal
         clinical_url = reverse('cts_module')
         
-        # Tukar teks nama kepada tag <a> supaya boleh diklik
+        # Link terus ke borang penilaian pegawai
         df_docs['Officer Name'] = df_docs['Officer Name'].apply(
             lambda x: f"<a href='{clinical_url}?officer={urllib.parse.quote(x)}&clinic={urllib.parse.quote(pilihan_klinik)}&state={urllib.parse.quote(pilihan_negeri)}&tab=Skills' style='color:#be123c; font-weight:800; text-decoration:none;' onmouseover='this.style.textDecoration=\"underline\"' onmouseout='this.style.textDecoration=\"none\"'>🔍 {x}</a>"
         )
-        
         roster_html = df_docs.to_html(index=False, classes="roster-table", escape=False)
     else:
+        df_docs = pd.DataFrame()
         roster_html = "<div style='text-align:center; padding: 20px; color:#a3aed1;'>No officers found for this state.</div>"
 
     # Dapatkan nama dinamik untuk header
-    hod_name = f"{request.user.first_name} {request.user.last_name}".strip()
-    if not hod_name:
-        hod_name = request.user.username
-    
+    hod_name = f"{request.user.first_name} {request.user.last_name}".strip() or request.user.username
     hod_facility_label = hod_facility if hod_scope == 'FACILITY' and hod_facility else "HPU Putrajaya"
 
-    # C. CARTA BAR (MENEGAK - Auto Resize)
-    senarai_modul = ["CTS", "FMS", "Peds", "O&G"] 
-    senarai_nilai = [120, 95, 60, 45]
+    # B. CARTA BAR KPI JABATAN (TARGET VS ACTUAL)
+    kpi_categories = ["Clinical Excellence", "CPD & Knowledge", "Doc Audit", "Policy Compliance"]
+    kpi_targets = [85, 80, 90, 100]
+    kpi_actuals = [88, 75, 82, 95]
 
-    fig_bar = go.Figure(data=[
-        go.Bar(
-            x=senarai_modul,  
-            y=senarai_nilai,  
-            text=senarai_nilai, 
-            textposition='auto', 
-            marker_color=["#4c0519", "#881337", "#be123c", "#f43f5e"] # <--- Tema Warna Rose
-        )
-    ])
-    
-    fig_bar.update_layout(
-        autosize=True,
-        height=240, 
-        margin=dict(l=30, r=20, t=20, b=30), 
-        bargap=0.4, 
-        showlegend=False, 
+    fig_kpi = go.Figure()
+    fig_kpi.add_trace(go.Bar(
+        x=kpi_categories, y=kpi_targets, name="Target KPI",
+        marker_color="#fecdd3", text=[f"{v}%" for v in kpi_targets], textposition='auto'
+    ))
+    fig_kpi.add_trace(go.Bar(
+        x=kpi_categories, y=kpi_actuals, name="Actual Score",
+        marker_color="#be123c", text=[f"{v}%" for v in kpi_actuals], textposition='auto'
+    ))
+
+    fig_kpi.update_layout(
+        barmode='group', height=240,
+        margin=dict(l=30, r=20, t=20, b=30), bargap=0.25,
         paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)',
-        xaxis=dict(fixedrange=True, showgrid=False, tickfont=dict(size=11)), 
-        yaxis=dict(fixedrange=True, showgrid=True, gridcolor='#ffe4e6') # Warna grid rose cair
+        legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1, font=dict(size=10, color='#881337')),
+        xaxis=dict(fixedrange=True, showgrid=False, tickfont=dict(size=10, color='#881337', weight='bold')),
+        yaxis=dict(fixedrange=True, showgrid=True, gridcolor='#ffe4e6', range=[0, 110])
     )
-    bar_html = fig_bar.to_html(full_html=False, include_plotlyjs=False, config={'responsive': True})
+    dept_kpi_html = fig_kpi.to_html(full_html=False, include_plotlyjs=False, config={'responsive': True})
 
-    # D. CARTA PIE
-    label_status = ["Outstanding", "Good", "Competent", "Needs Attention"]
-    nilai_status = [25, 45, 20, 10]
-    warna_status = ["#881337", "#be123c", "#fb7185", "#fecdd3"] # <--- Tema Warna Rose
+    # C. MO COMPETENCY HEATMAP (Paksi Y: Nama MO vs Paksi X: 3 Tunjang)
+    if not df_docs.empty:
+        mo_names = df_docs['Officer Name'].str.replace(r'<[^>]*>', '', regex=True).tolist()[:5]
+    else:
+        mo_names = ["Dr. Ramesh Lee", "Dr. Siti Abu", "Dr. Chong Ali", "Dr. Mei Ismail", "Dr. Mohammad"]
 
-    fig_pie = go.Figure(data=[go.Pie(
-        labels=label_status, 
-        values=nilai_status, 
-        hole=0.6,
-        marker=dict(colors=warna_status, line=dict(color='#ffffff', width=2)),
-        textinfo='percent',
-        textposition='inside'
-    )])
-    
-    fig_pie.update_layout(
-        height=280,
-        margin=dict(t=0, l=0, r=0, b=0),
-        showlegend=False, 
-        paper_bgcolor='rgba(0,0,0,0)', 
-        plot_bgcolor='rgba(0,0,0,0)'
+    z_mo_data = [
+        [88, 92, 78],
+        [65, 70, 82],
+        [94, 85, 90],
+        [72, 68, 75],
+        [85, 88, 92]
+    ]
+    tunjang_labels = ['Clinical', 'Operational', 'Interpersonal']
+
+    fig_mo_heat = go.Figure(data=go.Heatmap(
+        z=z_mo_data, x=tunjang_labels, y=mo_names,
+        colorscale=[[0, '#fecdd3'], [0.5, '#fb7185'], [1.0, '#be123c']],
+        texttemplate="%{z}%", showscale=False, xgap=3, ygap=3
+    ))
+    fig_mo_heat.update_layout(
+        autosize=True, height=240,
+        margin=dict(l=90, r=10, t=10, b=30),
+        paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)',
+        xaxis=dict(fixedrange=True, tickfont=dict(size=10, color='#881337', weight='bold')),
+        yaxis=dict(fixedrange=True, tickfont=dict(size=10, color='#881337', weight='bold'), autorange="reversed")
     )
-    pie_html = fig_pie.to_html(full_html=False, include_plotlyjs=False)
+    mo_heatmap_html = fig_mo_heat.to_html(full_html=False, include_plotlyjs=False, config={'responsive': True})
 
-    # E. CARTA SUNBURST
+    # D. DYNAMIC SUNBURST FRAMEWORK
     data_nav = {
         "labels": ["HPU", "Clinical<br>Excellence", "Operational", "Interpersonal<br>Excellence", "Skills", "Knowledge &<br>Capacity", "Policies &<br>Protocols", "Documentation", "Productivity &<br>Efficiency", "Innovation &<br>Problem Solving", "Patient<br>Experience", "Emotional<br>Intelligence", "Teamwork &<br>Collaboration", "Mentorship"],
         "parents": ["", "HPU", "HPU", "HPU", "Clinical<br>Excellence", "Clinical<br>Excellence", "Clinical<br>Excellence", "Clinical<br>Excellence", "Operational", "Operational", "Interpersonal<br>Excellence", "Interpersonal<br>Excellence", "Interpersonal<br>Excellence", "Interpersonal<br>Excellence"],
         "colors": ["Base", "Clinical", "Operational", "Interpersonal"] + ["Clinical"]*4 + ["Operational"]*2 + ["Interpersonal"]*4
     }
-    color_map = {"Base": "#ffffff", "Clinical": "#881337", "Operational": "#be123c", "Interpersonal": "#fb7185"} # <--- Tema Warna Rose
+    color_map = {"Base": "#ffffff", "Clinical": "#881337", "Operational": "#be123c", "Interpersonal": "#fb7185"}
     fig_sunburst = px.sunburst(pd.DataFrame(data_nav), names='labels', parents='parents', color='colors', color_discrete_map=color_map)
-    
     fig_sunburst.update_traces(
-        insidetextorientation='tangential', 
-        textinfo='label', 
-        textfont_size=12,
-        marker=dict(line=dict(color='#ffffff', width=2)) 
+        insidetextorientation='tangential', textinfo='label', textfont_size=11,
+        marker=dict(line=dict(color='#ffffff', width=2))
     )
     fig_sunburst.update_layout(
-        height=290,
-        margin=dict(t=0, l=0, r=0, b=0),
+        height=240, margin=dict(t=0, l=0, r=0, b=0),
         paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)'
     )
     sunburst_html = fig_sunburst.to_html(full_html=False, include_plotlyjs=False)
 
-    # F. CARTA HEATMAP
-    z_data = [
-        [85, 92, 78], 
-        [90, 88, 85], 
-        [60, 75, 80], 
-        [45, 65, 70]  
-    ]
-    x_labels = ['Clinical', 'Operational', 'Interpersonal']
-    y_labels = ['CTS', 'FMS', 'Peds', 'O&G']
-
-    fig_heat = go.Figure(data=go.Heatmap(
-        z=z_data, x=x_labels, y=y_labels,
-        colorscale='Reds', texttemplate="%{z}", # <--- Tukar kepada skala merah
-        showscale=False,
-        xgap=3, 
-        ygap=3  
-    ))
-    
-    fig_heat.update_layout(
-        autosize=True, 
-        height=260, 
-        margin=dict(l=50, r=20, t=35, b=20), 
-        paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)',
-        xaxis=dict(fixedrange=True, tickangle=0, tickfont=dict(size=9)),
-        yaxis=dict(fixedrange=True, tickfont=dict(size=10))
-    )
-    heatmap_html = fig_heat.to_html(full_html=False, include_plotlyjs=False, config={'responsive': True})
-
-    # Hantar data ke template (Diubahsuai supaya sejajar dengan fail HTML)
     context = {
         'section': section,
-        'map_html': map_html,
         'roster_html': roster_html,
-        'bar_html': bar_html,
-        'pie_html': pie_html, 
+        'dept_kpi_html': dept_kpi_html,
+        'mo_heatmap_html': mo_heatmap_html,
         'sunburst_html': sunburst_html,
-        'heatmap_html': heatmap_html,
         'senarai_negeri': STATE_CENTERS.keys(),
         'pilihan_negeri': pilihan_negeri,
         'senarai_klinik': senarai_klinik,
@@ -1272,6 +1178,9 @@ def staff_dashboard_view(request):
             messages.success(request, "✅ Mentorship session log has been saved.")
         elif form_type == 'settings':
             messages.success(request, "✅ Profile & Account Settings successfully updated.")
+        elif form_type == 'complete_coaching':
+            request.session['coaching_completed'] = True
+            messages.success(request, "⚡ AI Self-Coaching plan acknowledged! Your Operational Index has been upgraded to 88% (Target Achieved).")
             
         return redirect(f'/staff/?section={section}')
 
@@ -1353,7 +1262,61 @@ def staff_dashboard_view(request):
     # DUA BARIS INI TELAH DIKELUARKAN DARI BLOK ELIF (DITOLAK KE KIRI)
     staff_name = request.session.get('staff_name', 'Dr. Portal')
     staff_dept = request.session.get('staff_dept', 'Outpatient')
-  
+
+    # ==========================================
+    # LOGIK DIAGNOSTIK AI EVALUATOR (3 TUNJANG)
+    # ==========================================
+    random.seed(staff_name)
+    
+    score_clinical = random.randint(75, 95)
+    score_interpersonal = random.randint(80, 98)
+    
+    # Check if MO has completed the self-coaching module
+    if request.session.get('coaching_completed'):
+        score_ops_coding = 88  
+        ai_risk_tier = "GREEN"
+        ai_alert_title = "AI Diagnostic Alert: Remediation Completed"
+        ai_alert_msg = f"Congratulations! Clinical Coding tasks ({score_ops_coding}%) have been successfully completed. All 3 Pillars are now in optimal range."
+        ai_action_text = "View Verified Status"
+    else:
+        score_ops_coding = random.randint(40, 48)  
+        
+        # Determine Risk Tier based on 3-Pillar score ranges
+        if score_ops_coding < 50 or score_clinical < 65:
+            ai_risk_tier = "RED"
+            ai_alert_title = "AI Diagnostic Alert: Operational Lag Detected"
+            ai_alert_msg = f"AI Engine detected an efficiency drop in Task Velocity (Clinical Coding: {score_ops_coding}%) and documentation time backlog. Your Clinical ({score_clinical}%) & Interpersonal ({score_interpersonal}%) performance remain outstanding."
+            ai_action_text = "Start AI Self-Coaching"
+        elif score_ops_coding < 75 or score_clinical < 80:
+            ai_risk_tier = "YELLOW"
+            ai_alert_title = "AI Diagnostic Alert: Moderate Attention Needed"
+            ai_alert_msg = f"Your overall performance is stable, but documentation completion rate is at a borderline level ({score_ops_coding}%). Self-review is recommended."
+            ai_action_text = "Review Guidance"
+        else:
+            ai_risk_tier = "GREEN"
+            ai_alert_title = "AI Diagnostic Alert: Outstanding Performance"
+            ai_alert_msg = f"Congratulations! All 3 Pillars are at an outstanding level (>85%). You meet the eligibility criteria for the Excellent Service Award."
+            ai_action_text = "View Talent Track"
+
+    # ==========================================
+    # PROMOTION READINESS INDEX (PRI) CALCULATION
+    # ==========================================
+    cpd_score = 90
+    pri_score = int((0.40 * score_clinical) + (0.30 * score_ops_coding) + (0.20 * score_interpersonal) + (0.10 * cpd_score))
+    
+    if pri_score >= 85:
+        promotion_tier = "Tier 1: Fast-Track Candidate"
+        promotion_color = "#16a34a"
+        next_grade = "UD48 (Fast-Track)"
+    elif pri_score >= 70:
+        promotion_tier = "Tier 2: On-Track (Time-Based)"
+        promotion_color = "#d97706"
+        next_grade = "UD48 (Time-Based)"
+    else:
+        promotion_tier = "Tier 3: Action Required"
+        promotion_color = "#be123c"
+        next_grade = "UD48 (Deferred)"
+
     context = {
         'section': section,
         'chart_html': chart_html,
@@ -1362,12 +1325,22 @@ def staff_dashboard_view(request):
         'gauge_html': gauge_html,
         'area_html': area_html,
         'today_date': date.today().strftime('%d %B %Y'),
-        'clinical_score': 85,
-        'operational_score': 92,
+        'clinical_score': score_clinical,
+        'operational_score': score_ops_coding,
         'interpersonal_rating': "High",
-        # --- TAMBAHAN UNTUK PERSONALISASI ---
         'staff_name': staff_name,
         'staff_dept': staff_dept,
+        'ai_risk_tier': ai_risk_tier,
+        'ai_alert_title': ai_alert_title,
+        'ai_alert_msg': ai_alert_msg,
+        'ai_action_text': ai_action_text,
+        'score_clinical': score_clinical,
+        'score_ops_coding': score_ops_coding,
+        'score_interpersonal': score_interpersonal,
+        'pri_score': pri_score,
+        'promotion_tier': promotion_tier,
+        'promotion_color': promotion_color,
+        'next_grade': next_grade,
     }
     return render(request, 'dashboard/staff_dashboard.html', context)
 
@@ -1503,3 +1476,63 @@ def overall_analytics_view(request):
     }
 
     return render(request, 'dashboard/overall_analytics.html', context)
+
+# ==========================================
+# DEDICATED OFFICER COGNITIVE PROFILE
+# ==========================================
+@login_required(login_url='/login/')
+def officer_profile_view(request):
+    officer_name = request.GET.get('officer', 'Pegawai Perubatan')
+    clinic_name = request.GET.get('clinic', 'Klinik Kesihatan')
+    state_name = request.GET.get('state', 'State')
+    
+    # Jana data mentah berasaskan nama (Supaya sentiasa konsisten bila di-refresh)
+    import random
+    random.seed(officer_name)
+    
+    score_clinical = random.randint(75, 98)
+    score_ops = random.randint(70, 95)
+    score_interp = random.randint(65, 95)
+    score_cpd = random.randint(80, 100)
+    score_doc = random.randint(85, 100)
+    total_score = int((score_clinical + score_ops + score_interp) / 3)
+    
+    # Status Penilaian
+    status = "Outstanding" if total_score >= 85 else ("Competent" if total_score >= 65 else "Needs Attention")
+    
+    # Radar Chart Kognitif
+    categories = ['Clinical Skill', 'CPD Knowledge', 'Doc Quality', 'Emotional Intel', 'Teamwork']
+    values = [score_clinical, score_cpd, score_doc, score_interp, random.randint(70, 95)]
+    
+    fig_radar = go.Figure()
+    fig_radar.add_trace(go.Scatterpolar(
+        r=values + [values[0]],
+        theta=categories + [categories[0]],
+        fill='toself',
+        fillcolor='rgba(190, 18, 60, 0.2)',
+        line=dict(color='#be123c', width=2),
+        marker=dict(size=6, color='#881337')
+    ))
+    fig_radar.update_layout(
+        polar=dict(
+            radialaxis=dict(visible=True, range=[0, 100], tickfont=dict(size=9, color='#881337')),
+            angularaxis=dict(tickfont=dict(size=10, color='#881337', weight='bold'))
+        ),
+        margin=dict(t=20, b=20, l=30, r=30),
+        paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)',
+        showlegend=False, height=320
+    )
+    radar_html = fig_radar.to_html(full_html=False, include_plotlyjs=False)
+
+    context = {
+        'officer_name': officer_name,
+        'clinic_name': clinic_name,
+        'state_name': state_name,
+        'total_score': total_score,
+        'status': status,
+        'score_clinical': score_clinical,
+        'score_ops': score_ops,
+        'score_interp': score_interp,
+        'radar_html': radar_html,
+    }
+    return render(request, 'dashboard/officer_profile.html', context)

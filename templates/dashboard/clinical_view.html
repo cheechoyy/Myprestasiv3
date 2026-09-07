@@ -42,10 +42,10 @@
             opacity: 0;
         }
 
-        /* 2. Visual Gauge (Grow Circular) - Override untuk Gauge sahaja */
+        /* 2. Visual Gauge (Sapuan Kiri ke Kanan) */
         .grid-2 .box-border .js-plotly-plot {
-            animation: growCircular 1.2s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
-            transform-origin: center bottom;
+            animation: wipeRight 1.2s cubic-bezier(0.83, 1, 0.3, 1) forwards;
+            opacity: 0;
         }
 
         /* 3. Semua Jadual / Table (Smooth Fade) */
@@ -109,21 +109,43 @@
         .content-card {
             background: white;
             border-radius: 16px;
-            padding: 15px 20px;
+            padding: 20px 25px;
             border: 1px solid #ffe4e6;
             box-shadow: 0 4px 12px rgba(190, 18, 60, 0.03);
             flex-grow: 1;
-            display: flex;
-            flex-direction: column;
-            overflow-y: auto;  
-            margin-bottom: 0;
-            min-height: 0;
+            display: block;
+            overflow-y: auto;
+            margin-bottom: 15px;
         }
 
         .content-card::-webkit-scrollbar { width: 6px; }
         .content-card::-webkit-scrollbar-thumb { background-color: #fecdd3; border-radius: 10px; }
 
-        .filter-row { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 15px; margin-bottom: 10px; flex-shrink: 0; }
+        .filter-wrapper {
+            background: #fff1f2;
+            border: 1px solid #ffe4e6;
+            padding: 15px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+        }
+
+        .filter-row { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 15px; align-items: end; }
+
+        .scope-badge {
+            background: white;
+            border: 1px solid #fecdd3;
+            padding: 8px 14px;
+            border-radius: 8px;
+            color: #881337;
+            font-weight: 800;
+            font-size: 13px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            min-height: 38px;
+            box-sizing: border-box;
+            box-shadow: 0 1px 3px rgba(190, 18, 60, 0.04);
+        }
         .filter-group label { display: block; font-size: 12px; color: #be123c; margin-bottom: 5px; font-weight: 700;}
         .filter-select { width: 100%; padding: 8px 12px; border-radius: 8px; border: 1px solid #ffe4e6; font-family: 'Inter'; font-size: 13px; background: #fff1f2; color: #881337; font-weight: 600;}
         .filter-select:focus { outline: none; border-color: #be123c; background: white; box-shadow: 0 0 0 2px rgba(190, 18, 60, 0.1);}
@@ -395,7 +417,7 @@
 
         <div class="sub-modules-nav" style="margin-bottom: 15px;">
             <a href="{% url 'cts_module' %}?dept={{ dept }}&state={{ pilihan_negeri }}&clinic={{ pilihan_klinik }}&officer={{ pilihan_doktor }}" class="sm-btn active">
-                <svg style="width: 18px; height: 18px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.5 12.75l6 6 9-13.5M9 12l2.25 2.25L15 9m-6 12a9 9 0 110-18 9 9 0 010 18z"/></svg>
+                <svg style="width: 18px; height: 18px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/></svg>
                 Clinical Excellence
             </a>
             <a href="{% url 'operational_module' %}?dept={{ dept }}&state={{ pilihan_negeri }}&clinic={{ pilihan_klinik }}&officer={{ pilihan_doktor }}" class="sm-btn">
@@ -419,34 +441,65 @@
 
         <div class="content-card">
 
-            <form method="GET">
-                <input type="hidden" name="dept" value="{{ dept }}">
+            <div class="filter-wrapper">
+                <form method="GET" style="margin: 0;">
+                    <input type="hidden" name="dept" value="{{ dept }}">
+                    <input type="hidden" name="tab" value="{{ active_tab }}">
 
-                <input type="hidden" name="tab" value="{{ active_tab }}">
-                <div class="filter-row">
-                    <div class="filter-group">
-                        <label>Select state:</label>
-                        <select name="state" class="filter-select" onchange="this.form.submit()">
-                            {% for state in senarai_negeri %}<option value="{{ state }}" {% if state == pilihan_negeri %}selected{% endif %}>{{ state }}</option>{% endfor %}
-                        </select>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; align-items: center;">
+                        <!-- Kiri: State (Atas) & Facility/Clinic (Bawah) Tanpa Kotak Putih -->
+                        <div style="display: flex; flex-direction: column; gap: 6px;">
+                            <!-- State Context -->
+                            <div>
+                                {% if is_state_locked or is_facility_locked %}
+                                    <input type="hidden" name="state" value="{{ pilihan_negeri }}">
+                                    <div style="font-size: 13px; color: #881337; font-weight: 700; display: flex; align-items: center; gap: 6px;">
+                                        <span style="color: #be123c;">State:</span>
+                                        <svg style="width:15px; height:15px; color:#be123c; flex-shrink:0;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                                        <span style="font-weight: 800; color: #881337;">{{ pilihan_negeri }}</span>
+                                    </div>
+                                {% else %}
+                                    <div class="filter-group">
+                                        <label>State:</label>
+                                        <select name="state" class="filter-select" style="background: white;" onchange="this.form.submit()">
+                                            {% for state in senarai_negeri %}<option value="{{ state }}" {% if state == pilihan_negeri %}selected{% endif %}>{{ state }}</option>{% endfor %}
+                                        </select>
+                                    </div>
+                                {% endif %}
+                            </div>
+
+                            <!-- Facility / Clinic Context -->
+                            <div>
+                                {% if is_facility_locked %}
+                                    <input type="hidden" name="clinic" value="{{ pilihan_klinik }}">
+                                    <div style="font-size: 13px; color: #881337; font-weight: 700; display: flex; align-items: center; gap: 6px;">
+                                        <span style="color: #be123c;">Facility / Clinic:</span>
+                                        <svg style="width:15px; height:15px; color:#be123c; flex-shrink:0;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5m0 0v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4M12 7v4m-2-2h4"/></svg>
+                                        <span style="font-weight: 800; color: #881337;">{{ pilihan_klinik }}</span>
+                                    </div>
+                                {% else %}
+                                    <div class="filter-group">
+                                        <label>Facility / Clinic:</label>
+                                        <select name="clinic" class="filter-select" style="background: white;" onchange="this.form.submit()">
+                                            {% for klinik in senarai_klinik %}<option value="{{ klinik }}" {% if klinik == pilihan_klinik %}selected{% endif %}>{{ klinik }}</option>{% endfor %}
+                                        </select>
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <!-- Kanan: Select Medical Officer Dropdown -->
+                        <div class="filter-group" style="margin: 0;">
+                            <label>Select Medical Officer:</label>
+                            <select name="officer" class="filter-select" style="background: white; border-color: #be123c; font-weight: 800;" onchange="this.form.submit()">
+                                {% for doc in senarai_doktor %}<option value="{{ doc }}" {% if doc == pilihan_doktor %}selected{% endif %}>{{ doc }}</option>{% endfor %}
+                            </select>
+                        </div>
                     </div>
+                </form>
+            </div>
 
-                    <div class="filter-group">
-                        <label>Select Clinic:</label>
-                        <select name="clinic" class="filter-select" onchange="this.form.submit()">
-                            {% for klinik in senarai_klinik %}<option value="{{ klinik }}" {% if klinik == pilihan_klinik %}selected{% endif %}>{{ klinik }}</option>{% endfor %}
-                        </select>
-                    </div>
-
-                    <div class="filter-group">
-                        <label>Select Medical Officer:</label>
-                        <select name="officer" class="filter-select" onchange="this.form.submit()">
-                            {% for doc in senarai_doktor %}<option value="{{ doc }}" {% if doc == pilihan_doktor %}selected{% endif %}>{{ doc }}</option>{% endfor %}
-                        </select>
-                    </div>
-                </div>
-
-            <div style="background-color: #fff1f2; padding: 15px 20px; border-radius: 8px; margin-bottom: 20px; font-size: 15px; color: #881337; border: 1px solid #ffe4e6;">
+            <div style="background-color: #fff1f2; padding: 12px 20px; border-radius: 8px; margin-bottom: 20px; font-size: 14px; color: #881337; border: 1px solid #ffe4e6;">
                 Evaluation Session: <b>{{ pilihan_doktor }}</b>
             </div>
 

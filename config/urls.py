@@ -16,8 +16,9 @@ urlpatterns = [
     path('operational-module/', views.operational_view, name='operational_module'),
     path('interpersonal-module/', views.interpersonal_view, name='interpersonal_module'),
     
-    # --- LALUAN BAHARU UNTUK DRILL-DOWN ANALISIS ---
+    # --- LALUAN BAHARU UNTUK DRILL-DOWN ANALISIS & PROFIL KOGNITIF ---
     path('overall-analytics/', views.overall_analytics_view, name='overall_analytics'),
+    path('officer-profile/', views.officer_profile_view, name='officer_profile'),
     
     path('logout/', views.logout_view, name='logout'),
 ]
