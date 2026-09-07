@@ -16,7 +16,12 @@ SECRET_KEY = config('SECRET_KEY', default='django-insecure-your-secret-key-chang
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = config('DEBUG', default=True, cast=bool)
 
-ALLOWED_HOSTS = config('ALLOWED_HOSTS', default='127.0.0.1,localhost', cast=lambda v: [s.strip() for s in v.split(',')])
+ALLOWED_HOSTS = config('ALLOWED_HOSTS', default='127.0.0.1,localhost,cheechoyy.pythonanywhere.com', cast=lambda v: [s.strip() for s in v.split(',')])
+
+CSRF_TRUSTED_ORIGINS = [
+    'https://cheechoyy.pythonanywhere.com',
+    'http://cheechoyy.pythonanywhere.com',
+]
 
 
 # Application definition
@@ -97,7 +102,7 @@ AUTH_PASSWORD_VALIDATORS = [
 
 LANGUAGE_CODE = 'en-us'
 
-TIME_ZONE = 'UTC'
+TIME_ZONE = 'Asia/Kuala_Lumpur'
 
 USE_I18N = True
 
