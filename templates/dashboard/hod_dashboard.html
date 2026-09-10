@@ -9,7 +9,15 @@
     <script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
     <style>
         /* TEMA WARNA DNA BAHARU (ROSE & BURGUNDY) */
-        body { margin: 0; font-family: 'Inter', sans-serif; background-color: #fff1f2; display: flex; height: 100vh; overflow: hidden; }
+        body { 
+    margin: 0; 
+    font-family: 'Inter', sans-serif; 
+    background-color: #fff1f2; 
+    background-image: url("data:image/svg+xml,%3Csvg width='12' height='12' viewBox='0 0 12 12' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M0 0h12v12H0z' fill='none'/%3E%3Cpath d='M0 12L12 0M0 0l12 12' stroke='%23fecdd3' stroke-width='0.6' stroke-opacity='0.45'/%3E%3C/svg%3E");
+    display: flex; 
+    height: 100vh; 
+    overflow: hidden; 
+}
 
         /* --- SIDEBAR HOVER-TO-EXPAND (80px -> 280px) --- */
         .sidebar {
@@ -186,7 +194,7 @@
         .module-btn.disabled { color: #cbd5e1 !important; background-color: #f8f9fa !important; border-color: #e2e8f0 !important; cursor: not-allowed !important; opacity: 0.7; }
 
         .content-grid {
-            display: grid; grid-template-columns: 48% 26% minmax(0, 1fr);
+            display: grid; grid-template-columns: 42% 29% 29%;
             grid-template-areas: "action action kpi" "roster heatmap sunburst";
             grid-template-rows: 1fr 1fr; gap: 15px; flex-grow: 1; min-height: 0; min-width: 0; width: 100%;
         }
@@ -197,15 +205,60 @@
         .card-heatmap { grid-area: heatmap; display: flex; flex-direction: column; min-height: 0; min-width: 0; overflow: hidden; }
         .card-sunburst { grid-area: sunburst; display: flex; flex-direction: column; min-height: 0; min-width: 0; overflow: hidden; cursor: pointer; }
         
-        .alert-item { background: #fff1f2; border-left: 4px solid #be123c; border-radius: 8px; padding: 10px 14px; margin-bottom: 8px; display: flex; align-items: center; justify-content: space-between; }
-        .alert-item.urgent { border-left-color: #e11d48; background: #ffe4e6; }
+        .alert-item { 
+            background: #fff1f2; 
+            border: 1px solid #ffe4e6; 
+            border-radius: 12px; 
+            padding: 12px 16px; 
+            margin-bottom: 10px; 
+            display: flex; 
+            align-items: center; 
+            justify-content: space-between; 
+            transition: all 0.2s ease-in-out; 
+        }
+        .alert-item:hover { 
+            border-color: #fecdd3; 
+            background: #ffe4e6; 
+            transform: translateX(4px); 
+        }
+        .alert-item.urgent { 
+            background: #fff1f2; 
+            border: 1px solid #fecdd3; 
+        }
         .alert-title { font-size: 12px; font-weight: 800; color: #881337; margin: 0; }
         .alert-desc { font-size: 11px; color: #f43f5e; margin: 2px 0 0 0; font-weight: 600; }
         .btn-action-xs { background: #be123c; color: white; border: none; padding: 5px 10px; border-radius: 6px; font-size: 10px; font-weight: 800; text-decoration: none; transition: 0.2s; }
         .btn-action-xs:hover { background: #881337; }
 
-        .card { background: white; border-radius: 16px; border: 1px solid #ffe4e6; box-shadow: 0 4px 12px rgba(190, 18, 60, 0.03); padding: 15px; box-sizing: border-box; }
+        .card { 
+            background: white; 
+            border-radius: 16px; 
+            border: 1px solid #ffe4e6; 
+            box-shadow: 0 4px 12px rgba(190, 18, 60, 0.03); 
+            padding: 15px; 
+            box-sizing: border-box; 
+            transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
         .card-title { font-size: 14px; font-weight: 800; color: #881337; margin: 0 0 10px 0; flex-shrink: 0; display: flex; align-items: center; justify-content: space-between; gap: 8px;}
+
+        /* ANIMASI KURSOR HALAN PADA CARTA */
+        .card-kpi:hover, .card-heatmap:hover, .card-sunburst:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 12px 25px rgba(190, 18, 60, 0.12);
+            border-color: #fecdd3;
+        }
+
+        .card-kpi .js-plotly-plot, 
+        .card-heatmap .js-plotly-plot, 
+        .card-sunburst .js-plotly-plot {
+            transition: transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+
+        .card-kpi:hover .js-plotly-plot, 
+        .card-heatmap:hover .js-plotly-plot, 
+        .card-sunburst:hover .js-plotly-plot {
+            transform: scale(1.025);
+        }
 
         .roster-scroll { flex-grow: 1; overflow-y: auto; overflow-x: hidden; padding-right: 5px; }
         .roster-scroll::-webkit-scrollbar { width: 6px; }
@@ -412,11 +465,27 @@
         {% endif %}
 
         {% if section == 'Dashboard' %}
-            <div class="modules-grid">
-                <a href="{% url 'cts_module' %}?dept=CTS" class="module-btn" style="color: #be123c; border-color: #fecdd3;">CTS</a>
-                <a href="{% url 'cts_module' %}?dept=FMS" class="module-btn" style="color: #be123c; border-color: #fecdd3;">FMS</a>
-                <a href="#" class="module-btn disabled" onclick="return false;">Pediatrics</a>
-                <a href="#" class="module-btn disabled" onclick="return false;">O&G</a>
+            <!-- LENCANA JABATAN TUNGGAL BERDASARKAN PROFIL HOD (MODERN CLEAN LOOK) -->
+            <div style="background: linear-gradient(135deg, #ffffff 0%, #fff1f2 100%); border: 1px solid #ffe4e6; border-radius: 16px; padding: 16px 22px; margin-bottom: 20px; display: flex; align-items: center; justify-content: space-between; box-shadow: 0 4px 15px rgba(190, 18, 60, 0.03);">
+                <div style="display: flex; align-items: center; gap: 14px;">
+                    <div style="width: 42px; height: 42px; background: #fff1f2; border: 1px solid #ffe4e6; border-radius: 12px; display: flex; align-items: center; justify-content: center; color: #be123c; shrink-0;">
+                        <svg style="width: 22px; height: 22px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5m0 0v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4M12 7v4m-2-2h4"/></svg>
+                    </div>
+                    <div>
+                        <span style="font-size: 11px; font-weight: 800; color: #f43f5e; text-transform: uppercase; letter-spacing: 0.5px;">Modul Jabatan Dipantau</span>
+                        <h3 style="margin: 2px 0 0 0; color: #881337; font-size: 16px; font-weight: 900;">
+                            {% if user.profile.department == 'FMS' %}Family Medicine Specialist (FMS)
+                            {% elif user.profile.department == 'CTS' %}Cardiothoracic Surgery (CTS)
+                            {% elif user.profile.department == 'PEDS' %}Pediatrics
+                            {% elif user.profile.department == 'ONG' %}Obstetrics & Gynaecology (O&G)
+                            {% else %}{{ user.profile.department|default:"Family Medicine Specialist (FMS)" }}{% endif %}
+                        </h3>
+                    </div>
+                </div>
+                <a href="{% url 'cts_module' %}?dept={{ user.profile.department|default:'FMS' }}" style="background: #be123c; color: white; padding: 10px 18px; border-radius: 10px; font-size: 12px; font-weight: 800; text-decoration: none; display: flex; align-items: center; gap: 8px; transition: 0.2s; box-shadow: 0 4px 12px rgba(190, 18, 60, 0.2);" onmouseover="this.style.background='#881337'" onmouseout="this.style.background='#be123c'">
+                    <span>Masuk Modul Penilaian</span>
+                    <svg style="width: 14px; height: 14px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>
+                </a>
             </div>
 
             <div class="content-grid">
@@ -437,7 +506,7 @@
                             </div>
                             <a href="{% url 'cts_module' %}?officer=Dr.%20Ramesh%20Lee&tab=Skills" class="btn-action-xs">Review Case</a>
                         </div>
-                        <div class="alert-item" style="border-left-color: #16a34a; background: #f0fdf4;">
+                        <div class="alert-item" style="background: #f0fdf4; border: 1px solid #bbf7d0;">
                             <div>
                                 <p class="alert-title" style="color: #14532d;">🌟 Fast-Track Candidates (PRI ≥ 85%)</p>
                                 <p class="alert-desc" style="color: #15803d;">AI shortlisted 24 Officers eligible for Fast-Track UD48 promotion.</p>
@@ -479,14 +548,23 @@
                             <svg style="width: 18px; height: 18px; color: #be123c;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
                             Medical Officers
                         </span>
-                        <form method="GET" style="width: 50%;">
-                            <input type="hidden" name="state" value="{{ pilihan_negeri }}">
-                            <select name="clinic" class="filter-select" style="margin:0;" onchange="this.form.submit()" {% if is_facility_locked %}disabled style="opacity: 0.7; cursor: not-allowed;"{% endif %}>
-                                {% for clinic in senarai_klinik %}
-                                    <option value="{{ clinic }}" {% if clinic == pilihan_klinik %}selected{% endif %}>{{ clinic }}</option>
-                                {% endfor %}
-                            </select>
-                        </form>
+                        {% if is_facility_locked %}
+                            <!-- PAPARAN LENCANA STATIK (APABILA SKOP DIKUNCI) -->
+                            <div style="background: #fff1f2; color: #881337; border: 1px solid #ffe4e6; padding: 6px 12px; border-radius: 8px; font-size: 11px; font-weight: 800; display: flex; align-items: center; gap: 6px;">
+                                <svg style="width: 14px; height: 14px; color: #be123c;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5m0 0v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4M12 7v4m-2-2h4"/></svg>
+                                <span>{{ pilihan_klinik }}</span>
+                            </div>
+                        {% else %}
+                            <!-- DROPDOWN PILIHAN (APABILA MEMPUNYAI AKSES BANYAK KLINIK) -->
+                            <form method="GET" style="width: 50%;">
+                                <input type="hidden" name="state" value="{{ pilihan_negeri }}">
+                                <select name="clinic" class="filter-select" style="margin:0;" onchange="this.form.submit()">
+                                    {% for clinic in senarai_klinik %}
+                                        <option value="{{ clinic }}" {% if clinic == pilihan_klinik %}selected{% endif %}>{{ clinic }}</option>
+                                    {% endfor %}
+                                </select>
+                            </form>
+                        {% endif %}
                     </div>
                     <div class="roster-scroll" style="border: 1px solid #ffe4e6; border-radius: 8px;">
                         {{ roster_html|safe }}
@@ -638,50 +716,125 @@
     </div>
 
     
+    <!-- SKRIP LOGIK SISTEM & NAVIGASI SUNBURST DUA PERINGKAT -->
     <script>
-        
+        // 1. KAWALAN DROPDOWN HEADER
         function toggleDropdown(id) {
             var dropdowns = document.getElementsByClassName("dropdown-menu");
-            for (var i = 0; i < dropdowns.length; i++) { if (dropdowns[i].id !== id) { dropdowns[i].classList.remove('show'); } }
+            for (var i = 0; i < dropdowns.length; i++) { 
+                if (dropdowns[i].id !== id) { 
+                    dropdowns[i].classList.remove('show'); 
+                } 
+            }
             document.getElementById(id).classList.toggle("show");
         }
+
         window.onclick = function(event) {
             if (!event.target.closest('.dropdown-wrapper')) {
                 var dropdowns = document.getElementsByClassName("dropdown-menu");
-                for (var i = 0; i < dropdowns.length; i++) { dropdowns[i].classList.remove('show'); }
+                for (var i = 0; i < dropdowns.length; i++) { 
+                    dropdowns[i].classList.remove('show'); 
+                }
             }
-            
+        };
+
+        // 2. AUTO-RESIZE CARTA APABILA SIDEBAR HOVER
+        const sidebar = document.getElementById('mySidebar');
+        if (sidebar) {
+            sidebar.addEventListener('mouseenter', () => {
+                setTimeout(() => { window.dispatchEvent(new Event('resize')); }, 360);
+            });
+            sidebar.addEventListener('mouseleave', () => {
+                setTimeout(() => { window.dispatchEvent(new Event('resize')); }, 360);
+            });
         }
 
-        // Peta/graf auto-resize apabila tetingkap berubah saiz atau sidebar mengembang
-        const sidebar = document.getElementById('mySidebar');
-        sidebar.addEventListener('mouseenter', () => {
-            setTimeout(() => { window.dispatchEvent(new Event('resize')); }, 360);
-        });
-        sidebar.addEventListener('mouseleave', () => {
-            setTimeout(() => { window.dispatchEvent(new Event('resize')); }, 360);
-        });
-
-        // Event Listener untuk Navigasi Klik Carta Sunburst (Framework)
+        // 3. NAVIGASI DUA PERINGKAT CARTA SUNBURST (ZOOM DAHULU -> KLIK SUB-ITEM BARU REDIRECT)
         document.addEventListener("DOMContentLoaded", function() {
-            setTimeout(function() {
-                var sunburstCard = document.querySelector('.card-sunburst .js-plotly-plot');
-                if (sunburstCard) {
-                    sunburstCard.on('plotly_click', function(data) {
-                        if (data.points && data.points.length > 0) {
-                            var label = data.points[0].label.replace(/<br>/g, ' ');
-                            
-                            if (label.includes('Clinical') || label.includes('Skills') || label.includes('Knowledge') || label.includes('Policies') || label.includes('Documentation')) {
-                                window.location.href = "{% url 'cts_module' %}?dept=CTS&tab=Skills";
-                            } else if (label.includes('Operational') || label.includes('Productivity') || label.includes('Innovation')) {
-                                window.location.href = "{% url 'operational_module' %}?dept=CTS&tab=Productivity";
-                            } else if (label.includes('Interpersonal') || label.includes('Patient') || label.includes('Emotional') || label.includes('Teamwork') || label.includes('Mentorship')) {
-                                window.location.href = "{% url 'interpersonal_module' %}?dept=CTS&tab=Patient";
-                            }
-                        }
+            var urlClinical = "{% url 'cts_module' %}";
+            var urlOps = "{% url 'operational_module' %}";
+            var urlInterpersonal = "{% url 'interpersonal_module' %}";
+            var dept = "{{ user.profile.department|default:'FMS' }}";
+
+            function handleSunburstClick(data) {
+                if (!data || !data.points || data.points.length === 0) return true;
+
+                var pt = data.points[0];
+                var rawLabel = pt.label || pt.name || pt.hovertext || '';
+                var label = rawLabel
+                    .replace(/<[^>]*>/g, ' ')
+                    .replace(/&amp;/g, '&')
+                    .replace(/\s+/g, ' ')
+                    .trim()
+                    .toLowerCase();
+
+                // PERINGKAT 1: TUNJANG UTAMA (PARENT)
+                // Jika klik pada HPU, Clinical, Operational, Interpersonal -> Bolehkan Plotly Zoom (JANGAN Redirect)
+                var parentPillars = [
+                    'hpu', 
+                    'clinical excellence', 'clinical', 
+                    'operational', 
+                    'interpersonal excellence', 'interpersonal'
+                ];
+
+                if (parentPillars.includes(label)) {
+                    return true; // Benarkan animasi zoom in / zoom out semula jadi Plotly
+                }
+
+                // PERINGKAT 2: SUB-ITEM (LEAF)
+                // Klik pada sub-modul -> Lakukan lencongan (redirection)
+                var targetUrl = '';
+
+                // A. SUB-MODUL CLINICAL EXCELLENCE
+                if (label.includes('skill')) {
+                    targetUrl = urlClinical + "?dept=" + dept + "&tab=Skills";
+                } else if (label.includes('know') || label.includes('capac')) {
+                    targetUrl = urlClinical + "?dept=" + dept + "&tab=Knowledge";
+                } else if (label.includes('polic') || label.includes('protocol')) {
+                    targetUrl = urlClinical + "?dept=" + dept + "&tab=Policies";
+                } else if (label.includes('doc')) {
+                    targetUrl = urlClinical + "?dept=" + dept + "&tab=Documentation";
+
+                // B. SUB-MODUL OPERATIONAL
+                } else if (label.includes('product') || label.includes('efficien')) {
+                    targetUrl = urlOps + "?dept=" + dept + "&tab=Productivity";
+                } else if (label.includes('innov') || label.includes('problem') || label.includes('solv')) {
+                    targetUrl = urlOps + "?dept=" + dept + "&tab=Innovation";
+
+                // C. SUB-MODUL INTERPERSONAL EXCELLENCE
+                } else if (label.includes('patient') || label.includes('experi')) {
+                    targetUrl = urlInterpersonal + "?dept=" + dept + "&tab=Patient";
+                } else if (label.includes('emot') || label.includes('intel')) {
+                    targetUrl = urlInterpersonal + "?dept=" + dept + "&tab=EI";
+                } else if (label.includes('team') || label.includes('collab')) {
+                    targetUrl = urlInterpersonal + "?dept=" + dept + "&tab=Teamwork";
+                } else if (label.includes('mentor')) {
+                    targetUrl = urlInterpersonal + "?dept=" + dept + "&tab=Mentorship";
+                }
+
+                if (targetUrl) {
+                    window.location.href = targetUrl;
+                    return false; // Hentikan pusingan zoom selepas redirect
+                }
+
+                return true;
+            }
+
+            var checkPlotly = setInterval(function() {
+                var card = document.querySelector('.card-sunburst');
+                if (!card) return;
+                var gd = card.querySelector('.js-plotly-plot') || card.querySelector('.plotly-graph-div');
+
+                if (gd && typeof gd.on === 'function') {
+                    clearInterval(checkPlotly);
+
+                    // Daftar acara khas Plotly Sunburst Click
+                    gd.on('plotly_sunburstclick', function(data) {
+                        return handleSunburstClick(data);
                     });
                 }
-            }, 1000);
+            }, 150);
         });
+    </script>
 </body>
 </html>

@@ -91,6 +91,17 @@
         }
         .animate-up { animation: fadeUp 0.6s ease-out forwards; }
 
+        /* ANIMASI BAR KEMAJUAN FLUID */
+        @keyframes progressFluid {
+            0% { width: 0%; }
+            100% { width: var(--progress-val); }
+        }
+        .progress-fluid-bar {
+            height: 100%;
+            border-radius: 10px;
+            animation: progressFluid 1.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+
         /* MODAL PROFIL KOGNITIF */
         .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(136, 19, 55, 0.5); z-index: 2000; justify-content: center; align-items: center; backdrop-filter: blur(4px); }
         .modal-card { background: white; width: 550px; max-width: 90%; border-radius: 16px; padding: 25px; box-shadow: 0 20px 40px rgba(136, 19, 55, 0.2); border: 1px solid #ffe4e6; position: relative; animation: fadeUp 0.3s ease-out; }
@@ -276,12 +287,8 @@
                             <td>{{ doc.clinic }}</td>
                             <td><b>{{ doc.score }}%</b></td>
                             <td>
-                                {% if doc.status == 'Outstanding' %}
-                                    <span class="status-badge status-excellent">{{ doc.status }}</span>
-                                {% elif doc.status == 'Good' or doc.status == 'Competent' %}
-                                    <span class="status-badge status-moderate">{{ doc.status }}</span>
-                                {% else %}
-                                    <span class="status-badge status-needs-attention">{{ doc.status }}</span>
+                                {{ doc.status|safe }}
+                                {% if doc.score < 65 %}
                                     <span style="font-size: 10px; color: #be123c; font-weight: 800; display: block; margin-top: 3px; font-style: italic;">
                                         ⚡ AI Self-Coaching Active
                                     </span>
@@ -301,19 +308,90 @@
 
         <!-- CONTENT 3: PERFORMANCE & PROMOTION SHORTLIST -->
         {% elif analytic_type == 'performance' %}
-        <div class="grid-3" style="margin-bottom: 20px;">
-            <div style="background: white; border: 1px solid #ffe4e6; padding: 20px; border-radius: 12px; border-left: 4px solid #16A34A; box-shadow: 0 4px 10px rgba(190,18,60,0.03);">
-                <div style="font-size: 11px; color: #15803d; font-weight: bold; text-transform: uppercase;">Tier 1: Fast-Track (PRI ≥ 85%)</div>
-                <div style="font-size: 28px; font-weight: 900; color: #16A34A; margin-top: 5px;">24 <span style="font-size:12px; font-weight:normal; color:#15803d;">Eligible Candidates</span></div>
+        <!-- MYPRESTASI DNA PERFORMANCE DISTRIBUTION CARDS (CLEAN & FLUID BAR) -->
+        <div class="grid-3" style="margin-bottom: 25px; gap: 18px;">
+            
+            <!-- TIER 1: FAST-TRACK -->
+            <div style="background: linear-gradient(135deg, #ffffff 0%, #fff1f2 100%); border: 1px solid #ffe4e6; padding: 20px; border-radius: 16px; box-shadow: 0 4px 15px rgba(190, 18, 60, 0.04); position: relative;">
+                <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                    <div>
+                        <span style="background: #d1fae5; color: #15803d; padding: 4px 10px; border-radius: 20px; font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px; border: 1px solid #a7f3d0;">
+                            Tier 1 • Fast-Track (PRI ≥ 85%)
+                        </span>
+                        <div style="font-size: 32px; font-weight: 900; color: #881337; margin-top: 10px; line-height: 1;">
+                            24 <span style="font-size: 13px; font-weight: 700; color: #be123c;">Eligible Candidates</span>
+                        </div>
+                    </div>
+                    <div style="width: 40px; height: 40px; border-radius: 12px; background: #fff1f2; border: 1px solid #ffe4e6; color: #16a34a; display: flex; align-items: center; justify-content: center; shrink-0;">
+                        <svg style="width: 20px; height: 20px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/></svg>
+                    </div>
+                </div>
+                <!-- Fluid Progress Bar (Tebal 10px & Beranimasi) -->
+                <div style="margin-top: 18px;">
+                    <div style="display: flex; justify-content: space-between; font-size: 11px; font-weight: 800; color: #be123c; margin-bottom: 6px;">
+                        <span>Talent Distribution Rate</span>
+                        <span>77% of Roster</span>
+                    </div>
+                    <div style="background: #ffe4e6; height: 10px; border-radius: 10px; overflow: hidden; border: 1px solid #fecdd3;">
+                        <div class="progress-fluid-bar" style="background: #16a34a; --progress-val: 77%;"></div>
+                    </div>
+                </div>
             </div>
-            <div style="background: white; border: 1px solid #ffe4e6; padding: 20px; border-radius: 12px; border-left: 4px solid #D97706; box-shadow: 0 4px 10px rgba(190,18,60,0.03);">
-                <div style="font-size: 11px; color: #b45309; font-weight: bold; text-transform: uppercase;">Tier 2: On-Track (PRI 70-84%)</div>
-                <div style="font-size: 28px; font-weight: 900; color: #D97706; margin-top: 5px;">{{ total_staff }} <span style="font-size:12px; font-weight:normal; color:#b45309;">Time-Based Officers</span></div>
+
+            <!-- TIER 2: ON-TRACK -->
+            <div style="background: linear-gradient(135deg, #ffffff 0%, #fff1f2 100%); border: 1px solid #ffe4e6; padding: 20px; border-radius: 16px; box-shadow: 0 4px 15px rgba(190, 18, 60, 0.04); position: relative;">
+                <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                    <div>
+                        <span style="background: #fef3c7; color: #b45309; padding: 4px 10px; border-radius: 20px; font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px; border: 1px solid #fde68a;">
+                            Tier 2 • On-Track (PRI 70-84%)
+                        </span>
+                        <div style="font-size: 32px; font-weight: 900; color: #881337; margin-top: 10px; line-height: 1;">
+                            {{ total_staff }} <span style="font-size: 13px; font-weight: 700; color: #be123c;">Time-Based Officers</span>
+                        </div>
+                    </div>
+                    <div style="width: 40px; height: 40px; border-radius: 12px; background: #fff1f2; border: 1px solid #ffe4e6; color: #d97706; display: flex; align-items: center; justify-content: center; shrink-0;">
+                        <svg style="width: 20px; height: 20px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
+                    </div>
+                </div>
+                <!-- Fluid Progress Bar (Tebal 10px & Beranimasi) -->
+                <div style="margin-top: 18px;">
+                    <div style="display: flex; justify-content: space-between; font-size: 11px; font-weight: 800; color: #be123c; margin-bottom: 6px;">
+                        <span>Talent Distribution Rate</span>
+                        <span>18% of Roster</span>
+                    </div>
+                    <div style="background: #ffe4e6; height: 10px; border-radius: 10px; overflow: hidden; border: 1px solid #fecdd3;">
+                        <div class="progress-fluid-bar" style="background: #d97706; --progress-val: 18%;"></div>
+                    </div>
+                </div>
             </div>
-            <div style="background: white; border: 1px solid #ffe4e6; padding: 20px; border-radius: 12px; border-left: 4px solid #DC2626; box-shadow: 0 4px 10px rgba(190,18,60,0.03);">
-                <div style="font-size: 11px; color: #b91c1c; font-weight: bold; text-transform: uppercase;">Tier 3: Remediation (PRI < 70%)</div>
-                <div style="font-size: 28px; font-weight: 900; color: #DC2626; margin-top: 5px;">2 <span style="font-size:12px; font-weight:normal; color:#b91c1c;">Self-Coaching Active</span></div>
+
+            <!-- TIER 3: REMEDIATION -->
+            <div style="background: linear-gradient(135deg, #ffffff 0%, #fff1f2 100%); border: 1px solid #ffe4e6; padding: 20px; border-radius: 16px; box-shadow: 0 4px 15px rgba(190, 18, 60, 0.04); position: relative;">
+                <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                    <div>
+                        <span style="background: #ffe4e6; color: #be123c; padding: 4px 10px; border-radius: 20px; font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px; border: 1px solid #fecdd3;">
+                            Tier 3 • Remediation (PRI < 70%)
+                        </span>
+                        <div style="font-size: 32px; font-weight: 900; color: #881337; margin-top: 10px; line-height: 1;">
+                            2 <span style="font-size: 13px; font-weight: 700; color: #be123c;">AI Coaching Active</span>
+                        </div>
+                    </div>
+                    <div style="width: 40px; height: 40px; border-radius: 12px; background: #fff1f2; border: 1px solid #ffe4e6; color: #be123c; display: flex; align-items: center; justify-content: center; shrink-0;">
+                        <svg style="width: 20px; height: 20px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+                    </div>
+                </div>
+                <!-- Fluid Progress Bar (Tebal 10px & Beranimasi) -->
+                <div style="margin-top: 18px;">
+                    <div style="display: flex; justify-content: space-between; font-size: 11px; font-weight: 800; color: #be123c; margin-bottom: 6px;">
+                        <span>Talent Distribution Rate</span>
+                        <span>5% of Roster</span>
+                    </div>
+                    <div style="background: #ffe4e6; height: 10px; border-radius: 10px; overflow: hidden; border: 1px solid #fecdd3;">
+                        <div class="progress-fluid-bar" style="background: #be123c; --progress-val: 5%;"></div>
+                    </div>
+                </div>
             </div>
+
         </div>
 
         <div class="content-card">

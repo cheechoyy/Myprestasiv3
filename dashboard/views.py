@@ -163,7 +163,7 @@ def hod_dashboard(request):
     hod_name = f"{request.user.first_name} {request.user.last_name}".strip() or request.user.username
     hod_facility_label = hod_facility if hod_scope == 'FACILITY' and hod_facility else "HPU Putrajaya"
 
-    # B. CARTA BAR KPI JABATAN (TARGET VS ACTUAL)
+    # B. CARTA BAR KPI JABATAN (ROUNDED MODERN BARS)
     kpi_categories = ["Clinical Excellence", "CPD & Knowledge", "Doc Audit", "Policy Compliance"]
     kpi_targets = [85, 80, 90, 100]
     kpi_actuals = [88, 75, 82, 95]
@@ -171,24 +171,30 @@ def hod_dashboard(request):
     fig_kpi = go.Figure()
     fig_kpi.add_trace(go.Bar(
         x=kpi_categories, y=kpi_targets, name="Target KPI",
-        marker_color="#fecdd3", text=[f"{v}%" for v in kpi_targets], textposition='auto'
+        marker=dict(color="#ffe4e6", line=dict(color="#f43f5e", width=1), cornerradius=8),
+        text=[f"{v}%" for v in kpi_targets], textposition='auto',
+        textfont=dict(color='#be123c', size=11, family='Inter', weight='bold'),
+        hovertemplate="<b>%{x}</b><br>Target: %{y}%<extra></extra>"
     ))
     fig_kpi.add_trace(go.Bar(
         x=kpi_categories, y=kpi_actuals, name="Actual Score",
-        marker_color="#be123c", text=[f"{v}%" for v in kpi_actuals], textposition='auto'
+        marker=dict(color="#be123c", line=dict(color="#881337", width=1), cornerradius=8),
+        text=[f"{v}%" for v in kpi_actuals], textposition='auto',
+        textfont=dict(color='#ffffff', size=11, family='Inter', weight='bold'),
+        hovertemplate="<b>%{x}</b><br>Actual: %{y}%<extra></extra>"
     ))
 
     fig_kpi.update_layout(
         barmode='group', height=240,
-        margin=dict(l=30, r=20, t=20, b=30), bargap=0.25,
+        margin=dict(l=25, r=15, t=15, b=25), bargap=0.28, bargroupgap=0.12,
         paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)',
-        legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1, font=dict(size=10, color='#881337')),
-        xaxis=dict(fixedrange=True, showgrid=False, tickfont=dict(size=10, color='#881337', weight='bold')),
-        yaxis=dict(fixedrange=True, showgrid=True, gridcolor='#ffe4e6', range=[0, 110])
+        legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1, font=dict(size=10, color='#881337', family='Inter')),
+        xaxis=dict(fixedrange=True, showgrid=False, tickfont=dict(size=9.5, color='#881337', weight='bold', family='Inter')),
+        yaxis=dict(fixedrange=True, showgrid=True, gridcolor='#ffe4e6', range=[0, 110], tickfont=dict(size=9, color='#881337'))
     )
-    dept_kpi_html = fig_kpi.to_html(full_html=False, include_plotlyjs=False, config={'responsive': True})
+    dept_kpi_html = fig_kpi.to_html(full_html=False, include_plotlyjs=False, config={'displayModeBar': False, 'responsive': True})
 
-    # C. MO COMPETENCY HEATMAP (Paksi Y: Nama MO vs Paksi X: 3 Tunjang)
+    # C. MO COMPETENCY HEATMAP (GLASS & SOFT GRADIENT LOOK)
     if not df_docs.empty:
         mo_names = df_docs['Officer Name'].str.replace(r'<[^>]*>', '', regex=True).tolist()[:5]
     else:
@@ -205,35 +211,39 @@ def hod_dashboard(request):
 
     fig_mo_heat = go.Figure(data=go.Heatmap(
         z=z_mo_data, x=tunjang_labels, y=mo_names,
-        colorscale=[[0, '#fecdd3'], [0.5, '#fb7185'], [1.0, '#be123c']],
-        texttemplate="%{z}%", showscale=False, xgap=3, ygap=3
+        colorscale=[[0, '#fff1f2'], [0.4, '#fecdd3'], [0.7, '#f43f5e'], [1.0, '#be123c']],
+        texttemplate="<b>%{z}%</b>", textfont=dict(size=12, color="#ffffff", family='Inter'),
+        showscale=False, xgap=6, ygap=6,
+        hovertemplate="<b>Pegawai:</b> %{y}<br><b>Tunjang:</b> %{x}<br><b>Skor:</b> %{z}%<extra></extra>"
     ))
     fig_mo_heat.update_layout(
-        autosize=True, height=240,
-        margin=dict(l=90, r=10, t=10, b=30),
+        autosize=True, height=250,
+        margin=dict(l=10, r=10, t=10, b=25),
         paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)',
-        xaxis=dict(fixedrange=True, tickfont=dict(size=10, color='#881337', weight='bold')),
-        yaxis=dict(fixedrange=True, tickfont=dict(size=10, color='#881337', weight='bold'), autorange="reversed")
+        xaxis=dict(fixedrange=True, tickfont=dict(size=10, color='#881337', weight='bold', family='Inter')),
+        yaxis=dict(showticklabels=False, fixedrange=True, autorange="reversed")
     )
-    mo_heatmap_html = fig_mo_heat.to_html(full_html=False, include_plotlyjs=False, config={'responsive': True})
+    mo_heatmap_html = fig_mo_heat.to_html(full_html=False, include_plotlyjs=False, config={'displayModeBar': False, 'responsive': True})
 
-    # D. DYNAMIC SUNBURST FRAMEWORK
+    # D. DYNAMIC SUNBURST FRAMEWORK (HIGH-CONTRAST PALETTE)
     data_nav = {
         "labels": ["HPU", "Clinical<br>Excellence", "Operational", "Interpersonal<br>Excellence", "Skills", "Knowledge &<br>Capacity", "Policies &<br>Protocols", "Documentation", "Productivity &<br>Efficiency", "Innovation &<br>Problem Solving", "Patient<br>Experience", "Emotional<br>Intelligence", "Teamwork &<br>Collaboration", "Mentorship"],
         "parents": ["", "HPU", "HPU", "HPU", "Clinical<br>Excellence", "Clinical<br>Excellence", "Clinical<br>Excellence", "Clinical<br>Excellence", "Operational", "Operational", "Interpersonal<br>Excellence", "Interpersonal<br>Excellence", "Interpersonal<br>Excellence", "Interpersonal<br>Excellence"],
         "colors": ["Base", "Clinical", "Operational", "Interpersonal"] + ["Clinical"]*4 + ["Operational"]*2 + ["Interpersonal"]*4
     }
-    color_map = {"Base": "#ffffff", "Clinical": "#881337", "Operational": "#be123c", "Interpersonal": "#fb7185"}
+    color_map = {"Base": "#ffffff", "Clinical": "#881337", "Operational": "#be123c", "Interpersonal": "#e11d48"}
     fig_sunburst = px.sunburst(pd.DataFrame(data_nav), names='labels', parents='parents', color='colors', color_discrete_map=color_map)
     fig_sunburst.update_traces(
-        insidetextorientation='tangential', textinfo='label', textfont_size=11,
-        marker=dict(line=dict(color='#ffffff', width=2))
+        insidetextorientation='horizontal', textinfo='label',
+        textfont=dict(size=9.5, color='#ffffff', family='Inter', weight='bold'),
+        marker=dict(line=dict(color='#ffffff', width=2.5)),
+        hovertemplate="<b>%{label}</b><br>Modul MyPrestasi<extra></extra>"
     )
     fig_sunburst.update_layout(
-        height=240, margin=dict(t=0, l=0, r=0, b=0),
+        height=250, margin=dict(t=5, l=5, r=5, b=5),
         paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)'
     )
-    sunburst_html = fig_sunburst.to_html(full_html=False, include_plotlyjs=False)
+    sunburst_html = fig_sunburst.to_html(full_html=False, include_plotlyjs=False, config={'displayModeBar': False})
 
     context = {
         'section': section,
@@ -460,7 +470,7 @@ def cts_view(request):
                 yaxis=dict(tickformat='.0%', range=[0, 1.05], gridcolor='#ffe4e6'), xaxis=dict(gridcolor='#ffe4e6'), height=300,
                 margin=dict(t=50, l=40, r=20, b=40), paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)'
             )
-            chart_km_html = fig_km.to_html(full_html=False, include_plotlyjs=False)
+            chart_km_html = fig_km.to_html(full_html=False, include_plotlyjs=False, config={'displayModeBar': False})
 
             # 4. LUKIS GRAF 2: TREND GEE (SPAGHETTI PLOT + MARGINAL MEAN)
             df_agg = df.groupby('Bulan')['HbA1c'].agg(['mean', 'std']).reset_index()
@@ -506,7 +516,7 @@ def cts_view(request):
                 yaxis=dict(range=[5.0, 12.0], gridcolor='#ffe4e6'), xaxis=dict(gridcolor='#ffe4e6'),
                 legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1, font=dict(size=10, color='#881337'))
             )
-            chart_gee_html = fig_gee.to_html(full_html=False, include_plotlyjs=False)
+            chart_gee_html = fig_gee.to_html(full_html=False, include_plotlyjs=False, config={'displayModeBar': False})
 
        # ==========================================
         # TAMBAH BLOK 'ELSE' INI UNTUK CTS CUSUM LIMA-LAD
@@ -567,7 +577,7 @@ def cts_view(request):
                 xaxis=dict(tickmode='linear', tick0=1, dtick=1, gridcolor='#ffe4e6'), yaxis=dict(gridcolor='#ffe4e6')
             )
             
-            chart_html = fig.to_html(full_html=False, include_plotlyjs=False)
+            chart_html = fig.to_html(full_html=False, include_plotlyjs=False, config={'displayModeBar': False})
 
     # ==========================================
     # TAB 2: KNOWLEDGE (GAUGES & TABLE)
@@ -605,7 +615,7 @@ def cts_view(request):
             }
         ))
         fig_ind.update_layout(height=260, margin=dict(t=40, b=10, l=30, r=30), paper_bgcolor='rgba(0,0,0,0)')
-        gauge_score_html = fig_ind.to_html(full_html=False, include_plotlyjs=False)
+        gauge_score_html = fig_ind.to_html(full_html=False, include_plotlyjs=False, config={'displayModeBar': False})
 
         # GAUGE PURATA RAKAN SEKERJA (PEER TEMA ROSE)
         fig_peer = go.Figure(go.Indicator(
@@ -619,7 +629,7 @@ def cts_view(request):
             }
         ))
         fig_peer.update_layout(height=260, margin=dict(t=40, b=10, l=30, r=30), paper_bgcolor='rgba(0,0,0,0)')
-        gauge_peer_html = fig_peer.to_html(full_html=False, include_plotlyjs=False)
+        gauge_peer_html = fig_peer.to_html(full_html=False, include_plotlyjs=False, config={'displayModeBar': False})
 
         # JADUAL SEJARAH (Topik dinamik mengikut FMS / CTS)
         topik_2 = "Diabetes Management" if dept == "FMS" else "LIMA-LAD Technique"
@@ -661,7 +671,7 @@ def cts_view(request):
             yaxis=dict(showgrid=False),
             legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1)
         )
-        time_chart_html = fig_time.to_html(full_html=False, include_plotlyjs=False)
+        time_chart_html = fig_time.to_html(full_html=False, include_plotlyjs=False, config={'displayModeBar': False})
 
         # Jadual kekal sama
         df_delayed = pd.DataFrame({
@@ -825,7 +835,7 @@ def operational_view(request):
             yaxis_title="Patients Cleared",   
             xaxis=dict(showgrid=False)
         )
-        area_chart_html = fig_area.to_html(full_html=False, include_plotlyjs=False)
+        area_chart_html = fig_area.to_html(full_html=False, include_plotlyjs=False, config={'displayModeBar': False})
     # 2. Tab Innovation (PILIHAN 3: LOLLIPOP CHART)
     elif active_tab == 'Innovation':
         kategori = ['System Compliance', 'Proactive Thinking', 'Team Delegation', 'Crisis Response']
@@ -863,7 +873,7 @@ def operational_view(request):
             yaxis=dict(showgrid=False, tickfont=dict(size=12, color='#881337', weight='bold'))
         )
         
-        radar_chart_html = fig_pop.to_html(full_html=False, include_plotlyjs=False)
+        radar_chart_html = fig_pop.to_html(full_html=False, include_plotlyjs=False, config={'displayModeBar': False})
     context = {
         'sub_module': sub_module,
         'active_tab': active_tab,
@@ -1000,7 +1010,7 @@ def interpersonal_view(request):
         ),
         showlegend=False, height=320, margin=dict(t=30, b=30, l=30, r=30), paper_bgcolor='rgba(0,0,0,0)'
     )
-    radar_chart_html = fig_rose.to_html(full_html=False, include_plotlyjs=False)
+    radar_chart_html = fig_rose.to_html(full_html=False, include_plotlyjs=False, config={'displayModeBar': False})
     # 2. LOGIK TAB KANDUNGAN
     if active_tab == 'EI':
         import random
@@ -1024,7 +1034,7 @@ def interpersonal_view(request):
             paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)',
             xaxis=dict(range=[0, 100], showgrid=False)
         )
-        ei_chart_html = fig_ei.to_html(full_html=False, include_plotlyjs=False)
+        ei_chart_html = fig_ei.to_html(full_html=False, include_plotlyjs=False, config={'displayModeBar': False})
 
     elif active_tab == 'Teamwork':
         teamwork_view = request.GET.get('t_view', '360')
@@ -1042,7 +1052,7 @@ def interpersonal_view(request):
                 paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)',
                 yaxis=dict(range=[0, 100])
             )
-            team_360_html = fig_team.to_html(full_html=False, include_plotlyjs=False)
+            team_360_html = fig_team.to_html(full_html=False, include_plotlyjs=False, config={'displayModeBar': False})
             
         elif teamwork_view == 'Log':
             t_filter = request.GET.get('t_filter', 'Month')
@@ -1095,7 +1105,7 @@ def interpersonal_view(request):
                 # Letak legend (petunjuk) di tengah-tengah atas seperti gambar lama
                 legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="center", x=0.5, font=dict(size=11))
             )
-            team_scatter_html = fig_scatter.to_html(full_html=False, include_plotlyjs=False)
+            team_scatter_html = fig_scatter.to_html(full_html=False, include_plotlyjs=False, config={'displayModeBar': False})
 
     context = {
         'sub_module': sub_module,
@@ -1198,7 +1208,7 @@ def staff_dashboard_view(request):
         ))
         fig_donut.update_layout(height=190, margin=dict(t=0, b=0, l=0, r=0), showlegend=True, legend=dict(orientation="h", yanchor="bottom", y=-0.2, xanchor="center", x=0.5, font=dict(size=10)), paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)')
         fig_donut.add_annotation(text="<b>100%</b><br>Capacity", x=0.5, y=0.5, font_size=14, showarrow=False)
-        donut_html = fig_donut.to_html(full_html=False, include_plotlyjs=False)
+        donut_html = fig_donut.to_html(full_html=False, include_plotlyjs=False, config={'displayModeBar': False})
 
         # 2. AREA CHART (Trend Productivity)
         bulan_label = ["Sep", "Oct", "Nov", "Dec", "Jan", "Feb", "Mar", "Apr", "May", "Jun"]
@@ -1218,7 +1228,7 @@ def staff_dashboard_view(request):
             xaxis_title="", yaxis_title="Tasks Completed", 
             xaxis=dict(showgrid=False), yaxis=dict(showgrid=True, gridcolor='#ffe4e6')
         )
-        area_html = fig_area.to_html(full_html=False, include_plotlyjs=False)
+        area_html = fig_area.to_html(full_html=False, include_plotlyjs=False, config={'displayModeBar': False})
 
         # 3. GAUGE CHART (Performance Index)
         fig_gauge = go.Figure(go.Indicator(
@@ -1230,7 +1240,7 @@ def staff_dashboard_view(request):
             }
         ))
         fig_gauge.update_layout(height=220, margin=dict(t=30, b=10, l=20, r=20), paper_bgcolor='rgba(0,0,0,0)')
-        gauge_html = fig_gauge.to_html(full_html=False, include_plotlyjs=False)
+        gauge_html = fig_gauge.to_html(full_html=False, include_plotlyjs=False, config={'displayModeBar': False})
 
     # --- PERFORMANCE TAB (Holistic Benchmark 10 Modul - SPIDER WEB) ---
     elif section == 'Performance':
@@ -1257,7 +1267,7 @@ def staff_dashboard_view(request):
             ), 
             showlegend=False, height=380, margin=dict(t=40, b=40, l=60, r=60), paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)'
         )
-        radar_html = fig_radar.to_html(full_html=False, include_plotlyjs=False)
+        radar_html = fig_radar.to_html(full_html=False, include_plotlyjs=False, config={'displayModeBar': False})
 
     # DUA BARIS INI TELAH DIKELUARKAN DARI BLOK ELIF (DITOLAK KE KIRI)
     staff_name = request.session.get('staff_name', 'Dr. Portal')
@@ -1522,7 +1532,7 @@ def officer_profile_view(request):
         paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)',
         showlegend=False, height=320
     )
-    radar_html = fig_radar.to_html(full_html=False, include_plotlyjs=False)
+    radar_html = fig_radar.to_html(full_html=False, include_plotlyjs=False, config={'displayModeBar': False})
 
     context = {
         'officer_name': officer_name,
