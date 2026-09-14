@@ -465,14 +465,14 @@
         {% endif %}
 
         {% if section == 'Dashboard' %}
-            <!-- LENCANA JABATAN TUNGGAL BERDASARKAN PROFIL HOD (MODERN CLEAN LOOK) -->
+            <!-- SINGLE DEPARTMENT BADGE BASED ON HOD PROFILE (MODERN CLEAN LOOK) -->
             <div style="background: linear-gradient(135deg, #ffffff 0%, #fff1f2 100%); border: 1px solid #ffe4e6; border-radius: 16px; padding: 16px 22px; margin-bottom: 20px; display: flex; align-items: center; justify-content: space-between; box-shadow: 0 4px 15px rgba(190, 18, 60, 0.03);">
                 <div style="display: flex; align-items: center; gap: 14px;">
                     <div style="width: 42px; height: 42px; background: #fff1f2; border: 1px solid #ffe4e6; border-radius: 12px; display: flex; align-items: center; justify-content: center; color: #be123c; shrink-0;">
                         <svg style="width: 22px; height: 22px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5m0 0v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4M12 7v4m-2-2h4"/></svg>
                     </div>
                     <div>
-                        <span style="font-size: 11px; font-weight: 800; color: #f43f5e; text-transform: uppercase; letter-spacing: 0.5px;">Modul Jabatan Dipantau</span>
+                        <span style="font-size: 11px; font-weight: 800; color: #f43f5e; text-transform: uppercase; letter-spacing: 0.5px;">Monitored Department Module</span>
                         <h3 style="margin: 2px 0 0 0; color: #881337; font-size: 16px; font-weight: 900;">
                             {% if user.profile.department == 'FMS' %}Family Medicine Specialist (FMS)
                             {% elif user.profile.department == 'CTS' %}Cardiothoracic Surgery (CTS)
@@ -483,7 +483,7 @@
                     </div>
                 </div>
                 <a href="{% url 'cts_module' %}?dept={{ user.profile.department|default:'FMS' }}" style="background: #be123c; color: white; padding: 10px 18px; border-radius: 10px; font-size: 12px; font-weight: 800; text-decoration: none; display: flex; align-items: center; gap: 8px; transition: 0.2s; box-shadow: 0 4px 12px rgba(190, 18, 60, 0.2);" onmouseover="this.style.background='#881337'" onmouseout="this.style.background='#be123c'">
-                    <span>Masuk Modul Penilaian</span>
+                    <span>Enter Evaluation Module</span>
                     <svg style="width: 14px; height: 14px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>
                 </a>
             </div>
@@ -492,10 +492,10 @@
                 <!-- Card 1: Action Center & Red Flag Triage -->
                 <div class="card card-action">
                     <div class="card-title">
-                        <span class="flex items-center gap-2">
+                        <a href="{% url 'action_center_insight' %}?state={{ pilihan_negeri }}&clinic={{ pilihan_klinik }}" class="flex items-center gap-2" style="text-decoration:none; color:inherit;" onmouseover="this.style.color='#be123c'" onmouseout="this.style.color='inherit'">
                             <svg style="width: 18px; height: 18px; color: #be123c;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
-                            HOD Action Center (Red Flags & Triage)
-                        </span>
+                            <span>HOD Action Center (Red Flags & Triage) ↗</span>
+                        </a>
                         <span style="font-size: 11px; background: #be123c; color: white; padding: 2px 8px; border-radius: 12px; font-weight: 800;">3 Action Needed</span>
                     </div>
                     <div style="flex-grow: 1; overflow-y: auto; padding-right: 2px;">
@@ -533,8 +533,10 @@
                 <!-- Card 2: Department KPI Target vs Actual -->
                 <div class="card card-kpi">
                     <h3 class="card-title flex items-center justify-center gap-2">
-                        <svg style="width: 18px; height: 18px; color: #be123c;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
-                        Department Monthly KPI
+                        <a href="{% url 'kpi_analytics_insight' %}?state={{ pilihan_negeri }}&clinic={{ pilihan_klinik }}" style="text-decoration:none; color:inherit; display:flex; align-items:center; gap:8px;" onmouseover="this.style.color='#be123c'" onmouseout="this.style.color='inherit'">
+                            <svg style="width: 18px; height: 18px; color: #be123c;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
+                            <span>Department Monthly KPI ↗</span>
+                        </a>
                     </h3>
                     <div style="flex-grow:1; width:100%; height:100%; overflow:hidden;">
                         {{ dept_kpi_html|safe }}
@@ -544,10 +546,10 @@
                 <!-- Card 3: Medical Officers Roster -->
                 <div class="card card-roster">
                     <div class="card-title flex items-center justify-between">
-                        <span class="flex items-center gap-2">
+                        <a href="{% url 'officers_directory_insight' %}?state={{ pilihan_negeri }}&clinic={{ pilihan_klinik }}" class="flex items-center gap-2" style="text-decoration:none; color:inherit;" onmouseover="this.style.color='#be123c'" onmouseout="this.style.color='inherit'">
                             <svg style="width: 18px; height: 18px; color: #be123c;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
-                            Medical Officers
-                        </span>
+                            <span>Medical Officers Directory ↗</span>
+                        </a>
                         {% if is_facility_locked %}
                             <!-- PAPARAN LENCANA STATIK (APABILA SKOP DIKUNCI) -->
                             <div style="background: #fff1f2; color: #881337; border: 1px solid #ffe4e6; padding: 6px 12px; border-radius: 8px; font-size: 11px; font-weight: 800; display: flex; align-items: center; gap: 6px;">
@@ -574,8 +576,10 @@
                 <!-- Card 4: MO Competency Heatmap -->
                 <div class="card card-heatmap">
                     <h3 class="card-title flex items-center justify-center gap-2">
-                        <svg style="width: 18px; height: 18px; color: #be123c;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 18.657A8 8 0 016.343 7.343S7 9 9 10c0-2 1-4 4-6 0 3 3 3 3 6 1-1 2-2 2-3.657a8 8 0 01.657 12.314z"/></svg>
-                        MO Competency Matrix
+                        <a href="{% url 'competency_matrix_insight' %}?state={{ pilihan_negeri }}&clinic={{ pilihan_klinik }}" style="text-decoration:none; color:inherit; display:flex; align-items:center; gap:8px;" onmouseover="this.style.color='#be123c'" onmouseout="this.style.color='inherit'">
+                            <svg style="width: 18px; height: 18px; color: #be123c;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 18.657A8 8 0 016.343 7.343S7 9 9 10c0-2 1-4 4-6 0 3 3 3 3 6 1-1 2-2 2-3.657a8 8 0 01.657 12.314z"/></svg>
+                            <span>MO Competency Matrix ↗</span>
+                        </a>
                     </h3>
                     <div style="flex-grow:1; width:100%; height:100%; overflow:hidden;">
                         {{ mo_heatmap_html|safe }}

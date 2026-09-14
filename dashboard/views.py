@@ -1060,7 +1060,7 @@ def interpersonal_view(request):
             
             if t_filter == 'Week':
                 dates = pd.date_range(start="2026-02-20", end="2026-02-26", freq='D')
-                num_dots = np.random.randint(5, 10)
+                num_dots = np.random.randint(3, 7) # Kurangkan had maksimum untuk mingguan
             elif t_filter == 'Month':
                 dates = pd.date_range(start="2026-02-01", end="2026-02-28", freq='D')
                 num_dots = np.random.randint(15, 25)
@@ -1068,6 +1068,8 @@ def interpersonal_view(request):
                 dates = pd.date_range(start="2025-03-01", end="2026-02-28", freq='5D')
                 num_dots = np.random.randint(30, 50)
                 
+            # PENYELAMAT: Pastikan titik tidak melebihi saiz tarikh yang ada
+            num_dots = min(num_dots, len(dates))
             selected_dates = np.random.choice(dates, num_dots, replace=False)
             categories = ["General Clinical", "Procedural", "Consultation"]
             
@@ -1546,3 +1548,210 @@ def officer_profile_view(request):
         'radar_html': radar_html,
     }
     return render(request, 'dashboard/officer_profile.html', context)
+
+
+# ==========================================
+# 4 HALAMAN KHUSUS (DEDICATED INSIGHT VIEWS)
+# ==========================================
+
+@login_required(login_url='/login/')
+def action_center_insight_view(request):
+    """
+    Dedicated Insight Page: HOD Action Center (Red Flags & Triage)
+    """
+    hod_scope = getattr(request.user.profile, 'hod_scope', 'NATIONAL')
+    hod_state = getattr(request.user.profile, 'assigned_state', None)
+    hod_facility = getattr(request.user.profile, 'assigned_facility', None)
+
+    senarai_negeri = list(STATE_CENTERS.keys())
+    pilihan_negeri = hod_state if (hod_scope in ['FACILITY', 'STATE'] and hod_state) else request.GET.get('state', 'All States')
+
+    if pilihan_negeri == "All States":
+        klinik_dipaparkan = MOCK_KLINIK
+    else:
+        klinik_dipaparkan = [k for k in MOCK_KLINIK if k.get("state") == pilihan_negeri]
+
+    senarai_klinik = [k['name'] for k in klinik_dipaparkan]
+    pilihan_klinik = hod_facility if (hod_scope == 'FACILITY' and hod_facility) else request.GET.get('clinic', 'All Clinics')
+
+    hod_name = f"{request.user.first_name} {request.user.last_name}".strip() or request.user.username
+
+    red_flags = [
+        {'type': 'CUSUM Breach Warning', 'officer': 'Dr. Ramesh Lee', 'facility': 'Klinik Kesihatan Medong', 'severity': 'Urgent', 'time': 'Today, 08:30 AM', 'detail': 'Safety control limit breached in LIMA-LAD Procedure.'},
+        {'type': 'Fast-Track Candidates (PRI ≥ 85%)', 'officer': '24 Medical Officers', 'facility': 'Multiple Facilities', 'severity': 'Success', 'time': 'Today, 07:00 AM', 'detail': 'AI shortlisted 24 Officers eligible for Fast-Track UD48 promotion.'},
+        {'type': 'Pending Approval Log', 'officer': 'Multiple Officers', 'facility': 'Klinik Kesihatan Medong', 'severity': 'Pending', 'time': 'Yesterday, 18:00 PM', 'detail': '8 Procedure logs & 3 CPD claims require HOD validation.'},
+        {'type': 'SOP Documentation Drop', 'officer': 'Outpatient Department', 'facility': 'Klinik Kesihatan Medong', 'severity': 'Warning', 'time': '12 Sep 2026', 'detail': 'Clinic Outpatient records timeliness dropped below 80% target.'},
+    ]
+
+    context = {
+        'senarai_negeri': senarai_negeri,
+        'pilihan_negeri': pilihan_negeri,
+        'senarai_klinik': ["All Clinics"] + senarai_klinik,
+        'pilihan_klinik': pilihan_klinik,
+        'hod_name': hod_name,
+        'red_flags': red_flags,
+        'dept': getattr(request.user.profile, 'department', 'FMS'),
+    }
+    return render(request, 'dashboard/action_center_insight.html', context)
+
+
+@login_required(login_url='/login/')
+def kpi_analytics_insight_view(request):
+    """
+    Dedicated Insight Page: Department Monthly KPI Deep-Dive
+    """
+    hod_scope = getattr(request.user.profile, 'hod_scope', 'NATIONAL')
+    hod_state = getattr(request.user.profile, 'assigned_state', None)
+    hod_facility = getattr(request.user.profile, 'assigned_facility', None)
+
+    senarai_negeri = list(STATE_CENTERS.keys())
+    pilihan_negeri = hod_state if (hod_scope in ['FACILITY', 'STATE'] and hod_state) else request.GET.get('state', 'All States')
+
+    if pilihan_negeri == "All States":
+        klinik_dipaparkan = MOCK_KLINIK
+    else:
+        klinik_dipaparkan = [k for k in MOCK_KLINIK if k.get("state") == pilihan_negeri]
+
+    senarai_klinik = [k['name'] for k in klinik_dipaparkan]
+    pilihan_klinik = hod_facility if (hod_scope == 'FACILITY' and hod_facility) else request.GET.get('clinic', 'All Clinics')
+
+    hod_name = f"{request.user.first_name} {request.user.last_name}".strip() or request.user.username
+
+    months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
+    target_trend = [85]*12
+    actual_trend = [82, 84, 86, 88, 85, 89, 91, 90, 88, 92, 94, 93]
+
+    fig_trend = go.Figure()
+    fig_trend.add_trace(go.Scatter(
+        x=months, y=target_trend, mode='lines', name="Target KPI (85%)",
+        line=dict(color="#f43f5e", width=2, dash='dash')
+    ))
+    fig_trend.add_trace(go.Scatter(
+        x=months, y=actual_trend, mode='lines+markers', name="Actual Performance",
+        line=dict(color="#881337", width=3), marker=dict(size=8, color="#be123c"),
+        fill='tozeroy', fillcolor='rgba(190, 18, 60, 0.08)'
+    ))
+    fig_trend.update_layout(
+        height=320, margin=dict(l=30, r=20, t=20, b=30),
+        paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)',
+        legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1, font=dict(size=11, color='#881337', family='Inter')),
+        xaxis=dict(showgrid=False, tickfont=dict(size=11, color='#881337', weight='bold', family='Inter')),
+        yaxis=dict(showgrid=True, gridcolor='#ffe4e6', range=[60, 100], tickfont=dict(size=10, color='#881337', family='Inter'))
+    )
+    trend_chart_html = fig_trend.to_html(full_html=False, include_plotlyjs=False, config={'displayModeBar': False})
+
+    context = {
+        'senarai_negeri': senarai_negeri,
+        'pilihan_negeri': pilihan_negeri,
+        'senarai_klinik': ["All Clinics"] + senarai_klinik,
+        'pilihan_klinik': pilihan_klinik,
+        'hod_name': hod_name,
+        'trend_chart_html': trend_chart_html,
+        'dept': getattr(request.user.profile, 'department', 'FMS'),
+    }
+    return render(request, 'dashboard/kpi_insight.html', context)
+
+
+@login_required(login_url='/login/')
+def competency_matrix_insight_view(request):
+    """
+    Dedicated Insight Page: MO Competency Matrix & PRI Distribution
+    """
+    hod_scope = getattr(request.user.profile, 'hod_scope', 'NATIONAL')
+    hod_state = getattr(request.user.profile, 'assigned_state', None)
+    hod_facility = getattr(request.user.profile, 'assigned_facility', None)
+
+    senarai_negeri = list(STATE_CENTERS.keys())
+    pilihan_negeri = hod_state if (hod_scope in ['FACILITY', 'STATE'] and hod_state) else request.GET.get('state', 'All States')
+
+    if pilihan_negeri == "All States":
+        klinik_dipaparkan = MOCK_KLINIK
+    else:
+        klinik_dipaparkan = [k for k in MOCK_KLINIK if k.get("state") == pilihan_negeri]
+
+    senarai_klinik = [k['name'] for k in klinik_dipaparkan]
+    pilihan_klinik = hod_facility if (hod_scope == 'FACILITY' and hod_facility) else request.GET.get('clinic', 'All Clinics')
+
+    hod_name = f"{request.user.first_name} {request.user.last_name}".strip() or request.user.username
+
+    mo_sample = ["Dr. Ramesh Lee", "Dr. Siti Abu", "Dr. Chong Ali", "Dr. Mei Ismail", "Dr. Mohammad",
+                 "Dr. Farhana Wong", "Dr. David Nair", "Dr. Priya Kumar", "Dr. Ahmad Tan", "Dr. Sarah Ali"]
+    z_expanded = [
+        [88, 92, 78], [65, 70, 82], [94, 85, 90], [72, 68, 75], [85, 88, 92],
+        [90, 84, 88], [62, 65, 70], [77, 80, 82], [81, 79, 85], [92, 95, 91]
+    ]
+    tunjang_labels = ['Clinical', 'Operational', 'Interpersonal']
+
+    fig_heat = go.Figure(data=go.Heatmap(
+        z=z_expanded, x=tunjang_labels, y=mo_sample,
+        colorscale=[[0, '#fff1f2'], [0.4, '#fecdd3'], [0.7, '#f43f5e'], [1.0, '#be123c']],
+        texttemplate="<b>%{z}%</b>", textfont=dict(size=11, color="#ffffff", family='Inter'),
+        showscale=False, xgap=5, ygap=5,
+        hovertemplate="<b>Pegawai:</b> %{y}<br><b>Tunjang:</b> %{x}<br><b>Skor:</b> %{z}%<extra></extra>"
+    ))
+    fig_heat.update_layout(
+        height=380, margin=dict(l=120, r=20, t=20, b=30),
+        paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)',
+        xaxis=dict(fixedrange=True, tickfont=dict(size=11, color='#881337', weight='bold', family='Inter')),
+        yaxis=dict(fixedrange=True, tickfont=dict(size=10, color='#881337', weight='bold', family='Inter'), autorange="reversed")
+    )
+    heatmap_html = fig_heat.to_html(full_html=False, include_plotlyjs=False, config={'displayModeBar': False})
+
+    context = {
+        'senarai_negeri': senarai_negeri,
+        'pilihan_negeri': pilihan_negeri,
+        'senarai_klinik': ["All Clinics"] + senarai_klinik,
+        'pilihan_klinik': pilihan_klinik,
+        'hod_name': hod_name,
+        'heatmap_html': heatmap_html,
+        'dept': getattr(request.user.profile, 'department', 'FMS'),
+    }
+    return render(request, 'dashboard/competency_insight.html', context)
+
+
+@login_required(login_url='/login/')
+def officers_directory_insight_view(request):
+    """
+    Dedicated Insight Page: Medical Officers Directory & Roster Allocation
+    """
+    hod_scope = getattr(request.user.profile, 'hod_scope', 'NATIONAL')
+    hod_state = getattr(request.user.profile, 'assigned_state', None)
+    hod_facility = getattr(request.user.profile, 'assigned_facility', None)
+
+    senarai_negeri = list(STATE_CENTERS.keys())
+    pilihan_negeri = hod_state if (hod_scope in ['FACILITY', 'STATE'] and hod_state) else request.GET.get('state', 'All States')
+
+    if pilihan_negeri == "All States":
+        klinik_dipaparkan = MOCK_KLINIK
+    else:
+        klinik_dipaparkan = [k for k in MOCK_KLINIK if k.get("state") == pilihan_negeri]
+
+    senarai_klinik = [k['name'] for k in klinik_dipaparkan]
+    pilihan_klinik = hod_facility if (hod_scope == 'FACILITY' and hod_facility) else request.GET.get('clinic', 'All Clinics')
+
+    hod_name = f"{request.user.first_name} {request.user.last_name}".strip() or request.user.username
+
+    senarai_doktor_lengkap = []
+    for k in klinik_dipaparkan:
+        if pilihan_klinik == 'All Clinics' or k['name'] == pilihan_klinik:
+            df_docs = generate_mock_doctors(k['name'])
+            for _, doc in df_docs.iterrows():
+                senarai_doktor_lengkap.append({
+                    'name': doc['Officer Name'],
+                    'clinic': k['name'],
+                    'state': k.get('state', pilihan_negeri),
+                    'grade': doc['Grade'],
+                    'score': doc['Current Score'],
+                    'status': doc['Status']
+                })
+
+    context = {
+        'senarai_negeri': senarai_negeri,
+        'pilihan_negeri': pilihan_negeri,
+        'senarai_klinik': ["All Clinics"] + senarai_klinik,
+        'pilihan_klinik': pilihan_klinik,
+        'hod_name': hod_name,
+        'senarai_doktor_lengkap': senarai_doktor_lengkap,
+        'dept': getattr(request.user.profile, 'department', 'FMS'),
+    }
+    return render(request, 'dashboard/officers_directory_insight.html', context)

@@ -19,6 +19,12 @@ urlpatterns = [
     # --- LALUAN BAHARU UNTUK DRILL-DOWN ANALISIS & PROFIL KOGNITIF ---
     path('overall-analytics/', views.overall_analytics_view, name='overall_analytics'),
     path('officer-profile/', views.officer_profile_view, name='officer_profile'),
+
+    # --- 4 HALAMAN KHUSUS (DEDICATED INSIGHT VIEWS) ---
+    path('insights/action-center/', views.action_center_insight_view, name='action_center_insight'),
+    path('insights/kpi-analytics/', views.kpi_analytics_insight_view, name='kpi_analytics_insight'),
+    path('insights/competency-matrix/', views.competency_matrix_insight_view, name='competency_matrix_insight'),
+    path('insights/officers-directory/', views.officers_directory_insight_view, name='officers_directory_insight'),
     
     path('logout/', views.logout_view, name='logout'),
 ]

@@ -101,10 +101,10 @@
         .page-header h1 { color: #881337; font-weight: 900; font-size: 24px; margin: 0 0 5px 0; display: flex; align-items: center; gap: 10px; letter-spacing: -0.5px;}
         .page-header p { color: #f43f5e; font-size: 13px; margin: 0 0 10px 0; font-weight: 600;}
 
-        .sub-modules-nav { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; margin-bottom: 10px; flex-shrink: 0; }
-        .sm-btn { background: white; border: 1px solid #ffe4e6; border-radius: 12px; height: 40px; display: flex; align-items: center; justify-content: center; gap: 10px; font-weight: 800; font-size: 13px; color: #881337; text-decoration: none; box-shadow: 0 2px 5px rgba(190, 18, 60, 0.02); transition: 0.2s;}
-        .sm-btn:hover { border-color: #be123c; transform: translateY(-2px); }
-        .sm-btn.active { border: 2px solid #be123c; background: #fff1f2; color: #be123c;}
+        .sub-modules-nav { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; margin-bottom: 15px; flex-shrink: 0; }
+        .sm-btn { background: white; border: 1px solid #ffe4e6; border-radius: 12px; height: 44px; display: flex; align-items: center; justify-content: center; gap: 10px; font-weight: 800; font-size: 13px; color: #881337; text-decoration: none; box-shadow: 0 2px 5px rgba(190, 18, 60, 0.03); transition: all 0.2s ease; }
+        .sm-btn:hover { border-color: #fecdd3; background: #fff1f2; transform: translateY(-2px); }
+        .sm-btn.active { border: 1px solid #be123c; background: linear-gradient(135deg, #be123c 0%, #881337 100%); color: white; box-shadow: 0 4px 15px rgba(190, 18, 60, 0.25); }
 
         .content-card {
             background: white;
@@ -151,10 +151,10 @@
         .filter-select:focus { outline: none; border-color: #be123c; background: white; box-shadow: 0 0 0 2px rgba(190, 18, 60, 0.1);}
 
         /* --- TABS NAV (TEMA ROSE) --- */
-        .tabs-nav { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 15px; flex-shrink: 0; }
-        .tab-btn { background: white; border: 1px solid #ffe4e6; border-radius: 10px; height: 45px; display: flex; align-items: center; justify-content: center; gap: 8px; font-weight: 800; font-size: 13px; color: #881337; text-decoration: none; transition: 0.2s; }
-        .tab-btn:hover { border-color: #be123c; color: #be123c; background: #fff1f2;}
-        .tab-btn.active { border: 2px solid #be123c; background: #fff1f2; color: #be123c; }
+        .tabs-nav { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 15px; flex-shrink: 0; }
+        .tab-btn { background: white; border: 1px solid #ffe4e6; border-radius: 10px; height: 45px; padding: 0 20px; display: inline-flex; align-items: center; justify-content: center; gap: 8px; font-weight: 800; font-size: 13px; color: #881337; text-decoration: none; transition: 0.2s; box-shadow: 0 2px 5px rgba(190,18,60,0.02); flex: 1; }
+        .tab-btn:hover { border-color: #fecdd3; background: #fff1f2; transform: translateY(-2px); }
+        .tab-btn.active { border: 1px solid #be123c; background: #be123c; color: white; box-shadow: 0 4px 12px rgba(190, 18, 60, 0.2); }
 
         .tab-content-area { flex-grow: 1; overflow-y: auto; padding-right: 5px; min-height: 0; }
         .tab-content-area::-webkit-scrollbar { width: 5px; }

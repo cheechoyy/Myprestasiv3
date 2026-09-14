@@ -44,12 +44,17 @@
     </script>
     <style>
         body { font-family: 'Inter', sans-serif; }
+        
+        /* SCROLL ANIMATIONS (SLIDE & MERGE) */
+        .slide-hidden-left { opacity: 0; transform: translateX(-60px); transition: all 1s cubic-bezier(0.16, 1, 0.3, 1); }
+        .slide-hidden-right { opacity: 0; transform: translateX(60px); transition: all 1s cubic-bezier(0.16, 1, 0.3, 1); }
+        .slide-visible { opacity: 1; transform: translateX(0); }
     </style>
 </head>
 <body class="bg-white text-slate-700 antialiased overflow-x-hidden">
 
     <!-- NAVIGASI -->
-    <nav class="fixed top-0 left-0 right-0 z-50 bg-white/90 backdrop-blur-md border-b border-rose-100 px-6 lg:px-12 py-4 flex justify-between items-center transition-all">
+    <nav class="fixed top-0 left-0 right-0 z-50 bg-white/90 backdrop-blur-md border-b border-rose-100 px-6 lg:px-16 2xl:px-24 py-5 flex justify-between items-center transition-all">
         <!-- Susunan Logo Bersebelahan (Boleh Diklik) -->
         <a href="/" class="flex items-center gap-4 group cursor-pointer" title="Laman Utama MyPrestasi">
             <!-- Logo Jata Negara -->
@@ -62,54 +67,75 @@
             <img src="{% static 'images/myprestasi-logo-nobg.png' %}" alt="Logo MyPrestasi" class="h-8 md:h-10 w-auto transition-transform duration-300 group-hover:scale-105">
         </a>
         <a href="{% url 'login' %}" class="inline-flex items-center gap-2 bg-rose-700 hover:bg-rose-900 text-white font-semibold text-sm px-6 py-2.5 rounded-full shadow-lg shadow-rose-900/20 hover:shadow-rose-900/40 hover:-translate-y-0.5 transition-all duration-300">
-            Log Masuk Sistem
+            System Login
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>
         </a>
     </nav>
 
     <!-- HERO SECTION -->
-    <section class="relative pt-36 pb-20 px-6 lg:px-12 bg-gradient-to-b from-rose-50/80 via-rose-50/30 to-white flex flex-col items-center text-center">
-        <!-- Elemen Latar Belakang Beranimasi -->
-        <div class="absolute top-20 left-10 w-72 h-72 bg-rose-200/40 rounded-full filter blur-3xl animate-pulse-slow"></div>
-        <div class="absolute top-40 right-10 w-80 h-80 bg-rose-300/30 rounded-full filter blur-3xl animate-float"></div>
+    <section class="relative min-h-[85vh] pt-36 pb-20 px-6 lg:px-16 2xl:px-24 bg-gradient-to-b from-rose-50/80 via-rose-50/30 to-white flex flex-col justify-center items-center text-center">
+        <!-- Elemen Latar Belakang Beranimasi (Skala Fluid) -->
+        <div class="absolute top-10 left-10 w-[35vw] h-[35vw] max-w-[600px] max-h-[600px] bg-rose-200/40 rounded-full filter blur-[100px] animate-pulse-slow"></div>
+        <div class="absolute bottom-10 right-10 w-[30vw] h-[30vw] max-w-[500px] max-h-[500px] bg-rose-300/30 rounded-full filter blur-[100px] animate-float"></div>
 
-        <div class="relative z-10 max-w-4xl animate-fade-in-up">
-            <span class="inline-block px-4 py-1.5 rounded-full bg-rose-100 text-rose-800 text-xs font-bold tracking-wide uppercase mb-6 shadow-sm border border-rose-200">
-                Portal Prestasi Pegawai Perubatan KKM
+        <div class="relative z-10 max-w-[1400px] w-full mx-auto animate-fade-in-up">
+            <span class="inline-block px-5 py-2 rounded-full bg-rose-100 text-rose-800 text-sm font-bold tracking-wide uppercase mb-8 shadow-sm border border-rose-200">
+                MOH Medical Officer Performance Portal
             </span>
             <h1 class="text-4xl md:text-6xl font-black text-rose-900 leading-tight mb-6">
-                Bukan Sekadar Penilaian.<br><span class="text-rose-500">Perjalanan Kerjaya</span> Anda.
+                Beyond Evaluation.<br>Your <span class="text-rose-500">Career Trajectory</span>.
             </h1>
             <p class="text-base md:text-lg text-slate-600 max-w-2xl mx-auto mb-10 leading-relaxed">
-                MyPrestasi adalah ekosistem pintar Kementerian Kesihatan Malaysia yang direka untuk memupuk, memantau, dan memperkasa kecemerlangan Pegawai Perubatan secara holistik dan telus.
+                MyPrestasi is the Ministry of Health Malaysia's intelligent ecosystem designed to nurture, monitor, and empower Medical Officers' excellence holistically and transparently.
             </p>
             <div class="flex flex-col sm:flex-row gap-4 justify-center">
                 <a href="{% url 'login' %}" class="inline-flex items-center justify-center gap-2 bg-rose-700 hover:bg-rose-900 text-white font-bold text-base px-8 py-3.5 rounded-2xl shadow-xl shadow-rose-700/25 hover:-translate-y-1 transition-all duration-300">
-                    Mula Terokai Portal
+                    Explore Portal
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-7 7m7-7H6"/></svg>
                 </a>
             </div>
         </div>
     </section>
 
+    <!-- TEASER 1: LIVE ECOSYSTEM METRICS (SYSTEM AT A GLANCE) -->
+    <div class="relative z-20 max-w-[1200px] w-full mx-auto -mt-12 mb-10 px-6 lg:px-16 animate-fade-in-up" style="animation-delay: 0.2s;">
+        <div class="bg-white/90 backdrop-blur-xl border border-rose-100 rounded-3xl shadow-xl shadow-rose-900/5 p-8 flex flex-col md:flex-row justify-between items-center gap-8 divide-y md:divide-y-0 md:divide-x divide-rose-100">
+            <div class="text-center w-full md:w-1/4">
+                <div class="text-4xl font-black text-rose-900 mb-1">180<span class="text-rose-500">+</span></div>
+                <div class="text-xs font-extrabold text-slate-500 uppercase tracking-widest">Active Facilities</div>
+            </div>
+            <div class="text-center w-full md:w-1/4 pt-6 md:pt-0">
+                <div class="text-4xl font-black text-rose-900 mb-1">2,500<span class="text-rose-500">+</span></div>
+                <div class="text-xs font-extrabold text-slate-500 uppercase tracking-widest">Medical Officers</div>
+            </div>
+            <div class="text-center w-full md:w-1/4 pt-6 md:pt-0">
+                <div class="text-4xl font-black text-rose-900 mb-1">45K<span class="text-rose-500">+</span></div>
+                <div class="text-xs font-extrabold text-slate-500 uppercase tracking-widest">Evaluations Done</div>
+            </div>
+            <div class="text-center w-full md:w-1/4 pt-6 md:pt-0">
+                <div class="text-4xl font-black text-rose-900 mb-1">87<span class="text-rose-500">%</span></div>
+                <div class="text-xs font-extrabold text-slate-500 uppercase tracking-widest">Avg Performance</div>
+            </div>
+        </div>
+    </div>
+
     <!-- STORYTELLING & FEATURES SECTION -->
-    <section class="py-20 px-6 lg:px-12 bg-white relative">
-        <div class="max-w-6xl mx-auto text-center mb-16">
-            <h2 class="text-3xl md:text-4xl font-extrabold text-rose-900 mb-4">
-                Tiga Tunjang Kecemerlangan
+    <section class="py-28 px-6 lg:px-16 2xl:px-24 bg-white relative overflow-hidden">
+        <div class="max-w-[1400px] w-full mx-auto text-center mb-20 flex flex-col items-center">
+            <h2 class="text-4xl md:text-5xl font-extrabold text-rose-900 mb-6 slide-hidden-left">
+                Three Pillars of Excellence
             </h2>
-            <p class="text-slate-600 max-w-3xl mx-auto text-base md:text-lg leading-relaxed">
-                Setiap pegawai mempunyai potensi yang unik. Kami percaya kecemerlangan bukan hanya diukur melalui beban kerja, tetapi gabungan kemahiran teknikal, kelancaran operasi, dan sentuhan empati manusia.
+            <p class="text-slate-600 max-w-4xl mx-auto text-lg md:text-xl leading-relaxed slide-hidden-right">
+                Every officer has unique potential. We believe excellence is measured not merely by workload, but through a combination of technical proficiency, operational fluidity, and human empathy.
             </p>
         </div>
 
-        <div class="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-8">
+        <div class="max-w-[1400px] w-full mx-auto grid grid-cols-1 md:grid-cols-3 gap-10 xl:gap-16">
             
-            <!-- KAD 1: Kecemerlangan Klinikal -->
+            <!-- KAD 1: Clinical Excellence -->
             <div class="group bg-rose-50/60 hover:bg-rose-50 border border-rose-100 rounded-3xl p-8 transition-all duration-300 hover:-translate-y-2 hover:shadow-2xl hover:shadow-rose-900/10 flex flex-col items-start text-left relative overflow-hidden">
                 <div class="absolute top-0 right-0 w-24 h-24 bg-rose-100/50 rounded-bl-full transition-all group-hover:scale-110"></div>
                 
-                <!-- IKON TAILWIND 1: Stethoscope (Klinikal) -->
                 <div class="w-16 h-16 rounded-2xl bg-white border border-rose-200 shadow-md shadow-rose-900/5 flex items-center justify-center mb-6 group-hover:scale-110 group-hover:border-rose-500 transition-all duration-300">
                     <svg class="w-8 h-8 text-rose-600 group-hover:rotate-6 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M4.5 12.75l6 6 9-13.5M9 12l2.25 2.25L15 9m-6 12a9 9 0 110-18 9 9 0 010 18z"/>
@@ -117,17 +143,16 @@
                     </svg>
                 </div>
 
-                <h3 class="text-xl font-bold text-rose-900 mb-3">Kecemerlangan Klinikal</h3>
+                <h3 class="text-xl font-bold text-rose-900 mb-3">Clinical Excellence</h3>
                 <p class="text-slate-600 text-sm leading-relaxed">
-                    Merekod setiap prosedur dan log pembedahan (CUSUM) anda secara digital. Kami memantau perkembangan kemahiran anda dari fasa pembelajaran sehingga mencapai tahap kepakaran.
+                    Digitally record every procedure and surgical log (CUSUM). We monitor your skill progression from the learning phase right up to mastery level.
                 </p>
             </div>
 
-            <!-- KAD 2: Kecekapan Operasi -->
+            <!-- KAD 2: Operational Efficiency -->
             <div class="group bg-rose-50/60 hover:bg-rose-50 border border-rose-100 rounded-3xl p-8 transition-all duration-300 hover:-translate-y-2 hover:shadow-2xl hover:shadow-rose-900/10 flex flex-col items-start text-left relative overflow-hidden">
                 <div class="absolute top-0 right-0 w-24 h-24 bg-rose-100/50 rounded-bl-full transition-all group-hover:scale-110"></div>
 
-                <!-- IKON TAILWIND 2: Cog/Gear (Operasi) -->
                 <div class="w-16 h-16 rounded-2xl bg-white border border-rose-200 shadow-md shadow-rose-900/5 flex items-center justify-center mb-6 group-hover:scale-110 group-hover:border-rose-500 transition-all duration-300">
                     <svg class="w-8 h-8 text-rose-600 group-hover:rotate-45 transition-transform duration-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/>
@@ -135,37 +160,140 @@
                     </svg>
                 </div>
 
-                <h3 class="text-xl font-bold text-rose-900 mb-3">Kecekapan Operasi</h3>
+                <h3 class="text-xl font-bold text-rose-900 mb-3">Operational Efficiency</h3>
                 <p class="text-slate-600 text-sm leading-relaxed">
-                    Mengesan produktiviti harian, adaptasi teknologi baharu, dan sumbangan inovasi anda kepada jabatan. Setiap idea penambahbaikan anda kini mempunyai nilai yang direkodkan.
+                    Track daily productivity, adaptation to new technologies, and innovative contributions. Every system improvement idea you propose is now recorded and valued.
                 </p>
             </div>
 
-            <!-- KAD 3: Kekuatan Interpersonal -->
+            <!-- KAD 3: Interpersonal Strength -->
             <div class="group bg-rose-50/60 hover:bg-rose-50 border border-rose-100 rounded-3xl p-8 transition-all duration-300 hover:-translate-y-2 hover:shadow-2xl hover:shadow-rose-900/10 flex flex-col items-start text-left relative overflow-hidden">
                 <div class="absolute top-0 right-0 w-24 h-24 bg-rose-100/50 rounded-bl-full transition-all group-hover:scale-110"></div>
 
-                <!-- IKON TAILWIND 3: Handshake / Heart-Users (Interpersonal) -->
                 <div class="w-16 h-16 rounded-2xl bg-white border border-rose-200 shadow-md shadow-rose-900/5 flex items-center justify-center mb-6 group-hover:scale-110 group-hover:border-rose-500 transition-all duration-300">
                     <svg class="w-8 h-8 text-rose-600 group-hover:scale-110 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12z"/>
                     </svg>
                 </div>
 
-                <h3 class="text-xl font-bold text-rose-900 mb-3">Kekuatan Interpersonal</h3>
+                <h3 class="text-xl font-bold text-rose-900 mb-3">Interpersonal Strength</h3>
                 <p class="text-slate-600 text-sm leading-relaxed">
-                    Doktor yang hebat adalah pendengar yang baik. MyPrestasi memetakan Kecerdasan Emosi (EI), kerja berpasukan, dan maklum balas pengalaman pesakit untuk membina profil personaliti anda.
+                    Great doctors are exceptional listeners. MyPrestasi maps your Emotional Intelligence (EI), teamwork, and patient experience feedback to build a holistic personality profile.
                 </p>
             </div>
 
         </div>
+
+        <!-- TEASER 2: FAST-TRACK CAREER TRAJECTORY (PRI) -->
+        <div class="max-w-[1400px] w-full mx-auto mt-28 bg-rose-50/60 border border-rose-100 rounded-[2.5rem] p-10 md:p-16 relative overflow-hidden flex flex-col lg:flex-row items-center gap-16 shadow-lg shadow-rose-900/5">
+            <!-- Text Content -->
+            <div class="flex-1 text-center lg:text-left z-10 slide-hidden-left">
+                <span class="inline-block px-4 py-1.5 rounded-full bg-white text-rose-800 text-xs font-bold tracking-wide uppercase mb-6 shadow-sm border border-rose-200">
+                    Promotion Readiness Index (PRI)
+                </span>
+                <h2 class="text-3xl md:text-5xl font-extrabold text-rose-900 mb-6 leading-tight">
+                    Unlock Your <span class="text-transparent bg-clip-text bg-gradient-to-r from-rose-600 to-rose-400">Fast-Track</span> Promotion.
+                </h2>
+                <p class="text-slate-600 text-lg leading-relaxed mb-8 max-w-2xl mx-auto lg:mx-0">
+                    Leave manual appraisals behind. Our intelligent PRI algorithm automatically maps your clinical, operational, and interpersonal data into a unified promotion readiness score. Prove your capability for expedited career progression (UD48/UD52).
+                </p>
+                <ul class="space-y-4 text-left max-w-md mx-auto lg:mx-0">
+                    <li class="flex items-center gap-3 text-slate-700 font-semibold"><div class="w-2 h-2 rounded-full bg-rose-600"></div> 40% Clinical Mastery</li>
+                    <li class="flex items-center gap-3 text-slate-700 font-semibold"><div class="w-2 h-2 rounded-full bg-rose-600"></div> 30% Operational Efficiency</li>
+                    <li class="flex items-center gap-3 text-slate-700 font-semibold"><div class="w-2 h-2 rounded-full bg-rose-600"></div> 20% Interpersonal Excellence & 10% CPD</li>
+                </ul>
+            </div>
+
+            <!-- UI Mockup Teaser -->
+            <div class="flex-1 w-full flex justify-center relative z-10 slide-hidden-right">
+                <div class="bg-white border border-rose-100 rounded-3xl p-8 shadow-2xl shadow-rose-900/10 w-full max-w-md transform transition-transform hover:-translate-y-2">
+                    <div class="flex justify-between items-start mb-6">
+                        <div>
+                            <h4 class="text-slate-400 font-extrabold text-xs uppercase tracking-widest mb-1">Current PRI Score</h4>
+                            <div class="text-5xl font-black text-rose-900">88<span class="text-2xl text-rose-400">%</span></div>
+                        </div>
+                        <span class="px-3 py-1 bg-green-50 text-green-700 border border-green-200 rounded-full text-xs font-bold uppercase tracking-wide">
+                            Target Met
+                        </span>
+                    </div>
+                    
+                    <div class="w-full bg-rose-50 rounded-full h-4 mb-6 overflow-hidden border border-rose-100">
+                        <div class="bg-gradient-to-r from-rose-400 to-rose-700 h-4 rounded-full relative w-[88%]">
+                            <div class="absolute right-0 top-0 bottom-0 w-6 bg-white/30 rounded-full animate-pulse"></div>
+                        </div>
+                    </div>
+
+                    <div class="bg-rose-50/80 border border-rose-100 rounded-2xl p-5 relative overflow-hidden">
+                        <div class="absolute top-0 right-0 w-24 h-24 bg-white/60 rounded-full -translate-y-1/2 translate-x-1/3"></div>
+                        <h5 class="text-rose-900 font-black text-lg mb-1 relative z-10">Tier 1: Fast-Track</h5>
+                        <p class="text-rose-700 text-sm font-semibold relative z-10">Eligible for expedited UD48 promotion.</p>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Background Glow -->
+            <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-white rounded-full filter blur-[100px] -z-10"></div>
+        </div>
+
+        <!-- NEW AI DIAGNOSTIC FEATURE BANNER -->
+        <div class="max-w-[1400px] w-full mx-auto mt-16 bg-rose-900 rounded-[2.5rem] p-10 md:p-16 xl:p-20 relative overflow-hidden shadow-2xl">
+            <!-- Decorative Backgrounds -->
+            <div class="absolute top-[-50%] right-[-10%] w-96 h-96 bg-rose-500/30 rounded-full blur-3xl"></div>
+            <div class="absolute bottom-[-50%] left-[-10%] w-96 h-96 bg-rose-700/50 rounded-full blur-3xl"></div>
+            
+            <div class="relative z-10 flex flex-col md:flex-row items-center gap-8">
+                <div class="flex-1 text-left">
+                    <span class="inline-block px-4 py-1.5 rounded-full bg-white/10 text-rose-100 text-xs font-bold tracking-wide uppercase mb-4 border border-white/20">
+                        Integrated AI Engine
+                    </span>
+                    <h2 class="text-3xl md:text-4xl font-extrabold text-white mb-4">
+                        Smart Self-Coaching Analytics
+                    </h2>
+                    <p class="text-rose-100 text-base md:text-lg leading-relaxed mb-6 max-w-2xl">
+                        Our integrated AI doesn't just assess your data—it interprets it. Identify operational lags, clinical deviations, and receive automated, personalized micro-learning modules designed to get your performance back on track.
+                    </p>
+                </div>
+                
+                <!-- Floating Illustration/Badge -->
+                <div class="w-full md:w-auto shrink-0 flex justify-center">
+                    <div class="bg-white/10 backdrop-blur-md border border-white/20 p-6 rounded-2xl shadow-xl flex items-center gap-6 transform hover:scale-105 transition-transform duration-300">
+                        <div class="w-16 h-16 rounded-full bg-rose-500 text-white flex items-center justify-center shadow-lg">
+                            <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+                        </div>
+                        <div>
+                            <div class="text-white font-black text-xl">Real-Time</div>
+                            <div class="text-rose-200 font-bold text-sm uppercase tracking-wide">Performance Alerts</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
     </section>
 
     <!-- FOOTER -->
-    <footer class="bg-rose-900 text-rose-100 py-10 px-6 text-center border-t border-rose-800">
-        <p class="text-sm font-medium mb-2">&copy; 2026 Unit Tata Kelola Klinikal. Kementerian Kesihatan Malaysia.</p>
-        <p class="text-xs text-rose-300/80">Dibina untuk wira penjagaan kesihatan negara.</p>
+    <footer class="bg-white text-slate-500 py-10 px-6 text-center border-t border-rose-100">
+        <p class="text-sm font-semibold mb-2">&copy; 2026 Clinical Governance Unit. Ministry of Health Malaysia.</p>
+        <p class="text-xs text-slate-400">Built to empower the nation's healthcare heroes.</p>
     </footer>
 
+    <!-- SCRIPT ANIMASI SCROLL -->
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            const observer = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    // Jika elemen masuk ke dalam viewport (skrin)
+                    if (entry.isIntersecting) {
+                        entry.target.classList.add('slide-visible');
+                    }
+                });
+            }, { threshold: 0.15 }); // Animasi tercetus bila 15% elemen kelihatan
+
+            // Pantau semua elemen yang ada kelas ini
+            document.querySelectorAll('.slide-hidden-left, .slide-hidden-right').forEach((el) => {
+                observer.observe(el);
+            });
+        });
+    </script>
 </body>
 </html>
