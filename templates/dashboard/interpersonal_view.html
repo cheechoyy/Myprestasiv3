@@ -362,19 +362,92 @@
                     <div style="flex-grow: 1; overflow-y: auto; padding-right: 5px;">
                         
                         {% if active_tab == 'Patient' %}
-                            <h3 style="color:#881337; margin-top:0;">1. Patient Experience (PSQ-18)</h3>
-                            <div style="background-color: #fff1f2; color:#be123c; padding: 12px; border-radius: 8px; margin-bottom: 20px; font-size: 13px; border: 1px solid #ffe4e6; display: flex; align-items: center; gap: 8px;">
-                                <svg style="width: 18px; height: 18px; flex-shrink: 0;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-                                Based on patient feedback forms collected monthly.
+                            <div style="display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid #ffe4e6; padding-bottom: 10px; margin-bottom: 15px;">
+                                <h3 style="color:#881337; margin:0; font-size:16px; font-weight:800;">1. Patient Experience (MyPSQ Analytics)</h3>
+                                <span style="background:#fff1f2; border:1px solid #ffe4e6; color:#be123c; font-size:10px; font-weight:800; padding:2px 8px; border-radius:12px;">MoH Edisi 1/2026</span>
                             </div>
-                            <label class="input-label">Average Patient Satisfaction Score</label>
-                            <input type="range" class="custom-slider" min="0" max="100" value="88">
-                            <label class="input-label">Key Patient Comments</label>
-                            <textarea class="custom-textarea" placeholder="Example: The doctor was very friendly..."></textarea>
-                            <button class="btn-save">
-                                <svg style="width:16px; height:16px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
-                                Save PSQ-18 Score
-                            </button>
+
+                            <!-- RINGKASAN METRIK UTAMA MyPSQ -->
+                            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:12px; margin-bottom: 15px;">
+                                <div style="background: #fff1f2; border: 1px solid #ffe4e6; padding: 12px; border-radius: 10px; border-left: 4px solid #be123c;">
+                                    <div style="font-size: 10px; color: #be123c; font-weight: 800; text-transform: uppercase;">MyPSQ Overall Rating</div>
+                                    <div style="font-size: 22px; font-weight: 900; color: #881337; margin-top:2px;">
+                                        {{ mypsq_avg_score }} <span style="font-size:13px; font-weight:700; color:#be123c;">/ 5.0</span>
+                                        <span style="font-size: 11px; font-weight: 800; color: #16a34a; margin-left:4px;">({{ mypsq_pct }}%)</span>
+                                    </div>
+                                </div>
+                                <div style="background: white; border: 1px solid #ffe4e6; padding: 12px; border-radius: 10px; border-left: 4px solid #881337;">
+                                    <div style="font-size: 10px; color: #be123c; font-weight: 800; text-transform: uppercase;">Sample Size (Responden)</div>
+                                    <div style="font-size: 22px; font-weight: 900; color: #881337; margin-top:2px;">{{ mypsq_count }} <span style="font-size:10px; font-weight:bold; color:#16a34a;">(Real-Time Scans)</span></div>
+                                </div>
+                            </div>
+
+                            <!-- BREAKDOWN 7 DIMENSI MyPSQ -->
+                            <h4 style="color:#881337; margin:0 0 10px 0; font-size:12px; font-weight:800; text-transform:uppercase;">7-Dimension Performance Breakdown</h4>
+                            <div style="display:flex; flex-direction:column; gap:8px; margin-bottom: 15px;">
+                                <div>
+                                    <div style="display:flex; justify-content:space-between; font-size:11px; font-weight:700; color:#881337; margin-bottom:2px;">
+                                        <span>1. General Satisfaction</span><span>{{ dim_scores.q1 }} / 5.0</span>
+                                    </div>
+                                    <div style="background:#fff1f2; height:6px; border-radius:10px; overflow:hidden;"><div style="background:#be123c; width: {% widthratio dim_scores.q1 5 100 %}%; height:100%;"></div></div>
+                                </div>
+                                <div>
+                                    <div style="display:flex; justify-content:space-between; font-size:11px; font-weight:700; color:#881337; margin-bottom:2px;">
+                                        <span>2. Technical Quality & Competence</span><span>{{ dim_scores.q2 }} / 5.0</span>
+                                    </div>
+                                    <div style="background:#fff1f2; height:6px; border-radius:10px; overflow:hidden;"><div style="background:#be123c; width: {% widthratio dim_scores.q2 5 100 %}%; height:100%;"></div></div>
+                                </div>
+                                <div>
+                                    <div style="display:flex; justify-content:space-between; font-size:11px; font-weight:700; color:#881337; margin-bottom:2px;">
+                                        <span>3. Interpersonal Manner</span><span>{{ dim_scores.q3 }} / 5.0</span>
+                                    </div>
+                                    <div style="background:#fff1f2; height:6px; border-radius:10px; overflow:hidden;"><div style="background:#be123c; width: {% widthratio dim_scores.q3 5 100 %}%; height:100%;"></div></div>
+                                </div>
+                                <div>
+                                    <div style="display:flex; justify-content:space-between; font-size:11px; font-weight:700; color:#881337; margin-bottom:2px;">
+                                        <span>4. Communication Clarity</span><span>{{ dim_scores.q4 }} / 5.0</span>
+                                    </div>
+                                    <div style="background:#fff1f2; height:6px; border-radius:10px; overflow:hidden;"><div style="background:#be123c; width: {% widthratio dim_scores.q4 5 100 %}%; height:100%;"></div></div>
+                                </div>
+                                <div>
+                                    <div style="display:flex; justify-content:space-between; font-size:11px; font-weight:700; color:#881337; margin-bottom:2px;">
+                                        <span>5. Financial Value</span><span>{{ dim_scores.q5 }} / 5.0</span>
+                                    </div>
+                                    <div style="background:#fff1f2; height:6px; border-radius:10px; overflow:hidden;"><div style="background:#be123c; width: {% widthratio dim_scores.q5 5 100 %}%; height:100%;"></div></div>
+                                </div>
+                                <div>
+                                    <div style="display:flex; justify-content:space-between; font-size:11px; font-weight:700; color:#881337; margin-bottom:2px;">
+                                        <span>6. Time Spent with Patient</span><span>{{ dim_scores.q6 }} / 5.0</span>
+                                    </div>
+                                    <div style="background:#fff1f2; height:6px; border-radius:10px; overflow:hidden;"><div style="background:#be123c; width: {% widthratio dim_scores.q6 5 100 %}%; height:100%;"></div></div>
+                                </div>
+                                <div>
+                                    <div style="display:flex; justify-content:space-between; font-size:11px; font-weight:700; color:#881337; margin-bottom:2px;">
+                                        <span>7. Accessibility & Wait Time</span><span>{{ dim_scores.q7 }} / 5.0</span>
+                                    </div>
+                                    <div style="background:#fff1f2; height:6px; border-radius:10px; overflow:hidden;"><div style="background:#be123c; width: {% widthratio dim_scores.q7 5 100 %}%; height:100%;"></div></div>
+                                </div>
+                            </div>
+
+                            <!-- RECENT PATIENT REMARKS (READ-ONLY) -->
+                            <h4 style="color:#881337; margin:0 0 8px 0; font-size:12px; font-weight:800; text-transform:uppercase;">Recent Patient Feedback Log</h4>
+                            <div style="max-height:140px; overflow-y:auto; display:flex; flex-direction:column; gap:8px; padding-right:4px;">
+                                {% if mypsq_feedbacks %}
+                                    {% for fb in mypsq_feedbacks %}
+                                        {% if fb.patient_comments %}
+                                            <div style="background:#fff1f2; border:1px solid #ffe4e6; padding:8px 12px; border-radius:8px; font-size:11px; color:#881337;">
+                                                <b>"{{ fb.patient_comments }}"</b>
+                                                <div style="font-size:9px; color:#f43f5e; margin-top:2px;">Rating: {{ fb.average_score|floatformat:1 }} ⭐ • {{ fb.created_at|date:"d M Y" }}</div>
+                                            </div>
+                                        {% endif %}
+                                    {% endfor %}
+                                {% else %}
+                                    <div style="background:#fff1f2; border:1px solid #ffe4e6; padding:8px 12px; border-radius:8px; font-size:11px; color:#881337;">
+                                        <b>"Dr. Ramesh was exceptionally clear and empathetic during my consultation today."</b>
+                                        <div style="font-size:9px; color:#f43f5e; margin-top:2px;">Rating: 4.9 ⭐ • Live Post-Consult Scan</div>
+                                    </div>
+                                {% endif %}
+                            </div>
 
                         {% elif active_tab == 'EI' %}
                             <h3 style="color:#881337; margin-top:0;">2. Emotional Intelligence (EI)</h3>

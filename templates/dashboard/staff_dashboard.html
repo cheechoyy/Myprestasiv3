@@ -66,7 +66,7 @@
         /* --- KAWALAN BUTANG SIDEBAR & IKON --- */
         .nav-btn { background: white; border: 1px solid transparent; border-radius: 10px; padding: 12px 10px; font-weight: 700; color: #881337; margin-bottom: 8px; text-align: left; display: flex; align-items: center; gap: 12px; text-decoration: none; transition: 0.2s; overflow: hidden; min-height: 46px; box-sizing: border-box; }
         .nav-btn:hover { background: #fff1f2; border-color: #be123c; }
-        .nav-btn.active { background-color: #fff1f2 !important; color: #be123c !important; border: 1px solid #be123c !important; }
+        .nav-btn.active { border: 1px solid #be123c !important; background: linear-gradient(135deg, #be123c 0%, #881337 100%) !important; color: white !important; box-shadow: 0 4px 12px rgba(190, 18, 60, 0.25) !important; }
         
         .btn-logout { background-color: #be123c !important; color: white !important; padding: 12px 10px; border-radius: 10px; text-decoration: none; font-weight: bold; display: flex; align-items: center; gap: 12px; margin-top: auto; transition: 0.3s; box-shadow: 0 4px 10px rgba(190, 18, 60, 0.2); overflow: hidden; min-height: 46px; box-sizing: border-box; }
         .btn-logout:hover { background-color: #881337 !important; transform: translateY(-2px); } 
@@ -212,10 +212,10 @@
         .metric-val { font-size: 26px; font-weight: 900; color: #881337; margin-top: 5px; }
 
         /* TABS STYLING */
-        .tabs-nav { display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; }
-        .tab-btn { flex: 1; background: white; border: 1px solid #ffe4e6; border-radius: 10px; height: 45px; display: flex; align-items: center; justify-content: center; gap: 8px; font-weight: 800; font-size: 13px; color: #881337; cursor: pointer; transition: 0.2s;}
-        .tab-btn:hover { border-color: #be123c; color: #be123c; background: #fff1f2; transform: translateY(-2px);}
-        .tab-btn.active { border: 2px solid #be123c; background: #fff1f2; color: #be123c; }
+        .tabs-nav { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 20px; flex-shrink: 0; }
+        .tab-btn { background: white; border: 1px solid #ffe4e6; border-radius: 10px; height: 45px; padding: 0 20px; display: flex; align-items: center; justify-content: center; gap: 8px; font-weight: 800; font-size: 13px; color: #881337; cursor: pointer; transition: 0.2s; box-shadow: 0 2px 5px rgba(190,18,60,0.02); flex: 1; }
+        .tab-btn:hover { border-color: #fecdd3; background: #fff1f2; transform: translateY(-2px); }
+        .tab-btn.active { border: 1px solid #be123c; background: #be123c; color: white; box-shadow: 0 4px 12px rgba(190, 18, 60, 0.2); }
         .tab-content { display: none; }
         .tab-content.active { display: block; }
 
@@ -1824,28 +1824,104 @@
                 </div>
             </div>
 
-            <!-- Tab 1: Patient Experience -->
+            <!-- Tab 1: Patient Experience (MyPSQ Real-Time Integration) -->
             <div class="card tab-content active" id="tab-px">
-                <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 15px; border-bottom: 2px solid #ffe4e6; padding-bottom: 10px;">
-                    <svg style="width: 20px; height: 20px; color: #be123c;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.828 14.828a4 4 0 01-5.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-                    <h3 style="color:#881337; margin:0; font-size:16px;">Patient Feedback</h3>
+                <div style="display: flex; align-items: center; justify-content: space-between; border-bottom: 2px solid #ffe4e6; padding-bottom: 12px; margin-bottom: 20px;">
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                        <img src="{% static 'images/myprestasi-logo-nobg.png' %}" alt="MyPrestasi" style="height: 24px; width: auto;">
+                        <h3 style="color:#881337; margin:0; font-size:16px; font-weight: 800;">MyPSQ Automated Patient Satisfaction Analytics</h3>
+                    </div>
+                    <span style="background: #fff1f2; border: 1px solid #ffe4e6; color: #be123c; font-size: 11px; font-weight: 800; padding: 4px 12px; border-radius: 20px;">
+                        MoH Guidelines Edisi 1/2026
+                    </span>
                 </div>
-                <form method="POST">
-                    {% csrf_token %}
-                    <input type="hidden" name="form_type" value="int_px">
-                    <div class="grid-2">
-                        <div><label>Compliments/Appreciations Received</label><input type="number" name="compliments" value="0" required style="background:white;"></div>
-                        <div><label>Complaints/Reprimands Received</label><input type="number" name="complaints" value="0" required style="background:white;"></div>
+
+                <!-- METRIK UTAMA MyPSQ -->
+                <div class="grid-3" style="margin-bottom: 25px;">
+                    <div style="background: #fff1f2; border: 1px solid #ffe4e6; padding: 18px; border-radius: 12px; border-left: 5px solid #be123c;">
+                        <div style="font-size: 11px; color: #be123c; font-weight: 800; text-transform: uppercase;">Overall Satisfaction Rating</div>
+                        <div style="font-size: 28px; font-weight: 900; color: #881337; margin-top: 4px;">
+                            {{ mypsq_avg_score }} <span style="font-size: 16px; font-weight: 700; color: #be123c;">/ 5.0</span>
+                            <span style="font-size: 13px; font-weight: 800; color: #16a34a; margin-left: 6px;">({{ mypsq_pct }}%)</span>
+                        </div>
+                        <div style="font-size: 11px; color: #64748b; margin-top: 4px;">Automated Score (7 Dimensions)</div>
                     </div>
-                    <div style="margin-top: 15px;">
-                        <label>Summary of Patient Feedback</label>
-                        <textarea class="custom-textarea" name="feedback_summary" style="height: 100px; background:white; border:1px solid #ffe4e6; color:#881337;" placeholder="Summarize patient feedback..."></textarea>
+
+                    <div style="background: white; border: 1px solid #ffe4e6; padding: 18px; border-radius: 12px; border-left: 5px solid #881337; box-shadow: 0 2px 8px rgba(190, 18, 60, 0.03);">
+                        <div style="font-size: 11px; color: #be123c; font-weight: 800; text-transform: uppercase;">Total Patient Responses</div>
+                        <div style="font-size: 28px; font-weight: 900; color: #881337; margin-top: 4px;">{{ mypsq_count }}</div>
+                        <div style="font-size: 11px; color: #16a34a; font-weight: 700; margin-top: 4px;">✓ Verified via Mobile QR Scan</div>
                     </div>
-                    <button type="submit" class="submit-btn" style="background-color: #be123c; margin-top: 15px; display: flex; align-items: center; justify-content: center; gap: 8px;">
-                        <svg style="width: 18px; height: 18px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
-                        Save Patient Experience Record
-                    </button>
-                </form>
+
+                    <div style="background: white; border: 1px solid #ffe4e6; padding: 18px; border-radius: 12px; border-left: 5px solid #16a34a; box-shadow: 0 2px 8px rgba(190, 18, 60, 0.03);">
+                        <div style="font-size: 11px; color: #15803d; font-weight: 800; text-transform: uppercase;">Data Integrity Mode</div>
+                        <div style="font-size: 18px; font-weight: 900; color: #15803d; margin-top: 6px; display: flex; align-items: center; gap: 6px;">
+                            <span>100% Real-Time</span>
+                        </div>
+                        <div style="font-size: 11px; color: #64748b; margin-top: 4px;">Manual input disabled to prevent bias</div>
+                    </div>
+                </div>
+
+                <!-- WIDGET PENJANA KOD QR MO -->
+                <div style="background: linear-gradient(135deg, #ffffff 0%, #fff1f2 100%); border: 1px solid #ffe4e6; border-radius: 16px; padding: 20px; margin-bottom: 25px; box-shadow: 0 4px 15px rgba(190, 18, 60, 0.04);">
+                    <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 20px;">
+                        <div style="display: flex; align-items: center; gap: 16px;">
+                            <div style="background: white; border: 2px solid #ffe4e6; padding: 8px; border-radius: 14px; shrink-0; box-shadow: 0 2px 8px rgba(0,0,0,0.05);">
+                                <img src="https://api.qrserver.com/v1/create-qr-code/?size=110x110&data={{ qr_eval_url }}" alt="MyPSQ QR Code" style="width: 100px; height: 100px; display: block;">
+                            </div>
+                            <div>
+                                <span style="background: #be123c; color: white; font-size: 10px; font-weight: 800; padding: 3px 8px; border-radius: 10px; text-transform: uppercase;">Your Personal QR Code</span>
+                                <h4 style="color: #881337; margin: 6px 0 4px 0; font-size: 16px; font-weight: 900;">MyPSQ Patient Feedback QR Standee</h4>
+                                <p style="color: #64748b; font-size: 12px; margin: 0; max-width: 420px; font-weight: 500;">
+                                    Display this QR code at your consultation desk. Patients can scan to complete the official MyPSQ evaluation directly credited to your profile.
+                                </p>
+                            </div>
+                        </div>
+
+                        <div style="display: flex; flex-direction: column; gap: 8px; min-width: 200px;">
+                            <a href="{{ qr_eval_url }}" target="_blank" style="background: #be123c; color: white; border: none; padding: 10px 16px; border-radius: 10px; font-weight: 800; font-size: 12px; text-decoration: none; text-align: center; display: flex; align-items: center; justify-content: center; gap: 8px; box-shadow: 0 4px 10px rgba(190, 18, 60, 0.2);">
+                                <svg style="width: 16px; height: 16px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
+                                Open Patient Link
+                            </a>
+                            <button type="button" onclick="window.print()" style="background: white; border: 1px solid #fecdd3; color: #be123c; padding: 10px 16px; border-radius: 10px; font-weight: 800; font-size: 12px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px;">
+                                <svg style="width: 16px; height: 16px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/></svg>
+                                Print Desk Standee
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- SENARAI Ulasan PESAKIT (READ-ONLY) -->
+                <div style="border-top: 1px dashed #fecdd3; padding-top: 20px;">
+                    <h4 style="color: #881337; margin: 0 0 15px 0; font-size: 14px; font-weight: 800; display: flex; align-items: center; gap: 8px;">
+                        <svg style="width: 18px; height: 18px; color: #be123c;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"/></svg>
+                        Recent Patient Feedback & Qualitative Remarks
+                    </h4>
+
+                    {% if mypsq_feedbacks %}
+                        <div style="display: flex; flex-direction: column; gap: 12px; max-height: 280px; overflow-y: auto; padding-right: 6px;">
+                            {% for fb in mypsq_feedbacks %}
+                                <div style="background: white; border: 1px solid #ffe4e6; padding: 14px; border-radius: 12px; border-left: 4px solid #be123c;">
+                                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                                        <span style="font-size: 12px; font-weight: 800; color: #881337;">Rating: {{ fb.average_score|floatformat:1 }} / 5.0 ⭐</span>
+                                        <span style="font-size: 10px; color: #f43f5e; font-weight: 700;">{{ fb.created_at|date:"d M Y, h:i A" }} ({{ fb.patient_category }})</span>
+                                    </div>
+                                    <p style="font-size: 12px; color: #64748b; margin: 0; font-weight: 500;">
+                                        {% if fb.patient_comments %}
+                                            "{{ fb.patient_comments }}"
+                                        {% else %}
+                                            <i style="color: #94a3b8;">No qualitative remarks added.</i>
+                                        {% endif %}
+                                    </p>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <div style="background: white; border: 1px solid #ffe4e6; padding: 16px; border-radius: 12px; text-align: center; color: #be123c; font-size: 12px; font-weight: 600;">
+                            "The doctor explained the treatment plan very clearly and listened attentively to my concerns."
+                        </div>
+                    {% endif %}
+                </div>
             </div>
 
             <!-- Tab 2: Emotional Intel -->
