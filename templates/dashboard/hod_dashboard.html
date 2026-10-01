@@ -498,31 +498,43 @@
                         </a>
                         <span style="font-size: 11px; background: #be123c; color: white; padding: 2px 8px; border-radius: 12px; font-weight: 800;">3 Action Needed</span>
                     </div>
-                    <div style="flex-grow: 1; overflow-y: auto; padding-right: 2px;">
+                    <div style="flex-grow: 1; overflow-y: auto; overflow-x: hidden; padding-right: 2px;">
                         <div class="alert-item urgent">
                             <div>
-                                <p class="alert-title">🚨 CUSUM Breach Warning</p>
+                                <p class="alert-title" style="display: flex; align-items: center; gap: 6px;">
+                                    <svg style="width: 15px; height: 15px; color: #be123c; flex-shrink: 0;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+                                    <span>CUSUM Breach Warning</span>
+                                </p>
                                 <p class="alert-desc">Dr. Ramesh Lee breached safety control limit in LIMA-LAD Procedure.</p>
                             </div>
                             <a href="{% url 'cts_module' %}?officer=Dr.%20Ramesh%20Lee&tab=Skills" class="btn-action-xs">Review Case</a>
                         </div>
                         <div class="alert-item" style="background: #f0fdf4; border: 1px solid #bbf7d0;">
                             <div>
-                                <p class="alert-title" style="color: #14532d;">🌟 Fast-Track Candidates (PRI ≥ 85%)</p>
+                                <p class="alert-title" style="color: #14532d; display: flex; align-items: center; gap: 6px;">
+                                    <svg style="width: 15px; height: 15px; color: #16a34a; flex-shrink: 0;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"/></svg>
+                                    <span>Fast-Track Candidates (PRI ≥ 85%)</span>
+                                </p>
                                 <p class="alert-desc" style="color: #15803d;">AI shortlisted 24 Officers eligible for Fast-Track UD48 promotion.</p>
                             </div>
                             <a href="{% url 'overall_analytics' %}?type=performance" class="btn-action-xs" style="background: #16a34a;">View Shortlist</a>
                         </div>
                         <div class="alert-item">
                             <div>
-                                <p class="alert-title">⏳ Pending Approval Log</p>
+                                <p class="alert-title" style="display: flex; align-items: center; gap: 6px;">
+                                    <svg style="width: 15px; height: 15px; color: #be123c; flex-shrink: 0;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                                    <span>Pending Approval Log</span>
+                                </p>
                                 <p class="alert-desc">8 Procedure logs & 3 CPD claims require your validation.</p>
                             </div>
                             <a href="{% url 'overall_analytics' %}?type=evaluations" class="btn-action-xs">Approve All</a>
                         </div>
                         <div class="alert-item">
                             <div>
-                                <p class="alert-title">⚠️ SOP Documentation Drop</p>
+                                <p class="alert-title" style="display: flex; align-items: center; gap: 6px;">
+                                    <svg style="width: 15px; height: 15px; color: #be123c; flex-shrink: 0;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+                                    <span>SOP Documentation Drop</span>
+                                </p>
                                 <p class="alert-desc">Clinic Outpatient records timeliness dropped below 80% target.</p>
                             </div>
                             <a href="{% url 'cts_module' %}?tab=Documentation" class="btn-action-xs">View Audit</a>
@@ -654,61 +666,63 @@
             </div>
             
         {% elif section == 'Settings' %}
-            <div class="card" style="width: 100%; box-sizing: border-box; max-width: 800px; margin: 0 auto;">
+            <div class="card" style="width: 100%; box-sizing: border-box; flex-grow: 1;">
                 <h3 style="color:#881337; margin-top:0; border-bottom: 2px solid #ffe4e6; padding-bottom: 15px; display: flex; align-items: center; gap: 10px;">
                     <svg style="width: 24px; height: 24px; min-width: 24px; min-height: 24px; flex-shrink: 0; color: #be123c;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
                     System Settings
                 </h3>
-                <p style="color: #64748b; font-size: 14px; margin-bottom: 30px; font-weight: 500;">Manage your MyPrestasi environment preferences.</p>
+                <p style="color: #64748b; font-size: 14px; margin-bottom: 25px; font-weight: 500;">Manage your MyPrestasi environment preferences.</p>
 
-                <form method="POST">
+                <form method="POST" style="width: 100%;">
                     {% csrf_token %}
                     <input type="hidden" name="form_type" value="system_settings">
                     
-                    <div class="setting-item" style="padding: 20px 0;">
-                        <div style="width: 100%;">
-                            <strong style="color: #881337; font-size: 14px; display: block; margin-bottom: 8px;">Language / Bahasa</strong>
-                            <select name="language" class="filter-select" style="width: 100%; padding: 12px; font-size: 13px;">
-                                <option>English (UK)</option>
-                                <option>Bahasa Melayu</option>
-                            </select>
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 20px; margin-bottom: 20px;">
+                        <div class="setting-item" style="padding: 15px; background: #fff1f2; border-radius: 12px; border: 1px solid #ffe4e6;">
+                            <div style="width: 100%;">
+                                <strong style="color: #881337; font-size: 14px; display: block; margin-bottom: 8px;">Language / Bahasa</strong>
+                                <select name="language" class="filter-select" style="width: 100%; padding: 12px; font-size: 13px; background: white;">
+                                    <option>English (UK)</option>
+                                    <option>Bahasa Melayu</option>
+                                </select>
+                            </div>
                         </div>
-                    </div>
 
-                    <div class="setting-item" style="padding: 20px 0;">
-                        <div style="width: 100%;">
-                            <strong style="color: #881337; font-size: 14px; display: block; margin-bottom: 8px;">Timezone</strong>
-                            <select name="timezone" class="filter-select" style="width: 100%; padding: 12px; font-size: 13px;">
-                                <option>Asia/Kuala_Lumpur (MYT +08:00)</option>
-                                <option>Asia/Kuching (MYT +08:00)</option>
-                                <option>UTC (Coordinated Universal Time)</option>
-                            </select>
+                        <div class="setting-item" style="padding: 15px; background: #fff1f2; border-radius: 12px; border: 1px solid #ffe4e6;">
+                            <div style="width: 100%;">
+                                <strong style="color: #881337; font-size: 14px; display: block; margin-bottom: 8px;">Timezone</strong>
+                                <select name="timezone" class="filter-select" style="width: 100%; padding: 12px; font-size: 13px; background: white;">
+                                    <option>Asia/Kuala_Lumpur (MYT +08:00)</option>
+                                    <option>Asia/Kuching (MYT +08:00)</option>
+                                    <option>UTC (Coordinated Universal Time)</option>
+                                </select>
+                            </div>
                         </div>
-                    </div>
 
-                    <div class="setting-item" style="padding: 20px 0;">
-                        <div style="width: 100%;">
-                            <strong style="color: #881337; font-size: 14px; display: block; margin-bottom: 8px;">Date & Time Format</strong>
-                            <select name="date_format" class="filter-select" style="width: 100%; padding: 12px; font-size: 13px;">
-                                <option>DD/MM/YYYY (24-hour)</option>
-                                <option>DD-MM-YYYY (12-hour AM/PM)</option>
-                                <option>YYYY-MM-DD (ISO Standard)</option>
-                            </select>
+                        <div class="setting-item" style="padding: 15px; background: #fff1f2; border-radius: 12px; border: 1px solid #ffe4e6;">
+                            <div style="width: 100%;">
+                                <strong style="color: #881337; font-size: 14px; display: block; margin-bottom: 8px;">Date & Time Format</strong>
+                                <select name="date_format" class="filter-select" style="width: 100%; padding: 12px; font-size: 13px; background: white;">
+                                    <option>DD/MM/YYYY (24-hour)</option>
+                                    <option>DD-MM-YYYY (12-hour AM/PM)</option>
+                                    <option>YYYY-MM-DD (ISO Standard)</option>
+                                </select>
+                            </div>
                         </div>
-                    </div>
 
-                    <div class="setting-item" style="padding: 20px 0; border-bottom: none;">
-                        <div>
-                            <strong style="color: #881337; font-size: 14px;">Dark Mode</strong>
-                            <div style="font-size: 12px; color: #f43f5e; margin-top: 5px; font-weight: 600;">Toggle dark theme interface</div>
+                        <div class="setting-item" style="padding: 15px; background: #fff1f2; border-radius: 12px; border: 1px solid #ffe4e6; display: flex; justify-content: space-between; align-items: center;">
+                            <div>
+                                <strong style="color: #881337; font-size: 14px;">Dark Mode</strong>
+                                <div style="font-size: 12px; color: #f43f5e; margin-top: 4px; font-weight: 600;">Toggle dark theme interface</div>
+                            </div>
+                            <label class="switch">
+                                <input type="checkbox" name="dark_mode">
+                                <span class="slider"></span>
+                            </label>
                         </div>
-                        <label class="switch">
-                            <input type="checkbox" name="dark_mode">
-                            <span class="slider"></span>
-                        </label>
                     </div>
                     
-                    <button type="submit" style="background-color: #be123c; color: white; border: none; padding: 16px; border-radius: 10px; font-weight: bold; margin-top: 20px; cursor: pointer; font-size: 15px; width: 100%; transition: 0.3s; box-shadow: 0 4px 15px rgba(190, 18, 60, 0.2);" onmouseover="this.style.backgroundColor='#881337'; this.style.transform='translateY(-2px)';" onmouseout="this.style.backgroundColor='#be123c'; this.style.transform='translateY(0)';">Save Preferences</button>
+                    <button type="submit" style="background-color: #be123c; color: white; border: none; padding: 16px; border-radius: 12px; font-weight: 800; font-size: 15px; width: 100%; cursor: pointer; transition: 0.3s; box-shadow: 0 4px 15px rgba(190, 18, 60, 0.2);" onmouseover="this.style.backgroundColor='#881337'; this.style.transform='translateY(-2px)';" onmouseout="this.style.backgroundColor='#be123c'; this.style.transform='translateY(0)';">Save Preferences</button>
                 </form>
             </div>
         {% endif %} 
@@ -716,7 +730,7 @@
     </div> 
     
     <div class="custom-footer">
-        Copyright © 2026 MyPrestasi HOD | National Health Facility
+        Copyright © 2026 MyPrestasi HOD | Health Performance Unit
     </div>
 
     

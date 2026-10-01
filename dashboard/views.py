@@ -1,9 +1,11 @@
-from django.shortcuts import render, redirect
+from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
+from django.contrib.auth.models import User
+from datetime import date
 import pandas as pd
-import numpy as np          # <--- TAMBAH BARIS INI
+import numpy as np
 import plotly.express as px
 import plotly.graph_objects as go
 import folium
@@ -11,7 +13,17 @@ import random
 import math
 import hashlib
 import urllib.parse
+
+# Import Data Simulasi (Mock Data)
 from .mock_data import STATE_CENTERS, MOCK_KLINIK, generate_mock_doctors, MOCK_CUSUM_DATA
+
+# Import Enjin Pengira Skor & Model Pangkalan Data MyPrestasi
+from .services import calculate_pri_score
+from .models import (
+    UserProfile, MyPSQFeedback, ProcedureLog, PolicyDeclaration,
+    PolicyItemResponse, DocumentationLog, CPDClaim, ProductivityLog,
+    InnovationProject, EmotionalReflection, PeerKudos, MentorshipSession
+)
 
 
 def landing_page_view(request):
@@ -127,32 +139,58 @@ def hod_dashboard(request):
     is_facility_locked = (hod_scope == 'FACILITY')
     is_state_locked = (hod_scope == 'STATE')
 
-    # --- TAMBAHAN BARU: PENGIRAAN STATISTIK DINAMIK ---
+    # --- INTEGRASI HYBRID DATA PIPELINE (REAL DB + MOCK FALLBACK) ---
     active_facilities = len(klinik_dipaparkan)
     semua_markah = []
     total_staff = 0
-    
+
+    # 1. Tarik Staf Sebenar dari Database
+    real_staff_users = User.objects.filter(profile__role='STAFF')
+    real_staff_data = []
+
+    for staff_user in real_staff_users:
+        scores = calculate_pri_score(staff_user)
+        staff_facility = getattr(staff_user.profile, 'assigned_facility', '') or 'Klinik Kesihatan Medong'
+        
+        # Tapis mengikut klinik jika pilihan_klinik ditentukan
+        if not pilihan_klinik or pilihan_klinik == 'All Clinics' or pilihan_klinik == staff_facility:
+            full_name = f"{staff_user.first_name} {staff_user.last_name}".strip() or staff_user.username
+            real_staff_data.append({
+                'Officer Name': f"🟢 {full_name} (Live)",
+                'Grade': 'UD43 (MO)',
+                'Current Score': scores['pri_score'],
+                'Status': f"<span class='status-badge status-excellent'>{scores['promotion_tier'].split(':')[0]}</span>"
+            })
+            semua_markah.append(scores['pri_score'])
+
+    # 2. Ambil Data Mock untuk Melengkapkan Statistik Papan Pemuka
     for k in klinik_dipaparkan:
         if 'doctors' in k:
             total_staff += len(k['doctors'])
             semua_markah.extend([doc['Current Score'] for doc in k['doctors']])
             
+    total_staff += len(real_staff_data)
     avg_performance = int(sum(semua_markah) / len(semua_markah)) if semua_markah else 0
     
-    import random
-    random.seed(total_staff)
+    random.seed(total_staff or 1)
     evaluations_completed = total_staff * random.randint(3, 6)
 
-    # A. Senarai Staf (Roster)
+    # A. Senarai Staf (Roster Hybrid)
     from django.urls import reverse
     
     if pilihan_klinik:
         df_docs = generate_mock_doctors(pilihan_klinik)
+        
+        # Gabungkan data Staf Sebenar di bahagian paling atas Roster
+        if real_staff_data:
+            df_real = pd.DataFrame(real_staff_data)
+            df_docs = pd.concat([df_real, df_docs], ignore_index=True)
+            
         clinical_url = reverse('cts_module')
         
         # Link terus ke borang penilaian pegawai
         df_docs['Officer Name'] = df_docs['Officer Name'].apply(
-            lambda x: f"<a href='{clinical_url}?officer={urllib.parse.quote(x)}&clinic={urllib.parse.quote(pilihan_klinik)}&state={urllib.parse.quote(pilihan_negeri)}&tab=Skills' style='color:#be123c; font-weight:800; text-decoration:none;' onmouseover='this.style.textDecoration=\"underline\"' onmouseout='this.style.textDecoration=\"none\"'>🔍 {x}</a>"
+            lambda x: f"<a href='{clinical_url}?officer={urllib.parse.quote(x)}&clinic={urllib.parse.quote(pilihan_klinik)}&state={urllib.parse.quote(pilihan_negeri)}&tab=Skills' style='color:#be123c; font-weight:800; text-decoration:none;' onmouseover='this.style.textDecoration=\"underline\"' onmouseout='this.style.textDecoration=\"none\"'>{x}</a>"
         )
         roster_html = df_docs.to_html(index=False, classes="roster-table", escape=False)
     else:
@@ -397,17 +435,17 @@ def cts_view(request):
             
             if doc_skill >= 66:
                 prestasi = 'Excellent'
-                box_bg, box_border, box_text = '#EFF6FF', '#1E3A8A', '#1E3A8A'
+                box_bg, box_border, box_text = '#fff1f2', '#be123c', '#881337'
                 base_drop = np.random.uniform(0.6, 0.9) 
                 fms_p_value = "< 0.001"
             elif doc_skill >= 33:
                 prestasi = 'Moderate'
-                box_bg, box_border, box_text = '#DBEAFE', '#2563EB', '#1D4ED8'
+                box_bg, box_border, box_text = '#fff1f2', '#be123c', '#881337'
                 base_drop = np.random.uniform(0.2, 0.45) 
                 fms_p_value = f"0.0{np.random.randint(11, 49)}" 
             else:
                 prestasi = 'Needs Improvement'
-                box_bg, box_border, box_text = '#BFDBFE', '#60A5FA', '#2563EB' 
+                box_bg, box_border, box_text = '#ffe4e6', '#be123c', '#881337' 
                 base_drop = np.random.uniform(-0.1, 0.1) 
                 fms_p_value = f"0.{np.random.randint(150, 600)}" 
 
@@ -506,7 +544,7 @@ def cts_view(request):
                 name="Clinic Benchmark"
             ))
             
-            fig_gee.add_hline(y=7.0, line_dash="solid", line_color="#16a34a", line_width=1, annotation_text="Target (<7.0%)")
+            fig_gee.add_hline(y=7.0, line_dash="solid", line_color="#be123c", line_width=1.5, annotation_text="Target (<7.0%)")
             
             fig_gee.update_layout(
                 title=dict(text="<b>Longitudinal Trend (GEE Model)</b><br><span style='font-size:11px; color:#f43f5e;'>Individual Trajectories (Spaghetti) overlayed with Population-Averaged Mean</span>", font=dict(size=13, color="#881337")),
@@ -592,13 +630,12 @@ def cts_view(request):
         # 2. Peer average ambil dari purata sebenar klinik (avg_performance)
         peer_score = avg_performance if avg_performance > 0 else 75
 
-        # 3. Fungsi untuk tentukan teks dan warna status secara automatik
-        # 3. Fungsi untuk tentukan teks dan kelas CSS secara automatik
+        # 3. Fungsi untuk tentukan teks dan status secara automatik (Clean Text)
         def get_status_info(score):
-            if score >= 85: return "🌟 Outstanding", "outstanding"
-            elif score >= 75: return "👍 Good", "good"
-            elif score >= 65: return "✅ Competent", "competent"
-            else: return "⚠️ Needs Attention", "needs-attention"
+            if score >= 85: return "Outstanding", "outstanding"
+            elif score >= 75: return "Good", "good"
+            elif score >= 65: return "Competent", "competent"
+            else: return "Needs Attention", "needs-attention"
 
         cpd_text, cpd_css_class = get_status_info(cpd_score)
         peer_text, peer_css_class = get_status_info(peer_score)
@@ -1216,16 +1253,40 @@ def staff_dashboard_view(request):
     if request.method == 'POST':
         form_type = request.POST.get('form_type')
         if form_type == 'skills':
-            messages.success(request, "✅ Procedure log successfully submitted and pending HOD verification.")
+            proc_name = request.POST.get('procedure_name', 'LIMA-LAD Procedure')
+            score_val = float(request.POST.get('score', 85.0))
+            if request.user.is_authenticated:
+                ProcedureLog.objects.create(officer=request.user, procedure_name=proc_name, score=score_val)
+            messages.success(request, "✅ Procedure log successfully submitted and recorded in DB.")
+
         elif form_type == 'cpd':
-            mata = request.POST.get('mata', '0')
-            tajuk = request.POST.get('tajuk', 'Program')
-            messages.success(request, f"✅ Claim of {mata} CPD points for '{tajuk}' has been submitted to the HPU system.")
+            mata = int(request.POST.get('mata', '10'))
+            tajuk = request.POST.get('tajuk', 'Program CME')
+            category = request.POST.get('category', 'CME Workshop')
+            if request.user.is_authenticated:
+                CPDClaim.objects.create(officer=request.user, topic=tajuk, points=mata, category=category, event_date=date.today())
+            messages.success(request, f"✅ Claim of {mata} CPD points for '{tajuk}' saved to DB.")
+
         elif form_type == 'doc':
-            patient_id = request.POST.get('patient_id')
-            messages.success(request, f"✅ Documentation record for patient {patient_id} successfully submitted.")
+            patient_id = request.POST.get('patient_id', 'PT-001')
+            delay_hrs = float(request.POST.get('delay_hours', 0.0))
+            reason = request.POST.get('reason', '')
+            if request.user.is_authenticated:
+                DocumentationLog.objects.create(officer=request.user, patient_id=patient_id, delay_hours=delay_hrs, reason_for_delay=reason, is_ontime=(delay_hrs == 0))
+            messages.success(request, f"✅ Documentation record for patient {patient_id} recorded in DB.")
+
         elif form_type == 'policy':
-            messages.success(request, "✅ Your compliance declaration has been recorded in the database.")
+            if request.user.is_authenticated:
+                # Simpan Deklarasi 5 Domain
+                decl = PolicyDeclaration.objects.create(
+                    officer=request.user,
+                    score_domain_a=float(request.POST.get('score_a', 85.0)),
+                    score_domain_b=float(request.POST.get('score_b', 90.0)),
+                    score_domain_c=float(request.POST.get('score_c', 70.0)),
+                    score_domain_d=float(request.POST.get('score_d', 92.0)),
+                    score_domain_e=float(request.POST.get('score_e', 88.0)),
+                )
+            messages.success(request, "✅ Compliance declaration successfully recorded in DB.")
         elif form_type == 'ops_prod':
             messages.success(request, "✅ Productivity data successfully recorded.")
         elif form_type == 'ops_innov':
@@ -1282,13 +1343,21 @@ def staff_dashboard_view(request):
         )
         area_html = fig_area.to_html(full_html=False, include_plotlyjs=False, config={'displayModeBar': False})
 
-        # 3. GAUGE CHART (Performance Index)
+        # 3. GAUGE CHART (Performance Index - MyPrestasi Rose & Burgundy DNA)
         fig_gauge = go.Figure(go.Indicator(
-            mode="gauge+number", value=4.2, number={'font':{'size':35, 'color':'#881337'}},
+            mode="gauge+number", value=4.2, number={'font':{'size':36, 'color':'#881337', 'family':'Inter'}},
             gauge={
-                'axis': {'range': [0, 5], 'tickwidth': 1, 'tickcolor': "#881337"}, 'bar': {'color': "#881337", 'thickness': 0.2},
-                'steps': [{'range': [0, 3], 'color': "rgba(255, 75, 75, 0.2)"}, {'range': [3, 4], 'color': "rgba(241, 196, 15, 0.2)"}, {'range': [4, 5], 'color': "rgba(46, 204, 113, 0.2)"}],
-                'threshold': {'line': {'color': "red", 'width': 4}, 'thickness': 0.75, 'value': 4.5}
+                'axis': {'range': [0, 5], 'tickwidth': 1, 'tickcolor': "#881337", 'tickfont': {'color': '#881337', 'family': 'Inter', 'size': 11}}, 
+                'bar': {'color': "#881337", 'thickness': 0.22},
+                'bgcolor': "white",
+                'borderwidth': 1,
+                'bordercolor': "#ffe4e6",
+                'steps': [
+                    {'range': [0, 3], 'color': "#fff1f2"}, 
+                    {'range': [3, 4], 'color': "#ffe4e6"}, 
+                    {'range': [4, 5], 'color': "#fecdd3"}
+                ],
+                'threshold': {'line': {'color': "#be123c", 'width': 5}, 'thickness': 0.8, 'value': 4.5}
             }
         ))
         fig_gauge.update_layout(height=220, margin=dict(t=30, b=10, l=20, r=20), paper_bgcolor='rgba(0,0,0,0)')
@@ -1387,23 +1456,35 @@ def staff_dashboard_view(request):
             ai_action_text = "View Talent Track"
 
     # ==========================================
-    # PROMOTION READINESS INDEX (PRI) CALCULATION
+    # PROMOTION READINESS INDEX (PRI) CALCULATION (LIVE DB INTEGRATION)
     # ==========================================
-    cpd_score = 90
-    pri_score = int((0.40 * score_clinical) + (0.30 * score_ops_coding) + (0.20 * score_interpersonal) + (0.10 * cpd_score))
-    
-    if pri_score >= 85:
-        promotion_tier = "Tier 1: Fast-Track Candidate"
-        promotion_color = "#16a34a"
-        next_grade = "UD48 (Fast-Track)"
-    elif pri_score >= 70:
-        promotion_tier = "Tier 2: On-Track (Time-Based)"
-        promotion_color = "#d97706"
-        next_grade = "UD48 (Time-Based)"
+    if request.user.is_authenticated:
+        # Panggil Enjin Pengira Skor Bersepadu untuk Staf ini (Menggunakan .get untuk elak KeyError)
+        scores = calculate_pri_score(request.user)
+        score_clinical = scores.get('score_clinical', 85)
+        score_ops_coding = scores.get('score_operational', 80)
+        score_interpersonal = scores.get('score_interpersonal', 88)
+        score_cpd = scores.get('score_cpd', 90)
+        pri_score = scores.get('pri_score', 85)
+        promotion_tier = scores.get('promotion_tier', 'Tier 1: Fast-Track Candidate')
+        promotion_color = scores.get('promotion_color', '#16a34a')
+        next_grade = scores.get('next_grade', 'UD48 (Fast-Track)')
     else:
-        promotion_tier = "Tier 3: Action Required"
-        promotion_color = "#be123c"
-        next_grade = "UD48 (Deferred)"
+        # Fallback simulasi jika log masuk tanpa auth
+        score_cpd = 90
+        pri_score = int((0.40 * score_clinical) + (0.30 * score_ops_coding) + (0.20 * score_interpersonal) + (0.10 * score_cpd))
+        if pri_score >= 85:
+            promotion_tier = "Tier 1: Fast-Track Candidate"
+            promotion_color = "#16a34a"
+            next_grade = "UD48 (Fast-Track)"
+        elif pri_score >= 70:
+            promotion_tier = "Tier 2: On-Track (Time-Based)"
+            promotion_color = "#d97706"
+            next_grade = "UD48 (Time-Based)"
+        else:
+            promotion_tier = "Tier 3: Action Required"
+            promotion_color = "#be123c"
+            next_grade = "UD48 (Deferred)"
 
     context = {
         'section': section,

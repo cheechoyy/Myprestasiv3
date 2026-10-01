@@ -103,7 +103,12 @@
     </div>
     <div class="container">
         <div class="page-title-box">
-            <h1>📊 Department Monthly KPI Deep-Dive</h1>
+            <h1 style="display: flex; align-items: center; gap: 12px;">
+                <div style="width: 38px; height: 38px; border-radius: 10px; background: #fff1f2; border: 1px solid #ffe4e6; display: flex; justify-content: center; align-items: center; flex-shrink: 0;">
+                    <svg style="width: 22px; height: 22px; color: #be123c;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
+                </div>
+                <span>Department Monthly KPI Deep-Dive</span>
+            </h1>
             <p>12-Month longitudinal performance tracking, target vs actual variance analysis, and quarterly projections.</p>
         </div>
         <div class="grid-3">
@@ -125,6 +130,6 @@
             {{ trend_chart_html|safe }}
         </div>
     </div>
-    <div class="footer">Copyright © 2026 MyPrestasi HPU | National Health Facility</div>
+    <div class="footer">Copyright © 2026 MyPrestasi HPU | Health Performance Unit</div>
 </body>
 </html>
