@@ -1252,12 +1252,23 @@ def staff_dashboard_view(request):
     
     if request.method == 'POST':
         form_type = request.POST.get('form_type')
-        if form_type == 'skills':
-            proc_name = request.POST.get('procedure_name', 'LIMA-LAD Procedure')
+        if form_type in ['skills', 'skills_cts', 'skills_fms']:
+            proc_name = request.POST.get('procedure_name', 'Clinical Case Encounter')
             score_val = float(request.POST.get('score', 85.0))
+            patient_rn = request.POST.get('patient_id') or request.POST.get('mrn') or 'RN-' + str(random.randint(10000, 99999))
+            
             if request.user.is_authenticated:
+                # 1. Simpan Rekod Klinikal
                 ProcedureLog.objects.create(officer=request.user, procedure_name=proc_name, score=score_val)
-            messages.success(request, "✅ Procedure log successfully submitted and recorded in DB.")
+                
+                # 2. AUTO-SYNC: Cipta rekod DocumentationLog secara automatik!
+                DocumentationLog.objects.create(
+                    officer=request.user,
+                    patient_id=patient_rn,
+                    delay_hours=0.0,
+                    is_ontime=True
+                )
+            messages.success(request, f"✅ Clinical record for {patient_rn} saved & auto-synced to Documentation Log!")
 
         elif form_type == 'cpd':
             mata = int(request.POST.get('mata', '10'))
@@ -1486,8 +1497,12 @@ def staff_dashboard_view(request):
             promotion_color = "#be123c"
             next_grade = "UD48 (Deferred)"
 
+    # Tarik rekod DocumentationLog sebenar dari DB bagi staf ini
+    doc_logs = DocumentationLog.objects.filter(officer=staff_user).order_by('-created_at') if staff_user else []
+
     context = {
         'section': section,
+        'doc_logs': doc_logs,
         'chart_html': chart_html,
         'radar_html': radar_html,
         'donut_html': donut_html,

@@ -409,9 +409,25 @@
                 <div style="font-size: 11px; font-weight: 600; color: #f43f5e;">HOD | {{ hod_facility_label }}</div>
             </div>
 
-            <!-- Search Icon -->
-            <div class="icon-btn" title="Search Medical Officer">
-                <svg style="width: 18px; height: 18px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+            <!-- WORK SCHEDULE & CALENDAR BUTTON -->
+            <div style="background: white; border: 1px solid #ffe4e6; padding: 7px 14px; border-radius: 20px; font-size: 12px; color: #881337; font-weight: 700; display: flex; align-items: center; gap: 6px; box-shadow: 0 2px 8px rgba(190, 18, 60, 0.05); cursor: pointer; transition: 0.2s;" onclick="openScheduleModal()" onmouseover="this.style.borderColor='#be123c'; this.style.background='#fff1f2';" onmouseout="this.style.borderColor='#ffe4e6'; this.style.background='white';" title="Click to open Work Schedule & MyPrestasi Monthly Calendar">
+                <svg style="width: 16px; height: 16px; color: #be123c;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2h14"/></svg>
+                <span>02 October 2026</span>
+                <span style="background: #be123c; color: white; border-radius: 50%; width: 18px; height: 18px; font-size: 10px; display: inline-flex; align-items: center; justify-content: center; font-weight: 800;">5</span>
+            </div>
+
+            <!-- GOOGLE-STYLE INLINE SEARCH BAR -->
+            <div class="inline-search-container" style="position: relative; width: 250px;">
+                <div style="display: flex; align-items: center; background: white; border: 1px solid #ffe4e6; border-radius: 20px; padding: 6px 14px; box-shadow: 0 2px 8px rgba(190, 18, 60, 0.05); transition: all 0.2s ease;" id="inlineSearchBox">
+                    <svg style="width: 16px; height: 16px; color: #be123c; flex-shrink: 0; margin-right: 8px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+                    <input type="text" id="inlineSearchInput" placeholder="Search MyPrestasi modules..." style="width: 100%; border: none; background: transparent; font-family: 'Inter'; font-size: 13px; font-weight: 600; color: #881337; outline: none; padding: 2px 0;" oninput="filterInlineSuggestions()" onfocus="showInlineSuggestions()" autocomplete="off">
+                    <span id="clearSearchBtn" onclick="clearInlineSearch()" style="display: none; cursor: pointer; color: #f43f5e; font-size: 12px; font-weight: 800; margin-left: 6px;">✕</span>
+                </div>
+
+                <!-- DROPDOWN SUGGESTIONS -->
+                <div id="inlineSuggestionsDropdown" style="display: none; position: absolute; top: 115%; right: 0; width: 330px; max-height: 360px; overflow-y: auto; background: white; border: 1px solid #ffe4e6; border-radius: 14px; box-shadow: 0 10px 30px rgba(136, 19, 55, 0.15); z-index: 9999; padding: 8px; box-sizing: border-box;">
+                    <!-- Autocomplete results -->
+                </div>
             </div>
 
             <!-- Inbox Dropdown -->
@@ -853,6 +869,322 @@
                 }
             }, 150);
         });
+    </script>
+
+    <!-- ==========================================
+         HOD MONTHLY CALENDAR & SCHEDULE MODAL
+         ========================================== -->
+    <div class="modal-overlay" id="scheduleModal" style="z-index: 9999;">
+        <div class="modal-content" style="width: 1180px; max-width: 95vw; height: 88vh; border-radius: 20px; padding: 25px; box-shadow: 0 20px 50px rgba(136, 19, 55, 0.25); display: flex; flex-direction: column; overflow: hidden; border: 1px solid #ffe4e6;">
+            <button class="modal-close" onclick="closeScheduleModal()" style="top: 20px; right: 20px; font-size: 20px;">✕</button>
+
+            <!-- HEADER -->
+            <div style="display: flex; align-items: center; justify-content: space-between; border-bottom: 2px solid #ffe4e6; padding-bottom: 15px; margin-bottom: 15px; flex-shrink: 0;">
+                <div style="display: flex; align-items: center; gap: 14px;">
+                    <div style="width: 44px; height: 44px; border-radius: 12px; background: #be123c; color: white; display: flex; justify-content: center; align-items: center; box-shadow: 0 4px 12px rgba(190, 18, 60, 0.25);">
+                        <svg style="width: 24px; height: 24px; color: white;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2h14M12 11v6m-3-3h6"/></svg>
+                    </div>
+                    <div>
+                        <h3 style="margin: 0; color: #881337; font-weight: 900; font-size: 19px; letter-spacing: -0.3px;">Work Schedule & MyPrestasi Monthly Calendar</h3>
+                        <p style="margin: 2px 0 0 0; color: #f43f5e; font-size: 12px; font-weight: 600;">Interactive Google Calendar Mode • HOD Roster & Department Action Items</p>
+                    </div>
+                </div>
+
+                <!-- VIEW CONTROLS -->
+                <div style="display: flex; gap: 8px; background: #fff1f2; padding: 4px; border-radius: 12px; border: 1px solid #ffe4e6;">
+                    <button type="button" id="tabCalMonth" onclick="switchCalView('month')" style="padding: 8px 16px; border-radius: 8px; font-size: 11px; font-weight: 800; border: 1px solid #be123c; background: #be123c; color: white; cursor: pointer; transition: 0.2s; display: inline-flex; align-items: center; gap: 6px;">
+                        <svg style="width: 14px; height: 14px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2h14"/></svg>
+                        Month View
+                    </button>
+                    <button type="button" id="tabCalList" onclick="switchCalView('list')" style="padding: 8px 16px; border-radius: 8px; font-size: 11px; font-weight: 800; border: 1px solid transparent; background: transparent; color: #881337; cursor: pointer; transition: 0.2s; display: inline-flex; align-items: center; gap: 6px;">
+                        <svg style="width: 14px; height: 14px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16"/></svg>
+                        List View
+                    </button>
+                    <button type="button" id="tabCalAdd" onclick="switchCalView('add')" style="padding: 8px 16px; border-radius: 8px; font-size: 11px; font-weight: 800; border: 1px solid transparent; background: transparent; color: #881337; cursor: pointer; transition: 0.2s; display: inline-flex; align-items: center; gap: 6px;">
+                        <svg style="width: 14px; height: 14px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+                        Add Entry
+                    </button>
+                </div>
+            </div>
+
+            <!-- MODE 1: MONTH GRID (OCTOBER 2026) -->
+            <div id="calAreaMonth" style="display: flex; flex-direction: column; flex-grow: 1; overflow: hidden;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; flex-shrink: 0;">
+                    <div style="display: flex; align-items: center; gap: 12px;">
+                        <h4 style="margin: 0; color: #881337; font-size: 16px; font-weight: 900;">October 2026</h4>
+                        <span style="background: #fff1f2; border: 1px solid #fecdd3; color: #be123c; padding: 2px 10px; border-radius: 12px; font-size: 10px; font-weight: 800;">5 Department Action Items</span>
+                    </div>
+
+                    <div style="display: flex; gap: 12px; font-size: 11px; font-weight: 700; color: #881337;">
+                        <span style="display: flex; align-items: center; gap: 4px;"><span style="width: 10px; height: 10px; background: #be123c; border-radius: 3px;"></span> Duty / Audit</span>
+                        <span style="display: flex; align-items: center; gap: 4px;"><span style="width: 10px; height: 10px; background: #d97706; border-radius: 3px;"></span> Pending Approval</span>
+                        <span style="display: flex; align-items: center; gap: 4px;"><span style="width: 10px; height: 10px; background: #16a34a; border-radius: 3px;"></span> Fast-Track Track</span>
+                    </div>
+                </div>
+
+                <div style="display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; text-align: center; font-weight: 800; font-size: 11px; color: #be123c; background: #fff1f2; padding: 8px 0; border-radius: 8px; border: 1px solid #ffe4e6; margin-bottom: 6px; flex-shrink: 0;">
+                    <div>MON</div><div>TUE</div><div>WED</div><div>THU</div><div>FRI</div><div>SAT</div><div>SUN</div>
+                </div>
+
+                <div style="display: grid; grid-template-columns: repeat(7, 1fr); grid-template-rows: repeat(5, 1fr); gap: 4px; flex-grow: 1; overflow-y: auto;">
+                    <div style="background: #f8fafc; border: 1px solid #f1f5f9; border-radius: 8px; padding: 6px; opacity: 0.4;"><span style="font-size: 11px; font-weight: 700; color: #94a3b8;">28</span></div>
+                    <div style="background: #f8fafc; border: 1px solid #f1f5f9; border-radius: 8px; padding: 6px; opacity: 0.4;"><span style="font-size: 11px; font-weight: 700; color: #94a3b8;">29</span></div>
+                    <div style="background: #f8fafc; border: 1px solid #f1f5f9; border-radius: 8px; padding: 6px; opacity: 0.4;"><span style="font-size: 11px; font-weight: 700; color: #94a3b8;">30</span></div>
+
+                    <!-- OCTOBER 1 (TODAY) -->
+                    <div style="background: #fff1f2; border: 2px solid #be123c; border-radius: 8px; padding: 6px; display: flex; flex-direction: column; gap: 4px; box-shadow: 0 2px 6px rgba(190, 18, 60, 0.1);">
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <span style="font-size: 11px; font-weight: 900; color: white; background: #be123c; width: 20px; height: 20px; border-radius: 50%; display: flex; justify-content: center; align-items: center;">1</span>
+                            <span style="font-size: 9px; font-weight: 800; color: #be123c;">TODAY</span>
+                        </div>
+                        <div style="background: #be123c; color: white; font-size: 9px; padding: 3px 5px; border-radius: 4px; font-weight: 800; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="08:30 CUSUM Review">08:30 CUSUM Review</div>
+                        <div style="background: #d97706; color: white; font-size: 9px; padding: 3px 5px; border-radius: 4px; font-weight: 800; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="18:00 Pending Approval Log">18:00 Pending Approval Log</div>
+                    </div>
+
+                    <div style="background: white; border: 1px solid #ffe4e6; border-radius: 8px; padding: 6px;"><span style="font-size: 11px; font-weight: 700; color: #881337;">2</span></div>
+                    <div style="background: white; border: 1px solid #ffe4e6; border-radius: 8px; padding: 6px;"><span style="font-size: 11px; font-weight: 700; color: #881337;">3</span></div>
+                    <div style="background: white; border: 1px solid #ffe4e6; border-radius: 8px; padding: 6px;"><span style="font-size: 11px; font-weight: 700; color: #881337;">4</span></div>
+
+                    <div style="background: white; border: 1px solid #ffe4e6; border-radius: 8px; padding: 6px; display: flex; flex-direction: column; gap: 4px;">
+                        <span style="font-size: 11px; font-weight: 700; color: #881337;">5</span>
+                        <div style="background: #16a34a; color: white; font-size: 9px; padding: 3px 5px; border-radius: 4px; font-weight: 800; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">09:00 Fast-Track Panel</div>
+                    </div>
+                    <div style="background: white; border: 1px solid #ffe4e6; border-radius: 8px; padding: 6px;"><span style="font-size: 11px; font-weight: 700; color: #881337;">6</span></div>
+                    <div style="background: white; border: 1px solid #ffe4e6; border-radius: 8px; padding: 6px;"><span style="font-size: 11px; font-weight: 700; color: #881337;">7</span></div>
+                    <div style="background: white; border: 1px solid #ffe4e6; border-radius: 8px; padding: 6px;"><span style="font-size: 11px; font-weight: 700; color: #881337;">8</span></div>
+                    <div style="background: white; border: 1px solid #ffe4e6; border-radius: 8px; padding: 6px; display: flex; flex-direction: column; gap: 4px;">
+                        <span style="font-size: 11px; font-weight: 700; color: #881337;">9</span>
+                        <div style="background: #be123c; color: white; font-size: 9px; padding: 3px 5px; border-radius: 4px; font-weight: 800; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">10:00 Dept KPI Meeting</div>
+                    </div>
+                    <div style="background: white; border: 1px solid #ffe4e6; border-radius: 8px; padding: 6px;"><span style="font-size: 11px; font-weight: 700; color: #881337;">10</span></div>
+                    <div style="background: white; border: 1px solid #ffe4e6; border-radius: 8px; padding: 6px;"><span style="font-size: 11px; font-weight: 700; color: #881337;">11</span></div>
+
+                    <div style="background: white; border: 1px solid #ffe4e6; border-radius: 8px; padding: 6px; display: flex; flex-direction: column; gap: 4px;">
+                        <span style="font-size: 11px; font-weight: 700; color: #881337;">12</span>
+                        <div style="background: #d97706; color: white; font-size: 9px; padding: 3px 5px; border-radius: 4px; font-weight: 800; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">14:00 SOP Audit Review</div>
+                    </div>
+                    <div style="background: white; border: 1px solid #ffe4e6; border-radius: 8px; padding: 6px;"><span style="font-size: 11px; font-weight: 700; color: #881337;">13</span></div>
+                    <div style="background: white; border: 1px solid #ffe4e6; border-radius: 8px; padding: 6px;"><span style="font-size: 11px; font-weight: 700; color: #881337;">14</span></div>
+                    <div style="background: white; border: 1px solid #ffe4e6; border-radius: 8px; padding: 6px;"><span style="font-size: 11px; font-weight: 700; color: #881337;">15</span></div>
+                    <div style="background: white; border: 1px solid #ffe4e6; border-radius: 8px; padding: 6px;"><span style="font-size: 11px; font-weight: 700; color: #881337;">16</span></div>
+                    <div style="background: white; border: 1px solid #ffe4e6; border-radius: 8px; padding: 6px;"><span style="font-size: 11px; font-weight: 700; color: #881337;">17</span></div>
+                    <div style="background: white; border: 1px solid #ffe4e6; border-radius: 8px; padding: 6px;"><span style="font-size: 11px; font-weight: 700; color: #881337;">18</span></div>
+
+                    <div style="background: white; border: 1px solid #ffe4e6; border-radius: 8px; padding: 6px;"><span style="font-size: 11px; font-weight: 700; color: #881337;">19</span></div>
+                    <div style="background: white; border: 1px solid #ffe4e6; border-radius: 8px; padding: 6px; display: flex; flex-direction: column; gap: 4px;">
+                        <span style="font-size: 11px; font-weight: 700; color: #881337;">20</span>
+                        <div style="background: #16a34a; color: white; font-size: 9px; padding: 3px 5px; border-radius: 4px; font-weight: 800; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">11:00 MO Performance Verification</div>
+                    </div>
+                    <div style="background: white; border: 1px solid #ffe4e6; border-radius: 8px; padding: 6px;"><span style="font-size: 11px; font-weight: 700; color: #881337;">21</span></div>
+                    <div style="background: white; border: 1px solid #ffe4e6; border-radius: 8px; padding: 6px;"><span style="font-size: 11px; font-weight: 700; color: #881337;">22</span></div>
+                    <div style="background: white; border: 1px solid #ffe4e6; border-radius: 8px; padding: 6px;"><span style="font-size: 11px; font-weight: 700; color: #881337;">23</span></div>
+                    <div style="background: white; border: 1px solid #ffe4e6; border-radius: 8px; padding: 6px;"><span style="font-size: 11px; font-weight: 700; color: #881337;">24</span></div>
+                    <div style="background: white; border: 1px solid #ffe4e6; border-radius: 8px; padding: 6px;"><span style="font-size: 11px; font-weight: 700; color: #881337;">25</span></div>
+
+                    <div style="background: white; border: 1px solid #ffe4e6; border-radius: 8px; padding: 6px;"><span style="font-size: 11px; font-weight: 700; color: #881337;">26</span></div>
+                    <div style="background: white; border: 1px solid #ffe4e6; border-radius: 8px; padding: 6px;"><span style="font-size: 11px; font-weight: 700; color: #881337;">27</span></div>
+                    <div style="background: white; border: 1px solid #ffe4e6; border-radius: 8px; padding: 6px;"><span style="font-size: 11px; font-weight: 700; color: #881337;">28</span></div>
+                    <div style="background: white; border: 1px solid #ffe4e6; border-radius: 8px; padding: 6px;"><span style="font-size: 11px; font-weight: 700; color: #881337;">29</span></div>
+                    <div style="background: white; border: 1px solid #ffe4e6; border-radius: 8px; padding: 6px;"><span style="font-size: 11px; font-weight: 700; color: #881337;">30</span></div>
+                    <div style="background: white; border: 1px solid #ffe4e6; border-radius: 8px; padding: 6px;"><span style="font-size: 11px; font-weight: 700; color: #881337;">31</span></div>
+
+                    <div style="background: #f8fafc; border: 1px solid #f1f5f9; border-radius: 8px; padding: 6px; opacity: 0.4;"><span style="font-size: 11px; font-weight: 700; color: #94a3b8;">1</span></div>
+                </div>
+            </div>
+
+            <!-- MODE 2: LIST VIEW -->
+            <div id="calAreaList" style="display: none; flex-grow: 1; overflow-y: auto;">
+                <div style="display: flex; flex-direction: column; gap: 10px; padding-right: 6px;">
+                    <div style="background: #fff1f2; border-left: 5px solid #be123c; padding: 12px 16px; border-radius: 12px; display: flex; justify-content: space-between; align-items: center;">
+                        <div>
+                            <span style="font-size: 10px; font-weight: 800; color: #881337;">01 OCTOBER 2026 • 08:30 AM</span>
+                            <div style="font-size: 14px; font-weight: 800; color: #881337; margin-top: 2px;">CUSUM Breach Review — Dr. Ramesh Lee</div>
+                            <span style="font-size: 11px; color: #f43f5e;">Safety Control Limit Breach in LIMA-LAD Procedure</span>
+                        </div>
+                        <a href="{% url 'cts_module' %}?officer=Dr.%20Ramesh%20Lee&tab=Skills" style="background: #be123c; color: white; padding: 6px 14px; border-radius: 6px; font-size: 11px; font-weight: 800; text-decoration: none;">Review Case</a>
+                    </div>
+
+                    <div style="background: #fffbeb; border-left: 5px solid #d97706; padding: 12px 16px; border-radius: 12px; display: flex; justify-content: space-between; align-items: center;">
+                        <div>
+                            <span style="font-size: 10px; font-weight: 800; color: #b45309;">01 OCTOBER 2026 • 18:00 PM</span>
+                            <div style="font-size: 14px; font-weight: 800; color: #92400e; margin-top: 2px;">⏳ Pending Approval Log</div>
+                            <span style="font-size: 11px; color: #b45309;">8 Procedure logs & 3 CPD claims require HOD validation</span>
+                        </div>
+                        <a href="{% url 'overall_analytics' %}?type=evaluations" style="background: #d97706; color: white; padding: 6px 14px; border-radius: 6px; font-size: 11px; font-weight: 800; text-decoration: none;">Approve All</a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- MODE 3: ADD ENTRY FORM -->
+            <div id="calAreaAdd" style="display: none; flex-grow: 1; overflow-y: auto;">
+                <form method="POST" onsubmit="alert('Schedule entry saved successfully!'); closeScheduleModal(); return false;" style="background: #fff1f2; padding: 20px; border-radius: 16px; border: 1px solid #ffe4e6;">
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 12px;">
+                        <div>
+                            <label style="margin-top:0; color:#881337; font-weight:700;">Entry Title <span style="color:red;">*</span></label>
+                            <input type="text" placeholder="e.g. Monthly Performance Review / CUSUM Audit" required style="width:100%; padding:10px; border-radius:8px; border:1px solid #fecdd3; background:white; font-family:'Inter'; box-sizing:border-box;">
+                        </div>
+                        <div>
+                            <label style="margin-top:0; color:#881337; font-weight:700;">Category <span style="color:red;">*</span></label>
+                            <select required style="width:100%; padding:10px; border-radius:8px; border:1px solid #fecdd3; background:white; font-family:'Inter'; font-weight:600; box-sizing:border-box;">
+                                <option>Department Audit & Review</option>
+                                <option>Fast-Track Promotion Panel</option>
+                                <option>CPD Claim Verification</option>
+                                <option>Clinical SOP Assessment</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 12px;">
+                        <div>
+                            <label style="margin-top:0; color:#881337; font-weight:700;">Date & Time <span style="color:red;">*</span></label>
+                            <input type="datetime-local" required style="width:100%; padding:10px; border-radius:8px; border:1px solid #fecdd3; background:white; font-family:'Inter'; box-sizing:border-box;">
+                        </div>
+                        <div>
+                            <label style="margin-top:0; color:#881337; font-weight:700;">Assigned Officer / Location</label>
+                            <input type="text" placeholder="e.g. All MOs / Conference Room" style="width:100%; padding:10px; border-radius:8px; border:1px solid #fecdd3; background:white; font-family:'Inter'; box-sizing:border-box;">
+                        </div>
+                    </div>
+
+                    <div style="margin-bottom: 15px;">
+                        <label style="margin-top:0; color:#881337; font-weight:700;">Remarks & Notes</label>
+                        <textarea style="width:100%; height:60px; padding:10px; border-radius:8px; border:1px solid #fecdd3; background:white; font-family:'Inter'; box-sizing:border-box;" placeholder="Enter meeting agenda or audit details..."></textarea>
+                    </div>
+
+                    <button type="submit" style="background-color: #be123c; color: white; border: none; padding: 14px; border-radius: 8px; font-weight: 800; font-size: 14px; width: 100%; cursor: pointer; transition: 0.2s;">
+                        Save Schedule Entry
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==========================================
+         INLINE GOOGLE-STYLE SEARCH SCRIPT & INDEX (ENGLISH ONLY)
+         ========================================== -->
+    <script>
+        // Indeks Penuh Modul HOD & Feature Directory (English Only)
+        const myPrestasiHODModules = [
+            { title: "HOD Action Center (Red Flags & Triage)", category: "Clinical Excellence", keywords: "action center red flags triage cusum breach fast track approval sop documentation", url: "{% url 'action_center_insight' %}?state={{ pilihan_negeri }}&clinic={{ pilihan_klinik }}" },
+            { title: "Department Monthly KPI Analytics", category: "Clinical Excellence", keywords: "kpi monthly target actual score performance overall", url: "{% url 'kpi_analytics_insight' %}?state={{ pilihan_negeri }}&clinic={{ pilihan_klinik }}" },
+            { title: "Medical Officers Directory & Roster", category: "Management", keywords: "medical officers directory roster mo staff list grade score status", url: "{% url 'officers_directory_insight' %}?state={{ pilihan_negeri }}&clinic={{ pilihan_klinik }}" },
+            { title: "MO Competency Matrix & PRI Distribution", category: "Analytics", keywords: "competency matrix heatmap clinical operational interpersonal pri score", url: "{% url 'competency_matrix_insight' %}?state={{ pilihan_negeri }}&clinic={{ pilihan_klinik }}" },
+            { title: "Clinical Excellence Evaluation Module", category: "Evaluation", keywords: "clinical skills cusum knowledge cpd cme policies sop documentation", url: "{% url 'cts_module' %}?dept={{ user.profile.department|default:'FMS' }}" },
+            { title: "Operational Output Evaluation Module", category: "Evaluation", keywords: "operational productivity workload efficiency innovation research trials", url: "{% url 'operational_module' %}?dept={{ user.profile.department|default:'FMS' }}" },
+            { title: "Interpersonal Excellence Module", category: "Evaluation", keywords: "interpersonal mypsq patient satisfaction stress emotional intelligence teamwork kudos mentorship", url: "{% url 'interpersonal_module' %}?dept={{ user.profile.department|default:'FMS' }}" },
+            { title: "Overall Statistics & Facility Drill-Down", category: "Analytics", keywords: "overall statistics active facilities total staff avg performance evaluations", url: "{% url 'overall_analytics' %}?type=facilities&state={{ pilihan_negeri }}&clinic={{ pilihan_klinik }}" },
+            { title: "System Preferences & HOD Settings", category: "Account", keywords: "settings language timezone dark mode preferences", url: "?section=Settings" },
+            { title: "HOD Profile & Account Management", category: "Account", keywords: "profile account user details email password admin id", url: "?section=Profile" }
+        ];
+
+        function showInlineSuggestions() {
+            filterInlineSuggestions();
+        }
+
+        function filterInlineSuggestions() {
+            const input = document.getElementById('inlineSearchInput');
+            const query = input.value.toLowerCase().trim();
+            const dropdown = document.getElementById('inlineSuggestionsDropdown');
+            const clearBtn = document.getElementById('clearSearchBtn');
+            const box = document.getElementById('inlineSearchBox');
+
+            clearBtn.style.display = query.length > 0 ? 'inline' : 'none';
+
+            if (query.length === 0) {
+                dropdown.style.display = 'none';
+                box.style.borderColor = '#ffe4e6';
+                return;
+            }
+
+            const filtered = myPrestasiHODModules.filter(item => 
+                item.title.toLowerCase().includes(query) || 
+                item.category.toLowerCase().includes(query) || 
+                item.keywords.toLowerCase().includes(query)
+            );
+
+            dropdown.innerHTML = '';
+
+            if (filtered.length === 0) {
+                dropdown.innerHTML = `<div style="text-align: center; padding: 15px; color: #f43f5e; font-size: 12px; font-weight: 700;">No matching modules found for "${query}"</div>`;
+            } else {
+                filtered.forEach(item => {
+                    const el = document.createElement('a');
+                    el.href = item.url;
+                    el.style.cssText = 'display: flex; align-items: center; justify-content: space-between; padding: 10px 12px; border-radius: 8px; text-decoration: none; margin-bottom: 4px; transition: all 0.15s ease; background: white;';
+                    el.onmouseover = () => { el.style.background = '#fff1f2'; };
+                    el.onmouseout = () => { el.style.background = 'white'; };
+
+                    el.innerHTML = `
+                        <div style="display: flex; align-items: center; gap: 10px; overflow: hidden;">
+                            <svg style="width: 14px; height: 14px; color: #be123c; flex-shrink: 0;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+                            <div style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                                <div style="font-size: 12.5px; font-weight: 800; color: #881337;">${item.title}</div>
+                                <div style="font-size: 10px; font-weight: 700; color: #f43f5e; text-transform: uppercase;">${item.category}</div>
+                            </div>
+                        </div>
+                        <span style="font-size: 10px; font-weight: 800; color: #be123c; background: #fff1f2; padding: 2px 8px; border-radius: 6px; flex-shrink: 0; margin-left: 6px;">Open ➔</span>
+                    `;
+                    dropdown.appendChild(el);
+                });
+            }
+
+            dropdown.style.display = 'block';
+            box.style.borderColor = '#be123c';
+        }
+
+        function clearInlineSearch() {
+            const input = document.getElementById('inlineSearchInput');
+            input.value = '';
+            filterInlineSuggestions();
+            input.focus();
+        }
+
+        // Hide dropdown on outside click
+        document.addEventListener('click', function(e) {
+            const container = document.querySelector('.inline-search-container');
+            const dropdown = document.getElementById('inlineSuggestionsDropdown');
+            const box = document.getElementById('inlineSearchBox');
+            
+            if (container && !container.contains(e.target)) {
+                if (dropdown) dropdown.style.display = 'none';
+                if (box) box.style.borderColor = '#ffe4e6';
+            }
+        });
+
+        // Calendar Modal Functions
+        function openScheduleModal() {
+            document.getElementById('scheduleModal').style.display = 'flex';
+            switchCalView('month');
+        }
+
+        function closeScheduleModal() {
+            document.getElementById('scheduleModal').style.display = 'none';
+        }
+
+        function switchCalView(view) {
+            var mArea = document.getElementById('calAreaMonth');
+            var lArea = document.getElementById('calAreaList');
+            var aArea = document.getElementById('calAreaAdd');
+
+            var btnM = document.getElementById('tabCalMonth');
+            var btnL = document.getElementById('tabCalList');
+            var btnA = document.getElementById('tabCalAdd');
+
+            mArea.style.display = view === 'month' ? 'flex' : 'none';
+            lArea.style.display = view === 'list' ? 'block' : 'none';
+            aArea.style.display = view === 'add' ? 'block' : 'none';
+
+            btnM.style.background = view === 'month' ? '#be123c' : 'transparent';
+            btnM.style.color = view === 'month' ? 'white' : '#881337';
+            btnM.style.borderColor = view === 'month' ? '#be123c' : 'transparent';
+
+            btnL.style.background = view === 'list' ? '#be123c' : 'transparent';
+            btnL.style.color = view === 'list' ? 'white' : '#881337';
+            btnL.style.borderColor = view === 'list' ? '#be123c' : 'transparent';
+
+            btnA.style.background = view === 'add' ? '#be123c' : 'transparent';
+            btnA.style.color = view === 'add' ? 'white' : '#881337';
+            btnA.style.borderColor = view === 'add' ? '#be123c' : 'transparent';
+        }
     </script>
 </body>
 </html>

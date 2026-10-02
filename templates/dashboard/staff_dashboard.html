@@ -473,8 +473,18 @@
                     {{ today_date }}
                     <span style="background: #be123c; color: white; border-radius: 50%; width: 18px; height: 18px; font-size: 10px; display: inline-flex; align-items: center; justify-content: center; font-weight: 800; margin-left: 6px;">1</span>
                 </div>
-                <div class="icon-btn">
-                    <svg style="width: 18px; height: 18px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+                <!-- GOOGLE-STYLE INLINE SEARCH BAR (TANPA POPUP MODAL) -->
+                <div class="inline-search-container" style="position: relative; width: 260px;">
+                    <div style="display: flex; align-items: center; background: white; border: 1px solid #ffe4e6; border-radius: 20px; padding: 6px 14px; box-shadow: 0 2px 8px rgba(190, 18, 60, 0.05); transition: all 0.2s ease;" id="inlineSearchBox">
+                        <svg style="width: 16px; height: 16px; color: #be123c; flex-shrink: 0; margin-right: 8px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+                        <input type="text" id="inlineSearchInput" placeholder="Search MyPrestasi modules..." style="width: 100%; border: none; background: transparent; font-family: 'Inter'; font-size: 13px; font-weight: 600; color: #881337; outline: none; padding: 2px 0;" oninput="filterInlineSuggestions()" onfocus="showInlineSuggestions()" autocomplete="off">
+                        <span id="clearSearchBtn" onclick="clearInlineSearch()" style="display: none; cursor: pointer; color: #f43f5e; font-size: 12px; font-weight: 800; margin-left: 6px;">✕</span>
+                    </div>
+
+                    <!-- DROPDOWN SUGGESTIONS (MENETAP DI BAWAH SEARCH BAR) -->
+                    <div id="inlineSuggestionsDropdown" style="display: none; position: absolute; top: 115%; left: 0; width: 340px; max-height: 360px; overflow-y: auto; background: white; border: 1px solid #ffe4e6; border-radius: 14px; box-shadow: 0 10px 30px rgba(136, 19, 55, 0.15); z-index: 9999; padding: 8px; box-sizing: border-box;">
+                        <!-- Hasil pencarian akan terisi otomatis -->
+                    </div>
                 </div>
 
                 <div class="dropdown-wrapper">
@@ -889,8 +899,25 @@
             </div>
 
         {% elif section == 'Clinical' %}
-            <div style="background: #fff1f2; border-left: 5px solid #be123c; padding: 15px; border-radius: 8px; margin-bottom: 20px; border: 1px solid #ffe4e6; color: #881337;">
-                <b>Officer Name:</b> {{ staff_name }} <br><b>Department:</b> {{ staff_dept }} Department
+            <!-- MODERN FLOATING OFFICER PROFILE BANNER (NO LEFT BORDER) -->
+            <div style="background: white; border: 1px solid #fecdd3; padding: 12px 20px; border-radius: 16px; margin-bottom: 20px; box-shadow: 0 10px 25px -5px rgba(136, 19, 55, 0.05); display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 15px;">
+                <div style="display: flex; align-items: center; gap: 14px;">
+                    <div style="width: 42px; height: 42px; border-radius: 12px; background: linear-gradient(135deg, #fff1f2 0%, #ffe4e6 100%); border: 1px solid #fecdd3; color: #be123c; display: flex; align-items: center; justify-content: center; flex-shrink: 0; box-shadow: inset 0 1px 2px rgba(255,255,255,0.8);">
+                        <svg style="width: 20px; height: 20px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
+                    </div>
+                    <div>
+                        <div style="display: flex; align-items: center; gap: 6px;">
+                            <span style="width: 6px; height: 6px; background: #16a34a; border-radius: 50%; display: inline-block;"></span>
+                            <span style="font-size: 10.5px; font-weight: 800; color: #f43f5e; text-transform: uppercase; letter-spacing: 0.8px;">Officer In-Charge</span>
+                        </div>
+                        <div style="font-size: 15px; font-weight: 900; color: #881337; margin-top: 1px;">{{ staff_name }}</div>
+                    </div>
+                </div>
+
+                <div style="display: flex; align-items: center; gap: 8px; background: linear-gradient(135deg, #fff1f2 0%, #ffffff 100%); border: 1px solid #fecdd3; padding: 7px 16px; border-radius: 30px; box-shadow: 0 2px 6px rgba(190, 18, 60, 0.03);">
+                    <svg style="width: 14px; height: 14px; color: #be123c; flex-shrink: 0;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5m0 0v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4M12 7v4m-2-2h4"/></svg>
+                    <span style="font-size: 12px; font-weight: 800; color: #881337;">{{ staff_dept }} Department</span>
+                </div>
             </div>
 
             <div class="tabs-nav">
@@ -1361,50 +1388,49 @@
                     <table class="staff-table">
                         <thead>
                             <tr>
-                                <th>Patient ID</th>
-                                <th>Type</th>
-                                <th>Time Gap</th>
-                                <th>Justification</th>
-                                <th>Status</th>
+                                <th>Patient ID / RN</th>
+                                <th>Encounter Date</th>
+                                <th>Delay Hours</th>
+                                <th>Justification / Remarks</th>
+                                <th>Compliance Status</th>
                             </tr>
                         </thead>
                         <tbody>
-                            <tr>
-                                <td>RN88210</td>
-                                <td>Outpatient</td>
-                                <td>4 Hours</td>
-                                <td><i style="color:#f43f5e;">N/A</i></td>
-                                <td>
-                                    <span class="status-badge bg-success" style="display: inline-flex; align-items: center; gap: 4px;">
-                                        <svg style="width: 12px; height: 12px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
-                                        On-Time
-                                    </span>
-                                </td>
-                            </tr>
-                            <tr>
-                                <td>RN99302</td>
-                                <td>Admission</td>
-                                <td>28 Hours</td>
-                                <td>Red Zone emergency case</td>
-                                <td>
-                                    <span class="status-badge bg-danger" style="display: inline-flex; align-items: center; gap: 4px;">
-                                        <svg style="width: 12px; height: 12px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-                                        Delayed
-                                    </span>
-                                </td>
-                            </tr>
-                            <tr>
-                                <td>RN99115</td>
-                                <td>Discharge</td>
-                                <td>6 Hours</td>
-                                <td><i style="color:#f43f5e;">N/A</i></td>
-                                <td>
-                                    <span class="status-badge bg-success" style="display: inline-flex; align-items: center; gap: 4px;">
-                                        <svg style="width: 12px; height: 12px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
-                                        On-Time
-                                    </span>
-                                </td>
-                            </tr>
+                            {% if doc_logs %}
+                                {% for log in doc_logs %}
+                                    <tr>
+                                        <td style="font-weight: 800; color: #881337;">{{ log.patient_id }}</td>
+                                        <td>{{ log.created_at|date:"d M Y, h:i A" }}</td>
+                                        <td>{{ log.delay_hours|floatformat:1 }} Hours</td>
+                                        <td>
+                                            {% if log.reason_for_delay %}
+                                                {{ log.reason_for_delay }}
+                                            {% else %}
+                                                <i style="color:#f43f5e;">Auto-synced from Clinical Delivery (No Delay)</i>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            {% if log.is_ontime %}
+                                                <span class="status-badge bg-success" style="display: inline-flex; align-items: center; gap: 4px;">
+                                                    <svg style="width: 12px; height: 12px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+                                                    On-Time (Auto)
+                                                </span>
+                                            {% else %}
+                                                <span class="status-badge bg-danger" style="display: inline-flex; align-items: center; gap: 4px;">
+                                                    <svg style="width: 12px; height: 12px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                                                    Delayed (>24h)
+                                                </span>
+                                            {% endif %}
+                                        </td>
+                                    </tr>
+                                {% endfor %}
+                            {% else %}
+                                <tr>
+                                    <td colspan="5" style="text-align: center; color: #f43f5e; padding: 20px;">
+                                        No auto-synced clinical records found. Submit a case in Clinical Delivery to auto-populate here.
+                                    </td>
+                                </tr>
+                            {% endif %}
                         </tbody>
                     </table>
                 </div>
@@ -1586,8 +1612,25 @@
        
 
         {% elif section == 'Operational' %}
-            <div style="background: #fff1f2; border-left: 5px solid #be123c; padding: 15px; border-radius: 8px; margin-bottom: 20px; border: 1px solid #ffe4e6; color: #881337;">
-                <b>Officer Name:</b> {{ staff_name }} <br><b>Department:</b> {{ staff_dept }} Department
+            <!-- MODERN FLOATING OFFICER PROFILE BANNER (NO LEFT BORDER) -->
+            <div style="background: white; border: 1px solid #fecdd3; padding: 12px 20px; border-radius: 16px; margin-bottom: 20px; box-shadow: 0 10px 25px -5px rgba(136, 19, 55, 0.05); display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 15px;">
+                <div style="display: flex; align-items: center; gap: 14px;">
+                    <div style="width: 42px; height: 42px; border-radius: 12px; background: linear-gradient(135deg, #fff1f2 0%, #ffe4e6 100%); border: 1px solid #fecdd3; color: #be123c; display: flex; align-items: center; justify-content: center; flex-shrink: 0; box-shadow: inset 0 1px 2px rgba(255,255,255,0.8);">
+                        <svg style="width: 20px; height: 20px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
+                    </div>
+                    <div>
+                        <div style="display: flex; align-items: center; gap: 6px;">
+                            <span style="width: 6px; height: 6px; background: #16a34a; border-radius: 50%; display: inline-block;"></span>
+                            <span style="font-size: 10.5px; font-weight: 800; color: #f43f5e; text-transform: uppercase; letter-spacing: 0.8px;">Officer In-Charge</span>
+                        </div>
+                        <div style="font-size: 15px; font-weight: 900; color: #881337; margin-top: 1px;">{{ staff_name }}</div>
+                    </div>
+                </div>
+
+                <div style="display: flex; align-items: center; gap: 8px; background: linear-gradient(135deg, #fff1f2 0%, #ffffff 100%); border: 1px solid #fecdd3; padding: 7px 16px; border-radius: 30px; box-shadow: 0 2px 6px rgba(190, 18, 60, 0.03);">
+                    <svg style="width: 14px; height: 14px; color: #be123c; flex-shrink: 0;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5m0 0v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4M12 7v4m-2-2h4"/></svg>
+                    <span style="font-size: 12px; font-weight: 800; color: #881337;">{{ staff_dept }} Department</span>
+                </div>
             </div>
 
             <div class="tabs-nav">
@@ -1971,8 +2014,25 @@
             </div>
 
         {% elif section == 'Interpersonal' %}
-            <div style="background: #fff1f2; border-left: 5px solid #be123c; padding: 15px; border-radius: 8px; margin-bottom: 20px; border: 1px solid #ffe4e6; color: #881337;">
-                <b>Officer Name:</b> {{ staff_name }} <br><b>Department:</b> {{ staff_dept }} Department
+            <!-- MODERN FLOATING OFFICER PROFILE BANNER (NO LEFT BORDER) -->
+            <div style="background: white; border: 1px solid #fecdd3; padding: 12px 20px; border-radius: 16px; margin-bottom: 20px; box-shadow: 0 10px 25px -5px rgba(136, 19, 55, 0.05); display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 15px;">
+                <div style="display: flex; align-items: center; gap: 14px;">
+                    <div style="width: 42px; height: 42px; border-radius: 12px; background: linear-gradient(135deg, #fff1f2 0%, #ffe4e6 100%); border: 1px solid #fecdd3; color: #be123c; display: flex; align-items: center; justify-content: center; flex-shrink: 0; box-shadow: inset 0 1px 2px rgba(255,255,255,0.8);">
+                        <svg style="width: 20px; height: 20px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
+                    </div>
+                    <div>
+                        <div style="display: flex; align-items: center; gap: 6px;">
+                            <span style="width: 6px; height: 6px; background: #16a34a; border-radius: 50%; display: inline-block;"></span>
+                            <span style="font-size: 10.5px; font-weight: 800; color: #f43f5e; text-transform: uppercase; letter-spacing: 0.8px;">Officer In-Charge</span>
+                        </div>
+                        <div style="font-size: 15px; font-weight: 900; color: #881337; margin-top: 1px;">{{ staff_name }}</div>
+                    </div>
+                </div>
+
+                <div style="display: flex; align-items: center; gap: 8px; background: linear-gradient(135deg, #fff1f2 0%, #ffffff 100%); border: 1px solid #fecdd3; padding: 7px 16px; border-radius: 30px; box-shadow: 0 2px 6px rgba(190, 18, 60, 0.03);">
+                    <svg style="width: 14px; height: 14px; color: #be123c; flex-shrink: 0;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5m0 0v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4M12 7v4m-2-2h4"/></svg>
+                    <span style="font-size: 12px; font-weight: 800; color: #881337;">{{ staff_dept }} Department</span>
+                </div>
             </div>
 
             <div class="tabs-nav">
@@ -3519,6 +3579,102 @@
             btnA.style.color = view === 'add' ? 'white' : '#881337';
             btnA.style.borderColor = view === 'add' ? '#be123c' : 'transparent';
         }
+    </script>
+<!-- ==========================================
+         INLINE GOOGLE-STYLE SEARCH SCRIPT & INDEX
+         ========================================== -->
+    <script>
+        // Indeks Penuh 10 Sub-Modul & Fitur MyPrestasi
+        const myPrestasiModules = [
+            { title: "Clinical Delivery (CUSUM Log)", category: "Clinical Excellence", keywords: "cusum procedure lima-lad clinical skills surgery preclerking", url: "/staff/?section=Clinical" },
+            { title: "Knowledge & Competency (CPD Claims)", category: "Clinical Excellence", keywords: "cpd cme points workshop quiz test marks claim", url: "/staff/?section=Clinical" },
+            { title: "Adherence to Policies & Protocols (SOP)", category: "Clinical Excellence", keywords: "sop policy compliance diabetes audit checklist cpg self assessment", url: "/staff/?section=Clinical" },
+            { title: "Clinical Documentation Monitoring", category: "Clinical Excellence", keywords: "documentation eEHR records patient history delay justification", url: "/staff/?section=Clinical" },
+            { title: "Productivity & Workload Efficiency", category: "Operational Output", keywords: "productivity clearance consult time punctuality workload wisn", url: "/staff/?section=Operational" },
+            { title: "Innovation & Problem Solving", category: "Operational Output", keywords: "innovation research nmrr project idea adaptation journal trials", url: "/staff/?section=Operational" },
+            { title: "Patient Satisfaction (MyPSQ Analytics)", category: "Interpersonal Excellence", keywords: "mypsq patient feedback experience survey qr code rating standee", url: "/staff/?section=Interpersonal" },
+            { title: "Stress Management & Emotional Intelligence", category: "Interpersonal Excellence", keywords: "stress emotional intelligence ei reflection self awareness burnout resilience", url: "/staff/?section=Interpersonal" },
+            { title: "Teamwork & Collaboration (Peer Kudos)", category: "Interpersonal Excellence", keywords: "teamwork kudos points peers peer-to-peer appreciation endorsement karma", url: "/staff/?section=Interpersonal" },
+            { title: "Training & Mentorship", category: "Interpersonal Excellence", keywords: "mentorship mentor mentee junior ho young mo training leadership coaching", url: "/staff/?section=Interpersonal" },
+            { title: "AI Self-Coaching Hub & Remediation Plan", category: "AI Analytics", keywords: "coaching remediation ai diagnostic aura pulse risk tier", url: "/staff/?section=Coaching" },
+            { title: "My Performance & Spider Web Benchmark", category: "Analytics", keywords: "performance radar spider benchmark composite score pri promotion", url: "/staff/?section=Performance" },
+            { title: "System Preferences & Settings", category: "Account", keywords: "settings language timezone dark mode preferences", url: "/staff/?section=Settings" },
+            { title: "My Account Profile", category: "Account", keywords: "profile account user details email password mmc id", url: "/staff/?section=Profile" }
+        ];
+
+        function showInlineSuggestions() {
+            filterInlineSuggestions();
+        }
+
+        function filterInlineSuggestions() {
+            const input = document.getElementById('inlineSearchInput');
+            const query = input.value.toLowerCase().trim();
+            const dropdown = document.getElementById('inlineSuggestionsDropdown');
+            const clearBtn = document.getElementById('clearSearchBtn');
+            const box = document.getElementById('inlineSearchBox');
+
+            clearBtn.style.display = query.length > 0 ? 'inline' : 'none';
+
+            if (query.length === 0) {
+                dropdown.style.display = 'none';
+                box.style.borderColor = '#ffe4e6';
+                return;
+            }
+
+            const filtered = myPrestasiModules.filter(item => 
+                item.title.toLowerCase().includes(query) || 
+                item.category.toLowerCase().includes(query) || 
+                item.keywords.toLowerCase().includes(query)
+            );
+
+            dropdown.innerHTML = '';
+
+            if (filtered.length === 0) {
+                dropdown.innerHTML = `<div style="text-align: center; padding: 15px; color: #f43f5e; font-size: 12px; font-weight: 700;">No matching modules found for "${query}"</div>`;
+            } else {
+                filtered.forEach(item => {
+                    const el = document.createElement('a');
+                    el.href = item.url;
+                    el.style.cssText = 'display: flex; align-items: center; justify-content: space-between; padding: 10px 12px; border-radius: 8px; text-decoration: none; margin-bottom: 4px; transition: all 0.15s ease; background: white;';
+                    el.onmouseover = () => { el.style.background = '#fff1f2'; };
+                    el.onmouseout = () => { el.style.background = 'white'; };
+
+                    el.innerHTML = `
+                        <div style="display: flex; align-items: center; gap: 10px; overflow: hidden;">
+                            <svg style="width: 14px; height: 14px; color: #be123c; flex-shrink: 0;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+                            <div style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                                <div style="font-size: 12.5px; font-weight: 800; color: #881337;">${item.title}</div>
+                                <div style="font-size: 10px; font-weight: 700; color: #f43f5e; text-transform: uppercase;">${item.category}</div>
+                            </div>
+                        </div>
+                        <span style="font-size: 10px; font-weight: 800; color: #be123c; background: #fff1f2; padding: 2px 8px; border-radius: 6px; flex-shrink: 0; margin-left: 6px;">Open ➔</span>
+                    `;
+                    dropdown.appendChild(el);
+                });
+            }
+
+            dropdown.style.display = 'block';
+            box.style.borderColor = '#be123c';
+        }
+
+        function clearInlineSearch() {
+            const input = document.getElementById('inlineSearchInput');
+            input.value = '';
+            filterInlineSuggestions();
+            input.focus();
+        }
+
+        // Sembunyikan dropdown saat klik di luar area carian
+        document.addEventListener('click', function(e) {
+            const container = document.querySelector('.inline-search-container');
+            const dropdown = document.getElementById('inlineSuggestionsDropdown');
+            const box = document.getElementById('inlineSearchBox');
+            
+            if (container && !container.contains(e.target)) {
+                if (dropdown) dropdown.style.display = 'none';
+                if (box) box.style.borderColor = '#ffe4e6';
+            }
+        });
     </script>
 </body>
 </html>
