@@ -844,9 +844,26 @@ def operational_view(request):
     # 1. Tab Productivity (Area Chart)
     if active_tab == 'Productivity':
         
-        # 1. Masukkan data susunan tepat yang anda mahukan
-        pesakit_harian = [10, 20, 5, 35, 40, 25, 70]
-        tarikh_label = pd.date_range(start="2026-02-20", periods=7).strftime("%d %b").tolist()
+        # Dapatkan User sebenar berdasarkan pilihan_doktor
+        doc_username_clean = pilihan_doktor.split(" (")[0].strip() if " (" in pilihan_doktor else pilihan_doktor.strip()
+        target_user = User.objects.filter(username__icontains=doc_username_clean).first()
+        if not target_user:
+            target_user = User.objects.filter(first_name__icontains=doc_username_clean).first()
+
+        # Tarik data dari ProductivityLog di Database
+        if target_user:
+            prod_logs = ProductivityLog.objects.filter(officer=target_user).order_by('record_date')[:14] # Max 14 hari
+        else:
+            prod_logs = []
+
+        if prod_logs:
+            # Jika doktor sudah isi borang, papar rekod sebenar!
+            tarikh_label = [log.record_date.strftime("%d %b") for log in prod_logs]
+            pesakit_harian = [log.patients_cleared for log in prod_logs]
+        else:
+            # Fallback jika doktor belum isi apa-apa borang
+            tarikh_label = pd.date_range(start="2026-10-01", periods=7).strftime("%d %b").tolist()
+            pesakit_harian = [0, 0, 0, 0, 0, 0, 0]
         
         fig_area = go.Figure()
         fig_area.add_trace(go.Scatter(
@@ -1252,22 +1269,16 @@ def staff_dashboard_view(request):
     
     if request.method == 'POST':
         form_type = request.POST.get('form_type')
+        
+        # --- 1. MODUL KLINIKAL ---
         if form_type in ['skills', 'skills_cts', 'skills_fms']:
             proc_name = request.POST.get('procedure_name', 'Clinical Case Encounter')
             score_val = float(request.POST.get('score', 85.0))
-            patient_rn = request.POST.get('patient_id') or request.POST.get('mrn') or 'RN-' + str(random.randint(10000, 99999))
+            patient_rn = request.POST.get('patient_id') or request.POST.get('mrn') or f'RN-{random.randint(10000, 99999)}'
             
             if request.user.is_authenticated:
-                # 1. Simpan Rekod Klinikal
                 ProcedureLog.objects.create(officer=request.user, procedure_name=proc_name, score=score_val)
-                
-                # 2. AUTO-SYNC: Cipta rekod DocumentationLog secara automatik!
-                DocumentationLog.objects.create(
-                    officer=request.user,
-                    patient_id=patient_rn,
-                    delay_hours=0.0,
-                    is_ontime=True
-                )
+                DocumentationLog.objects.create(officer=request.user, patient_id=patient_rn, delay_hours=0.0, is_ontime=True)
             messages.success(request, f"✅ Clinical record for {patient_rn} saved & auto-synced to Documentation Log!")
 
         elif form_type == 'cpd':
@@ -1279,7 +1290,7 @@ def staff_dashboard_view(request):
             messages.success(request, f"✅ Claim of {mata} CPD points for '{tajuk}' saved to DB.")
 
         elif form_type == 'doc':
-            patient_id = request.POST.get('patient_id', 'PT-001')
+            patient_id = request.POST.get('patient_id', f'RN-{random.randint(10000, 99999)}')
             delay_hrs = float(request.POST.get('delay_hours', 0.0))
             reason = request.POST.get('reason', '')
             if request.user.is_authenticated:
@@ -1288,8 +1299,7 @@ def staff_dashboard_view(request):
 
         elif form_type == 'policy':
             if request.user.is_authenticated:
-                # Simpan Deklarasi 5 Domain
-                decl = PolicyDeclaration.objects.create(
+                PolicyDeclaration.objects.create(
                     officer=request.user,
                     score_domain_a=float(request.POST.get('score_a', 85.0)),
                     score_domain_b=float(request.POST.get('score_b', 90.0)),
@@ -1298,18 +1308,81 @@ def staff_dashboard_view(request):
                     score_domain_e=float(request.POST.get('score_e', 88.0)),
                 )
             messages.success(request, "✅ Compliance declaration successfully recorded in DB.")
+
+        # --- 2. MODUL OPERASIONAL ---
         elif form_type == 'ops_prod':
-            messages.success(request, "✅ Productivity data successfully recorded.")
+            # Mengambil data dari HTML _operational.html (name="outpatient_count", dll)
+            outpatient_count = int(request.POST.get('outpatient_count', 30))
+            avg_consult = float(request.POST.get('avg_consult', 15.0))
+            punctuality = request.POST.get('punctuality', 'On-Time')
+            p_rate = 100.0 if 'On-Time' in punctuality else 80.0
+
+            if request.user.is_authenticated:
+                ProductivityLog.objects.create(
+                    officer=request.user,
+                    patients_cleared=outpatient_count,
+                    avg_consult_minutes=avg_consult,
+                    punctuality_rate=p_rate
+                )
+            messages.success(request, "✅ Productivity data successfully recorded into Database.")
+
         elif form_type == 'ops_innov':
-            messages.success(request, "✅ Your innovation idea has been submitted to the system for evaluation.")
-        elif form_type == 'int_px':
-            messages.success(request, "✅ Patient experience record updated.")
+            # Form inovasi / research
+            title = request.POST.get('title', 'System Improvement / Research')
+            if request.user.is_authenticated:
+                InnovationProject.objects.create(
+                    officer=request.user,
+                    project_title=title,
+                    category="Innovation & Research",
+                    description="Submitted via MyPrestasi Portal",
+                    score=85.0
+                )
+            messages.success(request, "✅ Your innovation/research record has been saved to DB.")
+
+        # --- 3. MODUL INTERPERSONAL ---
         elif form_type == 'int_ei':
-            messages.success(request, "✅ Emotional intelligence reflection log successfully recorded.")
+            notes = request.POST.get('ei_reflection', 'Self debrief completed.')
+            if request.user.is_authenticated:
+                EmotionalReflection.objects.create(
+                    officer=request.user,
+                    self_awareness_score=85,
+                    reflection_notes=notes
+                )
+            messages.success(request, "✅ Emotional intelligence reflection log successfully recorded in DB.")
+
         elif form_type == 'int_team':
-            messages.success(request, "✅ Team collaboration data successfully recorded.")
+            peer_name = request.POST.get('peer_name', 'Unknown Peer')
+            points_awarded = int(request.POST.get('kudos_category', 5))
+            message = request.POST.get('kudos_note', 'Good job!')
+            
+            if request.user.is_authenticated:
+                # Cari user penerima (fallback kepada user semasa jika tak jumpa)
+                receiver_user = User.objects.filter(username__icontains=peer_name.split(' ')[-1]).first() or request.user
+                PeerKudos.objects.create(
+                    sender=request.user,
+                    receiver=receiver_user,
+                    category="Peer Endorsement",
+                    points=points_awarded,
+                    message=message
+                )
+            messages.success(request, f"✅ {points_awarded} Kudos points awarded to {peer_name}.")
+
         elif form_type == 'int_mentor':
-            messages.success(request, "✅ Mentorship session log has been saved.")
+            mentee = request.POST.get('mentee_name', 'Junior MO')
+            topic = request.POST.get('mentor_domain', 'Clinical Guidance')
+            date_val = request.POST.get('mentor_date', date.today())
+            
+            if request.user.is_authenticated:
+                MentorshipSession.objects.create(
+                    mentor=request.user,
+                    mentee_name=mentee,
+                    topic=topic,
+                    session_date=date_val,
+                    duration_hours=1.0
+                )
+            messages.success(request, "✅ Mentorship session securely saved in DB.")
+
+        # --- SETTINGS & COACHING ---
         elif form_type == 'settings':
             messages.success(request, "✅ Profile & Account Settings successfully updated.")
         elif form_type == 'complete_coaching':
@@ -1497,12 +1570,27 @@ def staff_dashboard_view(request):
             promotion_color = "#be123c"
             next_grade = "UD48 (Deferred)"
 
-    # Tarik rekod DocumentationLog sebenar dari DB bagi staf ini
+    # Tarik rekod DocumentationLog & ProductivityLog sebenar dari DB bagi staf ini
     doc_logs = DocumentationLog.objects.filter(officer=staff_user).order_by('-created_at') if staff_user else []
+    prod_logs = ProductivityLog.objects.filter(officer=staff_user).order_by('-id') if staff_user else []
+
+    # Kira metrik ringkasan harian secara automatik dari data DB
+    if prod_logs.exists():
+        prod_cleared_avg = int(sum([p.patients_cleared for p in prod_logs]) / prod_logs.count())
+        prod_consult_avg = round(sum([p.avg_consult_minutes for p in prod_logs]) / prod_logs.count(), 1)
+        prod_punctuality_avg = round(sum([p.punctuality_rate for p in prod_logs]) / prod_logs.count(), 0)
+    else:
+        prod_cleared_avg = 42
+        prod_consult_avg = 12.0
+        prod_punctuality_avg = 95.0
 
     context = {
         'section': section,
         'doc_logs': doc_logs,
+        'prod_logs': prod_logs,
+        'prod_cleared_avg': prod_cleared_avg,
+        'prod_consult_avg': prod_consult_avg,
+        'prod_punctuality_avg': prod_punctuality_avg,
         'chart_html': chart_html,
         'radar_html': radar_html,
         'donut_html': donut_html,
@@ -1836,35 +1924,48 @@ def kpi_analytics_insight_view(request):
 @login_required(login_url='/login/')
 def competency_matrix_insight_view(request):
     """
-    Dedicated Insight Page: MO Competency Matrix & PRI Distribution
+    Dedicated Insight Page: MO Competency Matrix & PRI Distribution (Optimized)
     """
     hod_scope = getattr(request.user.profile, 'hod_scope', 'NATIONAL')
     hod_state = getattr(request.user.profile, 'assigned_state', None)
     hod_facility = getattr(request.user.profile, 'assigned_facility', None)
 
-    senarai_negeri = list(STATE_CENTERS.keys())
     pilihan_negeri = hod_state if (hod_scope in ['FACILITY', 'STATE'] and hod_state) else request.GET.get('state', 'All States')
-
-    if pilihan_negeri == "All States":
-        klinik_dipaparkan = MOCK_KLINIK
-    else:
-        klinik_dipaparkan = [k for k in MOCK_KLINIK if k.get("state") == pilihan_negeri]
-
-    senarai_klinik = [k['name'] for k in klinik_dipaparkan]
     pilihan_klinik = hod_facility if (hod_scope == 'FACILITY' and hod_facility) else request.GET.get('clinic', 'All Clinics')
 
     hod_name = f"{request.user.first_name} {request.user.last_name}".strip() or request.user.username
 
-    mo_sample = ["Dr. Ramesh Lee", "Dr. Siti Abu", "Dr. Chong Ali", "Dr. Mei Ismail", "Dr. Mohammad",
-                 "Dr. Farhana Wong", "Dr. David Nair", "Dr. Priya Kumar", "Dr. Ahmad Tan", "Dr. Sarah Ali"]
-    z_expanded = [
-        [88, 92, 78], [65, 70, 82], [94, 85, 90], [72, 68, 75], [85, 88, 92],
-        [90, 84, 88], [62, 65, 70], [77, 80, 82], [81, 79, 85], [92, 95, 91]
-    ]
+    # Tarik data staf dari DB dan hadkan kepada 10 rekod terawal untuk kepantasan
+    staff_users = User.objects.filter(profile__role='STAFF')[:10]
+    
+    mo_names = []
+    z_data = []
+
+    if staff_users.exists():
+        for staff in staff_users:
+            fullname = f"Dr. {staff.first_name} {staff.last_name}".strip()
+            mo_names.append(fullname if fullname != "Dr." else f"Dr. {staff.username}")
+            
+            try:
+                # Cuba kira skor menggunakan fungsi sedia ada
+                scores = calculate_pri_score(staff)
+                z_data.append([
+                    scores.get('score_clinical', 85), 
+                    scores.get('score_operational', 80), 
+                    scores.get('score_interpersonal', 88)
+                ])
+            except Exception as e:
+                # Fallback selamat jika calculate_pri_score gagal
+                z_data.append([85, 80, 88])
+    else:
+        # Fallback jika tiada staf langsung dalam DB
+        mo_names = ["Dr. Ramesh Lee", "Dr. Siti Abu", "Dr. Chong Ali", "Dr. Mei Ismail", "Dr. Mohammad"]
+        z_data = [[88, 92, 78], [65, 70, 82], [94, 85, 90], [72, 68, 75], [85, 88, 92]]
+
     tunjang_labels = ['Clinical', 'Operational', 'Interpersonal']
 
     fig_heat = go.Figure(data=go.Heatmap(
-        z=z_expanded, x=tunjang_labels, y=mo_sample,
+        z=z_data, x=tunjang_labels, y=mo_names,
         colorscale=[[0, '#fff1f2'], [0.4, '#fecdd3'], [0.7, '#f43f5e'], [1.0, '#be123c']],
         texttemplate="<b>%{z}%</b>", textfont=dict(size=11, color="#ffffff", family='Inter'),
         showscale=False, xgap=5, ygap=5,
@@ -1879,9 +1980,9 @@ def competency_matrix_insight_view(request):
     heatmap_html = fig_heat.to_html(full_html=False, include_plotlyjs=False, config={'displayModeBar': False})
 
     context = {
-        'senarai_negeri': senarai_negeri,
+        'senarai_negeri': list(STATE_CENTERS.keys()),
         'pilihan_negeri': pilihan_negeri,
-        'senarai_klinik': ["All Clinics"] + senarai_klinik,
+        'senarai_klinik': ["All Clinics", pilihan_klinik] if pilihan_klinik != "All Clinics" else ["All Clinics"],
         'pilihan_klinik': pilihan_klinik,
         'hod_name': hod_name,
         'heatmap_html': heatmap_html,
@@ -1997,41 +2098,4 @@ def patient_mypsq_view(request, doctor_username):
     }
     return render(request, 'dashboard/patient_mypsq_form.html', context)
 
-    # Jika pesakit telah menekan butang Submit
-    if request.method == 'POST':
-        # Tangkap markah dari butang radio (1 hingga 5)
-        q1 = int(request.POST.get('q1', 5))
-        q2 = int(request.POST.get('q2', 5))
-        q3 = int(request.POST.get('q3', 5))
-        q4 = int(request.POST.get('q4', 5))
-        q5 = int(request.POST.get('q5', 5))
-        q6 = int(request.POST.get('q6', 5))
-        q7 = int(request.POST.get('q7', 5))
-        
-        comments = request.POST.get('patient_comments', '')
-        pt_category = request.POST.get('patient_category', 'Outpatient')
-
-        # Simpan terus ke pangkalan data MyPrestasi!
-        MyPSQFeedback.objects.create(
-            doctor=doctor_obj,
-            patient_category=pt_category,
-            q1_general=q1,
-            q2_technical=q2,
-            q3_interpersonal=q3,
-            q4_communication=q4,
-            q5_financial=q5,
-            q6_time=q6,
-            q7_accessibility=q7,
-            patient_comments=comments
-        )
-        
-        # Hantar mesej berjaya dan teruskan memaparkan halaman yang sama
-        messages.success(request, "Terima kasih! Maklum balas anda sangat berharga bagi kami.")
-        return redirect('patient_mypsq_form', doctor_username=doctor_username)
-
-    context = {
-        'doctor_username': doctor_username,
-        'doc_full_name': doc_full_name,
-        'facility_name': facility_name,
-    }
-    return render(request, 'dashboard/patient_mypsq_form.html', context)
+    

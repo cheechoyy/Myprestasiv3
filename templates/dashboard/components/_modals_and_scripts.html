@@ -1,0 +1,762 @@
+{% load static %}
+
+<!-- FOOTER -->
+<div class="custom-footer">Copyright © 2026 MyPrestasi HPU | Health Performance Unit</div>
+
+<!-- MODAL SETTINGS -->
+<div class="modal-overlay" id="settingsModal">
+    <div class="modal-content" style="width: 400px;">
+        <button class="modal-close" onclick="closeSettings()">✖</button>
+        <h2 style="color: #1E3A8A; margin-top: 0; font-weight: 900;">⚙️ System Settings</h2>
+        <p style="color: #64748b; font-size: 13px; margin-bottom: 20px;">Manage your MyPrestasi environment preferences.</p>
+
+        <div class="setting-item" style="padding-top: 5px;">
+            <div style="width: 100%;">
+                <strong style="color: #2b3674; font-size: 13px;">Language / Bahasa</strong>
+                <select style="width: 100%; padding: 8px 12px; border-radius: 8px; border: 1px solid #e2e8f0; font-family: 'Inter'; font-size: 13px; background: #f8f9fa; margin-top: 5px;">
+                    <option>English (UK)</option>
+                    <option>Bahasa Melayu</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="setting-item">
+            <div style="width: 100%;">
+                <strong style="color: #2b3674; font-size: 13px;">Timezone</strong>
+                <select style="width: 100%; padding: 8px 12px; border-radius: 8px; border: 1px solid #e2e8f0; font-family: 'Inter'; font-size: 13px; background: #f8f9fa; margin-top: 5px;">
+                    <option>Asia/Kuala_Lumpur (MYT +08:00)</option>
+                    <option>Asia/Kuching (MYT +08:00)</option>
+                    <option>UTC (Coordinated Universal Time)</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="setting-item">
+            <div>
+                <strong style="color: #2b3674; font-size: 13px;">Dark Mode</strong>
+                <div style="font-size: 11px; color: #a3aed1; margin-top: 3px;">Toggle dark theme interface</div>
+            </div>
+            <label class="switch">
+                <input type="checkbox" id="darkModeToggle">
+                <span class="slider"></span>
+            </label>
+        </div>
+        
+        <button class="submit-btn" style="margin-top: 15px;" onclick="closeSettings()">Save Preferences</button>
+    </div>
+</div>
+
+<!-- MODAL AI SELF-COACHING HUB -->
+<div class="modal-overlay" id="aiSelfCoachingModal">
+    <div class="modal-content" style="width: 600px; max-width: 92%; border-radius: 16px; padding: 25px;">
+        <button class="modal-close" onclick="closeSelfCoachingModal()">✕</button>
+        
+        <div style="display: flex; align-items: center; gap: 12px; border-bottom: 1px solid #ffe4e6; padding-bottom: 15px; margin-bottom: 15px;">
+            <div style="width: 42px; height: 42px; border-radius: 12px; background: #be123c; color: white; display: flex; justify-content: center; align-items: center; font-size: 20px; font-weight: 900;">
+                🤖
+            </div>
+            <div>
+                <h3 style="margin: 0; color: #881337; font-weight: 900; font-size: 18px;">AI Self-Coaching & Remediation Plan</h3>
+                <p style="margin: 2px 0 0 0; color: #f43f5e; font-size: 12px; font-weight: 700;">Personalized Performance Boost for {{ staff_name }}</p>
+            </div>
+        </div>
+
+        <!-- STEP 1: AI DIAGNOSTIC BREAKDOWN -->
+        <div style="background: #fff1f2; padding: 14px; border-radius: 10px; border: 1px solid #ffe4e6; margin-bottom: 15px;">
+            <b style="color: #881337; font-size: 12px; text-transform: uppercase; display: block; margin-bottom: 6px;">🎯 Identified Performance Gap:</b>
+            <div style="font-size: 13px; color: #be123c; font-weight: 600; line-height: 1.4;">
+                Coding backlog is currently at <b>5/12 tasks (41%)</b>. Completing 4 more coding entries today will elevate your Operational Index back to <b>>80% Target</b>.
+            </div>
+        </div>
+
+        <!-- STEP 2: ACTIONABLE STEPS -->
+        <b style="color: #881337; font-size: 13px; font-weight: 800; display: block; margin-bottom: 10px;">Recommended Self-Correction Steps:</b>
+        
+        <div style="display: flex; flex-direction: column; gap: 10px; margin-bottom: 20px;">
+            <div style="border: 1px solid #ffe4e6; padding: 12px; border-radius: 10px; background: white; display: flex; align-items: center; justify-content: space-between;">
+                <div>
+                    <strong style="color: #881337; font-size: 13px; display: block;">1. Smart Prioritization Matrix</strong>
+                    <span style="font-size: 11px; color: #f43f5e;">Batch-process 5 pending ICD-10 coding entries in 15 mins.</span>
+                </div>
+                <a href="?section=Operational" style="background: #be123c; color: white; padding: 6px 12px; border-radius: 6px; text-decoration: none; font-size: 11px; font-weight: bold;">Launch Task</a>
+            </div>
+
+            <div style="border: 1px solid #ffe4e6; padding: 12px; border-radius: 10px; background: white; display: flex; align-items: center; justify-content: space-between;">
+                <div>
+                    <strong style="color: #881337; font-size: 13px; display: block;">2. Micro-Learning Refresher (5-Min)</strong>
+                    <span style="font-size: 11px; color: #f43f5e;">Quick Guide: Rapid Clinical Coding in EHR Environment.</span>
+                </div>
+                <button type="button" onclick="openMicroLearningModal()" style="background: white; border: 1px solid #be123c; color: #be123c; padding: 6px 12px; border-radius: 6px; font-size: 11px; font-weight: bold; cursor: pointer;">Start Refresher</button>
+            </div>
+        </div>
+
+        <form method="POST" style="margin: 0;">
+            {% csrf_token %}
+            <input type="hidden" name="form_type" value="complete_coaching">
+            <div style="display: flex; gap: 10px;">
+                <button type="submit" style="flex: 1; background: #be123c; color: white; border: none; padding: 12px; border-radius: 8px; font-weight: bold; font-size: 13px; cursor: pointer;">Acknowledge & Apply Plan</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- MODAL AI MICRO-LEARNING (5-MIN REFRESHER) -->
+<div class="modal-overlay" id="microLearningModal" style="z-index: 10000;">
+    <div class="modal-content" style="width: 580px; max-width: 92%; border-radius: 16px; padding: 25px;">
+        <button class="modal-close" onclick="closeMicroLearningModal()">✕</button>
+
+        <!-- HEADER -->
+        <div style="display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid #ffe4e6; padding-bottom: 15px; margin-bottom: 20px;">
+            <div style="display: flex; align-items: center; gap: 12px;">
+                <div style="width: 40px; height: 40px; border-radius: 10px; background: #be123c; color: white; display: flex; justify-content: center; align-items: center; font-size: 18px; font-weight: 900;">
+                    🎓
+                </div>
+                <div>
+                    <h3 style="margin: 0; color: #881337; font-weight: 900; font-size: 16px;">AI Micro-Learning Refresher</h3>
+                    <p style="margin: 2px 0 0 0; color: #f43f5e; font-size: 12px; font-weight: 700;">Topic: Rapid Clinical Coding in EHR Environment</p>
+                </div>
+            </div>
+            <span id="microStepBadge" style="background: #fff1f2; color: #be123c; border: 1px solid #ffe4e6; padding: 4px 10px; border-radius: 12px; font-size: 11px; font-weight: 800;">Step 1 of 3</span>
+        </div>
+
+        <!-- STEP 1: KEY CPG & ICD-10 RULE -->
+        <div id="microStep1">
+            <div style="background: #fff1f2; padding: 15px; border-radius: 12px; border-left: 4px solid #be123c; margin-bottom: 20px;">
+                <h4 style="margin: 0 0 8px 0; color: #881337; font-size: 14px;">📌 Rule 1: High-Frequency ICD-10 Diagnostic Codes</h4>
+                <p style="margin: 0; color: #9f1239; font-size: 12px; line-height: 1.5; font-weight: 500;">
+                    Proper ICD-10 coding directly impacts clinic operational metrics and national health reporting. Always document primary diagnosis with specific sub-types:
+                </p>
+                <ul style="margin: 10px 0 0 0; padding-left: 20px; font-size: 12px; color: #881337; line-height: 1.6;">
+                    <li><b>E11.9</b> — Type 2 Diabetes Mellitus without complications</li>
+                    <li><b>I10</b> — Essential (primary) Hypertension</li>
+                    <li><b>E78.5</b> — Hyperlipidemia, unspecified</li>
+                </ul>
+            </div>
+            <button type="button" onclick="goMicroStep(2)" style="width: 100%; background: #be123c; color: white; border: none; padding: 12px; border-radius: 8px; font-weight: bold; font-size: 13px; cursor: pointer;">Next: EHR Shortcuts & Templates →</button>
+        </div>
+
+        <!-- STEP 2: EHR SHORTCUTS -->
+        <div id="microStep2" style="display: none;">
+            <div style="background: #fff1f2; padding: 15px; border-radius: 12px; border-left: 4px solid #be123c; margin-bottom: 20px;">
+                <h4 style="margin: 0 0 8px 0; color: #881337; font-size: 14px;">⚡ Smart EHR Time-Saving Macros</h4>
+                <p style="margin: 0; color: #9f1239; font-size: 12px; line-height: 1.5; font-weight: 500;">
+                    Speed up documentation velocity by 60% using pre-configured clinical macros in the Outpatient Clerking Module:
+                </p>
+                <div style="margin-top: 10px; background: white; padding: 10px; border-radius: 8px; border: 1px solid #ffe4e6; font-size: 12px; color: #881337;">
+                    • Type <code>.dm2</code> → Auto-populates T2DM monitoring template (BP, HbA1c, Fundoscopy status).<br>
+                    • Type <code>.dis</code> → Auto-populates Discharge Summary checklist.
+                </div>
+            </div>
+            <div style="display: flex; gap: 10px;">
+                <button type="button" onclick="goMicroStep(1)" style="width: 30%; background: #ffe4e6; color: #be123c; border: none; padding: 12px; border-radius: 8px; font-weight: bold; font-size: 13px; cursor: pointer;">← Back</button>
+                <button type="button" onclick="goMicroStep(3)" style="width: 70%; background: #be123c; color: white; border: none; padding: 12px; border-radius: 8px; font-weight: bold; font-size: 13px; cursor: pointer;">Next: Knowledge Check →</button>
+            </div>
+        </div>
+
+        <!-- STEP 3: KNOWLEDGE CHECK (QUIZ) -->
+        <div id="microStep3" style="display: none;">
+            <div style="background: #fff1f2; padding: 15px; border-radius: 12px; border: 1px solid #ffe4e6; margin-bottom: 20px;">
+                <h4 style="margin: 0 0 10px 0; color: #881337; font-size: 14px;">❓ Quick Quiz (1 Question):</h4>
+                <p style="margin: 0 0 12px 0; color: #881337; font-size: 13px; font-weight: 600;">
+                    Which ICD-10 code represents Type 2 Diabetes Mellitus without complications?
+                </p>
+                <div style="display: flex; flex-direction: column; gap: 8px;">
+                    <label style="background: white; padding: 10px; border-radius: 8px; border: 1px solid #ffe4e6; margin: 0; font-size: 12px; cursor: pointer; color: #881337;">
+                        <input type="radio" name="microQuiz" value="E10.9"> E10.9 (Type 1 Diabetes)
+                    </label>
+                    <label style="background: white; padding: 10px; border-radius: 8px; border: 1px solid #ffe4e6; margin: 0; font-size: 12px; cursor: pointer; color: #881337;">
+                        <input type="radio" name="microQuiz" value="E11.9"> E11.9 (Type 2 Diabetes without complications)
+                    </label>
+                    <label style="background: white; padding: 10px; border-radius: 8px; border: 1px solid #ffe4e6; margin: 0; font-size: 12px; cursor: pointer; color: #881337;">
+                        <input type="radio" name="microQuiz" value="I10"> I10 (Essential Hypertension)
+                    </label>
+                </div>
+            </div>
+            <div style="display: flex; gap: 10px;">
+                <button type="button" onclick="goMicroStep(2)" style="width: 30%; background: #ffe4e6; color: #be123c; border: none; padding: 12px; border-radius: 8px; font-weight: bold; font-size: 13px; cursor: pointer;">← Back</button>
+                <button type="button" onclick="submitMicroQuiz()" style="width: 70%; background: #be123c; color: white; border: none; padding: 12px; border-radius: 8px; font-weight: bold; font-size: 13px; cursor: pointer;">Submit & Claim +5 CPD Points 🎉</button>
+            </div>
+        </div>
+
+        <!-- SUCCESS STATE -->
+        <div id="microStepSuccess" style="display: none; text-align: center; padding: 10px 0;">
+            <div style="font-size: 48px; margin-bottom: 10px;">🎉</div>
+            <h3 style="margin: 0 0 8px 0; color: #16a34a; font-weight: 900; font-size: 18px;">Refresher Completed!</h3>
+            <p style="margin: 0 0 15px 0; color: #15803d; font-size: 13px; font-weight: 600;">
+                You have earned <b>+5 CPD Points</b> for completing this AI Micro-Learning module.
+            </p>
+            <button type="button" onclick="closeMicroLearningModal()" style="background: #be123c; color: white; border: none; padding: 12px 25px; border-radius: 8px; font-weight: bold; font-size: 13px; cursor: pointer;">Return to Dashboard</button>
+        </div>
+    </div>
+</div>
+
+<!-- FLOATING ACTION BUTTON (FAB) AURA-PULSE AI -->
+<div class="aura-fab" onclick="toggleAuraPulse()" title="Ask AURA-Pulse AI">
+    <svg style="width: 28px; height: 28px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12h3l2-4 3 8 2-4h3"/></svg>
+    <span class="aura-badge"></span>
+</div>
+
+<!-- WINDOW CHATBOT AURA-PULSE AI -->
+<div class="aura-chat-window" id="auraChatWindow">
+    <div class="aura-header">
+        <div style="display: flex; align-items: center; gap: 10px;">
+            <div style="width: 32px; height: 32px; background: rgba(255,255,255,0.2); border-radius: 8px; display: flex; justify-content: center; align-items: center;">
+                <svg style="width: 20px; height: 20px; color: white;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/></svg>
+            </div>
+            <div>
+                <strong style="font-size: 14px; display: block; line-height: 1.1;">AURA-Pulse AI</strong>
+                <span style="font-size: 10px; opacity: 0.85; font-weight: 500;">Remediation & Clinical Assistant</span>
+            </div>
+        </div>
+        <button onclick="toggleAuraPulse()" style="background: none; border: none; color: white; font-size: 18px; cursor: pointer; font-weight: bold;">✕</button>
+    </div>
+
+    <div class="aura-body" id="auraChatBody">
+        <div class="aura-msg bot">
+            <b>Greetings, {{ staff_name }}! 👋</b><br>
+            I am <b>AURA-Pulse</b>, your AI assistant. Is there any CPG guideline or Task Velocity issue I can assist you with today?
+            
+            <div class="aura-chips">
+                <span class="aura-chip" onclick="quickAskAura('How to boost Clinical Coding score?')">💡 Assist Task Velocity</span>
+                <span class="aura-chip" onclick="quickAskAura('Summarize 2026 Diabetes CPG')">📖 Review 2026 CPG</span>
+                <span class="aura-chip" onclick="quickAskAura('My Self-Coaching status?')">⚡ Coaching Status</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="aura-footer">
+        <input type="text" id="auraInput" class="aura-input" placeholder="Ask AURA-Pulse a question..." onkeypress="if(event.key==='Enter') sendAuraMessage()">
+        <button class="aura-send-btn" onclick="sendAuraMessage()">Send</button>
+    </div>
+</div>
+
+<!-- MODAL ENTERPRISE GOOGLE-CALENDAR MONTH VIEW & DUE TRACKER -->
+<div class="modal-overlay" id="scheduleModal" style="z-index: 9999;">
+    <div class="modal-content" style="width: 1180px; max-width: 95vw; height: 88vh; border-radius: 20px; padding: 25px; box-shadow: 0 20px 50px rgba(136, 19, 55, 0.25); display: flex; flex-direction: column; overflow: hidden; border: 1px solid #ffe4e6;">
+        <button class="modal-close" onclick="closeScheduleModal()" style="top: 20px; right: 20px; font-size: 20px;">✕</button>
+
+        <!-- HEADER ENTERPRISE -->
+        <div style="display: flex; align-items: center; justify-content: space-between; border-bottom: 2px solid #ffe4e6; padding-bottom: 15px; margin-bottom: 15px; flex-shrink: 0;">
+            <div style="display: flex; align-items: center; gap: 14px;">
+                <div style="width: 44px; height: 44px; border-radius: 12px; background: #be123c; color: white; display: flex; justify-content: center; align-items: center; box-shadow: 0 4px 12px rgba(190, 18, 60, 0.25);">
+                    <svg style="width: 24px; height: 24px; color: white;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2h14M12 11v6m-3-3h6"/></svg>
+                </div>
+                <div>
+                    <h3 style="margin: 0; color: #881337; font-weight: 900; font-size: 19px; letter-spacing: -0.3px;">Work Schedule & MyPrestasi Monthly Calendar</h3>
+                    <p style="margin: 2px 0 0 0; color: #f43f5e; font-size: 12px; font-weight: 600;">Interactive Google Calendar Mode • Full Month Roster & Action Items</p>
+                </div>
+            </div>
+
+            <!-- KAWALAN MOD TAB -->
+            <div style="display: flex; gap: 8px; background: #fff1f2; padding: 4px; border-radius: 12px; border: 1px solid #ffe4e6;">
+                <button type="button" id="tabCalMonth" onclick="switchCalView('month')" style="padding: 8px 16px; border-radius: 8px; font-size: 11px; font-weight: 800; border: 1px solid #be123c; background: #be123c; color: white; cursor: pointer; transition: 0.2s; display: inline-flex; align-items: center; gap: 6px;">
+                    <svg style="width: 14px; height: 14px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2h14"/></svg>
+                    Month View
+                </button>
+                <button type="button" id="tabCalList" onclick="switchCalView('list')" style="padding: 8px 16px; border-radius: 8px; font-size: 11px; font-weight: 800; border: 1px solid transparent; background: transparent; color: #881337; cursor: pointer; transition: 0.2s; display: inline-flex; align-items: center; gap: 6px;">
+                    <svg style="width: 14px; height: 14px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16"/></svg>
+                    List View
+                </button>
+                <button type="button" id="tabCalAdd" onclick="switchCalView('add')" style="padding: 8px 16px; border-radius: 8px; font-size: 11px; font-weight: 800; border: 1px solid transparent; background: transparent; color: #881337; cursor: pointer; transition: 0.2s; display: inline-flex; align-items: center; gap: 6px;">
+                    <svg style="width: 14px; height: 14px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+                    Add Entry
+                </button>
+            </div>
+        </div>
+
+        <!-- MOD 1: MONTH VIEW -->
+        <div id="calAreaMonth" style="display: flex; flex-direction: column; flex-grow: 1; overflow: hidden;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; flex-shrink: 0;">
+                <div style="display: flex; align-items: center; gap: 12px;">
+                    <h4 style="margin: 0; color: #881337; font-size: 16px; font-weight: 900;">October 2026</h4>
+                    <span style="background: #fff1f2; border: 1px solid #fecdd3; color: #be123c; padding: 2px 10px; border-radius: 12px; font-size: 10px; font-weight: 800;">5 Due Items Registered</span>
+                </div>
+                <div style="display: flex; gap: 12px; font-size: 11px; font-weight: 700; color: #881337;">
+                    <span style="display: flex; align-items: center; gap: 4px;"><span style="width: 10px; height: 10px; background: #be123c; border-radius: 3px;"></span> Duty Shift</span>
+                    <span style="display: flex; align-items: center; gap: 4px;"><span style="width: 10px; height: 10px; background: #d97706; border-radius: 3px;"></span> Task Due</span>
+                    <span style="display: flex; align-items: center; gap: 4px;"><span style="width: 10px; height: 10px; background: #16a34a; border-radius: 3px;"></span> CPD Event</span>
+                </div>
+            </div>
+
+            <div style="display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; text-align: center; font-weight: 800; font-size: 11px; color: #be123c; background: #fff1f2; padding: 8px 0; border-radius: 8px; border: 1px solid #ffe4e6; margin-bottom: 6px; flex-shrink: 0;">
+                <div>MON</div><div>TUE</div><div>WED</div><div>THU</div><div>FRI</div><div>SAT</div><div>SUN</div>
+            </div>
+
+            <div style="display: grid; grid-template-columns: repeat(7, 1fr); grid-template-rows: repeat(5, 1fr); gap: 4px; flex-grow: 1; overflow-y: auto;">
+                <div style="background: #f8fafc; border: 1px solid #f1f5f9; border-radius: 8px; padding: 6px; opacity: 0.4;"><span style="font-size: 11px; font-weight: 700; color: #94a3b8;">28</span></div>
+                <div style="background: #f8fafc; border: 1px solid #f1f5f9; border-radius: 8px; padding: 6px; opacity: 0.4;"><span style="font-size: 11px; font-weight: 700; color: #94a3b8;">29</span></div>
+                <div style="background: #f8fafc; border: 1px solid #f1f5f9; border-radius: 8px; padding: 6px; opacity: 0.4;"><span style="font-size: 11px; font-weight: 700; color: #94a3b8;">30</span></div>
+
+                <div style="background: #fff1f2; border: 2px solid #be123c; border-radius: 8px; padding: 6px; display: flex; flex-direction: column; gap: 4px; box-shadow: 0 2px 6px rgba(190, 18, 60, 0.1);">
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <span style="font-size: 11px; font-weight: 900; color: white; background: #be123c; width: 20px; height: 20px; border-radius: 50%; display: flex; justify-content: center; align-items: center;">1</span>
+                        <span style="font-size: 9px; font-weight: 800; color: #be123c;">TODAY</span>
+                    </div>
+                    <div style="background: #be123c; color: white; font-size: 9px; padding: 3px 5px; border-radius: 4px; font-weight: 800; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="10:30 Ward Round">10:30 Ward Round</div>
+                    <div style="background: #d97706; color: white; font-size: 9px; padding: 3px 5px; border-radius: 4px; font-weight: 800; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="23:59 Doc Audit Due">⏳ Doc Audit Due</div>
+                </div>
+
+                <div style="background: white; border: 1px solid #ffe4e6; border-radius: 8px; padding: 6px;"><span style="font-size: 11px; font-weight: 700; color: #881337;">2</span></div>
+                <div style="background: white; border: 1px solid #ffe4e6; border-radius: 8px; padding: 6px;"><span style="font-size: 11px; font-weight: 700; color: #881337;">3</span></div>
+                <div style="background: white; border: 1px solid #ffe4e6; border-radius: 8px; padding: 6px;"><span style="font-size: 11px; font-weight: 700; color: #881337;">4</span></div>
+
+                <div style="background: white; border: 1px solid #ffe4e6; border-radius: 8px; padding: 6px; display: flex; flex-direction: column; gap: 4px;">
+                    <span style="font-size: 11px; font-weight: 700; color: #881337;">5</span>
+                    <div style="background: #be123c; color: white; font-size: 9px; padding: 3px 5px; border-radius: 4px; font-weight: 800; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">09:00 Policy Renewal</div>
+                </div>
+                <div style="background: white; border: 1px solid #ffe4e6; border-radius: 8px; padding: 6px;"><span style="font-size: 11px; font-weight: 700; color: #881337;">6</span></div>
+                <div style="background: white; border: 1px solid #ffe4e6; border-radius: 8px; padding: 6px;"><span style="font-size: 11px; font-weight: 700; color: #881337;">7</span></div>
+                <div style="background: white; border: 1px solid #ffe4e6; border-radius: 8px; padding: 6px;"><span style="font-size: 11px; font-weight: 700; color: #881337;">8</span></div>
+                <div style="background: white; border: 1px solid #ffe4e6; border-radius: 8px; padding: 6px; display: flex; flex-direction: column; gap: 4px;">
+                    <span style="font-size: 11px; font-weight: 700; color: #881337;">9</span>
+                    <div style="background: #be123c; color: white; font-size: 9px; padding: 3px 5px; border-radius: 4px; font-weight: 800; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">08:00 Clinic On-Call</div>
+                </div>
+                <div style="background: white; border: 1px solid #ffe4e6; border-radius: 8px; padding: 6px;"><span style="font-size: 11px; font-weight: 700; color: #881337;">10</span></div>
+                <div style="background: white; border: 1px solid #ffe4e6; border-radius: 8px; padding: 6px;"><span style="font-size: 11px; font-weight: 700; color: #881337;">11</span></div>
+
+                <div style="background: white; border: 1px solid #ffe4e6; border-radius: 8px; padding: 6px; display: flex; flex-direction: column; gap: 4px;">
+                    <span style="font-size: 11px; font-weight: 700; color: #881337;">12</span>
+                    <div style="background: #16a34a; color: white; font-size: 9px; padding: 3px 5px; border-radius: 4px; font-weight: 800; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">14:00 Cardio Conf (+10 CPD)</div>
+                </div>
+                <div style="background: white; border: 1px solid #ffe4e6; border-radius: 8px; padding: 6px;"><span style="font-size: 11px; font-weight: 700; color: #881337;">13</span></div>
+                <div style="background: white; border: 1px solid #ffe4e6; border-radius: 8px; padding: 6px;"><span style="font-size: 11px; font-weight: 700; color: #881337;">14</span></div>
+                <div style="background: white; border: 1px solid #ffe4e6; border-radius: 8px; padding: 6px; display: flex; flex-direction: column; gap: 4px;">
+                    <span style="font-size: 11px; font-weight: 700; color: #881337;">15</span>
+                    <div style="background: #d97706; color: white; font-size: 9px; padding: 3px 5px; border-radius: 4px; font-weight: 800; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">⏳ Monthly WISN Log Due</div>
+                </div>
+                <div style="background: white; border: 1px solid #ffe4e6; border-radius: 8px; padding: 6px;"><span style="font-size: 11px; font-weight: 700; color: #881337;">16</span></div>
+                <div style="background: white; border: 1px solid #ffe4e6; border-radius: 8px; padding: 6px;"><span style="font-size: 11px; font-weight: 700; color: #881337;">17</span></div>
+                <div style="background: white; border: 1px solid #ffe4e6; border-radius: 8px; padding: 6px;"><span style="font-size: 11px; font-weight: 700; color: #881337;">18</span></div>
+
+                <div style="background: white; border: 1px solid #ffe4e6; border-radius: 8px; padding: 6px;"><span style="font-size: 11px; font-weight: 700; color: #881337;">19</span></div>
+                <div style="background: white; border: 1px solid #ffe4e6; border-radius: 8px; padding: 6px; display: flex; flex-direction: column; gap: 4px;">
+                    <span style="font-size: 11px; font-weight: 700; color: #881337;">20</span>
+                    <div style="background: #be123c; color: white; font-size: 9px; padding: 3px 5px; border-radius: 4px; font-weight: 800; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">11:00 Mentorship Sign-off</div>
+                </div>
+                <div style="background: white; border: 1px solid #ffe4e6; border-radius: 8px; padding: 6px;"><span style="font-size: 11px; font-weight: 700; color: #881337;">21</span></div>
+                <div style="background: white; border: 1px solid #ffe4e6; border-radius: 8px; padding: 6px;"><span style="font-size: 11px; font-weight: 700; color: #881337;">22</span></div>
+                <div style="background: white; border: 1px solid #ffe4e6; border-radius: 8px; padding: 6px;"><span style="font-size: 11px; font-weight: 700; color: #881337;">23</span></div>
+                <div style="background: white; border: 1px solid #ffe4e6; border-radius: 8px; padding: 6px;"><span style="font-size: 11px; font-weight: 700; color: #881337;">24</span></div>
+                <div style="background: white; border: 1px solid #ffe4e6; border-radius: 8px; padding: 6px;"><span style="font-size: 11px; font-weight: 700; color: #881337;">25</span></div>
+
+                <div style="background: white; border: 1px solid #ffe4e6; border-radius: 8px; padding: 6px;"><span style="font-size: 11px; font-weight: 700; color: #881337;">26</span></div>
+                <div style="background: white; border: 1px solid #ffe4e6; border-radius: 8px; padding: 6px;"><span style="font-size: 11px; font-weight: 700; color: #881337;">27</span></div>
+                <div style="background: white; border: 1px solid #ffe4e6; border-radius: 8px; padding: 6px; display: flex; flex-direction: column; gap: 4px;">
+                    <span style="font-size: 11px; font-weight: 700; color: #881337;">28</span>
+                    <div style="background: #d97706; color: white; font-size: 9px; padding: 3px 5px; border-radius: 4px; font-weight: 800; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">⏳ CPD Target Review</div>
+                </div>
+                <div style="background: white; border: 1px solid #ffe4e6; border-radius: 8px; padding: 6px;"><span style="font-size: 11px; font-weight: 700; color: #881337;">29</span></div>
+                <div style="background: white; border: 1px solid #ffe4e6; border-radius: 8px; padding: 6px;"><span style="font-size: 11px; font-weight: 700; color: #881337;">30</span></div>
+                <div style="background: white; border: 1px solid #ffe4e6; border-radius: 8px; padding: 6px;"><span style="font-size: 11px; font-weight: 700; color: #881337;">31</span></div>
+
+                <div style="background: #f8fafc; border: 1px solid #f1f5f9; border-radius: 8px; padding: 6px; opacity: 0.4;"><span style="font-size: 11px; font-weight: 700; color: #94a3b8;">1</span></div>
+            </div>
+        </div>
+
+        <!-- MOD 2: LIST VIEW -->
+        <div id="calAreaList" style="display: none; flex-grow: 1; overflow-y: auto;">
+            <div style="display: flex; flex-direction: column; gap: 10px; padding-right: 6px;">
+                <div style="background: #fff1f2; border-left: 5px solid #881337; padding: 12px 16px; border-radius: 12px; display: flex; justify-content: space-between; align-items: center;">
+                    <div>
+                        <span style="font-size: 10px; font-weight: 800; color: #881337;">01 OCTOBER 2026 • 10:30 AM</span>
+                        <div style="font-size: 14px; font-weight: 800; color: #881337; margin-top: 2px;">Grand Rounds & Ward Inspection</div>
+                        <span style="font-size: 11px; color: #64748b;">Clinical Shift • Inpatient Ward 4</span>
+                    </div>
+                    <span style="background: white; border: 1px solid #ffe4e6; color: #881337; padding: 4px 10px; border-radius: 6px; font-size: 11px; font-weight: 800;">Duty Shift</span>
+                </div>
+
+                <div style="background: #fffbeb; border-left: 5px solid #d97706; padding: 12px 16px; border-radius: 12px; display: flex; justify-content: space-between; align-items: center;">
+                    <div>
+                        <span style="font-size: 10px; font-weight: 800; color: #b45309;">01 OCTOBER 2026 • 23:59 PM</span>
+                        <div style="font-size: 14px; font-weight: 800; color: #92400e; margin-top: 2px;">⏳ Clinical Documentation Audit</div>
+                        <span style="font-size: 11px; color: #b45309;">MyPrestasi Action Item • 2 Patient entries pending</span>
+                    </div>
+                    <a href="?section=Clinical" style="background: #d97706; color: white; padding: 6px 14px; border-radius: 6px; font-size: 11px; font-weight: 800; text-decoration: none;">Execute Task</a>
+                </div>
+            </div>
+        </div>
+
+        <!-- MOD 3: ADD ENTRY -->
+        <div id="calAreaAdd" style="display: none; flex-grow: 1; overflow-y: auto;">
+            <form method="POST" onsubmit="alert('Entry added to your MyPrestasi Schedule!'); closeScheduleModal(); return false;" style="background: #fff1f2; padding: 20px; border-radius: 16px; border: 1px solid #ffe4e6;">
+                <div class="grid-2" style="margin-bottom: 12px;">
+                    <div>
+                        <label style="margin-top:0; color:#881337; font-weight:700;">Entry Title <span style="color:red;">*</span></label>
+                        <input type="text" placeholder="e.g. On-Call Shift / CPG Audit Deadline" required style="background:white; border-color:#fecdd3;">
+                    </div>
+                    <div>
+                        <label style="margin-top:0; color:#881337; font-weight:700;">Entry Type <span style="color:red;">*</span></label>
+                        <select required style="background:white; border-color:#fecdd3; font-weight:600;">
+                            <option>Clinical Duty Shift</option>
+                            <option>MyPrestasi Module Deadline</option>
+                            <option>CPD Event / Workshop</option>
+                            <option>Ward Round & Surgery</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="grid-2" style="margin-bottom: 12px;">
+                    <div>
+                        <label style="margin-top:0; color:#881337; font-weight:700;">Date & Time <span style="color:red;">*</span></label>
+                        <input type="datetime-local" required style="background:white; border-color:#fecdd3;">
+                    </div>
+                    <div>
+                        <label style="margin-top:0; color:#881337; font-weight:700;">Location / Module Link</label>
+                        <input type="text" placeholder="e.g. Room 3 / Clinical Module" style="background:white; border-color:#fecdd3;">
+                    </div>
+                </div>
+
+                <div style="margin-bottom: 15px;">
+                    <label style="margin-top:0; color:#881337; font-weight:700;">Notes & Instructions</label>
+                    <textarea class="custom-textarea" style="height: 60px; background:white; border-color:#fecdd3;" placeholder="Details or reminder notes..."></textarea>
+                </div>
+
+                <button type="submit" class="submit-btn" style="background-color: #be123c; margin-top: 10px; font-weight: 800;">
+                    Save Schedule Entry
+                </button>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- ==========================================
+     GLOBAL JAVASCRIPT LOGIC
+     ========================================== -->
+<script>
+    // 1. MODAL SETTINGS
+    function openSettings() {
+        document.getElementById('settingsModal').style.display = 'flex';
+    }
+    function closeSettings() {
+        document.getElementById('settingsModal').style.display = 'none';
+    }
+
+    // 2. TAB CONTROL
+    function openTab(evt, tabName) {
+        var i, tabcontent, tablinks;
+        tabcontent = document.getElementsByClassName("tab-content");
+        for (i = 0; i < tabcontent.length; i++) { tabcontent[i].style.display = "none"; }
+        tablinks = document.getElementsByClassName("tab-btn");
+        for (i = 0; i < tablinks.length; i++) { tablinks[i].className = tablinks[i].className.replace(" active", ""); }
+        document.getElementById(tabName).style.display = "block";
+        evt.currentTarget.className += " active";
+    }
+
+    // 3. DROPDOWN (Inbox & Notifikasi)
+    function toggleDropdown(id) {
+        var dropdowns = document.getElementsByClassName("dropdown-menu");
+        for (var i = 0; i < dropdowns.length; i++) {
+            if (dropdowns[i].id !== id) {
+                dropdowns[i].classList.remove('show');
+            }
+        }
+        document.getElementById(id).classList.toggle("show");
+    }
+
+    // 4. SUB-MENU INNOVATION
+    function switchInnov(view, element) {
+        document.getElementById('innov-research').style.display = 'none';
+        document.getElementById('innov-trials').style.display = 'none';
+        document.getElementById('innov-tech').style.display = 'none';
+        document.getElementById('innov-pub').style.display = 'none';
+        
+        var radios = document.getElementById('innov-selector').getElementsByClassName('sm-radio');
+        for(var i=0; i<radios.length; i++){ 
+            radios[i].classList.remove('active'); 
+        }
+        
+        document.getElementById('innov-' + view).style.display = 'block';
+        element.classList.add('active');
+    }
+
+    // 5. TOGGLE BORANG CTS & FMS
+    function switchDeptForm(dept, element) {
+        document.getElementById('form-cts').style.display = 'none';
+        document.getElementById('form-fms').style.display = 'none';
+
+        var radios = document.getElementById('dept-selector').getElementsByClassName('sm-radio');
+        for(var i=0; i<radios.length; i++){
+            radios[i].classList.remove('active');
+        }
+
+        document.getElementById('form-' + dept).style.display = 'block';
+        element.classList.add('active');
+    }
+
+    // 6. TOGGLE SIDEBAR
+    function toggleSidebar() {
+        var sidebar = document.getElementById("mySidebar");
+        var logoImg = document.getElementById("logoImg");
+        sidebar.classList.toggle("collapsed");
+        if (sidebar.classList.contains("collapsed")) {
+            logoImg.style.width = "40px";
+        } else {
+            logoImg.style.width = "60px";
+        }
+    }
+
+    // 7. WINDOW ONCLICK (TUTUP DROPDOWN/MODAL LUAR)
+    window.onclick = function(event) {
+        if (!event.target.closest('.dropdown-wrapper') && !event.target.closest('.sidebar-toggle')) {
+            var dropdowns = document.getElementsByClassName("dropdown-menu");
+            for (var i = 0; i < dropdowns.length; i++) {
+                dropdowns[i].classList.remove('show');
+            }
+        }
+        var modal = document.getElementById('settingsModal');
+        if (event.target == modal) {
+            modal.style.display = "none";
+        }
+    }
+
+    // 8. AUTO-RESIZE CARTA PLOTLY BILA SIDEBAR HOVER
+    const staffSidebar = document.getElementById('mySidebar');
+    if (staffSidebar) {
+        staffSidebar.addEventListener('mouseenter', () => {
+            setTimeout(() => { 
+                if (typeof Plotly !== 'undefined') {
+                    Plotly.Plots.resize(document.querySelector('.card-donut .js-plotly-plot'));
+                    Plotly.Plots.resize(document.querySelector('.card-gauge .js-plotly-plot'));
+                    Plotly.Plots.resize(document.querySelector('.card-area .js-plotly-plot'));
+                }
+                window.dispatchEvent(new Event('resize')); 
+            }, 360);
+        });
+        staffSidebar.addEventListener('mouseleave', () => {
+            setTimeout(() => { 
+                if (typeof Plotly !== 'undefined') {
+                    Plotly.Plots.resize(document.querySelector('.card-donut .js-plotly-plot'));
+                    Plotly.Plots.resize(document.querySelector('.card-gauge .js-plotly-plot'));
+                    Plotly.Plots.resize(document.querySelector('.card-area .js-plotly-plot'));
+                }
+                window.dispatchEvent(new Event('resize')); 
+            }, 360);
+        });
+    }
+
+    // 9. SELF COACHING & MICRO LEARNING
+    function openSelfCoachingModal() { document.getElementById('aiSelfCoachingModal').style.display = 'flex'; }
+    function closeSelfCoachingModal() { document.getElementById('aiSelfCoachingModal').style.display = 'none'; }
+    function openMicroLearningModal() { document.getElementById('microLearningModal').style.display = 'flex'; goMicroStep(1); }
+    function closeMicroLearningModal() { document.getElementById('microLearningModal').style.display = 'none'; }
+    
+    function goMicroStep(stepNum) {
+        document.getElementById('microStep1').style.display = stepNum === 1 ? 'block' : 'none';
+        document.getElementById('microStep2').style.display = stepNum === 2 ? 'block' : 'none';
+        document.getElementById('microStep3').style.display = stepNum === 3 ? 'block' : 'none';
+        document.getElementById('microStepSuccess').style.display = 'none';
+        document.getElementById('microStepBadge').innerText = 'Step ' + stepNum + ' of 3';
+    }
+
+    function submitMicroQuiz() {
+        var selected = document.querySelector('input[name="microQuiz"]:checked');
+        if (!selected) {
+            alert('Please select an answer to complete the quiz.');
+            return;
+        }
+        if (selected.value === 'E11.9') {
+            document.getElementById('microStep3').style.display = 'none';
+            document.getElementById('microStepSuccess').style.display = 'block';
+            document.getElementById('microStepBadge').innerText = 'Completed';
+        } else {
+            alert('Incorrect code selected. Hint: E11.9 represents Type 2 Diabetes without complications.');
+        }
+    }
+
+    // 10. AURA-PULSE AI FLOATING CHATBOT
+    function toggleAuraPulse() {
+        var chat = document.getElementById('auraChatWindow');
+        chat.style.display = (chat.style.display === 'flex') ? 'none' : 'flex';
+    }
+
+    function quickAskAura(text) {
+        document.getElementById('auraInput').value = text;
+        sendAuraMessage();
+    }
+
+    function sendAuraMessage() {
+        var input = document.getElementById('auraInput');
+        var msg = input.value.trim();
+        if (!msg) return;
+
+        var body = document.getElementById('auraChatBody');
+        var userDiv = document.createElement('div');
+        userDiv.className = 'aura-msg user';
+        userDiv.innerText = msg;
+        body.appendChild(userDiv);
+        input.value = '';
+
+        setTimeout(function() {
+            var botDiv = document.createElement('div');
+            botDiv.className = 'aura-msg bot';
+            
+            var lowerMsg = msg.toLowerCase();
+            if (lowerMsg.includes('coding') || lowerMsg.includes('velocity')) {
+                botDiv.innerHTML = "<b>AURA-Pulse:</b> To clear your <i>Clinical Coding</i> backlog, use the batch matrix in the <b>Operational</b> tab. Completing 4 entries today will elevate your score to <b>>80% Target</b>.";
+            } else if (lowerMsg.includes('cpg') || lowerMsg.includes('diabetes')) {
+                botDiv.innerHTML = "<b>AURA-Pulse:</b> According to <b>T2DM CPG 2026</b>, periodic retinal screening referrals are mandatory every 12 months for stable patients, or immediately if HbA1c > 8.5%.";
+            } else {
+                botDiv.innerHTML = "<b>AURA-Pulse:</b> I have recorded your query. The system is synchronizing your 3-Pillar data in the background.";
+            }
+
+            body.appendChild(botDiv);
+            body.scrollTop = body.scrollHeight;
+        }, 600);
+
+        body.scrollTop = body.scrollHeight;
+    }
+
+    // 11. SCHEDULE & CALENDAR MODAL
+    function openScheduleModal() {
+        document.getElementById('scheduleModal').style.display = 'flex';
+        switchCalView('month');
+    }
+
+    function closeScheduleModal() {
+        document.getElementById('scheduleModal').style.display = 'none';
+    }
+
+    function switchCalView(view) {
+        var mArea = document.getElementById('calAreaMonth');
+        var lArea = document.getElementById('calAreaList');
+        var aArea = document.getElementById('calAreaAdd');
+
+        var btnM = document.getElementById('tabCalMonth');
+        var btnL = document.getElementById('tabCalList');
+        var btnA = document.getElementById('tabCalAdd');
+
+        mArea.style.display = view === 'month' ? 'flex' : 'none';
+        lArea.style.display = view === 'list' ? 'block' : 'none';
+        aArea.style.display = view === 'add' ? 'block' : 'none';
+
+        btnM.style.background = view === 'month' ? '#be123c' : 'transparent';
+        btnM.style.color = view === 'month' ? 'white' : '#881337';
+        btnM.style.borderColor = view === 'month' ? '#be123c' : 'transparent';
+
+        btnL.style.background = view === 'list' ? '#be123c' : 'transparent';
+        btnL.style.color = view === 'list' ? 'white' : '#881337';
+        btnL.style.borderColor = view === 'list' ? '#be123c' : 'transparent';
+
+        btnA.style.background = view === 'add' ? '#be123c' : 'transparent';
+        btnA.style.color = view === 'add' ? 'white' : '#881337';
+        btnA.style.borderColor = view === 'add' ? '#be123c' : 'transparent';
+    }
+
+    // 12. INLINE GOOGLE-STYLE SEARCH SCRIPT & INDEX
+    const myPrestasiModules = [
+        { title: "Clinical Delivery (CUSUM Log)", category: "Clinical Excellence", keywords: "cusum procedure lima-lad clinical skills surgery preclerking", url: "/staff/?section=Clinical" },
+        { title: "Knowledge & Competency (CPD Claims)", category: "Clinical Excellence", keywords: "cpd cme points workshop quiz test marks claim", url: "/staff/?section=Clinical" },
+        { title: "Adherence to Policies & Protocols (SOP)", category: "Clinical Excellence", keywords: "sop policy compliance diabetes audit checklist cpg self assessment", url: "/staff/?section=Clinical" },
+        { title: "Clinical Documentation Monitoring", category: "Clinical Excellence", keywords: "documentation eEHR records patient history delay justification", url: "/staff/?section=Clinical" },
+        { title: "Productivity & Workload Efficiency", category: "Operational Output", keywords: "productivity clearance consult time punctuality workload wisn", url: "/staff/?section=Operational" },
+        { title: "Innovation & Problem Solving", category: "Operational Output", keywords: "innovation research nmrr project idea adaptation journal trials", url: "/staff/?section=Operational" },
+        { title: "Patient Satisfaction (MyPSQ Analytics)", category: "Interpersonal Excellence", keywords: "mypsq patient feedback experience survey qr code rating standee", url: "/staff/?section=Interpersonal" },
+        { title: "Stress Management & Emotional Intelligence", category: "Interpersonal Excellence", keywords: "stress emotional intelligence ei reflection self awareness burnout resilience", url: "/staff/?section=Interpersonal" },
+        { title: "Teamwork & Collaboration (Peer Kudos)", category: "Interpersonal Excellence", keywords: "teamwork kudos points peers peer-to-peer appreciation endorsement karma", url: "/staff/?section=Interpersonal" },
+        { title: "Training & Mentorship", category: "Interpersonal Excellence", keywords: "mentorship mentor mentee junior ho young mo training leadership coaching", url: "/staff/?section=Interpersonal" },
+        { title: "AI Self-Coaching Hub & Remediation Plan", category: "AI Analytics", keywords: "coaching remediation ai diagnostic aura pulse risk tier", url: "/staff/?section=Coaching" },
+        { title: "My Performance & Spider Web Benchmark", category: "Analytics", keywords: "performance radar spider benchmark composite score pri promotion", url: "/staff/?section=Performance" },
+        { title: "System Preferences & Settings", category: "Account", keywords: "settings language timezone dark mode preferences", url: "/staff/?section=Settings" },
+        { title: "My Account Profile", category: "Account", keywords: "profile account user details email password mmc id", url: "/staff/?section=Profile" }
+    ];
+
+    function showInlineSuggestions() {
+        filterInlineSuggestions();
+    }
+
+    function filterInlineSuggestions() {
+        const input = document.getElementById('inlineSearchInput');
+        if (!input) return;
+        const query = input.value.toLowerCase().trim();
+        const dropdown = document.getElementById('inlineSuggestionsDropdown');
+        const clearBtn = document.getElementById('clearSearchBtn');
+        const box = document.getElementById('inlineSearchBox');
+
+        if (clearBtn) clearBtn.style.display = query.length > 0 ? 'inline' : 'none';
+
+        if (query.length === 0) {
+            if (dropdown) dropdown.style.display = 'none';
+            if (box) box.style.borderColor = '#ffe4e6';
+            return;
+        }
+
+        const filtered = myPrestasiModules.filter(item => 
+            item.title.toLowerCase().includes(query) || 
+            item.category.toLowerCase().includes(query) || 
+            item.keywords.toLowerCase().includes(query)
+        );
+
+        if (!dropdown) return;
+        dropdown.innerHTML = '';
+
+        if (filtered.length === 0) {
+            dropdown.innerHTML = `<div style="text-align: center; padding: 15px; color: #f43f5e; font-size: 12px; font-weight: 700;">No matching modules found for "${query}"</div>`;
+        } else {
+            filtered.forEach(item => {
+                const el = document.createElement('a');
+                el.href = item.url;
+                el.style.cssText = 'display: flex; align-items: center; justify-content: space-between; padding: 10px 12px; border-radius: 8px; text-decoration: none; margin-bottom: 4px; transition: all 0.15s ease; background: white;';
+                el.onmouseover = () => { el.style.background = '#fff1f2'; };
+                el.onmouseout = () => { el.style.background = 'white'; };
+
+                el.innerHTML = `
+                    <div style="display: flex; align-items: center; gap: 10px; overflow: hidden;">
+                        <svg style="width: 14px; height: 14px; color: #be123c; flex-shrink: 0;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+                        <div style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                            <div style="font-size: 12.5px; font-weight: 800; color: #881337;">${item.title}</div>
+                            <div style="font-size: 10px; font-weight: 700; color: #f43f5e; text-transform: uppercase;">${item.category}</div>
+                        </div>
+                    </div>
+                    <span style="font-size: 10px; font-weight: 800; color: #be123c; background: #fff1f2; padding: 2px 8px; border-radius: 6px; flex-shrink: 0; margin-left: 6px;">Open ➔</span>
+                `;
+                dropdown.appendChild(el);
+            });
+        }
+
+        dropdown.style.display = 'block';
+        if (box) box.style.borderColor = '#be123c';
+    }
+
+    function clearInlineSearch() {
+        const input = document.getElementById('inlineSearchInput');
+        if (input) {
+            input.value = '';
+            filterInlineSuggestions();
+            input.focus();
+        }
+    }
+
+    document.addEventListener('click', function(e) {
+        const container = document.querySelector('.inline-search-container');
+        const dropdown = document.getElementById('inlineSuggestionsDropdown');
+        const box = document.getElementById('inlineSearchBox');
+        
+        if (container && !container.contains(e.target)) {
+            if (dropdown) dropdown.style.display = 'none';
+            if (box) box.style.borderColor = '#ffe4e6';
+        }
+    });
+
+    // ==========================================
+    // PREVENT DOUBLE-SUBMIT (DATABASE LOCKING PROTECTION)
+    // ==========================================
+    document.addEventListener('submit', function(e) {
+        if (e.target && e.target.nodeName === 'FORM') {
+            var submitBtn = e.target.querySelector('button[type="submit"]');
+            if (submitBtn) {
+                // Matikan butang serta-merta dan paparkan indikator animasi
+                submitBtn.disabled = true;
+                submitBtn.style.opacity = '0.7';
+                submitBtn.style.cursor = 'not-allowed';
+                submitBtn.innerHTML = '<svg style="width:18px; height:18px; animation:spin 1s linear infinite; display:inline-block; vertical-align:middle; margin-right:6px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg> Menyimpan rekod...';
+            }
+        }
+    });
+</script>
+
+<style>
+    /* Animasi putaran spinner */
+    @keyframes spin { 
+        100% { transform: rotate(360deg); } 
+    }
+</style>
