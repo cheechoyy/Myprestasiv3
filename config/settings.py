@@ -135,8 +135,11 @@ REST_FRAMEWORK = {
     ],
 }
 
-# Paksa pengguna log keluar apabila browser ditutup
-SESSION_EXPIRE_AT_BROWSER_CLOSE = True
+# Matikan auto-logout saat browser ditutup selama masa development
+SESSION_EXPIRE_AT_BROWSER_CLOSE = False
 
-# (Pilihan Tambahan) Tamatkan sesi secara automatik jika dibiarkan terlalu lama (cth: 300 saat = 5 minit)
-SESSION_COOKIE_AGE = 3600 
+# Perpanjang durasi sesi hingga 30 hari (30 hari * 24 jam * 3600 detik)
+SESSION_COOKIE_AGE = 60 * 60 * 24 * 30
+
+# Perbarui masa aktif sesi secara otomatis setiap kali ada interaksi/request
+SESSION_SAVE_EVERY_REQUEST = True 

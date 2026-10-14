@@ -91,6 +91,52 @@ def logout_view(request):
         del request.session['role']
     return redirect('login')
 
+def register_view(request):
+    """
+    Paparan Pendaftaran Pengguna Baharu.
+    Secara lalai (default), pengguna baru akan didaftarkan sebagai STAFF.
+    Admin HPU boleh menukar role mereka di HPU Dashboard nanti.
+    """
+    # Jika sudah log masuk, tendang ke home
+    if request.user.is_authenticated:
+        return redirect('landing_page')
+
+    if request.method == 'POST':
+        user_ic = request.POST.get('username', '').strip() # Guna IC/ID sebagai username
+        email = request.POST.get('email', '').strip()
+        first_name = request.POST.get('first_name', '').strip()
+        last_name = request.POST.get('last_name', '').strip()
+        department = request.POST.get('department', 'FMS')
+        password = request.POST.get('password', '')
+        confirm_password = request.POST.get('confirm_password', '')
+
+        # Validasi asas
+        if password != confirm_password:
+            messages.error(request, "❌ Passwords do not match!")
+            return redirect('register')
+        
+        if User.objects.filter(username=user_ic).exists():
+            messages.error(request, "❌ User ID or IC Number is already registered.")
+            return redirect('register')
+
+        # 1. Cipta Akaun User (Bawaan Django)
+        new_user = User.objects.create_user(username=user_ic, email=email, password=password)
+        new_user.first_name = first_name
+        new_user.last_name = last_name
+        new_user.save()
+
+        # 2. Cipta UserProfile dan sambungkan dengan DB MyPrestasi (Set as STAFF default)
+        UserProfile.objects.create(
+            user=new_user, 
+            role='STAFF', 
+            department=department
+        )
+
+        messages.success(request, "✅ Registration successful! Your account has been registered as Staff. Please login.")
+        return redirect('login')
+
+    return render(request, 'dashboard/register.html')
+
 
 # ---LOGIK ADMIN DASHBOARD ---
 @login_required(login_url='/login/')

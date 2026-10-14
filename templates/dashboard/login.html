@@ -170,7 +170,7 @@
                             <input type="checkbox" class="w-5 h-5 rounded border-slate-300 text-rose-600 focus:ring-rose-500 cursor-pointer">
                             <span class="text-base font-bold text-slate-600 group-hover:text-slate-800 transition-colors">Remember Me</span>
                         </label>
-                        <a href="#" class="text-base font-bold text-rose-600 hover:text-rose-800 transition-colors">Forgot Password?</a>
+                        <a href="{% url 'password_reset' %}" class="text-base font-bold text-rose-600 hover:text-rose-800 transition-colors">Forgot Password?</a>
                     </div>
 
                     <div class="pt-6">
@@ -178,6 +178,14 @@
                             LOGIN
                             <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>
                         </button>
+                    </div>
+
+                    <!-- TAUTAN REGISTER BARU -->
+                    <div class="text-center pt-3">
+                        <p class="text-sm lg:text-base font-semibold text-slate-500">
+                            Don't have an account? 
+                            <a href="{% url 'register' %}" class="font-bold text-rose-600 hover:text-rose-800 transition-colors ml-1 underline decoration-rose-300 underline-offset-4">Register here</a>
+                        </p>
                     </div>
                 </form>
             </div>

@@ -1,0 +1,111 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="ms">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Daftar Akaun - MyPrestasi</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <style>
+        body { margin: 0; font-family: 'Inter', sans-serif; display: flex; height: 100vh; background-color: #fff1f2; }
+        .split-left { width: 45%; background: linear-gradient(135deg, #fff5f5 0%, #fecdd3 100%); display: flex; justify-content: center; align-items: center; padding: 40px; position: relative; overflow: hidden;}
+        .split-right { width: 55%; background: white; display: flex; justify-content: center; align-items: center; padding: 40px; }
+        .login-box { width: 100%; max-width: 450px; }
+        
+        .input-group { margin-bottom: 20px; }
+        .input-group label { display: block; font-size: 11px; font-weight: 800; color: #881337; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px;}
+        .input-group input, .input-group select { width: 100%; padding: 14px 16px; border-radius: 10px; border: 1px solid #ffe4e6; background: #f8fafc; font-family: 'Inter'; font-size: 14px; color: #881337; font-weight: 600; box-sizing: border-box; transition: 0.2s; }
+        .input-group input:focus, .input-group select:focus { outline: none; border-color: #be123c; background: white; box-shadow: 0 0 0 3px rgba(190, 18, 60, 0.1); }
+        
+        .btn-submit { width: 100%; background: #be123c; color: white; border: none; padding: 16px; border-radius: 10px; font-weight: 800; font-size: 15px; cursor: pointer; transition: 0.3s; margin-top: 10px; box-shadow: 0 4px 15px rgba(190, 18, 60, 0.2); }
+        .btn-submit:hover { background: #881337; transform: translateY(-2px); }
+        
+        .link-text { color: #be123c; font-size: 13px; font-weight: 700; text-decoration: none; transition: 0.2s; }
+        .link-text:hover { color: #881337; text-decoration: underline; }
+
+        @media (max-width: 768px) {
+            body { flex-direction: column; }
+            .split-left { display: none; } /* Sembunyikan gambar kiri di fon */
+            .split-right { width: 100%; height: 100vh; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="split-left">
+        <!-- Anda boleh letak imej logo yang sama seperti di halaman login -->
+        <div style="text-align: center; z-index: 2;">
+            <img src="{% static 'images/myprestasi-logo-nobg.png' %}" alt="Logo" style="width: 180px; filter: drop-shadow(0 4px 10px rgba(190,18,60,0.1)); margin-bottom: 20px;">
+            <h1 style="color: #881337; font-weight: 900; margin: 0; font-size: 32px; letter-spacing: -1px;">MYPRESTASI</h1>
+            <p style="color: #be123c; font-weight: 700; font-size: 13px; letter-spacing: 1px; text-transform: uppercase;">MOH Facility Evaluation & Registration Portal</p>
+        </div>
+    </div>
+
+    <div class="split-right">
+        <div class="login-box">
+            <h1 style="color: #881337; font-weight: 900; font-size: 32px; margin: 0 0 5px 0;">Create Account</h1>
+            <p style="color: #64748b; font-size: 14px; margin: 0 0 30px 0; font-weight: 500;">Register to access your healthcare facility performance portal.</p>
+
+            {% if messages %}
+                {% for message in messages %}
+                    <div style="background: #fee2e2; color: #991b1b; padding: 12px; border-radius: 8px; margin-bottom: 20px; font-size: 13px; font-weight: 600; border: 1px solid #fecaca;">
+                        {{ message }}
+                    </div>
+                {% endfor %}
+            {% endif %}
+
+            <form method="POST">
+                {% csrf_token %}
+                <div style="display: flex; gap: 15px;">
+                    <div class="input-group" style="flex: 1;">
+                        <label>First Name</label>
+                        <input type="text" name="first_name" required>
+                    </div>
+                    <div class="input-group" style="flex: 1;">
+                        <label>Last Name</label>
+                        <input type="text" name="last_name" required>
+                    </div>
+                </div>
+
+                <div class="input-group">
+                    <label>User ID / IC Number <span style="color:red;">*</span></label>
+                    <input type="text" name="username" required placeholder="Cth: 901201015566">
+                </div>
+
+                <div class="input-group">
+                    <label>Official Email</label>
+                    <input type="email" name="email" placeholder="Cth: ali@moh.gov.my">
+                </div>
+
+                <div class="input-group">
+                    <label>Department / Specialty</label>
+                    <select name="department">
+                        <option value="FMS">Family Medicine Specialist (FMS)</option>
+                        <option value="CTS">Cardiothoracic Surgery (CTS)</option>
+                        <option value="PEDS">Pediatrics</option>
+                        <option value="ONG">Obstetrics & Gynaecology</option>
+                    </select>
+                </div>
+
+                <div style="display: flex; gap: 15px;">
+                    <div class="input-group" style="flex: 1;">
+                        <label>Password <span style="color:red;">*</span></label>
+                        <input type="password" name="password" required>
+                    </div>
+                    <div class="input-group" style="flex: 1;">
+                        <label>Confirm Password <span style="color:red;">*</span></label>
+                        <input type="password" name="confirm_password" required>
+                    </div>
+                </div>
+
+                <button type="submit" class="btn-submit">REGISTER ACCOUNT ➔</button>
+                
+                <div style="text-align: center; margin-top: 25px; font-size: 13px; font-weight: 600; color: #64748b;">
+                    Already have an account? <a href="{% url 'login' %}" class="link-text">Login here</a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+</body>
+</html>

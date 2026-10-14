@@ -1,6 +1,7 @@
 from django.contrib import admin
 from django.urls import path
 from dashboard import views
+from django.contrib.auth import views as auth_views
 
 urlpatterns = [
     path('admin/', admin.site.urls),
@@ -31,4 +32,9 @@ urlpatterns = [
     path('insights/officers-directory/', views.officers_directory_insight_view, name='officers_directory_insight'),
     
     path('logout/', views.logout_view, name='logout'),
+    path('register/', views.register_view, name='register'),
+    
+    # --- SISTEM FORGOT PASSWORD DJANGO ---
+    path('password-reset/', auth_views.PasswordResetView.as_view(template_name='dashboard/password_reset.html'), name='password_reset'),
+    path('password-reset/done/', auth_views.PasswordResetDoneView.as_view(template_name='dashboard/password_reset_done.html'), name='password_reset_done'),
 ]
