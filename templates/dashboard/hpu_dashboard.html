@@ -1,3 +1,4 @@
+{% load static %}
 <!DOCTYPE html>
 <html lang="ms">
 <head>
@@ -34,400 +35,814 @@
         }
     </script>
     <style>
+        /* ================================================================== */
+        /* 01. DESIGN TOKENS (same as Staff Portal)                           */
+        /* ================================================================== */
         :root {
             --portal-blue: #150a35;
-            --portal-accent: #6d3ec4;
             --portal-lavender: #a577ff;
+            --portal-ghost: #f5f7fc;
+            --portal-accent: #6d3ec4;
+            --portal-accent-hover: #5528a6;
+            --portal-ink: #150a35;
             --portal-muted: #726585;
             --portal-border: #e7e1f0;
+            --portal-surface: #ffffff;
+            --portal-soft: #f3edff;
+            --portal-shadow: 0 4px 18px rgba(21, 10, 53, .045);
+            --portal-sidebar-width: 80px;
+            --portal-sidebar-expanded: 264px;
+            --portal-topbar-height: 76px;
+        }
+        *, *::before, *::after { box-sizing: border-box; }
+        html { width: 100%; min-height: 100%; }
+        body {
+            margin: 0;
+            font-family: 'Inter', system-ui, sans-serif;
+            width: 100%; height: 100vh; height: 100dvh;
+            overflow: hidden;
+            background: var(--portal-ghost);
+            background-image: radial-gradient(ellipse at 92% 0%, rgba(165,119,255,.075), transparent 44%);
+            color: var(--portal-ink);
+            -webkit-font-smoothing: antialiased;
+        }
+        body.sidebar-open { --portal-sidebar-width: var(--portal-sidebar-expanded); }
+        ::selection { background: #dccbff; color: var(--portal-blue); }
+        button, input, select, textarea { font: inherit; }
+        button, a, input, select, textarea { -webkit-tap-highlight-color: transparent; accent-color: var(--portal-accent); }
+        button:focus-visible, a:focus-visible, [role="button"]:focus-visible {
+            outline: 3px solid var(--portal-lavender); outline-offset: 3px;
         }
 
-        .hpu-canvas {
-            background-color: #f3edff;
-            background-image: url("data:image/svg+xml,%3Csvg width='12' height='12' viewBox='0 0 12 12' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M0 0h12v12H0z' fill='none'/%3E%3Cpath d='M0 12L12 0M0 0l12 12' stroke='%23d8c7f4' stroke-width='0.6' stroke-opacity='0.45'/%3E%3C/svg%3E");
-            color: var(--portal-blue);
+        /* ================================================================== */
+        /* 02. SIDEBAR (dark rail, opened and closed by the menu button)      */
+        /* ================================================================== */
+        .sidebar {
+            width: var(--portal-sidebar-width);
+            height: 100vh; height: 100dvh;
+            position: fixed; top: 0; left: 0;
+            padding: 22px 14px 20px;
+            display: flex; flex-direction: column;
+            overflow-x: hidden; overflow-y: auto;
+            background: linear-gradient(180deg, #150a35 0%, #201243 100%);
+            border-right: 1px solid rgba(165,119,255,.16);
+            z-index: 1200;
+            scrollbar-width: thin; scrollbar-color: #5b4380 #150a35;
+        }
+        .sidebar-brand-row { display: flex; align-items: center; gap: 8px; margin-bottom: 24px; min-height: 42px; }
+        .sidebar .hide-on-collapse { opacity: 0; visibility: hidden; pointer-events: none; white-space: nowrap; }
+        body.sidebar-open .sidebar .hide-on-collapse { opacity: 1; visibility: visible; pointer-events: auto; }
+        .sidebar-section-title {
+            font-size: 10px; font-weight: 800; color: #b4a1cf;
+            text-transform: uppercase; letter-spacing: 1.35px;
+            margin: 20px 0 12px 4px;
         }
 
-        .hpu-canvas .rounded-3xl {
-            border-color: var(--portal-border);
-            border-radius: 12px;
-            box-shadow: 0 2px 6px rgba(16, 24, 40, 0.04);
+        .nav-btn {
+            display: flex; align-items: center; gap: 12px;
+            width: 100%; min-height: 46px; padding: 12px 14px; margin-bottom: 6px;
+            border: 1px solid transparent; border-radius: 11px;
+            background: transparent; color: #ded6ed;
+            font-size: 13px; font-weight: 550; text-decoration: none;
+            overflow: hidden;
+        }
+        .nav-btn:hover { background: rgba(165,119,255,.13); border-color: rgba(165,119,255,.15); color: #fff; }
+        .nav-btn.active {
+            background: var(--portal-lavender); color: var(--portal-blue);
+            border-color: var(--portal-lavender); font-weight: 700;
+            box-shadow: 0 4px 14px rgba(0,0,0,.1);
+        }
+        .nav-icon { width: 22px; min-width: 22px; display: flex; justify-content: center; align-items: center; flex-shrink: 0; }
+        .nav-icon svg { width: 20px; height: 20px; display: block; }
+
+        /* Overall statistics: same rail item, number + label */
+        .nav-stat { padding-top: 10px; padding-bottom: 10px; }
+        .nav-stat-text { min-width: 0; }
+        .nav-stat-text h3 { margin: 0; color: #fff; font-size: 15px; font-weight: 800; line-height: 1.25; font-variant-numeric: tabular-nums; }
+        .nav-stat-text p { margin: 2px 0 0; color: #b4a1cf; font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: .4px; }
+        .nav-stat .nav-icon { color: #c8b6e8; }
+        .nav-stat:hover .nav-icon { color: #fff; }
+
+        .sidebar-bottom { margin-top: auto; padding-top: 16px; display: flex; flex-direction: column; gap: 0; }
+        .btn-logout {
+            display: flex; align-items: center; gap: 12px;
+            min-height: 46px; padding: 12px 14px;
+            background: rgba(165,119,255,.08); color: #d9c6ff;
+            border: 1px solid rgba(165,119,255,.2); border-radius: 11px;
+            font-size: 13px; font-weight: 600; text-decoration: none; overflow: hidden;
+        }
+        .btn-logout:hover { background: rgba(165,119,255,.17); }
+
+        .sidebar-toggle {
+            width: 42px; height: 42px; flex-shrink: 0;
+            display: inline-flex; align-items: center; justify-content: center;
+            border: 1px solid var(--portal-border); border-radius: 10px;
+            background: white; color: #5f5278; cursor: pointer;
+        }
+        .sidebar-toggle:hover, .sidebar-toggle[aria-expanded="true"] { background: var(--portal-soft); border-color: #d8c7f4; color: var(--portal-accent); }
+        .sidebar-toggle svg { width: 21px; height: 21px; }
+        .sidebar-toggle-rail { background: transparent; border-color: rgba(165,119,255,.25); color: #ded6ed; }
+        .sidebar-toggle-rail:hover { background: rgba(165,119,255,.15); border-color: rgba(165,119,255,.4); color: #fff; }
+        .sidebar-close {
+            display: none; flex-shrink: 0; width: 30px; height: 32px;
+            align-items: center; justify-content: center;
+            background: transparent; color: #d7c9ec; border: 0; border-radius: 7px; cursor: pointer;
+        }
+        body.sidebar-open .sidebar-close { display: flex; }
+        .sidebar-close:hover { color: #fff; background: rgba(165,119,255,.16); }
+        .sidebar-close svg { width: 18px; height: 18px; }
+        .sidebar-backdrop { display: none; position: fixed; inset: 0; background: rgba(21,10,53,.45); backdrop-filter: blur(3px); z-index: 1150; }
+
+        /* ================================================================== */
+        /* 03. TOPBAR (logo, schedule, search, inbox, alerts, profile, tabs)  */
+        /* ================================================================== */
+        .portal-topbar {
+            position: fixed; top: 0; left: var(--portal-sidebar-width); right: 0;
+            z-index: 1100; background: #fff;
+            border-bottom: 1px solid var(--portal-border);
+            box-shadow: 0 3px 15px rgba(21,10,53,.035);
+        }
+        .topbar-main { height: 76px; display: flex; align-items: center; gap: 20px; padding: 0 28px; min-width: 0; }
+        .topbar-leading { display: flex; align-items: center; gap: 14px; flex-shrink: 0; }
+        .topbar-logo { display: flex; align-items: center; flex-shrink: 0; text-decoration: none; }
+        .topbar-logo img { width: 36px; height: auto; display: block; }
+        .topbar-brand { line-height: 1.3; min-width: 0; }
+        .topbar-brand strong { display: block; font-size: 15px; font-weight: 800; letter-spacing: -.45px; color: var(--portal-blue); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .topbar-brand span { display: block; margin-top: 3px; font-size: 10px; color: var(--portal-muted); text-transform: uppercase; letter-spacing: .6px; }
+
+        .top-header-right { display: flex; align-items: center; gap: 10px; min-width: 0; flex: 1; justify-content: flex-end; }
+        .header-tool {
+            min-height: 40px; display: flex; align-items: center; gap: 6px;
+            padding: 9px 11px; background: white;
+            border: 1px solid var(--portal-border); border-radius: 10px;
+            font-size: 11px; font-weight: 600; color: #5f5278; white-space: nowrap;
+        }
+        .header-schedule { cursor: pointer; }
+        .header-schedule:hover { border-color: #d8c7f4; background: var(--portal-soft); }
+        .header-schedule svg { width: 16px; height: 16px; color: var(--portal-accent); flex-shrink: 0; }
+        .header-badge {
+            background: var(--portal-accent); color: white; border-radius: 50%;
+            width: 18px; height: 18px; font-size: 10px; font-weight: 800;
+            display: inline-flex; align-items: center; justify-content: center;
         }
 
-        .hpu-canvas h1 {
-            color: var(--portal-blue);
-            font-size: clamp(22px, 2vw, 28px);
-            font-weight: 400;
-            letter-spacing: -0.7px;
+        .inline-search-container { position: relative; order: -1; flex: 1; min-width: 150px; max-width: 320px; }
+        #inlineSearchBox {
+            display: flex; align-items: center; min-height: 40px; padding: 6px 14px;
+            background: var(--portal-ghost); border: 1px solid var(--portal-border); border-radius: 10px;
+        }
+        #inlineSearchBox:focus-within { border-color: var(--portal-lavender) !important; }
+        #inlineSearchBox > svg { width: 16px; height: 16px; color: var(--portal-accent); flex-shrink: 0; margin-right: 8px; }
+        #inlineSearchInput {
+            width: 100%; min-width: 0; padding: 2px 0; border: none; outline: none; background: transparent;
+            font-family: 'Inter', system-ui, sans-serif; font-size: 12px; font-weight: 500; color: var(--portal-ink);
+        }
+        #inlineSearchInput::placeholder { color: #857796; opacity: 1; }
+        #clearSearchBtn { display: none; cursor: pointer; color: var(--portal-muted); font-size: 12px; font-weight: 800; margin-left: 6px; }
+        #inlineSuggestionsDropdown {
+            display: none; position: absolute; top: 115%; left: 0;
+            width: min(380px, calc(100vw - 32px)); max-height: min(360px, 55dvh); overflow-y: auto;
+            background: white; border: 1px solid var(--portal-border); border-radius: 14px;
+            box-shadow: 0 14px 35px rgba(21,10,53,.12); z-index: 9999; padding: 8px;
         }
 
-        .hpu-canvas h2 {
-            color: var(--portal-blue);
-            font-weight: 700;
+        .icon-btn {
+            width: 40px; height: 40px; position: relative;
+            display: flex; justify-content: center; align-items: center;
+            background: white; border: 1px solid var(--portal-border); border-radius: 10px;
+            color: #5f5278; cursor: pointer;
+        }
+        .icon-btn:hover { color: var(--portal-accent); background: var(--portal-soft); border-color: #d8c7f4; }
+        .icon-btn svg { width: 18px; height: 18px; }
+        .notif-dot { position: absolute; top: 6px; right: 8px; width: 8px; height: 8px; background: #ff4b4b; border-radius: 50%; border: 2px solid white; }
+        .header-avatar {
+            width: 38px; height: 38px; flex-shrink: 0; border-radius: 50%;
+            display: flex; justify-content: center; align-items: center;
+            background: linear-gradient(145deg, #7948d0 0%, #5528a6 100%); color: white;
+            box-shadow: 0 3px 9px rgba(109,62,196,.13); cursor: pointer;
+        }
+        .header-avatar svg { width: 20px; height: 20px; }
+
+        .dropdown-wrapper { position: relative; display: inline-block; }
+        .dropdown-menu {
+            display: none; position: absolute; top: 50px; right: 0;
+            width: min(320px, calc(100vw - 32px));
+            background: white; border: 1px solid var(--portal-border); border-radius: 14px;
+            box-shadow: 0 14px 35px rgba(21,10,53,.12);
+            z-index: 1000; overflow: hidden; text-align: left;
+        }
+        .dropdown-menu.show { display: block; animation: fadeIn 0.2s; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
+        .dropdown-header { padding: 15px; border-bottom: 1px solid var(--portal-border); font-weight: 800; color: var(--portal-blue); background: var(--portal-soft); font-size: 13px; }
+        .dropdown-item { padding: 15px; border-bottom: 1px solid var(--portal-soft); font-size: 12px; color: #64748b; cursor: pointer; transition: 0.2s; }
+        .dropdown-item:hover { background: var(--portal-ghost); }
+        .dropdown-item:last-child { border-bottom: none; }
+        .dropdown-item strong { color: var(--portal-blue); font-size: 13px; display: block; margin-bottom: 3px; }
+        .dropdown-item .time { float: right; font-size: 10px; color: var(--portal-accent); font-weight: 700; }
+
+        .topbar-sections {
+            display: flex; align-items: stretch; gap: 24px; padding: 0 28px;
+            height: 48px; overflow-x: auto; scrollbar-width: thin;
+            border-top: 1px solid #f1edf7; white-space: nowrap;
+        }
+        .topbar-link {
+            display: inline-flex; align-items: center; min-height: 44px; flex-shrink: 0;
+            border-bottom: 2px solid transparent; text-decoration: none;
+            font-size: 12px; font-weight: 600; color: var(--portal-muted);
+        }
+        .topbar-link:hover { color: var(--portal-accent); }
+        .topbar-link.is-current { color: var(--portal-accent); border-bottom: 3px solid var(--portal-lavender); font-weight: 700; }
+
+        /* ================================================================== */
+        /* 04. MAIN CONTENT, PAGE HEADER, MESSAGES, FOOTER                    */
+        /* ================================================================== */
+        .main-content {
+            margin-left: var(--portal-sidebar-width);
+            height: 100vh; height: 100dvh; min-width: 0;
+            padding: calc(var(--portal-topbar-height) + 28px) 28px 90px;
+            overflow-y: auto; overflow-x: hidden;
+            display: flex; flex-direction: column;
+            container-type: inline-size; container-name: portal;
+            scrollbar-width: thin;
+        }
+        .main-content > * { flex-shrink: 0; max-width: 100%; }
+        .main-content div { min-width: 0; }
+
+        .page-header { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; flex-wrap: wrap; margin-bottom: 26px; }
+        .page-header h1 { margin: 0; color: var(--portal-blue); font-size: clamp(22px, 2vw, 28px); font-weight: 750; letter-spacing: -.7px; line-height: 1.3; }
+        .page-header p { margin: 7px 0 0; color: var(--portal-muted); font-size: 12px; font-weight: 400; line-height: 1.6; }
+        .hod-identity {
+            text-align: right; background: white;
+            border: 1px solid var(--portal-border); border-radius: 12px;
+            padding: 9px 14px; box-shadow: 0 2px 6px rgba(21,10,53,.025);
+        }
+        .hod-identity-name { font-size: 14px; font-weight: 800; color: var(--portal-blue); text-transform: capitalize; }
+        .hod-identity-role { font-size: 11px; font-weight: 600; color: var(--portal-muted); margin-top: 2px; }
+
+        .portal-message { background: #d4edda; color: #155724; padding: 15px; border-radius: 10px; margin-bottom: 20px; border: 1px solid #c3e6cb; font-size: 14px; font-weight: 500; }
+
+        .custom-footer {
+            position: fixed; left: var(--portal-sidebar-width); right: 0; bottom: 0; z-index: 900;
+            background: var(--portal-ghost); color: #80738f;
+            border-top: 1px solid var(--portal-border);
+            text-align: center; padding: 11px 20px; font-size: 10px; line-height: 1.4;
         }
 
-        .hpu-canvas input,
-        .hpu-canvas select {
-            border-color: #e0d6f0;
-            border-radius: 8px;
-            border-width: 1px;
-            background-color: #fff;
+        /* ================================================================== */
+        /* 05. HPU SIDEBAR BUTTONS                                            */
+        /*     switchTab() rewrites the Tailwind classes of .nav-item, so the  */
+        /*     Staff look is applied here by id (stronger than Tailwind).      */
+        /* ================================================================== */
+        :root { --portal-topbar-height: 76px; }
+        #mySidebar .nav-item {
+            display: flex !important; align-items: center !important; gap: 12px !important;
+            width: 100% !important; min-height: 46px; margin: 0 0 6px !important;
+            padding: 12px 14px !important;
+            background: transparent !important; color: #ded6ed !important;
+            border: 1px solid transparent !important; border-radius: 11px !important;
+            box-shadow: none !important;
+            font-size: 13px !important; font-weight: 550 !important; text-align: left;
+            overflow: hidden; cursor: pointer;
+        }
+        #mySidebar .nav-item:hover { background: rgba(165,119,255,.13) !important; border-color: rgba(165,119,255,.15) !important; color: #fff !important; }
+        /* Active button: switchTab() gives it "bg-rose-900/80" */
+        #mySidebar .nav-item[class*="bg-rose-900/80"] {
+            background: var(--portal-lavender) !important; color: var(--portal-blue) !important;
+            border-color: var(--portal-lavender) !important; font-weight: 700 !important;
+            box-shadow: 0 4px 14px rgba(0,0,0,.1) !important;
+        }
+        #mySidebar .nav-item > div:first-child { width: 22px !important; min-width: 22px; }
+        #mySidebar .nav-item svg { width: 20px !important; height: 20px !important; }
+        /* Staff shows the active state with the lavender fill, not a side bar */
+        #mySidebar .active-indicator { display: none !important; }
+        .btn-logout svg { width: 20px; height: 20px; }
+
+        /* ================================================================== */
+        /* 06. PAGE HEADER, STATUS & MESSAGES                                 */
+        /* ================================================================== */
+        .status-pill {
+            display: flex; align-items: center; gap: 10px; flex-shrink: 0;
+            background: #fff; border: 1px solid var(--portal-border); border-radius: 12px;
+            padding: 10px 14px; box-shadow: 0 2px 6px rgba(21,10,53,.025);
+            font-size: 12px; font-weight: 600; color: #5f5278;
+        }
+        .status-dot { width: 9px; height: 9px; border-radius: 50%; background: #10b981; }
+        .portal-message { display: flex; align-items: center; gap: 10px; padding: 14px 16px; border-radius: 10px; font-size: 14px; font-weight: 500; margin-bottom: 12px; }
+        .portal-message svg { width: 18px; height: 18px; flex-shrink: 0; }
+        .portal-message.is-success { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .portal-message.is-error { background: #fef2f2; color: #b91c1c; border: 1px solid #fecaca; }
+
+        /* ================================================================== */
+        /* 07. CARDS (same as Staff cards)                                    */
+        /* ================================================================== */
+        .card {
+            background: #fff; border: 1px solid var(--portal-border); border-radius: 16px;
+            box-shadow: var(--portal-shadow); padding: 22px;
+        }
+        .card-title {
+            margin: 0 0 18px; padding-bottom: 12px; border-bottom: 1px solid #e7dff2;
+            color: var(--portal-blue); font-size: 15px; font-weight: 700; letter-spacing: -.15px; line-height: 1.5;
+        }
+        .card-head {
+            display: flex; align-items: center; justify-content: space-between; gap: 14px; flex-wrap: wrap;
+            padding: 20px 22px; border-bottom: 1px solid #e7dff2;
+        }
+        .card-head h2 { margin: 0; color: var(--portal-blue); font-size: 15px; font-weight: 700; }
+        .card-head p { margin: 4px 0 0; color: var(--portal-muted); font-size: 12px; }
+        .count-pill {
+            background: var(--portal-soft); color: var(--portal-accent); border: 1px solid #d8c7f4;
+            border-radius: 999px; padding: 6px 12px; font-size: 11px; font-weight: 700;
+            text-transform: uppercase; letter-spacing: .5px; flex-shrink: 0;
         }
 
-        .hpu-canvas input:focus,
-        .hpu-canvas select:focus {
-            border-color: var(--portal-lavender);
-            box-shadow: 0 0 0 3px rgba(165, 119, 255, 0.15);
+        /* ================================================================== */
+        /* 08. FORMS & BUTTONS (same as Staff forms)                          */
+        /* ================================================================== */
+        .field-label { display: block; margin-bottom: 6px; color: #3b2b55; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .08em; }
+        .field-input {
+            width: 100%; padding: 12px 14px;
+            background: #faf8fd; border: 1px solid var(--portal-border); border-radius: 10px;
+            color: var(--portal-blue); font-size: 14px; font-weight: 500; font-family: inherit;
+            outline: none; transition: border-color .2s, box-shadow .2s, background .2s;
+        }
+        select.field-input { appearance: none; -webkit-appearance: none; padding-right: 40px; cursor: pointer; }
+        .field-input:focus { background: #fff; border-color: var(--portal-lavender); box-shadow: 0 0 0 3px rgba(165,119,255,.15); }
+        .field-input::placeholder { color: #857796; }
+        .field-input[readonly] { background: var(--portal-soft); color: var(--portal-accent); opacity: .75; cursor: not-allowed; }
+        .field-chevron { position: absolute; top: 0; bottom: 0; right: 14px; display: flex; align-items: center; pointer-events: none; color: var(--portal-muted); font-size: 11px; }
+        .field-chevron svg { width: 16px; height: 16px; }
+        .field-divider { height: 1px; background: #eee8f6; }
+
+        .btn-primary {
+            display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+            background: var(--portal-accent); color: #fff; border: 0; border-radius: 10px;
+            padding: 12px 20px; font-size: 14px; font-weight: 650; cursor: pointer;
+            box-shadow: 0 4px 12px rgba(109,62,196,.13); transition: background .2s;
+        }
+        .btn-primary:hover { background: var(--portal-accent-hover); }
+        .btn-primary svg { width: 18px; height: 18px; }
+        .btn-secondary {
+            display: inline-flex; align-items: center; justify-content: center;
+            background: #fff; color: #5f5278; border: 1px solid var(--portal-border); border-radius: 10px;
+            padding: 12px 20px; font-size: 14px; font-weight: 600; cursor: pointer; transition: all .2s;
+        }
+        .btn-secondary:hover { background: var(--portal-soft); border-color: #d8c7f4; color: var(--portal-accent); }
+
+        /* ================================================================== */
+        /* 09. USER TABLE (same as Staff tables)                              */
+        /* ================================================================== */
+        .user-table { width: 100%; border-collapse: collapse; text-align: left; font-size: 13px; }
+        .user-table thead th {
+            position: sticky; top: 0; z-index: 1;
+            background: #5528a6; color: #fff; padding: 12px 18px;
+            font-size: 10px; font-weight: 650; text-transform: uppercase; letter-spacing: .6px; white-space: nowrap;
+        }
+        .user-table tbody tr { border-bottom: 1px solid #eee8f6; transition: background .2s; }
+        .user-table tbody tr:nth-child(even) { background: #faf8fd; }
+        .user-table tbody tr:hover { background: var(--portal-soft); }
+        .user-table td { padding: 14px 18px; color: #3b2b55; vertical-align: middle; }
+        .user-avatar {
+            width: 32px; height: 32px; flex-shrink: 0; border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            background: var(--portal-soft); color: var(--portal-accent);
+            font-size: 12px; font-weight: 700; text-transform: uppercase;
+        }
+        .user-name { color: var(--portal-blue); font-weight: 700; font-size: 13px; }
+        .role-badge { display: inline-flex; align-items: center; gap: 6px; padding: 5px 9px; border-radius: 7px; font-size: 11px; font-weight: 650; text-transform: uppercase; letter-spacing: .4px; }
+        .role-badge .dot { width: 6px; height: 6px; border-radius: 50%; }
+        .icon-action { padding: 8px; border-radius: 8px; color: #8a7d9c; transition: background .2s, color .2s; }
+        .icon-action svg { width: 16px; height: 16px; display: block; }
+        .empty-state { padding: 56px 20px; text-align: center; color: var(--portal-muted); }
+        .empty-state svg { width: 56px; height: 56px; margin: 0 auto 14px; color: #d8c7f4; }
+
+        /* ================================================================== */
+        /* 10. DATABASE & SETTINGS SECTIONS                                   */
+        /* ================================================================== */
+        .db-icon {
+            width: 84px; height: 84px; border-radius: 50%; margin-bottom: 20px;
+            display: flex; align-items: center; justify-content: center;
+            background: var(--portal-soft); border: 1px solid #d8c7f4; color: var(--portal-accent);
+        }
+        .db-icon svg { width: 40px; height: 40px; }
+        .setting-item {
+            display: flex; align-items: center; justify-content: space-between; gap: 16px;
+            background: #faf8fd; border: 1px solid #e7dff2; border-radius: 12px; padding: 16px;
+        }
+        .setting-item h3 { margin: 0; color: var(--portal-blue); font-size: 13px; font-weight: 700; }
+        .setting-item p { margin: 4px 0 0; color: var(--portal-muted); font-size: 12px; }
+        /* The toggle button classes are switched by the original onclick. Colours follow Staff. */
+        .toggle-btn { flex-shrink: 0; }
+        .toggle-btn.bg-emerald-500 { background-color: var(--portal-accent) !important; }
+        .toggle-btn.bg-slate-300 { background-color: #cbd5e1 !important; }
+
+        /* ================================================================== */
+        /* 11. EDIT PROFILE MODAL                                             */
+        /* ================================================================== */
+        #editProfileModal .modal-backdrop { background: rgba(21,10,53,.55); backdrop-filter: blur(4px); }
+        #modalContent { border: 1px solid var(--portal-border); border-radius: 18px; box-shadow: 0 24px 70px rgba(21,10,53,.2); }
+        .modal-head { display: flex; align-items: center; justify-content: space-between; padding: 18px 22px; border-bottom: 1px solid #eee8f6; background: #faf8fd; }
+        .modal-head h3 { margin: 0; display: flex; align-items: center; gap: 8px; color: var(--portal-blue); font-size: 16px; font-weight: 700; }
+        .modal-close { color: #64748b; background: none; border: 0; cursor: pointer; padding: 4px; border-radius: 8px; transition: color .2s, transform .2s; }
+        .modal-close:hover { color: #ff4b4b; transform: scale(1.1); }
+        .modal-close svg { width: 20px; height: 20px; display: block; }
+
+        /* ================================================================== */
+        /* 12. RESPONSIVE (same breakpoints as Staff)                         */
+        /* ================================================================== */
+        @media (min-width: 1024px) {
+            .topbar-leading .sidebar-toggle { display: none; }
+            .sidebar-close { display: none !important; }
+        }
+        @media (min-width: 1920px) {
+            .main-content { padding-left: 40px; padding-right: 40px; }
+            .topbar-main { padding-left: 40px; padding-right: 40px; }
+        }
+        @media (max-width: 1023px) {
+            :root, body.sidebar-open { --portal-sidebar-width: 0px; }
+            .sidebar {
+                width: min(var(--portal-sidebar-expanded), calc(100vw - 48px));
+                transform: translateX(-100%); visibility: hidden;
+                box-shadow: 12px 0 36px rgba(16,24,40,.12);
+            }
+            .sidebar-toggle-rail { display: none; }
+            body.sidebar-open .sidebar { transform: none; visibility: visible; }
+            body.sidebar-open .sidebar-backdrop { display: block; }
+            body.sidebar-open .main-content { overflow-y: hidden; }
+            .topbar-main { padding: 0 20px; }
+        }
+        @media (max-width: 767px) {
+            .topbar-main { padding: 0 16px; gap: 10px; }
+            .main-content { padding: calc(var(--portal-topbar-height) + 22px) 16px 100px; }
+            .page-header h1 { font-size: 23px; }
+            .card { padding: 18px; }
+            .card-head { padding: 18px; }
+            .user-table td, .user-table thead th { padding-left: 14px; padding-right: 14px; }
+            .setting-item { align-items: flex-start; }
+            .custom-footer { padding: 10px 16px; font-size: 9px; text-align: left; }
+            .field-input { font-size: 16px; }
+        }
+        @media (max-width: 359px) {
+            .topbar-brand strong { font-size: 12px; }
+            .main-content { padding-left: 12px; padding-right: 12px; }
+            .card { padding: 15px; }
+        }
+        @media (max-height: 600px) and (max-width: 1023px) {
+            .sidebar { padding-top: 12px; }
+            .sidebar-brand-row { margin-bottom: 10px; }
+            #mySidebar .nav-item { min-height: 40px; padding-top: 8px !important; padding-bottom: 8px !important; }
+        }
+        @media (prefers-reduced-motion: reduce) {
+            *, *::before, *::after { animation-duration: .01ms !important; animation-delay: 0s !important; transition-duration: .01ms !important; }
         }
     </style>
 </head>
-<body class="bg-slate-50/50 font-sans text-slate-800 flex h-screen overflow-hidden m-0">
+<body class="font-sans">
 
-    <!-- SIDEBAR HPU DEV (SaaS Style Hover-to-Expand) -->
-    <div class="group fixed top-0 left-0 h-full w-20 hover:w-72 bg-rose-950 text-white flex flex-col shadow-2xl transition-all duration-300 ease-in-out z-50 border-r border-rose-900/50 overflow-hidden">
-        
-        <!-- Logo Area -->
-        <div class="flex items-center h-24 px-6 border-b border-rose-900/60 whitespace-nowrap">
-            <svg class="w-8 h-8 shrink-0 text-rose-300 drop-shadow-md" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
-            <div class="ml-4 opacity-0 group-hover:opacity-100 transition-opacity duration-300 ease-in-out">
-                <h2 class="font-black text-2xl tracking-tight text-white">HPU DEV</h2>
-                <p class="text-[10px] text-rose-300/80 font-bold tracking-widest uppercase">System Control</p>
-            </div>
+    <!-- SIDEBAR HPU DEV (BUTTON-CONTROLLED, SAME AS STAFF PORTAL) -->
+    <div class="sidebar-backdrop" id="sidebarBackdrop" aria-hidden="true"></div>
+    <aside class="sidebar" id="mySidebar" aria-label="Navigation menu">
+        <div class="sidebar-brand-row">
+            <button type="button" class="sidebar-toggle sidebar-toggle-rail" onclick="toggleSidebar()" aria-controls="mySidebar" aria-label="Toggle navigation menu">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16" stroke-width="1.8" stroke-linecap="round"/></svg>
+            </button>
+            <button type="button" class="sidebar-close" id="sidebarCloseButton" onclick="toggleSidebar()" aria-label="Close navigation menu">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18" stroke-width="1.8" stroke-linecap="round"/></svg>
+            </button>
         </div>
-        
+
         <!-- Navigation Links -->
-        <div class="flex flex-col py-6 px-3 gap-3 flex-grow whitespace-nowrap overflow-y-auto overflow-x-hidden">
-            <div class="text-[10px] font-extrabold text-rose-300/40 uppercase tracking-widest mb-1 px-3 opacity-0 group-hover:opacity-100 transition-opacity duration-300">Modul Teknikal</div>
-            
-            <button onclick="switchTab('users')" id="nav-users" class="nav-item bg-rose-900/80 text-rose-50 font-bold p-3 rounded-xl flex items-center gap-4 border border-rose-700/50 shadow-sm relative w-full text-left transition-all">
-                <div class="shrink-0 flex items-center justify-center w-8">
-                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
-                </div>
-                <span class="opacity-0 group-hover:opacity-100 transition-opacity duration-300 text-sm">Pengurusan Pengguna</span>
-                <div class="active-indicator absolute left-0 top-1/2 -translate-y-1/2 w-1 h-8 bg-rose-400 rounded-r-full"></div>
-            </button>
-            
-            <button onclick="switchTab('db')" id="nav-db" class="nav-item hover:bg-rose-900/40 text-rose-200/70 hover:text-white font-semibold p-3 rounded-xl flex items-center gap-4 transition-all w-full text-left relative">
-                <div class="shrink-0 flex items-center justify-center w-8">
-                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4m0 5c0 2.21-3.582 4-8 4s-8-1.79-8-4"/></svg>
-                </div>
-                <span class="opacity-0 group-hover:opacity-100 transition-opacity duration-300 text-sm">Pangkalan Data (DB)</span>
-                <div class="active-indicator hidden absolute left-0 top-1/2 -translate-y-1/2 w-1 h-8 bg-rose-400 rounded-r-full"></div>
-            </button>
-            
-            <button onclick="switchTab('settings')" id="nav-settings" class="nav-item hover:bg-rose-900/40 text-rose-200/70 hover:text-white font-semibold p-3 rounded-xl flex items-center gap-4 transition-all w-full text-left relative">
-                <div class="shrink-0 flex items-center justify-center w-8">
-                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"/></svg>
-                </div>
-                <span class="opacity-0 group-hover:opacity-100 transition-opacity duration-300 text-sm">Tetapan Sistem</span>
-                <div class="active-indicator hidden absolute left-0 top-1/2 -translate-y-1/2 w-1 h-8 bg-rose-400 rounded-r-full"></div>
-            </button>
-        </div>
+        <div class="sidebar-section-title hide-on-collapse">Modul Teknikal</div>
+
+        <button onclick="switchTab('users')" id="nav-users" class="nav-item bg-rose-900/80 text-rose-50 font-bold p-3 rounded-xl flex items-center gap-4 border border-rose-700/50 shadow-sm relative w-full text-left transition-all">
+            <div class="shrink-0 flex items-center justify-center w-8">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
+            </div>
+            <span class="hide-on-collapse">Pengurusan Pengguna</span>
+            <div class="active-indicator absolute left-0 top-1/2 -translate-y-1/2 w-1 h-8 bg-rose-400 rounded-r-full"></div>
+        </button>
+
+        <button onclick="switchTab('db')" id="nav-db" class="nav-item hover:bg-rose-900/40 text-rose-200/70 hover:text-white font-semibold p-3 rounded-xl flex items-center gap-4 transition-all w-full text-left relative">
+            <div class="shrink-0 flex items-center justify-center w-8">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4m0 5c0 2.21-3.582 4-8 4s-8-1.79-8-4"/></svg>
+            </div>
+            <span class="hide-on-collapse">Pangkalan Data (DB)</span>
+            <div class="active-indicator hidden absolute left-0 top-1/2 -translate-y-1/2 w-1 h-8 bg-rose-400 rounded-r-full"></div>
+        </button>
+
+        <button onclick="switchTab('settings')" id="nav-settings" class="nav-item hover:bg-rose-900/40 text-rose-200/70 hover:text-white font-semibold p-3 rounded-xl flex items-center gap-4 transition-all w-full text-left relative">
+            <div class="shrink-0 flex items-center justify-center w-8">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"/></svg>
+            </div>
+            <span class="hide-on-collapse">Tetapan Sistem</span>
+            <div class="active-indicator hidden absolute left-0 top-1/2 -translate-y-1/2 w-1 h-8 bg-rose-400 rounded-r-full"></div>
+        </button>
 
         <!-- Logout Area -->
-        <div class="p-4 border-t border-rose-900/60 whitespace-nowrap">
-            <a href="{% url 'logout' %}" class="flex items-center gap-4 bg-rose-700 hover:bg-rose-600 text-white font-bold p-3 rounded-xl transition-all shadow-lg shadow-rose-950/50 overflow-hidden group/logout">
-                <div class="shrink-0 flex items-center justify-center w-8">
-                    <svg class="w-6 h-6 group-hover/logout:-translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/></svg>
+        <div class="sidebar-bottom">
+            <a href="{% url 'logout' %}" class="btn-logout">
+                <div class="nav-icon">
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/></svg>
                 </div>
-                <span class="opacity-0 group-hover:opacity-100 transition-opacity duration-300 text-sm">Log Keluar</span>
+                <span class="hide-on-collapse">Log Keluar</span>
             </a>
         </div>
+    </aside>
+
+    <!-- TOP NAVIGATION BAR (SAME AS STAFF PORTAL) -->
+    <header class="portal-topbar" aria-label="HPU top navigation">
+        <div class="topbar-main">
+            <div class="topbar-leading">
+                <button type="button" class="sidebar-toggle" id="sidebarMenuButton" onclick="toggleSidebar()" aria-controls="mySidebar" aria-expanded="false" aria-label="Open navigation menu">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16" stroke-width="1.8" stroke-linecap="round"/></svg>
+                </button>
+                <a href="{% url 'hpu_dashboard' %}" class="topbar-logo" title="Kembali ke Dashboard">
+                    <img src="{% static 'images/myprestasi-logo-nobg.png' %}" alt="Logo MyPrestasi">
+                </a>
+                <div class="topbar-brand"><strong>HPU DEV</strong><span>System Control</span></div>
+            </div>
+        </div>
+    </header>
+
+    <!-- MAIN CONTENT -->
+    <div class="main-content" id="mainContent">
+
+        <!-- HEADER -->
+        <div class="page-header">
+            <div>
+                <h1 id="page-title">Pusat Kawalan Utama</h1>
+                <p id="page-subtitle">Uruskan akaun, peranan pengguna, dan selenggara sistem MyPrestasi.</p>
+            </div>
+            <div class="status-pill">
+                <span class="status-dot animate-pulse"></span>
+                Sistem Beroperasi (V4.2)
+            </div>
+        </div>
+
+        <!-- MESSAGES ALERT -->
+        {% if messages %}
+            <div class="mb-6 w-full">
+                {% for message in messages %}
+                    <div class="portal-message {% if message.tags == 'error' %}is-error{% else %}is-success{% endif %}">
+                        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                        {{ message }}
+                    </div>
+                {% endfor %}
+            </div>
+        {% endif %}
+
+        <!-- SECTION 1: PENGURUSAN PENGGUNA -->
+        <div id="section-users" class="tab-section grid grid-cols-1 lg:grid-cols-12 gap-5 w-full animate-fade-in">
+
+            <!-- KAD 1: BORANG DAFTAR PENGGUNA -->
+            <div class="card lg:col-span-5 xl:col-span-4 h-fit">
+                <h2 class="card-title">Daftar Akaun Baharu</h2>
+
+                <form method="POST" class="space-y-5">
+                    {% csrf_token %}
+                    <input type="hidden" name="form_type" value="create_user">
+
+                    <div>
+                        <label class="field-label">ID Pengguna (Username)</label>
+                        <input type="text" name="username" placeholder="cth: dr_azlan..." required class="field-input">
+                    </div>
+
+                    <div>
+                        <label class="field-label">Kata Laluan</label>
+                        <input type="password" name="password" placeholder="••••••••" required class="field-input">
+                    </div>
+
+                    <div class="field-divider"></div>
+
+                    <div>
+                        <label class="field-label">Peranan (Role)</label>
+                        <div class="relative">
+                            <select name="role" class="field-input">
+                                <option value="HOD">Ketua Jabatan / Pakar (HOD)</option>
+                                <option value="STAFF">Pegawai Perubatan (MO)</option>
+                                <option value="AUDITOR">Pegawai Audit Kualiti</option>
+                            </select>
+                            <div class="field-chevron">
+                                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="field-label">Jabatan / Modul</label>
+                        <div class="relative">
+                            <select name="department" class="field-input">
+                                <option value="CTS">Cardiothoracic Surgery (CTS)</option>
+                                <option value="FMS">Family Medicine Specialist (FMS)</option>
+                                <option value="PEDS">Pediatrics</option>
+                                <option value="ONG">O&G</option>
+                            </select>
+                            <div class="field-chevron">
+                                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+                            </div>
+                        </div>
+                    </div>
+
+                    <button type="submit" class="btn-primary w-full">
+                        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"/></svg>
+                        Cipta Akaun Sistem
+                    </button>
+                </form>
+            </div>
+
+            <!-- KAD 2: SENARAI PENGGUNA -->
+            <div class="card lg:col-span-7 xl:col-span-8 overflow-hidden flex flex-col" style="padding: 0;">
+
+                <div class="card-head">
+                    <div>
+                        <h2>Senarai Pengguna Aktif</h2>
+                        <p>Pengurusan pangkalan data pengguna terkini.</p>
+                    </div>
+                    <span class="count-pill">
+                        {{ users|length }} Rekod Dijumpai
+                    </span>
+                </div>
+
+                <div class="overflow-x-auto flex-grow">
+                    <table class="user-table">
+                        <thead>
+                            <tr>
+                                <th>ID Pengguna</th>
+                                <th>Peranan</th>
+                                <th>Jabatan</th>
+                                <th class="text-center">Tindakan</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for u in users %}
+                            <tr>
+                                <td>
+                                    <div class="flex items-center gap-3">
+                                        <div class="user-avatar">
+                                            {{ u.user.username|make_list|first }}
+                                        </div>
+                                        <span class="user-name">{{ u.user.username }}</span>
+                                    </div>
+                                </td>
+                                <td>
+                                    {% if u.role == 'HOD' %}
+                                        <span class="role-badge bg-indigo-50 text-indigo-700 border border-indigo-200">
+                                            <span class="dot bg-indigo-500"></span> HOD
+                                        </span>
+                                    {% elif u.role == 'HPU_ADMIN' %}
+                                        <span class="role-badge bg-rose-50 text-rose-700 border border-rose-200">
+                                            <span class="dot bg-rose-500"></span> HPU Dev
+                                        </span>
+                                    {% else %}
+                                        <span class="role-badge bg-emerald-50 text-emerald-700 border border-emerald-200">
+                                            <span class="dot bg-emerald-500"></span> MO
+                                        </span>
+                                    {% endif %}
+                                </td>
+                                <td class="font-semibold">{{ u.department }}</td>
+                                <td class="text-center">
+                                    <div class="flex items-center justify-center gap-1">
+                                        <!-- Login As -->
+                                        <button onclick="alert('Fungsi Log Masuk Sebagai {{ u.user.username }} akan diaktifkan.')" class="icon-action hover:text-blue-600 hover:bg-blue-50" title="Log Masuk Sebagai">
+                                            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+                                        </button>
+                                        <!-- Edit -->
+                                        <button onclick="openEditModal('{{ u.user.username }}', '{{ u.role }}', '{{ u.department }}')" class="icon-action hover:text-emerald-600 hover:bg-emerald-50" title="Kemas Kini Profil">
+                                            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+                                        </button>
+                                        <!-- Reset Password -->
+                                        <button onclick="alert('Fungsi Set Semula Kata Laluan untuk {{ u.user.username }} akan diaktifkan.')" class="icon-action hover:text-amber-600 hover:bg-amber-50" title="Set Semula Kata Laluan">
+                                            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"/></svg>
+                                        </button>
+                                        <!-- Delete -->
+                                        <button onclick="alert('Fungsi Padam Akaun {{ u.user.username }} akan diaktifkan.')" class="icon-action hover:text-red-600 hover:bg-red-50" title="Padam Akaun">
+                                            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="4" class="empty-state">
+                                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4"/></svg>
+                                    <div class="font-bold text-base" style="color: var(--portal-blue);">Tiada Pengguna Didaftarkan</div>
+                                    <div class="text-sm mt-1">Sila cipta akaun baharu menggunakan borang di sebelah kiri.</div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- SECTION 2: PANGKALAN DATA (DB) -->
+        <div id="section-db" class="tab-section hidden animate-fade-in">
+            <div class="card flex flex-col items-center justify-center text-center" style="min-height: 420px;">
+                <div class="db-icon">
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4m0 5c0 2.21-3.582 4-8 4s-8-1.79-8-4"/></svg>
+                </div>
+                <h2 style="margin: 0 0 6px; color: var(--portal-blue); font-size: 18px; font-weight: 700;">Pangkalan Data (SQLite3)</h2>
+                <p class="max-w-md" style="margin: 0 0 24px; color: var(--portal-muted); font-size: 13px;">Uruskan sandaran (backup), eksport data, dan selenggara pangkalan data utama MyPrestasi.</p>
+
+                <button onclick="alert('Fungsi muat turun db.sqlite3 sedang diaktifkan oleh developer.')" class="btn-primary">
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+                    Muat Turun Sandaran (Backup)
+                </button>
+            </div>
+        </div>
+
+        <!-- SECTION 3: TETAPAN SISTEM -->
+        <div id="section-settings" class="tab-section hidden animate-fade-in">
+            <div class="card" style="min-height: 420px;">
+                <h2 class="card-title">Konfigurasi Teknikal Global</h2>
+
+                <div class="space-y-4 max-w-2xl">
+                    <div class="setting-item">
+                        <div>
+                            <h3>Modul Penyelenggaraan (Maintenance Mode)</h3>
+                            <p>Halang semua pengguna kecuali HPU Admin dari mengakses sistem.</p>
+                        </div>
+                        <button onclick="this.classList.toggle('bg-emerald-500'); this.classList.toggle('bg-slate-300');" class="toggle-btn w-12 h-6 bg-slate-300 rounded-full relative transition-colors duration-300 cursor-pointer">
+                            <div class="w-4 h-4 bg-white rounded-full absolute top-1 left-1 transition-transform duration-300 transform peer-checked:translate-x-6"></div>
+                        </button>
+                    </div>
+
+                    <div class="setting-item">
+                        <div>
+                            <h3>Pendaftaran Automatik</h3>
+                            <p>Benarkan pendaftaran melalui emel rasmi @moh.gov.my.</p>
+                        </div>
+                        <button onclick="this.classList.toggle('bg-emerald-500'); this.classList.toggle('bg-slate-300');" class="toggle-btn w-12 h-6 bg-emerald-500 rounded-full relative transition-colors duration-300 cursor-pointer">
+                            <div class="w-4 h-4 bg-white rounded-full absolute top-1 left-7 transition-transform duration-300"></div>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
     </div>
 
-    <!-- MAIN CONTENT (Fluid 100% Full Width) -->
-    <div class="hpu-canvas flex-1 flex flex-col h-screen overflow-y-auto pl-20">
-        
-        <div class="p-6 sm:p-10 lg:p-12 w-full min-w-full">
-            
-            <!-- HEADER -->
-            <div class="mb-10 flex flex-col md:flex-row md:items-end justify-between gap-4 w-full">
-                <div>
-                    <h1 class="text-3xl sm:text-4xl font-black text-slate-800 tracking-tight mb-2" id="page-title">Pusat Kawalan Utama</h1>
-                    <p class="text-slate-500 font-medium text-sm sm:text-base" id="page-subtitle">Uruskan akaun, peranan pengguna, dan selenggara sistem MyPrestasi.</p>
-                </div>
-                <div class="bg-white border border-slate-200 px-5 py-2.5 rounded-xl shadow-sm text-sm font-bold text-slate-600 flex items-center gap-3 shrink-0">
-                    <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
-                    Sistem Beroperasi (V4.2)
-                </div>
-            </div>
-
-            <!-- MESSAGES ALERT -->
-            {% if messages %}
-                <div class="mb-8 space-y-3 w-full">
-                    {% for message in messages %}
-                        <div class="px-5 py-4 rounded-xl font-bold text-sm flex items-center gap-3 shadow-sm {% if message.tags == 'error' %}bg-rose-50 text-rose-700 border border-rose-200{% else %}bg-emerald-50 text-emerald-700 border border-emerald-200{% endif %}">
-                            <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-                            {{ message }}
-                        </div>
-                    {% endfor %}
-                </div>
-            {% endif %}
-
-            <!-- SECTION 1: PENGURUSAN PENGGUNA (FLUID 12-COLUMNS GRID) -->
-            <div id="section-users" class="tab-section grid grid-cols-1 lg:grid-cols-12 gap-8 w-full animate-fade-in">
-                
-                <!-- KAD 1: BORANG DAFTAR PENGGUNA (4/12 LAJUR) -->
-                <div class="lg:col-span-5 xl:col-span-4 bg-white rounded-3xl p-8 shadow-xl shadow-slate-200/40 border border-slate-100 h-fit">
-                    <h2 class="text-xl font-black text-slate-800 mb-8 flex items-center gap-3">
-                        <div class="w-10 h-10 rounded-xl bg-rose-50 text-rose-600 flex items-center justify-center shrink-0">
-                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"/></svg>
-                        </div>
-                        Daftar Akaun Baharu
-                    </h2>
-                    
-                    <form method="POST" class="space-y-6">
-                        {% csrf_token %}
-                        <input type="hidden" name="form_type" value="create_user">
-                        
-                        <div>
-                            <label class="block text-[11px] font-extrabold text-slate-500 uppercase tracking-widest mb-2">ID Pengguna (Username)</label>
-                            <input type="text" name="username" placeholder="cth: dr_azlan..." required class="w-full bg-slate-50 border-2 border-slate-200 rounded-xl px-4 py-3.5 text-sm font-semibold text-slate-800 focus:border-rose-500 focus:bg-white focus:ring-4 focus:ring-rose-500/10 outline-none transition-all placeholder:text-slate-400">
-                        </div>
-
-                        <div>
-                            <label class="block text-[11px] font-extrabold text-slate-500 uppercase tracking-widest mb-2">Kata Laluan</label>
-                            <input type="password" name="password" placeholder="••••••••" required class="w-full bg-slate-50 border-2 border-slate-200 rounded-xl px-4 py-3.5 text-sm font-semibold text-slate-800 focus:border-rose-500 focus:bg-white focus:ring-4 focus:ring-rose-500/10 outline-none transition-all placeholder:text-slate-400">
-                        </div>
-
-                        <div class="h-px w-full bg-slate-100 my-2"></div>
-
-                        <div>
-                            <label class="block text-[11px] font-extrabold text-slate-500 uppercase tracking-widest mb-2">Peranan (Role)</label>
-                            <div class="relative">
-                                <select name="role" class="w-full appearance-none bg-slate-50 border-2 border-slate-200 rounded-xl px-4 py-3.5 text-sm font-bold text-slate-700 focus:border-rose-500 focus:bg-white focus:ring-4 focus:ring-rose-500/10 outline-none transition-all cursor-pointer">
-                                    <option value="HOD">Ketua Jabatan / Pakar (HOD)</option>
-                                    <option value="STAFF">Pegawai Perubatan (MO)</option>
-                                    <option value="AUDITOR">Pegawai Audit Kualiti</option>
-                                </select>
-                                <div class="absolute inset-y-0 right-4 flex items-center pointer-events-none text-slate-400">
-                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div>
-                            <label class="block text-[11px] font-extrabold text-slate-500 uppercase tracking-widest mb-2">Jabatan / Modul</label>
-                            <div class="relative">
-                                <select name="department" class="w-full appearance-none bg-slate-50 border-2 border-slate-200 rounded-xl px-4 py-3.5 text-sm font-bold text-slate-700 focus:border-rose-500 focus:bg-white focus:ring-4 focus:ring-rose-500/10 outline-none transition-all cursor-pointer">
-                                    <option value="CTS">Cardiothoracic Surgery (CTS)</option>
-                                    <option value="FMS">Family Medicine Specialist (FMS)</option>
-                                    <option value="PEDS">Pediatrics</option>
-                                    <option value="ONG">O&G</option>
-                                </select>
-                                <div class="absolute inset-y-0 right-4 flex items-center pointer-events-none text-slate-400">
-                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
-                                </div>
-                            </div>
-                        </div>
-
-                        <button type="submit" class="w-full flex justify-center gap-2 bg-rose-700 hover:bg-rose-900 text-white font-black text-base py-4 rounded-xl mt-2 transition-all duration-300 shadow-xl shadow-rose-700/20 hover:shadow-rose-900/40 hover:-translate-y-1">
-                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"/></svg>
-                            Cipta Akaun Sistem
-                        </button>
-                    </form>
-                </div>
-
-                <!-- KAD 2: SENARAI PENGGUNA (8/12 LAJUR - FLUID & RESPONSIVE) -->
-                <div class="lg:col-span-7 xl:col-span-8 bg-white rounded-3xl shadow-xl shadow-slate-200/40 border border-slate-100 overflow-hidden flex flex-col min-h-[600px]">
-                    
-                    <div class="p-8 border-b border-slate-100 flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 bg-white">
-                        <div>
-                            <h2 class="text-xl font-black text-slate-800">Senarai Pengguna Aktif</h2>
-                            <p class="text-sm font-medium text-slate-500 mt-1">Pengurusan pangkalan data pengguna terkini.</p>
-                        </div>
-                        <span class="bg-rose-50 text-rose-700 border border-rose-200 text-xs font-black px-4 py-2 rounded-xl uppercase tracking-wider shrink-0">
-                            {{ users|length }} Rekod Dijumpai
-                        </span>
-                    </div>
-                    
-                    <div class="overflow-x-auto flex-grow bg-slate-50/30">
-                        <table class="w-full text-left border-collapse">
-                            <thead class="bg-slate-50 text-slate-500 text-[10px] uppercase font-black tracking-widest sticky top-0 z-10 shadow-sm">
-                                <tr>
-                                    <th class="px-8 py-5 border-b border-slate-200">ID Pengguna</th>
-                                    <th class="px-8 py-5 border-b border-slate-200">Peranan</th>
-                                    <th class="px-8 py-5 border-b border-slate-200">Jabatan</th>
-                                    <th class="px-8 py-5 border-b border-slate-200 text-center">Tindakan</th>
-                                </tr>
-                            </thead>
-                            <tbody class="divide-y divide-slate-100">
-                                {% for u in users %}
-                                <tr class="hover:bg-white transition-colors group">
-                                    <td class="px-8 py-5">
-                                        <div class="flex items-center gap-3">
-                                            <div class="w-8 h-8 rounded-full bg-slate-200 text-slate-600 flex items-center justify-center text-xs font-bold shrink-0 uppercase">
-                                                {{ u.user.username|make_list|first }}
-                                            </div>
-                                            <span class="font-black text-slate-700 text-sm">{{ u.user.username }}</span>
-                                        </div>
-                                    </td>
-                                    <td class="px-8 py-5">
-                                        {% if u.role == 'HOD' %}
-                                            <span class="inline-flex items-center gap-1.5 bg-indigo-50 text-indigo-700 border border-indigo-200 px-3 py-1.5 rounded-lg text-[11px] font-black uppercase tracking-wider">
-                                                <span class="w-1.5 h-1.5 rounded-full bg-indigo-500"></span> HOD
-                                            </span>
-                                        {% elif u.role == 'HPU_ADMIN' %}
-                                            <span class="inline-flex items-center gap-1.5 bg-rose-50 text-rose-700 border border-rose-200 px-3 py-1.5 rounded-lg text-[11px] font-black uppercase tracking-wider">
-                                                <span class="w-1.5 h-1.5 rounded-full bg-rose-500"></span> HPU Dev
-                                            </span>
-                                        {% else %}
-                                            <span class="inline-flex items-center gap-1.5 bg-emerald-50 text-emerald-700 border border-emerald-200 px-3 py-1.5 rounded-lg text-[11px] font-black uppercase tracking-wider">
-                                                <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> MO
-                                            </span>
-                                        {% endif %}
-                                    </td>
-                                    <td class="px-8 py-5 font-bold text-slate-500 text-sm">{{ u.department }}</td>
-                                    <td class="px-8 py-5 text-center">
-                                        <div class="flex items-center justify-center gap-1.5">
-                                            <!-- Login As -->
-                                            <button onclick="alert('Fungsi Log Masuk Sebagai {{ u.user.username }} akan diaktifkan.')" class="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors" title="Log Masuk Sebagai">
-                                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
-                                            </button>
-                                            <!-- Edit -->
-                                            <button onclick="openEditModal('{{ u.user.username }}', '{{ u.role }}', '{{ u.department }}')" class="p-2 text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors" title="Kemas Kini Profil">
-                                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
-                                            </button>
-                                            <!-- Reset Password -->
-                                            <button onclick="alert('Fungsi Set Semula Kata Laluan untuk {{ u.user.username }} akan diaktifkan.')" class="p-2 text-slate-400 hover:text-amber-600 hover:bg-amber-50 rounded-lg transition-colors" title="Set Semula Kata Laluan">
-                                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"/></svg>
-                                            </button>
-                                            <!-- Delete -->
-                                            <button onclick="alert('Fungsi Padam Akaun {{ u.user.username }} akan diaktifkan.')" class="p-2 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors" title="Padam Akaun">
-                                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
-                                            </button>
-                                        </div>
-                                    </td>
-                                </tr>
-                                {% empty %}
-                                <tr>
-                                    <td colspan="4" class="px-8 py-16 text-center text-slate-400">
-                                        <svg class="w-16 h-16 mx-auto mb-4 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4"/></svg>
-                                        <div class="font-bold text-base">Tiada Pengguna Didaftarkan</div>
-                                        <div class="text-sm font-medium mt-1">Sila cipta akaun baharu menggunakan borang di sebelah kiri.</div>
-                                    </td>
-                                </tr>
-                                {% endfor %}
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
-
-            <!-- SECTION 2: PANGKALAN DATA (DB) -->
-            <div id="section-db" class="tab-section hidden animate-fade-in">
-                <div class="bg-white rounded-3xl p-10 shadow-xl shadow-slate-200/40 border border-slate-100 flex flex-col items-center justify-center text-center h-[500px]">
-                    <div class="w-24 h-24 bg-rose-50 rounded-full flex items-center justify-center text-rose-600 mb-6">
-                        <svg class="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4m0 5c0 2.21-3.582 4-8 4s-8-1.79-8-4"/></svg>
-                    </div>
-                    <h2 class="text-2xl font-black text-slate-800 mb-2">Pangkalan Data (SQLite3)</h2>
-                    <p class="text-slate-500 font-medium mb-8 max-w-md">Uruskan sandaran (backup), eksport data, dan selenggara pangkalan data utama MyPrestasi.</p>
-                    
-                    <button onclick="alert('Fungsi muat turun db.sqlite3 sedang diaktifkan oleh developer.')" class="bg-rose-700 hover:bg-rose-900 text-white font-bold py-3.5 px-8 rounded-xl shadow-lg shadow-rose-700/20 hover:shadow-rose-900/40 transition-all flex items-center gap-3">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
-                        Muat Turun Sandaran (Backup)
-                    </button>
-                </div>
-            </div>
-
-            <!-- SECTION 3: TETAPAN SISTEM -->
-            <div id="section-settings" class="tab-section hidden animate-fade-in">
-                <div class="bg-white rounded-3xl p-10 shadow-xl shadow-slate-200/40 border border-slate-100 h-[500px]">
-                    <h2 class="text-xl font-black text-slate-800 mb-8 flex items-center gap-3">
-                        <div class="w-10 h-10 rounded-xl bg-slate-100 text-slate-600 flex items-center justify-center">
-                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
-                        </div>
-                        Konfigurasi Teknikal Global
-                    </h2>
-                    
-                    <div class="space-y-6 max-w-2xl">
-                        <div class="flex items-center justify-between p-5 border border-slate-200 rounded-2xl bg-slate-50/50">
-                            <div>
-                                <h3 class="font-bold text-slate-800 text-sm">Modul Penyelenggaraan (Maintenance Mode)</h3>
-                                <p class="text-xs text-slate-500 mt-1">Halang semua pengguna kecuali HPU Admin dari mengakses sistem.</p>
-                            </div>
-                            <button onclick="this.classList.toggle('bg-emerald-500'); this.classList.toggle('bg-slate-300');" class="w-12 h-6 bg-slate-300 rounded-full relative transition-colors duration-300 cursor-pointer">
-                                <div class="w-4 h-4 bg-white rounded-full absolute top-1 left-1 transition-transform duration-300 transform peer-checked:translate-x-6"></div>
-                            </button>
-                        </div>
-
-                        <div class="flex items-center justify-between p-5 border border-slate-200 rounded-2xl bg-slate-50/50">
-                            <div>
-                                <h3 class="font-bold text-slate-800 text-sm">Pendaftaran Automatik</h3>
-                                <p class="text-xs text-slate-500 mt-1">Benarkan pendaftaran melalui emel rasmi @moh.gov.my.</p>
-                            </div>
-                            <button onclick="this.classList.toggle('bg-emerald-500'); this.classList.toggle('bg-slate-300');" class="w-12 h-6 bg-emerald-500 rounded-full relative transition-colors duration-300 cursor-pointer">
-                                <div class="w-4 h-4 bg-white rounded-full absolute top-1 left-7 transition-transform duration-300"></div>
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="mt-12 text-center text-xs font-semibold text-slate-400 pb-8">
-                Hak Cipta &copy; 2026 MyPrestasi HPU | Antaramuka SaaS Prestasi Tinggi
-            </div>
-            
-        </div>
+    <div class="custom-footer">
+        Hak Cipta &copy; 2026 MyPrestasi HPU | Antaramuka SaaS Prestasi Tinggi
     </div>
 
     <!-- MODAL KEMAS KINI PROFIL (Disembunyikan pada awalnya) -->
-    <div id="editProfileModal" class="fixed inset-0 z-[100] hidden flex items-center justify-center">
+    <div id="editProfileModal" class="fixed inset-0 z-[2000] hidden flex items-center justify-center">
         <!-- Latar Belakang Kabur -->
-        <div class="absolute inset-0 bg-slate-900/40 backdrop-blur-sm" onclick="closeEditModal()"></div>
-        
+        <div class="modal-backdrop absolute inset-0" onclick="closeEditModal()"></div>
+
         <!-- Kotak Modal -->
-        <div class="relative bg-white rounded-3xl shadow-2xl w-full max-w-md mx-4 overflow-hidden transform transition-all duration-300 scale-95 opacity-0" id="modalContent">
-            <div class="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
-                <h3 class="text-lg font-black text-slate-800 flex items-center gap-2">
-                    <span class="text-rose-600">✏️</span> Kemas Kini Profil
+        <div class="relative bg-white w-full max-w-md mx-4 overflow-hidden transform transition-all duration-300 scale-95 opacity-0" id="modalContent">
+            <div class="modal-head">
+                <h3>
+                    <span>✏️</span> Kemas Kini Profil
                 </h3>
-                <button onclick="closeEditModal()" class="text-slate-400 hover:text-rose-600 transition-colors">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                <button onclick="closeEditModal()" class="modal-close">
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
                 </button>
             </div>
-            
+
             <form method="POST" action="" class="p-6 space-y-5" id="editForm">
                 {% csrf_token %}
                 <input type="hidden" name="form_type" value="edit_user">
                 <!-- Kita hantar ID pengguna asal secara tersembunyi -->
                 <input type="hidden" name="original_username" id="edit_original_username">
-                
+
                 <div>
-                    <label class="block text-[11px] font-extrabold text-slate-500 uppercase tracking-widest mb-2">ID Pengguna (Baca Sahaja)</label>
-                    <input type="text" id="edit_username" name="new_username" readonly class="w-full bg-slate-100 border-2 border-slate-200 rounded-xl px-4 py-3 text-sm font-bold text-slate-500 outline-none cursor-not-allowed">
+                    <label class="field-label">ID Pengguna (Baca Sahaja)</label>
+                    <input type="text" id="edit_username" name="new_username" readonly class="field-input">
                 </div>
 
                 <div>
-                    <label class="block text-[11px] font-extrabold text-slate-500 uppercase tracking-widest mb-2">Peranan (Role)</label>
+                    <label class="field-label">Peranan (Role)</label>
                     <div class="relative">
-                        <select name="role" id="edit_role" class="w-full appearance-none bg-slate-50 border-2 border-slate-200 rounded-xl px-4 py-3 text-sm font-bold text-slate-700 focus:border-rose-500 focus:bg-white focus:ring-4 focus:ring-rose-500/10 outline-none transition-all cursor-pointer">
+                        <select name="role" id="edit_role" class="field-input">
                             <option value="HOD">Ketua Jabatan / Pakar (HOD)</option>
                             <option value="STAFF">Pegawai Perubatan (MO)</option>
                             <option value="AUDITOR">Pegawai Audit Kualiti</option>
                         </select>
-                        <div class="absolute inset-y-0 right-4 flex items-center pointer-events-none text-slate-400">▼</div>
+                        <div class="field-chevron">▼</div>
                     </div>
                 </div>
 
                 <div>
-                    <label class="block text-[11px] font-extrabold text-slate-500 uppercase tracking-widest mb-2">Jabatan / Modul</label>
+                    <label class="field-label">Jabatan / Modul</label>
                     <div class="relative">
-                        <select name="department" id="edit_department" class="w-full appearance-none bg-slate-50 border-2 border-slate-200 rounded-xl px-4 py-3 text-sm font-bold text-slate-700 focus:border-rose-500 focus:bg-white focus:ring-4 focus:ring-rose-500/10 outline-none transition-all cursor-pointer">
+                        <select name="department" id="edit_department" class="field-input">
                             <option value="CTS">Cardiothoracic Surgery (CTS)</option>
                             <option value="FMS">Family Medicine Specialist (FMS)</option>
                             <option value="PEDS">Pediatrics</option>
                             <option value="ONG">O&G</option>
                         </select>
-                        <div class="absolute inset-y-0 right-4 flex items-center pointer-events-none text-slate-400">▼</div>
+                        <div class="field-chevron">▼</div>
                     </div>
                 </div>
 
-                <div class="pt-4 flex gap-3">
-                    <button type="button" onclick="closeEditModal()" class="flex-1 bg-white border-2 border-slate-200 hover:border-slate-300 hover:bg-slate-50 text-slate-600 font-bold text-sm py-3 rounded-xl transition-all">
+                <div class="pt-2 flex gap-3">
+                    <button type="button" onclick="closeEditModal()" class="btn-secondary flex-1">
                         Batal
                     </button>
-                    <button type="submit" class="flex-1 bg-rose-600 hover:bg-rose-700 text-white font-bold text-sm py-3 rounded-xl shadow-lg shadow-rose-600/20 transition-all">
+                    <button type="submit" class="btn-primary flex-1">
                         Simpan Perubahan
                     </button>
                 </div>
@@ -469,10 +884,10 @@
             document.querySelectorAll('.tab-section').forEach(el => {
                 el.classList.add('hidden');
             });
-            
+
             // 2. Tunjuk tab yang dipilih
             document.getElementById('section-' + tabId).classList.remove('hidden');
-            
+
             // 3. Reset semua butang sidebar ke styling tidak aktif (inactive)
             const defaultClass = "nav-item hover:bg-rose-900/40 text-rose-200/70 hover:text-white font-semibold p-3 rounded-xl flex items-center gap-4 transition-all w-full text-left relative";
             document.querySelectorAll('.nav-item').forEach(el => {
@@ -480,7 +895,7 @@
                 // Sembunyikan bar merah (active indicator)
                 el.querySelector('.active-indicator').classList.add('hidden');
             });
-            
+
             // 4. Set butang yang ditekan sebagai aktif (active style)
             const activeBtn = document.getElementById('nav-' + tabId);
             activeBtn.className = "nav-item bg-rose-900/80 text-rose-50 font-bold p-3 rounded-xl flex items-center gap-4 border border-rose-700/50 shadow-sm relative w-full text-left transition-all";
@@ -489,7 +904,7 @@
             // 5. Ubah Tajuk Halaman Mengikut Tab
             const titleEl = document.getElementById('page-title');
             const subtitleEl = document.getElementById('page-subtitle');
-            
+
             if(tabId === 'users') {
                 titleEl.textContent = 'Pusat Kawalan Utama';
                 subtitleEl.textContent = 'Uruskan akaun, peranan pengguna, dan selenggara sistem MyPrestasi.';
@@ -501,6 +916,141 @@
                 subtitleEl.textContent = 'Ubah parameter dan kebenaran global aplikasi.';
             }
         }
+    </script>
+
+    <!-- SIDEBAR SHELL SCRIPT (SAME AS STAFF PORTAL) -->
+    <script>
+        // Instant button-controlled sidebar (same as Staff Portal).
+        function toggleSidebar() {
+            if (window.myPrestasiShell) window.myPrestasiShell.toggle();
+        }
+
+        // Dashboard shell only. Forms, module handlers and backend routes are unchanged.
+        (function () {
+            'use strict';
+            var sidebar = document.getElementById('mySidebar');
+            var menuButton = document.getElementById('sidebarMenuButton');
+            var closeButton = document.getElementById('sidebarCloseButton');
+            var backdrop = document.getElementById('sidebarBackdrop');
+            var main = document.querySelector('.main-content');
+            var smallScreen = window.matchMedia('(max-width: 1023px)');
+            var preferenceKey = 'myprestasi.sidebar.expanded';
+            var resizeTimer;
+            var desktopExpanded = false;
+            try { desktopExpanded = localStorage.getItem(preferenceKey) === 'true'; } catch (error) { /* Storage may be disabled. */ }
+
+            function resizeCharts() {
+                clearTimeout(resizeTimer);
+                resizeTimer = setTimeout(function () {
+                    if (!window.Plotly || !window.Plotly.Plots) return;
+                    document.querySelectorAll('.main-content .js-plotly-plot').forEach(function (chart) {
+                        // Hidden/uninitialized charts are not safe to resize.
+                        if (!chart._fullLayout || chart.clientWidth === 0 || chart.clientHeight === 0) return;
+                        try {
+                            var result = window.Plotly.Plots.resize(chart);
+                            if (result && typeof result.catch === 'function') result.catch(function () {});
+                        } catch (error) { /* A chart may still be initializing. */ }
+                    });
+                }, 120);
+            }
+
+            function applySidebar(open, moveFocus) {
+                var isDrawer = smallScreen.matches;
+                document.body.classList.toggle('sidebar-open', open);
+                menuButton.setAttribute('aria-expanded', String(open));
+                menuButton.setAttribute('aria-label', open ? 'Close navigation menu' : 'Open navigation menu');
+                sidebar.setAttribute('aria-hidden', String(isDrawer && !open));
+                sidebar.inert = isDrawer && !open;
+                backdrop.setAttribute('aria-hidden', String(!isDrawer || !open));
+                if (isDrawer && open) {
+                    sidebar.setAttribute('role', 'dialog');
+                    sidebar.setAttribute('aria-modal', 'true');
+                } else {
+                    sidebar.removeAttribute('role');
+                    sidebar.removeAttribute('aria-modal');
+                }
+                // Keep keyboard focus inside the mobile drawer, not behind it.
+                document.querySelectorAll('.main-content, .portal-topbar, .custom-footer, .aura-fab, .aura-chat-window').forEach(function (element) {
+                    element.inert = isDrawer && open;
+                });
+                if (!isDrawer) {
+                    desktopExpanded = open;
+                    try { localStorage.setItem(preferenceKey, String(open)); } catch (error) { /* Optional preference only. */ }
+                }
+                if (moveFocus) {
+                    if (isDrawer && open) closeButton.focus();
+                    else if (!open) menuButton.focus();
+                }
+                resizeCharts();
+            }
+
+            window.myPrestasiShell = {
+                toggle: function () { applySidebar(!document.body.classList.contains('sidebar-open'), true); },
+                close: function () { applySidebar(false, true); }
+            };
+            backdrop.addEventListener('click', window.myPrestasiShell.close);
+            sidebar.addEventListener('click', function (event) {
+                if (smallScreen.matches && event.target.closest('a[href]')) applySidebar(false, false);
+            });
+            document.addEventListener('keydown', function (event) {
+                if (!document.body.classList.contains('sidebar-open')) return;
+                var visibleModal = Array.from(document.querySelectorAll('.modal-overlay')).some(function (modal) {
+                    return getComputedStyle(modal).display !== 'none';
+                });
+                if (visibleModal) return;
+                if (event.key === 'Escape') {
+                    event.preventDefault();
+                    applySidebar(false, true);
+                }
+                if (event.key === 'Tab' && smallScreen.matches) {
+                    var focusable = Array.from(sidebar.querySelectorAll('a[href], button:not([disabled])')).filter(function (element) {
+                        return element.getClientRects().length && getComputedStyle(element).visibility !== 'hidden';
+                    });
+                    if (!focusable.length) return;
+                    var first = focusable[0];
+                    var last = focusable[focusable.length - 1];
+                    if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last.focus(); }
+                    else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first.focus(); }
+                }
+            });
+            // Enable keyboard activation for existing non-button header controls.
+            document.querySelector('.portal-topbar').addEventListener('keydown', function (event) {
+                var control = event.target.closest('[role="button"]');
+                if (control && (event.key === 'Enter' || event.key === ' ')) {
+                    event.preventDefault();
+                    control.click();
+                }
+            });
+            // Observe the original handler's class changes rather than replacing it.
+            document.querySelectorAll('.portal-topbar .dropdown-menu').forEach(function (dropdown) {
+                var trigger = document.querySelector('.portal-topbar [aria-controls="' + dropdown.id + '"]');
+                if (!trigger) return;
+                function synchronizeDropdownState() {
+                    trigger.setAttribute('aria-expanded', String(dropdown.classList.contains('show')));
+                }
+                synchronizeDropdownState();
+                new MutationObserver(synchronizeDropdownState).observe(dropdown, { attributes: true, attributeFilter: ['class'] });
+            });
+            function screenModeChanged() {
+                applySidebar(smallScreen.matches ? false : desktopExpanded, false);
+                if (sidebar.contains(document.activeElement) && smallScreen.matches) menuButton.focus();
+            }
+            if (smallScreen.addEventListener) smallScreen.addEventListener('change', screenModeChanged);
+            else smallScreen.addListener(screenModeChanged);
+            window.addEventListener('resize', resizeCharts);
+            window.addEventListener('load', resizeCharts);
+            if (window.ResizeObserver && main) {
+                var previousWidth = -1;
+                new ResizeObserver(function (entries) {
+                    var width = entries[0].contentRect.width;
+                    if (Math.abs(width - previousWidth) > 1) { previousWidth = width; resizeCharts(); }
+                }).observe(main);
+            }
+            document.addEventListener('click', function (event) {
+                if (event.target.closest('.tab-btn, .sub-menu, .sm-radio')) resizeCharts();
+            });
+            applySidebar(smallScreen.matches ? false : desktopExpanded, false);
+        })();
     </script>
 </body>
 </html>

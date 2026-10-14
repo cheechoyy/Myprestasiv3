@@ -8,91 +8,191 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&display=swap" rel="stylesheet">
     <script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
     <style>
-        body { margin: 0; font-family: 'Inter', sans-serif; background-color: #fff1f2; display: flex; flex-direction: column; min-height: 100vh; }
-        
-        /* TOPBAR MENGIKUT DNA DASHBOARD */
-        .topbar { background: white; padding: 15px 35px; border-bottom: 1px solid #ffe4e6; display: flex; align-items: center; justify-content: space-between; }
-        
-        /* BUTANG KEMBALI YANG SERAGAM */
-        .btn-back { background-color: white; border: 1px solid #ffe4e6; color: #be123c; padding: 8px 16px; border-radius: 12px; text-decoration: none; font-weight: bold; display: inline-flex; align-items: center; gap: 10px; transition: 0.2s; box-shadow: 0 2px 5px rgba(190, 18, 60, 0.03); }
-        .btn-back:hover { border-color: #be123c; background-color: #fff1f2; transform: translateY(-1px); }
-        
-        /* MAIN CONTAINER FLUID (EDGE-TO-EDGE) */
-        .main-container { 
-            padding: 25px 35px; 
-            flex-grow: 1; 
-            display: flex; 
-            flex-direction: column; 
-            width: 100%; 
-            box-sizing: border-box; 
+        /* ================================================================== */
+        /* 01. DESIGN TOKENS (same as Staff Portal)                           */
+        /* ================================================================== */
+        :root {
+            --portal-blue: #150a35;
+            --portal-lavender: #a577ff;
+            --portal-ghost: #f5f7fc;
+            --portal-accent: #6d3ec4;
+            --portal-accent-hover: #5528a6;
+            --portal-muted: #726585;
+            --portal-border: #e7e1f0;
+            --portal-soft: #f3edff;
+            --portal-shadow: 0 4px 18px rgba(21, 10, 53, .045);
         }
-        
-        .header-card { 
-            background: white; 
-            border-radius: 16px; 
-            padding: 25px; 
-            display: flex; 
-            align-items: center; 
-            gap: 20px; 
-            border: 1px solid #ffe4e6; 
-            box-shadow: 0 4px 12px rgba(190, 18, 60, 0.03); 
-            margin-bottom: 20px; 
-            width: 100%;
-            box-sizing: border-box;
+        *, *::before, *::after { box-sizing: border-box; }
+        body {
+            margin: 0; font-family: 'Inter', system-ui, sans-serif;
+            background: var(--portal-ghost);
+            background-image: radial-gradient(ellipse at 92% 0%, rgba(165,119,255,.075), transparent 44%);
+            color: var(--portal-blue);
+            display: flex; flex-direction: column; min-height: 100vh;
+            -webkit-font-smoothing: antialiased;
         }
-        
-        .avatar { width: 70px; height: 70px; border-radius: 50%; background: #be123c; color: white; display: flex; justify-content: center; align-items: center; font-size: 28px; }
-        .doc-info h1 { margin: 0; color: #881337; font-size: 24px; font-weight: 900; }
-        .doc-info p { margin: 5px 0 0 0; color: #f43f5e; font-weight: 600; font-size: 13px; }
-        .status-badge { padding: 6px 12px; border-radius: 8px; font-size: 12px; font-weight: 800; text-transform: uppercase; margin-left: auto; }
-        .bg-green { background: #D1FAE5; color: #16A34A; border: 1px solid #BBF7D0; }
-        .bg-yellow { background: #FEF3C7; color: #D97706; border: 1px solid #FDE68A; }
-        
-        .grid-layout { 
-            display: grid; 
-            grid-template-columns: 380px 1fr; 
-            gap: 20px; 
-            width: 100%;
-            box-sizing: border-box;
+        ::selection { background: #dccbff; color: var(--portal-blue); }
+        a:focus-visible, button:focus-visible { outline: 3px solid var(--portal-lavender); outline-offset: 3px; }
+
+        /* ================================================================== */
+        /* 02. TOP BAR (same as the Staff / HOD topbar)                       */
+        /* ================================================================== */
+        .topbar {
+            position: sticky; top: 0; z-index: 1000;
+            min-height: 76px; padding: 12px 28px;
+            display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap;
+            background: #fff; border-bottom: 1px solid var(--portal-border);
+            box-shadow: 0 3px 15px rgba(21,10,53,.035);
         }
-        
-        .content-card { background: white; border-radius: 16px; padding: 25px; border: 1px solid #ffe4e6; box-shadow: 0 4px 12px rgba(190, 18, 60, 0.03); margin-bottom: 20px; }
-        .card-title { margin: 0 0 15px 0; color: #881337; font-size: 16px; font-weight: 800; border-bottom: 1px solid #ffe4e6; padding-bottom: 10px; display: flex; align-items: center; gap: 8px; }
-        
-        .metric-row { display: flex; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid #fff1f2; }
-        .metric-label { color: #be123c; font-weight: 700; font-size: 13px; }
-        .metric-val { color: #881337; font-weight: 900; font-size: 14px; }
-        
-        .note-box { background: #fff1f2; padding: 15px; border-radius: 8px; border-left: 4px solid #be123c; font-size: 13px; color: #881337; line-height: 1.5; margin-top: 15px; }
-        
-        .btn-action { background: #be123c; color: white; padding: 12px 20px; border-radius: 8px; text-decoration: none; font-weight: bold; display: inline-block; text-align: center; font-size: 13px; transition: 0.2s; border: none; cursor: pointer; width: 100%; box-sizing: border-box; margin-top: 10px; }
-        .btn-action:hover { background: #881337; transform: translateY(-2px); }
+        .btn-back {
+            display: inline-flex; align-items: center; gap: 6px; flex-shrink: 0;
+            min-height: 40px; padding: 9px 14px;
+            background: #fff; color: #5f5278;
+            border: 1px solid var(--portal-border); border-radius: 10px;
+            font-size: 12px; font-weight: 600; text-decoration: none;
+            transition: all .2s ease;
+        }
+        .btn-back svg { width: 16px !important; height: 16px !important; color: var(--portal-accent) !important; }
+        .btn-back:hover { background: var(--portal-soft); border-color: #d8c7f4; color: var(--portal-accent); }
+        /* Print button keeps its own colours (set inline), Staff primary style */
+        button.btn-back { box-shadow: 0 4px 12px rgba(109,62,196,.13); font-weight: 650 !important; white-space: nowrap; }
+        button.btn-back svg { color: #fff !important; }
+        button.btn-back:hover { background: var(--portal-accent-hover) !important; color: #fff !important; }
+        .topbar > div > div > span { font-size: 16px !important; font-weight: 800 !important; letter-spacing: -.45px !important; }
+
+        /* ================================================================== */
+        /* 03. PAGE CONTENT                                                   */
+        /* ================================================================== */
+        .main-container { padding: 28px 28px 60px; flex-grow: 1; display: flex; flex-direction: column; width: 100%; }
+
+        /* Officer header: same dark banner as the Staff officer banner */
+        .header-card {
+            display: flex; align-items: center; gap: 18px; flex-wrap: wrap; width: 100%;
+            background: linear-gradient(135deg, #150a35 0%, #6d3ec4 100%);
+            border-radius: 16px; padding: 22px; margin-bottom: 20px;
+            box-shadow: 0 10px 25px rgba(21, 10, 53, 0.25);
+        }
+        .avatar {
+            width: 64px; height: 64px; flex-shrink: 0; border-radius: 50%;
+            display: flex; justify-content: center; align-items: center; font-size: 28px;
+            background: rgba(255,255,255,0.2); border: 1px solid rgba(255,255,255,0.35); color: #fff;
+        }
+        .doc-info h1 { margin: 0; color: #fff; font-size: 22px; font-weight: 800; letter-spacing: -.4px; }
+        .doc-info p { margin: 5px 0 0; color: rgba(255,255,255,.8); font-weight: 500; font-size: 13px; }
+        .status-badge { padding: 7px 12px; border-radius: 8px; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .4px; margin-left: auto; }
+        .bg-green { background: #D1FAE5; color: #15803d; border: 1px solid #BBF7D0; }
+        .bg-yellow { background: #FEF3C7; color: #b45309; border: 1px solid #FDE68A; }
+
+        .grid-layout { display: grid; grid-template-columns: 380px minmax(0, 1fr); gap: 20px; width: 100%; }
+        .grid-layout > div { min-width: 0; }
+
+        /* Cards: same as Staff cards */
+        .content-card {
+            background: #fff; border: 1px solid var(--portal-border); border-radius: 16px;
+            box-shadow: var(--portal-shadow); padding: 20px; margin-bottom: 20px; overflow-x: auto;
+        }
+        .card-title {
+            margin: 0 0 14px; padding-bottom: 12px; border-bottom: 1px solid #e7dff2;
+            color: var(--portal-blue); font-size: 15px; font-weight: 700; letter-spacing: -.15px;
+            display: flex; align-items: center; gap: 8px;
+        }
+        .content-card[style*="text-align: center"] .card-title { justify-content: center; }
+
+        /* Pillar rows */
+        .metric-row { display: flex; justify-content: space-between; align-items: center; gap: 16px; padding: 14px 0; border-bottom: 1px solid #eee8f6; }
+        .metric-label { color: #3b2b55; font-weight: 600; font-size: 13px; }
+        .metric-val {
+            color: var(--portal-accent); font-weight: 750; font-size: 14px; font-variant-numeric: tabular-nums;
+            background: var(--portal-soft); border: 1px solid #d8c7f4; border-radius: 999px; padding: 4px 12px; flex-shrink: 0;
+        }
+
+        .note-box {
+            background: #faf8fd; border: 1px solid #e7dff2; border-radius: 10px;
+            padding: 14px 16px; margin-top: 15px;
+            font-size: 13px; color: #3b2b55; line-height: 1.6;
+        }
+        .note-box b { color: var(--portal-blue); }
+
+        /* Buttons: same as Staff submit buttons */
+        .btn-action {
+            display: inline-block; width: 100%; margin-top: 10px; padding: 12px 20px;
+            background: var(--portal-accent); color: #fff; border: none; border-radius: 10px;
+            font-size: 13px; font-weight: 650; text-align: center; text-decoration: none; cursor: pointer;
+            box-shadow: 0 4px 12px rgba(109,62,196,.13); transition: background .2s, color .2s;
+        }
+        .btn-action:hover { background: var(--portal-accent-hover); }
+        .btn-action[style*="background: white"] { box-shadow: none; border-width: 1px !important; }
+        .btn-action[style*="background: white"]:hover { background: var(--portal-soft) !important; }
+
+        /* Recolour old Rose/Burgundy pigments inside server-made Plotly charts
+           (same rules as the Staff Portal). Data and chart scripts are untouched. */
+        .js-plotly-plot [style*="fill: rgb(136, 19, 55)"] { fill: #150a35 !important; }
+        .js-plotly-plot [style*="stroke: rgb(136, 19, 55)"] { stroke: #150a35 !important; }
+        .js-plotly-plot [style*="fill: rgb(190, 18, 60)"] { fill: #a577ff !important; }
+        .js-plotly-plot [style*="stroke: rgb(190, 18, 60)"] { stroke: #6d3ec4 !important; }
+        .js-plotly-plot [style*="fill: rgb(244, 63, 94)"] { fill: #a577ff !important; }
+        .js-plotly-plot [style*="stroke: rgb(244, 63, 94)"] { stroke: #a577ff !important; }
+        .js-plotly-plot [style*="fill: rgb(254, 205, 211)"] { fill: #dccbff !important; }
+        .js-plotly-plot [style*="stroke: rgb(254, 205, 211)"] { stroke: #dccbff !important; }
+        .js-plotly-plot [style*="fill: rgb(255, 228, 230)"] { fill: #e7dff2 !important; }
+        .js-plotly-plot [style*="stroke: rgb(255, 228, 230)"] { stroke: #e7dff2 !important; }
+        .js-plotly-plot [style*="fill: rgb(255, 241, 242)"] { fill: #f3edff !important; }
+        .js-plotly-plot [style*="stroke: rgb(255, 241, 242)"] { stroke: #f3edff !important; }
+
+        /* ================================================================== */
+        /* 04. RESPONSIVE (same breakpoints as Staff)                         */
+        /* ================================================================== */
+        @media (min-width: 1920px) {
+            .topbar, .main-container { padding-left: 40px; padding-right: 40px; }
+        }
+        @media (max-width: 1023px) {
+            .grid-layout { grid-template-columns: minmax(0, 1fr); gap: 0; }
+        }
+        @media (max-width: 767px) {
+            .topbar { padding: 12px 16px; }
+            .main-container { padding: 22px 16px 40px; }
+            .header-card { padding: 18px; }
+            .status-badge { margin-left: 0; }
+            .doc-info h1 { font-size: 19px; }
+            .content-card { padding: 16px; }
+            .content-card div[style*="grid-template-columns: 1fr 1fr"] { grid-template-columns: minmax(0, 1fr) !important; gap: 0 !important; }
+        }
+        @media (prefers-reduced-motion: reduce) {
+            *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; }
+        }
 
         /* GAYA CETAKAN RASMI (PDF / PRINT) */
         @media print {
-            body { background-color: white !important; }
+            body { background: white !important; }
             .btn-back, .no-print { display: none !important; }
-            .topbar { border-bottom: 2px solid #881337 !important; padding: 10px 0 !important; }
+            .topbar { position: static; box-shadow: none; border-bottom: 2px solid #150a35 !important; padding: 10px 0 !important; }
             .main-container { padding: 10px 0 !important; }
             .content-card, .header-card { box-shadow: none !important; border: 1px solid #cbd5e1 !important; page-break-inside: avoid; }
+            .header-card { background: white !important; }
+            .doc-info h1 { color: #150a35 !important; }
+            .doc-info p { color: #475569 !important; }
+            .avatar { background: #f3edff !important; border-color: #d8c7f4 !important; }
+            .grid-layout { grid-template-columns: 340px minmax(0, 1fr); }
         }
     </style>
 </head>
 <body>
 
     <div class="topbar">
-        <a href="javascript:history.back()" class="btn-back">
-            <svg style="width:20px; height:20px; color:#be123c;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
-            Back to Leaderboard
+        <!-- Returns to the list the profile was opened from (Directory / Leaderboard); falls back to the dashboard -->
+        <a href="{% url 'hod_dashboard' %}" class="btn-back" aria-label="Back"
+           onclick="if (document.referrer && document.referrer.indexOf(location.origin) === 0 && history.length > 1) { history.back(); return false; }">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
+            <span>Back</span>
         </a>
         <div style="display: flex; align-items: center; gap: 12px;">
-            <button onclick="window.print()" class="btn-back no-print" style="cursor: pointer; background: #be123c; color: white; border: none; font-size: 12px; padding: 8px 14px;">
+            <button onclick="window.print()" class="btn-back no-print" style="cursor: pointer; background: #6d3ec4; color: white; border: none; font-size: 12px; padding: 8px 14px;">
                 <svg style="width: 16px; height: 16px; color: white;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/></svg>
                 Print Dossier (PDF)
             </button>
             <div style="display: flex; align-items: center; gap: 8px;">
-                <svg style="width: 24px; height: 24px; color: #be123c;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5m0 0v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4M12 7v4m-2-2h4"/></svg>
-                <span style="font-weight: 900; color: #881337; font-size: 18px; letter-spacing: -0.5px;">Executive Talent Dossier</span>
+                <svg style="width: 24px; height: 24px; color: #6d3ec4;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5m0 0v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4M12 7v4m-2-2h4"/></svg>
+                <span style="font-weight: 900; color: #150a35; font-size: 18px; letter-spacing: -0.5px;">Executive Talent Dossier</span>
             </div>
         </div>
     </div>
@@ -145,16 +245,342 @@
 
                 <div class="content-card">
                     <h3 class="card-title">🎯 Action & Interventions</h3>
-                    <p style="font-size: 13px; color: #64748b; margin-top: 0;">Navigate to the evaluation modules to perform targeted audits or log new procedures for this officer.</p>
+                    <p style="font-size: 13px; color: #726585; margin-top: 0;">Navigate to the evaluation modules to perform targeted audits or log new procedures for this officer.</p>
                     
                     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
                         <a href="{% url 'cts_module' %}?officer={{ officer_name|urlencode }}&clinic={{ clinic_name|urlencode }}&state={{ state_name|urlencode }}&tab=Skills" class="btn-action">Perform Clinical Audit</a>
-                        <a href="{% url 'interpersonal_module' %}?officer={{ officer_name|urlencode }}&clinic={{ clinic_name|urlencode }}&state={{ state_name|urlencode }}&tab=Teamwork" class="btn-action" style="background: white; color: #be123c; border: 2px solid #be123c;">Log Teamwork Review</a>
+                        <a href="{% url 'interpersonal_module' %}?officer={{ officer_name|urlencode }}&clinic={{ clinic_name|urlencode }}&state={{ state_name|urlencode }}&tab=Teamwork" class="btn-action" style="background: white; color: #6d3ec4; border: 2px solid #6d3ec4;">Log Teamwork Review</a>
                     </div>
                 </div>
             </div>
         </div>
     </div>
 
+    {# --- JS: Score colours (red -> yellow -> green), same palette as the Staff dashboard --- #}
+    <script data-score-palette="gradient">
+        // Presentation-only: colours charts, % bars and % numbers by their value
+        // (low = red, middle = yellow, high = green). Data and layout are not changed.
+        window.MPScorePalette = window.MPScorePalette || (function () {
+            'use strict';
+            var RED = [220, 38, 38], YELLOW = [250, 204, 21], GREEN = [22, 163, 74];
+            // Darker yellow for text so numbers stay readable on white
+            var T_RED = [220, 38, 38], T_YELLOW = [202, 138, 4], T_GREEN = [22, 163, 74];
+            var SVG_NS = 'http://www.w3.org/2000/svg';
+            var GAUGE_STEPS = 121;
+            var frame = null, uid = 0, defs = null, pageConfig = { texts: [], bars: [] };
+            var attached = new WeakSet();
+
+            function mix(from, to, f) {
+                return '#' + from.map(function (c, i) {
+                    return Math.round(c + (to[i] - c) * f).toString(16).padStart(2, '0');
+                }).join('');
+            }
+            function clamp01(p) { return Math.max(0, Math.min(1, p)); }
+            function colorAt(p) { p = clamp01(p); return p <= 0.5 ? mix(RED, YELLOW, p * 2) : mix(YELLOW, GREEN, (p - 0.5) * 2); }
+            function textColorAt(p) { p = clamp01(p); return p <= 0.5 ? mix(T_RED, T_YELLOW, p * 2) : mix(T_YELLOW, T_GREEN, (p - 0.5) * 2); }
+            function list(v) { return v && (Array.isArray(v) || ArrayBuffer.isView(v)) ? Array.from(v) : null; }
+            function sameList(a, b) { return Array.isArray(a) && a.length === b.length && b.every(function (x, i) { return a[i] === x; }); }
+            function safeRestyle(chart, update, idx) {
+                try { var r = window.Plotly.restyle(chart, update, [idx]); if (r && r.catch) r.catch(function () {}); } catch (e) { }
+            }
+
+            // ---------- shared hidden <svg> for gradients ----------
+            function getDefs() {
+                if (defs && document.body.contains(defs)) return defs;
+                var svg = document.createElementNS(SVG_NS, 'svg');
+                svg.setAttribute('width', '0'); svg.setAttribute('height', '0'); svg.setAttribute('aria-hidden', 'true');
+                svg.style.cssText = 'position:absolute; width:0; height:0; overflow:hidden;';
+                defs = document.createElementNS(SVG_NS, 'defs');
+                svg.appendChild(defs);
+                document.body.appendChild(svg);
+                return defs;
+            }
+            function gradient(id, kind) {
+                var g = document.getElementById(id);
+                if (g) return g;
+                g = document.createElementNS(SVG_NS, kind);
+                g.setAttribute('id', id);
+                g.setAttribute('gradientUnits', 'userSpaceOnUse');
+                [['0', '#dc2626'], ['0.5', '#facc15'], ['1', '#16a34a']].forEach(function (s) {
+                    var stop = document.createElementNS(SVG_NS, 'stop');
+                    stop.setAttribute('offset', s[0]); stop.setAttribute('stop-color', s[1]);
+                    g.appendChild(stop);
+                });
+                getDefs().appendChild(g);
+                return g;
+            }
+            function chartId(chart) { if (!chart.__mpPaletteId) chart.__mpPaletteId = 'mpScore' + (++uid); return chart.__mpPaletteId; }
+            function traceGroups(chart, index) {
+                return Array.prototype.filter.call(chart.querySelectorAll('.scatterlayer .trace'), function (g) {
+                    var d = g.__data__; return d && d[0] && d[0].trace && d[0].trace.index === index;
+                });
+            }
+
+            // ---------- value scale per trace: returns {lo, hi} (lo = red, hi = green) ----------
+            function axisScale(ax, values) {
+                var range = ax && ax.range ? ax.range.slice() : [0, 100];
+                var lo = Math.max(0, Math.min(range[0], range[1])), hi = Math.max(range[0], range[1]);
+                var maxVal = Math.max.apply(null, values);
+                if (hi <= 1.05 && maxVal <= 1) hi = 1;            // probability 0–1
+                else if (hi > 100 && maxVal <= 100) hi = 100;     // percentage axis with headroom
+                if (hi <= lo) { lo = 0; hi = 100; }
+                return { lo: lo, hi: hi };
+            }
+            function lineScale(trace, values, ya) {
+                var name = String(trace.name || '');
+                if (/cusum/i.test(name)) {                       // above 0 = good, below 0 = poor
+                    var m = Math.max.apply(null, values.map(Math.abs)) || 1;
+                    return { lo: -m, hi: m };
+                }
+                if (/gee|hba1c/i.test(name)) return { lo: 12, hi: 7 };   // HbA1c: lower is better (target < 7%)
+                return axisScale(ya, values);
+            }
+            function pos(v, s) { return (v - s.lo) / (s.hi - s.lo); }
+
+            // ---------- line / area charts ----------
+            function paintLine(chart, trace, index) {
+                var ys = list(trace.y);
+                if (!ys || !ys.length || typeof ys[0] !== 'number') return;
+                var ya = chart._fullLayout[(trace.yaxis || 'y').replace('y', 'yaxis')] || chart._fullLayout.yaxis;
+                if (!ya || !ya.c2p) return;
+                var s = lineScale(trace, ys, ya);
+                var mode = trace.mode || '';
+                if (mode.indexOf('markers') > -1) {
+                    var colors = ys.map(function (v) { return colorAt(pos(v, s)); });
+                    if (!sameList(trace.marker && trace.marker.color, colors)) {
+                        safeRestyle(chart, { 'marker.color': [colors], 'marker.line.color': '#ffffff', 'marker.line.width': 2 }, index);
+                    }
+                }
+                var id = chartId(chart) + 'L' + index, g = gradient(id, 'linearGradient');
+                var y1 = ya.c2p(s.lo), y2 = ya.c2p(s.hi);
+                if (!isFinite(y1) || !isFinite(y2)) return;
+                g.setAttribute('x1', '0'); g.setAttribute('x2', '0');
+                g.setAttribute('y1', y1); g.setAttribute('y2', y2);
+                traceGroups(chart, index).forEach(function (grp) {
+                    grp.querySelectorAll('.js-line').forEach(function (p) { p.style.setProperty('stroke', 'url(#' + id + ')', 'important'); });
+                    grp.querySelectorAll('.js-fill').forEach(function (p) {
+                        p.style.setProperty('fill', 'url(#' + id + ')', 'important');
+                        p.style.setProperty('fill-opacity', '.30', 'important');
+                    });
+                });
+            }
+
+            // ---------- marker-only score charts (e.g. lollipop) ----------
+            function paintMarkers(chart, trace, index) {
+                var xs = list(trace.x), ys = list(trace.y);
+                var horizontal = xs && typeof xs[0] === 'number' && ys && typeof ys[0] !== 'number';
+                var vals = horizontal ? xs : ys;
+                if (!vals || typeof vals[0] !== 'number') return;
+                var s = axisScale(horizontal ? chart._fullLayout.xaxis : chart._fullLayout.yaxis, vals);
+                var colors = vals.map(function (v) { return colorAt(pos(v, s)); });
+                if (!sameList(trace.marker && trace.marker.color, colors)) safeRestyle(chart, { 'marker.color': [colors] }, index);
+                // Lollipop stems: give each stem the colour of its own score
+                var shapes = chart.layout.shapes;
+                if (horizontal && Array.isArray(shapes) && shapes.length) {
+                    var changed = false;
+                    var next = shapes.map(function (sh) {
+                        if (sh.type !== 'line' || sh.y0 !== sh.y1 || typeof sh.x1 !== 'number') return sh;
+                        var c = colorAt(pos(sh.x1, s));
+                        if (sh.line && sh.line.color === c) return sh;
+                        changed = true;
+                        return Object.assign({}, sh, { line: Object.assign({}, sh.line, { color: c }) });
+                    });
+                    if (changed) { try { var r = window.Plotly.relayout(chart, { shapes: next }); if (r && r.catch) r.catch(function () {}); } catch (e) { } }
+                }
+            }
+
+            // ---------- bars ----------
+            var STATUS_BARS = [[/on-?time/i, '#16a34a', '#ffffff'], [/delay/i, '#facc15', '#1f2937'], [/overdue|late/i, '#dc2626', '#ffffff']];
+            function paintBar(chart, trace, index, barCount) {
+                var name = String(trace.name || '');
+                for (var k = 0; k < STATUS_BARS.length; k++) {   // stacked status bars: semantic colours
+                    if (STATUS_BARS[k][0].test(name)) {
+                        if (trace.marker && trace.marker.color === STATUS_BARS[k][1]) return;
+                        safeRestyle(chart, { 'marker.color': STATUS_BARS[k][1], 'textfont.color': STATUS_BARS[k][2] }, index);
+                        return;
+                    }
+                }
+                if (barCount > 1) return;                          // multi-series bars: colours mean the series
+                var horizontal = trace.orientation === 'h';
+                var vals = list(horizontal ? trace.x : trace.y);
+                if (!vals || typeof vals[0] !== 'number') return;
+                var s = axisScale(horizontal ? chart._fullLayout.xaxis : chart._fullLayout.yaxis, vals);
+                var colors = vals.map(function (v) { return colorAt(pos(v, s)); });
+                if (sameList(trace.marker && trace.marker.color, colors)) return;
+                safeRestyle(chart, { 'marker.color': [colors], 'textfont.color': '#1f2937' }, index);
+            }
+            function paintBarpolar(chart, trace, index) {
+                var rs = list(trace.r);
+                if (!rs || typeof rs[0] !== 'number') return;
+                var ra = chart._fullLayout.polar && chart._fullLayout.polar.radialaxis;
+                var s = axisScale(ra, rs);
+                var colors = rs.map(function (v) { return colorAt(pos(v, s)); });
+                if (!sameList(trace.marker && trace.marker.color, colors)) safeRestyle(chart, { 'marker.color': [colors] }, index);
+            }
+
+            // ---------- radar: radial gradient (centre red -> edge green) ----------
+            function paintRadar(chart, trace, index) {
+                var rs = list(trace.r);
+                if (!rs || typeof rs[0] !== 'number') return;
+                var ra = chart._fullLayout.polar && chart._fullLayout.polar.radialaxis;
+                var s = axisScale(ra, rs);
+                var colors = rs.map(function (v) { return colorAt(pos(v, s)); });
+                if (!sameList(trace.marker && trace.marker.color, colors)) {
+                    safeRestyle(chart, { 'marker.color': [colors], 'marker.line.color': '#ffffff', 'marker.line.width': 2 }, index);
+                }
+                var id = chartId(chart) + 'R' + index, g = gradient(id, 'radialGradient');
+                var bg = chart.querySelector('.polarlayer .plotbg');
+                traceGroups(chart, index).forEach(function (grp) {
+                    var shape = grp.querySelector('.js-fill') || grp.querySelector('.js-line');
+                    if (bg && shape && bg.getBBox && shape.getCTM && bg.getCTM) {
+                        var box = bg.getBBox(), m1 = bg.getCTM(), m2 = shape.getCTM();
+                        if (box.width && m1 && m2) {
+                            var pt = bg.ownerSVGElement.createSVGPoint();
+                            pt.x = box.x + box.width / 2; pt.y = box.y + box.height / 2;
+                            var local = pt.matrixTransform(m1).matrixTransform(m2.inverse());
+                            ['cx', 'fx'].forEach(function (k) { g.setAttribute(k, local.x); });
+                            ['cy', 'fy'].forEach(function (k) { g.setAttribute(k, local.y); });
+                            g.setAttribute('r', Math.abs((box.width / 2) * (m1.a / m2.a)));
+                        }
+                    }
+                    grp.querySelectorAll('.js-fill').forEach(function (p) {
+                        p.style.setProperty('fill', 'url(#' + id + ')', 'important');
+                        p.style.setProperty('fill-opacity', '.55', 'important');
+                    });
+                    grp.querySelectorAll('.js-line').forEach(function (p) { p.style.setProperty('stroke', 'url(#' + id + ')', 'important'); });
+                });
+            }
+
+            // ---------- gauges ----------
+            function gaugeSteps(range) {
+                var lo = range[0], hi = range[1], steps = [];
+                for (var i = 0; i < GAUGE_STEPS; i++) {
+                    var c = colorAt(i / (GAUGE_STEPS - 1));
+                    steps.push({ range: [lo + (hi - lo) * i / GAUGE_STEPS, lo + (hi - lo) * (i + 1) / GAUGE_STEPS], color: c, thickness: 1, line: { color: c, width: 0 } });
+                }
+                return steps;
+            }
+            function keepIndicatorsVisible(chart) {
+                chart.querySelectorAll('.angular').forEach(function (angular) {
+                    var bgs = Array.from(angular.children).filter(function (el) { return el.classList.contains('bg-arc'); });
+                    var last = bgs[bgs.length - 1];
+                    if (!last) return;
+                    var fg = ['value-arc', 'threshold-arc', 'gauge-outline'].map(function (cls) {
+                        return Array.from(angular.children).find(function (el) { return el.classList.contains(cls); });
+                    }).filter(Boolean);
+                    if (fg.some(function (el) { return Boolean(el.compareDocumentPosition(last) & 4); })) fg.forEach(function (el) { angular.appendChild(el); });
+                });
+            }
+            function paintGauge(chart, trace, index) {
+                if (trace.gauge && trace.gauge.shape === 'bullet') return;
+                var full = chart._fullData && chart._fullData[index];
+                var range = (full && full.gauge && full.gauge.axis && full.gauge.axis.range) || [0, 100];
+                var steps = gaugeSteps(range), current = trace.gauge && trace.gauge.steps;
+                keepIndicatorsVisible(chart);
+                if (Array.isArray(current) && current.length === steps.length && current[0].color === steps[0].color &&
+                    current[0].range[1] === steps[0].range[1]) return;
+                try {
+                    var r = window.Plotly.restyle(chart, { 'gauge.steps': [steps] }, [index]);
+                    if (r && r.then) r.then(function () { keepIndicatorsVisible(chart); }).catch(function () {});
+                } catch (e) { }
+            }
+
+            // ---------- heatmaps (same as HOD MO Competency Matrix) ----------
+            function paintHeatmap(chart, trace, index) {
+                if (trace.zmin === 60 && trace.zmax === 100) return;
+                safeRestyle(chart, {
+                    zmin: 60, zmax: 100, zauto: false,
+                    colorscale: [[[0, '#f87171'], [0.5, '#fcd34d'], [1.0, '#4ade80']]],
+                    'textfont.color': '#1f2937'
+                }, index);
+            }
+
+            function paintChart(chart) {
+                if (!chart._fullLayout || !Array.isArray(chart.data)) return;
+                if (!attached.has(chart) && typeof chart.on === 'function') {
+                    attached.add(chart);
+                    chart.on('plotly_afterplot', schedule);
+                }
+                var barCount = chart.data.filter(function (t) { return (t.type || 'scatter') === 'bar'; }).length;
+                var markerOnly = chart.data.filter(function (t) { return (t.type || 'scatter') === 'scatter' && (t.mode || '').indexOf('lines') === -1; }).length;
+                chart.data.forEach(function (trace, index) {
+                    var type = trace.type || 'scatter';
+                    var hidden = trace.hoverinfo === 'skip' || (typeof trace.opacity === 'number' && trace.opacity < 0.5);
+                    var dashed = trace.line && trace.line.dash && trace.line.dash !== 'solid';
+                    if (type === 'indicator' && (trace.mode || '').indexOf('gauge') > -1) paintGauge(chart, trace, index);
+                    else if (type === 'heatmap') paintHeatmap(chart, trace, index);
+                    else if (type === 'bar') paintBar(chart, trace, index, barCount);
+                    else if (type === 'barpolar') paintBarpolar(chart, trace, index);
+                    else if (type === 'scatterpolar') paintRadar(chart, trace, index);
+                    else if (type === 'scatter' && !hidden && !dashed) {
+                        if ((trace.mode || '').indexOf('lines') > -1) paintLine(chart, trace, index);
+                        else if (markerOnly === 1) paintMarkers(chart, trace, index);   // several marker groups = categories, keep
+                    }
+                });
+            }
+
+            // ---------- HTML % bars and % numbers ----------
+            function readPercent(el) {
+                var m = /width\s*:\s*([\d.]+)\s*%/i.exec(el.getAttribute('style') || '');
+                return m ? parseFloat(m[1]) : null;
+            }
+            function barLabel(bar) {
+                var track = bar.parentElement;
+                if (!track) return null;
+                var next = track.nextElementSibling;
+                if (next && /%/.test(next.textContent)) return next;
+                var row = track.previousElementSibling;
+                if (row) { var spans = row.querySelectorAll(':scope > span'); if (spans.length >= 2) return spans[spans.length - 1]; }
+                return null;
+            }
+            function paintBars(selector) {
+                document.querySelectorAll(selector).forEach(function (bar) {
+                    var pct = readPercent(bar);
+                    if (pct === null || pct <= 0) return;
+                    pct = Math.min(pct, 100);
+                    // Gradient spans the full track (0–100) and is revealed up to the bar's own %
+                    bar.style.setProperty('background-color', 'transparent', 'important');
+                    bar.style.setProperty('background-image', 'linear-gradient(90deg, #dc2626 0%, #facc15 50%, #16a34a 100%)', 'important');
+                    bar.style.setProperty('background-size', (10000 / pct) + '% 100%', 'important');
+                    bar.style.setProperty('background-repeat', 'no-repeat', 'important');
+                    bar.style.setProperty('background-position', 'left center', 'important');
+                    var label = barLabel(bar);
+                    if (label) label.style.setProperty('color', textColorAt(pct / 100), 'important');
+                });
+            }
+            function paintTexts(selector) {
+                document.querySelectorAll(selector).forEach(function (el) {
+                    var m = /^\(?\s*(\d+(?:\.\d+)?)\s*%\s*\)?$/.exec(el.textContent.trim());
+                    if (m) el.style.setProperty('color', textColorAt(parseFloat(m[1]) / 100), 'important');
+                });
+            }
+
+            function apply() {
+                if (window.Plotly && typeof window.Plotly.restyle === 'function') {
+                    document.querySelectorAll('.js-plotly-plot').forEach(paintChart);
+                }
+                pageConfig.bars.forEach(paintBars);
+                pageConfig.texts.forEach(paintTexts);
+            }
+            function schedule() {
+                if (frame !== null) return;
+                frame = window.requestAnimationFrame(function () { frame = null; apply(); });
+            }
+            function run(config) {
+                pageConfig = { texts: (config && config.texts) || [], bars: (config && config.bars) || [] };
+                if (window.MutationObserver) {
+                    new MutationObserver(function (records) {
+                        // Only react to newly added nodes outside our own hidden gradient <svg>
+                        if (records.some(function (r) { return r.addedNodes.length && !(defs && defs.contains(r.target)); })) schedule();
+                    }).observe(document.body, { childList: true, subtree: true });
+                }
+                window.addEventListener('load', schedule, { once: true });
+                window.addEventListener('resize', schedule);
+                schedule();
+            }
+            return { run: run, colorAt: colorAt, textColorAt: textColorAt };
+        })();
+        window.MPScorePalette.run({"texts": [".metric-row .metric-val"]});
+    </script>
 </body>
 </html>

@@ -10,135 +10,461 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
     <script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
     <style>
-        /* TEMA WARNA DNA BAHARU (ROSE & BURGUNDY) */
-        body { margin: 0; font-family: 'Inter', sans-serif; background-color: #fff1f2; display: flex; height: 100vh; overflow: hidden; }
-        
+        /* ================================================================== */
+        /* 01. DESIGN TOKENS (same as Staff Portal)                           */
+        /* ================================================================== */
+        :root {
+            --portal-blue: #150a35;
+            --portal-lavender: #a577ff;
+            --portal-ghost: #f5f7fc;
+            --portal-accent: #6d3ec4;
+            --portal-accent-hover: #5528a6;
+            --portal-ink: #150a35;
+            --portal-muted: #726585;
+            --portal-border: #e7e1f0;
+            --portal-surface: #ffffff;
+            --portal-soft: #f3edff;
+            --portal-shadow: 0 4px 18px rgba(21, 10, 53, .045);
+            --portal-sidebar-width: 80px;
+            --portal-sidebar-expanded: 264px;
+            --portal-topbar-height: 76px;
+        }
+        *, *::before, *::after { box-sizing: border-box; }
+        html { width: 100%; min-height: 100%; }
+        body {
+            margin: 0;
+            font-family: 'Inter', system-ui, sans-serif;
+            width: 100%; height: 100vh; height: 100dvh;
+            overflow: hidden;
+            background: var(--portal-ghost);
+            background-image: radial-gradient(ellipse at 92% 0%, rgba(165,119,255,.075), transparent 44%);
+            color: var(--portal-ink);
+            -webkit-font-smoothing: antialiased;
+        }
+        body.sidebar-open { --portal-sidebar-width: var(--portal-sidebar-expanded); }
+        ::selection { background: #dccbff; color: var(--portal-blue); }
+        button, input, select, textarea { font: inherit; }
+        button, a, input, select, textarea { -webkit-tap-highlight-color: transparent; accent-color: var(--portal-accent); }
+        button:focus-visible, a:focus-visible, [role="button"]:focus-visible {
+            outline: 3px solid var(--portal-lavender); outline-offset: 3px;
+        }
+
+        /* ================================================================== */
+        /* 02. SIDEBAR (dark rail, opened and closed by the menu button)      */
+        /* ================================================================== */
         .sidebar {
-            width: 80px; height: 100vh; position: fixed; top: 0; left: 0;
-            background: white; border-right: 1px solid #ffe4e6;
-            padding: 20px 14px; padding-bottom: 30px; display: flex; flex-direction: column;
-            overflow-x: hidden; overflow-y: auto; box-sizing: border-box;
-            transition: width 0.35s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.35s ease;
-            z-index: 1000;
+            width: var(--portal-sidebar-width);
+            height: 100vh; height: 100dvh;
+            position: fixed; top: 0; left: 0;
+            padding: 22px 14px 20px;
+            display: flex; flex-direction: column;
+            overflow-x: hidden; overflow-y: auto;
+            background: linear-gradient(180deg, #150a35 0%, #201243 100%);
+            border-right: 1px solid rgba(165,119,255,.16);
+            z-index: 1200;
+            scrollbar-width: thin; scrollbar-color: #5b4380 #150a35;
+        }
+        .sidebar-brand-row { display: flex; align-items: center; gap: 8px; margin-bottom: 24px; min-height: 42px; }
+        .sidebar .hide-on-collapse { opacity: 0; visibility: hidden; pointer-events: none; white-space: nowrap; }
+        body.sidebar-open .sidebar .hide-on-collapse { opacity: 1; visibility: visible; pointer-events: auto; }
+        .sidebar-section-title {
+            font-size: 10px; font-weight: 800; color: #b4a1cf;
+            text-transform: uppercase; letter-spacing: 1.35px;
+            margin: 20px 0 12px 4px;
         }
 
-        .sidebar:hover { width: 280px; box-shadow: 10px 0 30px rgba(190, 18, 60, 0.08); }
-        .sidebar:hover ~ .main-content { margin-left: 280px; }
-        .sidebar:hover ~ .custom-footer { left: 280px; }
+        .nav-btn {
+            display: flex; align-items: center; gap: 12px;
+            width: 100%; min-height: 46px; padding: 12px 14px; margin-bottom: 6px;
+            border: 1px solid transparent; border-radius: 11px;
+            background: transparent; color: #ded6ed;
+            font-size: 13px; font-weight: 550; text-decoration: none;
+            overflow: hidden;
+        }
+        .nav-btn:hover { background: rgba(165,119,255,.13); border-color: rgba(165,119,255,.15); color: #fff; }
+        .nav-btn.active {
+            background: var(--portal-lavender); color: var(--portal-blue);
+            border-color: var(--portal-lavender); font-weight: 700;
+            box-shadow: 0 4px 14px rgba(0,0,0,.1);
+        }
+        .nav-icon { width: 22px; min-width: 22px; display: flex; justify-content: center; align-items: center; flex-shrink: 0; }
+        .nav-icon svg { width: 20px; height: 20px; display: block; }
 
-        .hide-on-collapse { opacity: 0; white-space: nowrap; pointer-events: none; transition: opacity 0.25s ease; }
-        .sidebar:hover .hide-on-collapse { opacity: 1; pointer-events: auto; }
+        /* Overall statistics: same rail item, number + label */
+        .nav-stat { padding-top: 10px; padding-bottom: 10px; }
+        .nav-stat-text { min-width: 0; }
+        .nav-stat-text h3 { margin: 0; color: #fff; font-size: 15px; font-weight: 800; line-height: 1.25; font-variant-numeric: tabular-nums; }
+        .nav-stat-text p { margin: 2px 0 0; color: #b4a1cf; font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: .4px; }
+        .nav-stat .nav-icon { color: #c8b6e8; }
+        .nav-stat:hover .nav-icon { color: #fff; }
 
-        .sidebar-logo { display: flex; align-items: center; gap: 14px; margin-bottom: 25px; padding: 0 4px; min-height: 50px; text-decoration: none; cursor: pointer; }
-        .sidebar-logo img { width: 42px !important; height: auto !important; flex-shrink: 0; filter: drop-shadow(0 2px 4px rgba(136, 19, 55, 0.1)); }
-        .sidebar-logo-text h2 { color: #881337; font-weight: 900; margin: 0; font-size: 1.3rem; letter-spacing: -0.5px;}
-        .sidebar-logo-text p { color: #f43f5e; font-size: 0.75rem; font-weight: 800; margin: 0; text-transform: uppercase; letter-spacing: 1px;}
+        .sidebar-bottom { margin-top: auto; padding-top: 16px; display: flex; flex-direction: column; gap: 0; }
+        .btn-logout {
+            display: flex; align-items: center; gap: 12px;
+            min-height: 46px; padding: 12px 14px;
+            background: rgba(165,119,255,.08); color: #d9c6ff;
+            border: 1px solid rgba(165,119,255,.2); border-radius: 11px;
+            font-size: 13px; font-weight: 600; text-decoration: none; overflow: hidden;
+        }
+        .btn-logout:hover { background: rgba(165,119,255,.17); }
 
-        /* SIDEBAR KPI & MENU CARDS */
-        .stat-card, .kpi-card { background: white; border: 1px solid #ffe4e6; border-radius: 12px; padding: 7px; display: flex; align-items: center; margin-bottom: 10px; box-shadow: 0 2px 5px rgba(190, 18, 60, 0.03); min-height: 52px; box-sizing: border-box; width: 100%; }
-        .stat-icon, .kpi-icon { width: 36px; height: 36px; border-radius: 10px; background: #fff1f2; display: flex; justify-content: center; align-items: center; flex-shrink: 0; }
-        .stat-info, .kpi-text { margin-left: 12px; display: flex; flex-direction: column; }
-        .stat-val, .kpi-text h3 { margin: 0; font-size: 15px; font-weight: 900; color: #881337; line-height: 1.2; }
-        .stat-label, .kpi-text p { margin: 0; font-size: 10px; font-weight: 700; color: #f43f5e; text-transform: uppercase; }
+        .sidebar-toggle {
+            width: 42px; height: 42px; flex-shrink: 0;
+            display: inline-flex; align-items: center; justify-content: center;
+            border: 1px solid var(--portal-border); border-radius: 10px;
+            background: white; color: #5f5278; cursor: pointer;
+        }
+        .sidebar-toggle:hover, .sidebar-toggle[aria-expanded="true"] { background: var(--portal-soft); border-color: #d8c7f4; color: var(--portal-accent); }
+        .sidebar-toggle svg { width: 21px; height: 21px; }
+        .sidebar-toggle-rail { background: transparent; border-color: rgba(165,119,255,.25); color: #ded6ed; }
+        .sidebar-toggle-rail:hover { background: rgba(165,119,255,.15); border-color: rgba(165,119,255,.4); color: #fff; }
+        .sidebar-close {
+            display: none; flex-shrink: 0; width: 30px; height: 32px;
+            align-items: center; justify-content: center;
+            background: transparent; color: #d7c9ec; border: 0; border-radius: 7px; cursor: pointer;
+        }
+        body.sidebar-open .sidebar-close { display: flex; }
+        .sidebar-close:hover { color: #fff; background: rgba(165,119,255,.16); }
+        .sidebar-close svg { width: 18px; height: 18px; }
+        .sidebar-backdrop { display: none; position: fixed; inset: 0; background: rgba(21,10,53,.45); backdrop-filter: blur(3px); z-index: 1150; }
 
-        .nav-btn, .menu-btn, .btn-menu { background: white; border: 1px solid #ffe4e6; border-radius: 12px; padding: 7px; font-weight: 700; color: #881337; margin-bottom: 8px; text-align: left; display: flex; align-items: center; text-decoration: none; transition: 0.2s; min-height: 52px; box-sizing: border-box; width: 100%; }
-        .nav-btn:hover, .menu-btn:hover, .btn-menu:hover { background: #fff1f2; border-color: #be123c; }
-        .btn-menu-icon { width: 36px; height: 36px; border-radius: 10px; background: #fff1f2; display: flex; justify-content: center; align-items: center; flex-shrink: 0; }
+        /* ================================================================== */
+        /* 03. TOPBAR (logo, schedule, search, inbox, alerts, profile, tabs)  */
+        /* ================================================================== */
+        .portal-topbar {
+            position: fixed; top: 0; left: var(--portal-sidebar-width); right: 0;
+            z-index: 1100; background: #fff;
+            border-bottom: 1px solid var(--portal-border);
+            box-shadow: 0 3px 15px rgba(21,10,53,.035);
+        }
+        .topbar-main { height: 76px; display: flex; align-items: center; gap: 20px; padding: 0 28px; min-width: 0; }
+        .topbar-leading { display: flex; align-items: center; gap: 14px; flex-shrink: 0; }
+        .topbar-logo { display: flex; align-items: center; flex-shrink: 0; text-decoration: none; }
+        .topbar-logo img { width: 36px; height: auto; display: block; }
+        .topbar-brand { line-height: 1.3; min-width: 0; }
+        .topbar-brand strong { display: block; font-size: 15px; font-weight: 800; letter-spacing: -.45px; color: var(--portal-blue); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .topbar-brand span { display: block; margin-top: 3px; font-size: 10px; color: var(--portal-muted); text-transform: uppercase; letter-spacing: .6px; }
 
-        .btn-back { background-color: white; border: 1px solid #ffe4e6; color: #be123c; padding: 7px; border-radius: 12px; text-decoration: none; font-weight: bold; display: flex; align-items: center; margin-bottom: 10px; transition: 0.2s; min-height: 52px; box-sizing: border-box; width: 100%; }
-        .btn-back:hover { border-color: #be123c; background: #fff1f2; }
-        .btn-logout { background-color: #be123c; color: white; padding: 7px; border-radius: 12px; text-decoration: none; font-weight: bold; display: flex; align-items: center; margin-top: auto; transition: 0.3s; box-shadow: 0 4px 10px rgba(190, 18, 60, 0.2); min-height: 52px; box-sizing: border-box; width: 100%; }
-        .btn-logout:hover { background-color: #881337; transform: translateY(-2px); }
-
-        .sidebar-section-title { font-size: 11px; font-weight: 800; color: #fb7185; text-transform: uppercase; margin: 15px 0 10px 4px; letter-spacing: 0.5px; }
-
-        /* MAIN CONTENT LAYOUT */
-        .main-content { flex: 1; margin-left: 80px; padding: 10px 35px 60px 35px; overflow: hidden; display: flex; flex-direction: column; transition: margin-left 0.35s ease; min-height: calc(100vh - 70px); }
-        .page-header { flex-shrink: 0; }
-        .page-header h1 { color: #881337; font-weight: 900; font-size: 24px; margin: 0 0 5px 0; display: flex; align-items: center; gap: 10px; letter-spacing: -0.5px; }
-        .page-header p { color: #f43f5e; font-size: 13px; margin: 0 0 10px 0; font-weight: 600; }
-
-        /* NAVIGASI SUB-MODUL */
-        .sub-modules-nav { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; margin-bottom: 15px; flex-shrink: 0; }
-        .sm-btn { background: white; border: 1px solid #ffe4e6; border-radius: 12px; height: 44px; display: flex; align-items: center; justify-content: center; gap: 10px; font-weight: 800; font-size: 13px; color: #881337; text-decoration: none; box-shadow: 0 2px 5px rgba(190, 18, 60, 0.03); transition: all 0.2s ease; }
-        .sm-btn:hover { border-color: #fecdd3; background: #fff1f2; transform: translateY(-2px); }
-        .sm-btn.active { border: 1px solid #be123c; background: linear-gradient(135deg, #be123c 0%, #881337 100%); color: white; box-shadow: 0 4px 15px rgba(190, 18, 60, 0.25); }
-
-        /* CONTENT CARD (DIKEMAS KINI) */
-        .content-card {
-            background: white; border-radius: 16px; padding: 20px 25px;
-            border: 1px solid #ffe4e6; box-shadow: 0 4px 12px rgba(190, 18, 60, 0.03);
-            flex-grow: 1; display: block;
-            overflow-y: auto; margin-bottom: 15px;
+        .top-header-right { display: flex; align-items: center; gap: 10px; min-width: 0; flex: 1; justify-content: flex-end; }
+        .header-tool {
+            min-height: 40px; display: flex; align-items: center; gap: 6px;
+            padding: 9px 11px; background: white;
+            border: 1px solid var(--portal-border); border-radius: 10px;
+            font-size: 11px; font-weight: 600; color: #5f5278; white-space: nowrap;
+        }
+        .header-schedule { cursor: pointer; }
+        .header-schedule:hover { border-color: #d8c7f4; background: var(--portal-soft); }
+        .header-schedule svg { width: 16px; height: 16px; color: var(--portal-accent); flex-shrink: 0; }
+        .header-badge {
+            background: var(--portal-accent); color: white; border-radius: 50%;
+            width: 18px; height: 18px; font-size: 10px; font-weight: 800;
+            display: inline-flex; align-items: center; justify-content: center;
         }
 
-        .content-card::-webkit-scrollbar { width: 6px; }
-        .content-card::-webkit-scrollbar-thumb { background-color: #fecdd3; border-radius: 10px; }
-
-        .filter-wrapper {
-            background: #fff1f2;
-            border: 1px solid #ffe4e6;
-            padding: 15px;
-            border-radius: 12px;
-            margin-bottom: 20px;
+        .inline-search-container { position: relative; order: -1; flex: 1; min-width: 150px; max-width: 320px; }
+        #inlineSearchBox {
+            display: flex; align-items: center; min-height: 40px; padding: 6px 14px;
+            background: var(--portal-ghost); border: 1px solid var(--portal-border); border-radius: 10px;
+        }
+        #inlineSearchBox:focus-within { border-color: var(--portal-lavender) !important; }
+        #inlineSearchBox > svg { width: 16px; height: 16px; color: var(--portal-accent); flex-shrink: 0; margin-right: 8px; }
+        #inlineSearchInput {
+            width: 100%; min-width: 0; padding: 2px 0; border: none; outline: none; background: transparent;
+            font-family: 'Inter', system-ui, sans-serif; font-size: 12px; font-weight: 500; color: var(--portal-ink);
+        }
+        #inlineSearchInput::placeholder { color: #857796; opacity: 1; }
+        #clearSearchBtn { display: none; cursor: pointer; color: var(--portal-muted); font-size: 12px; font-weight: 800; margin-left: 6px; }
+        #inlineSuggestionsDropdown {
+            display: none; position: absolute; top: 115%; left: 0;
+            width: min(380px, calc(100vw - 32px)); max-height: min(360px, 55dvh); overflow-y: auto;
+            background: white; border: 1px solid var(--portal-border); border-radius: 14px;
+            box-shadow: 0 14px 35px rgba(21,10,53,.12); z-index: 9999; padding: 8px;
         }
 
-        .filter-row { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 15px; align-items: end; }
-
-        .scope-badge {
-            background: white;
-            border: 1px solid #fecdd3;
-            padding: 8px 14px;
-            border-radius: 8px;
-            color: #881337;
-            font-weight: 800;
-            font-size: 13px;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            min-height: 38px;
-            box-sizing: border-box;
-            box-shadow: 0 1px 3px rgba(190, 18, 60, 0.04);
+        .icon-btn {
+            width: 40px; height: 40px; position: relative;
+            display: flex; justify-content: center; align-items: center;
+            background: white; border: 1px solid var(--portal-border); border-radius: 10px;
+            color: #5f5278; cursor: pointer;
         }
-        .filter-group label { display: block; font-size: 12px; color: #be123c; margin-bottom: 5px; font-weight: 700; }
-        .filter-select { width: 100%; padding: 8px 12px; border-radius: 8px; border: 1px solid #ffe4e6; font-family: 'Inter'; font-size: 13px; background: #fff1f2; color: #881337; font-weight: 600; }
-        .filter-select:focus { outline: none; border-color: #be123c; background: white; box-shadow: 0 0 0 2px rgba(190, 18, 60, 0.1); }
+        .icon-btn:hover { color: var(--portal-accent); background: var(--portal-soft); border-color: #d8c7f4; }
+        .icon-btn svg { width: 18px; height: 18px; }
+        .notif-dot { position: absolute; top: 6px; right: 8px; width: 8px; height: 8px; background: #ff4b4b; border-radius: 50%; border: 2px solid white; }
+        .header-avatar {
+            width: 38px; height: 38px; flex-shrink: 0; border-radius: 50%;
+            display: flex; justify-content: center; align-items: center;
+            background: linear-gradient(145deg, #7948d0 0%, #5528a6 100%); color: white;
+            box-shadow: 0 3px 9px rgba(109,62,196,.13); cursor: pointer;
+        }
+        .header-avatar svg { width: 20px; height: 20px; }
 
-        /* TABS INTERPERSONAL */
-        .tabs-nav { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 15px; flex-shrink: 0; }
-        .tab-btn { background: white; border: 1px solid #ffe4e6; border-radius: 10px; height: 45px; padding: 0 20px; display: inline-flex; align-items: center; justify-content: center; gap: 8px; font-weight: 800; font-size: 13px; color: #881337; text-decoration: none; transition: 0.2s; box-shadow: 0 2px 5px rgba(190,18,60,0.02); flex: 1; }
-        .tab-btn:hover { border-color: #fecdd3; background: #fff1f2; transform: translateY(-2px); }
-        .tab-btn.active { border: 1px solid #be123c; background: #be123c; color: white; box-shadow: 0 4px 12px rgba(190, 18, 60, 0.2); }
+        .dropdown-wrapper { position: relative; display: inline-block; }
+        .dropdown-menu {
+            display: none; position: absolute; top: 50px; right: 0;
+            width: min(320px, calc(100vw - 32px));
+            background: white; border: 1px solid var(--portal-border); border-radius: 14px;
+            box-shadow: 0 14px 35px rgba(21,10,53,.12);
+            z-index: 1000; overflow: hidden; text-align: left;
+        }
+        .dropdown-menu.show { display: block; animation: fadeIn 0.2s; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
+        .dropdown-header { padding: 15px; border-bottom: 1px solid var(--portal-border); font-weight: 800; color: var(--portal-blue); background: var(--portal-soft); font-size: 13px; }
+        .dropdown-item { padding: 15px; border-bottom: 1px solid var(--portal-soft); font-size: 12px; color: #64748b; cursor: pointer; transition: 0.2s; }
+        .dropdown-item:hover { background: var(--portal-ghost); }
+        .dropdown-item:last-child { border-bottom: none; }
+        .dropdown-item strong { color: var(--portal-blue); font-size: 13px; display: block; margin-bottom: 3px; }
+        .dropdown-item .time { float: right; font-size: 10px; color: var(--portal-accent); font-weight: 700; }
 
-        /* FORM ELEMENTS */
-        .input-label { font-weight: 800; color: #881337; font-size: 14px; margin-top: 20px; margin-bottom: 10px; display: block; }
-        .custom-slider { width: 100%; margin-bottom: 20px; accent-color: #be123c; }
-        .custom-textarea { width: 100%; height: 80px; padding: 15px; border-radius: 10px; border: 1px solid #ffe4e6; box-sizing: border-box; font-family: 'Inter'; font-size: 14px; margin-bottom: 20px; color: #881337; }
-        .btn-save { background-color: #be123c; color: white; border: none; border-radius: 8px; padding: 12px 25px; font-weight: bold; font-size: 14px; cursor: pointer; display: flex; justify-content: center; align-items: center; gap: 8px; width: 100%; transition: 0.2s; }
-        .btn-save:hover { background-color: #881337; transform: translateY(-2px); }
+        .topbar-sections {
+            display: flex; align-items: stretch; gap: 24px; padding: 0 28px;
+            height: 48px; overflow-x: auto; scrollbar-width: thin;
+            border-top: 1px solid #f1edf7; white-space: nowrap;
+        }
+        .topbar-link {
+            display: inline-flex; align-items: center; min-height: 44px; flex-shrink: 0;
+            border-bottom: 2px solid transparent; text-decoration: none;
+            font-size: 12px; font-weight: 600; color: var(--portal-muted);
+        }
+        .topbar-link:hover { color: var(--portal-accent); }
+        .topbar-link.is-current { color: var(--portal-accent); border-bottom: 3px solid var(--portal-lavender); font-weight: 700; }
 
-        .sub-menu { display: flex; gap: 15px; margin-bottom: 20px;}
-        .sm-radio { padding: 8px 16px; border-radius: 8px; font-weight: 700; font-size: 13px; cursor: pointer; border: 1px solid #ffe4e6; background: white; color: #881337; text-decoration: none; }
-        .sm-radio.active { border: 1px solid #be123c; background: #fff1f2; color: #be123c; }
+        /* ================================================================== */
+        /* 04. MAIN CONTENT, PAGE HEADER, MESSAGES, FOOTER                    */
+        /* ================================================================== */
+        .main-content {
+            margin-left: var(--portal-sidebar-width);
+            height: 100vh; height: 100dvh; min-width: 0;
+            padding: calc(var(--portal-topbar-height) + 28px) 28px 90px;
+            overflow-y: auto; overflow-x: hidden;
+            display: flex; flex-direction: column;
+            container-type: inline-size; container-name: portal;
+            scrollbar-width: thin;
+        }
+        .main-content > * { flex-shrink: 0; max-width: 100%; }
+        .main-content div { min-width: 0; }
 
-        /* FOOTER ADMIN DASHBOARD */
+        .page-header { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; flex-wrap: wrap; margin-bottom: 26px; }
+        .page-header h1 { margin: 0; color: var(--portal-blue); font-size: clamp(22px, 2vw, 28px); font-weight: 750; letter-spacing: -.7px; line-height: 1.3; }
+        .page-header p { margin: 7px 0 0; color: var(--portal-muted); font-size: 12px; font-weight: 400; line-height: 1.6; }
+        .hod-identity {
+            text-align: right; background: white;
+            border: 1px solid var(--portal-border); border-radius: 12px;
+            padding: 9px 14px; box-shadow: 0 2px 6px rgba(21,10,53,.025);
+        }
+        .hod-identity-name { font-size: 14px; font-weight: 800; color: var(--portal-blue); text-transform: capitalize; }
+        .hod-identity-role { font-size: 11px; font-weight: 600; color: var(--portal-muted); margin-top: 2px; }
+
+        .portal-message { background: #d4edda; color: #155724; padding: 15px; border-radius: 10px; margin-bottom: 20px; border: 1px solid #c3e6cb; font-size: 14px; font-weight: 500; }
+
         .custom-footer {
-            position: fixed;
-            left: 80px; /* Seragam dengan sidebar lebar 80px */
-            right: 0;
-            bottom: 0;
-            background-color: white;
-            color: #881337;
-            text-align: center;
-            padding: 15px 0;
-            font-size: 13px;
-            font-weight: 600;
-            border-top: 1px solid #ffe4e6;
-            z-index: 999;
-            transition: left 0.35s ease;
+            position: fixed; left: var(--portal-sidebar-width); right: 0; bottom: 0; z-index: 900;
+            background: var(--portal-ghost); color: #80738f;
+            border-top: 1px solid var(--portal-border);
+            text-align: center; padding: 11px 20px; font-size: 10px; line-height: 1.4;
         }
 
-        /* --- ANIMASI GRAF --- */
+        /* ================================================================== */
+        /* 05. DEPARTMENT BANNER (same look as the Staff Coaching banner)     */
+        /* ================================================================== */
+        .dept-banner {
+            display: flex; align-items: center; justify-content: space-between; gap: 15px; flex-wrap: wrap;
+            background: linear-gradient(135deg, #150a35 0%, #6d3ec4 100%);
+            border-radius: 16px; padding: 16px 22px; margin-bottom: 20px;
+            box-shadow: 0 10px 25px rgba(21, 10, 53, 0.25);
+        }
+        .dept-banner-info { display: flex; align-items: center; gap: 14px; }
+        .dept-banner-icon {
+            width: 42px; height: 42px; flex-shrink: 0; border-radius: 12px;
+            display: flex; align-items: center; justify-content: center;
+            background: rgba(255,255,255,0.2); border: 1px solid rgba(255,255,255,0.35); color: #fff;
+        }
+        .dept-banner-icon svg { width: 22px; height: 22px; }
+        .dept-banner-label { font-size: 11px; font-weight: 800; color: rgba(255,255,255,0.75); text-transform: uppercase; letter-spacing: 0.5px; }
+        .dept-banner-title { margin: 2px 0 0; color: #fff; font-size: 16px; font-weight: 800; }
+        .dept-banner-btn {
+            display: flex; align-items: center; gap: 8px;
+            background: rgba(255,255,255,0.2); border: 1px solid rgba(255,255,255,0.4); color: #fff;
+            padding: 10px 18px; border-radius: 10px; font-size: 12px; font-weight: 800;
+            text-decoration: none; backdrop-filter: blur(4px); transition: 0.2s;
+        }
+        .dept-banner-btn:hover { background: #fff; color: var(--portal-accent); }
+        .dept-banner-btn svg { width: 14px; height: 14px; }
+
+        /* Recolour old Rose/Burgundy pigments inside server-made Plotly charts
+           (same rules as the Staff Portal). Data and chart scripts are untouched. */
+        .js-plotly-plot [style*="fill: rgb(136, 19, 55)"] { fill: #150a35 !important; }
+        .js-plotly-plot [style*="stroke: rgb(136, 19, 55)"] { stroke: #150a35 !important; }
+        .js-plotly-plot [style*="fill: rgb(190, 18, 60)"] { fill: #a577ff !important; }
+        .js-plotly-plot [style*="stroke: rgb(190, 18, 60)"] { stroke: #6d3ec4 !important; }
+        .js-plotly-plot [style*="fill: rgb(244, 63, 94)"] { fill: #a577ff !important; }
+        .js-plotly-plot [style*="stroke: rgb(244, 63, 94)"] { stroke: #a577ff !important; }
+        .js-plotly-plot [style*="fill: rgb(159, 18, 57)"] { fill: #6d3ec4 !important; }
+        .js-plotly-plot [style*="stroke: rgb(159, 18, 57)"] { stroke: #6d3ec4 !important; }
+        .js-plotly-plot [style*="fill: rgb(254, 205, 211)"] { fill: #dccbff !important; }
+        .js-plotly-plot [style*="stroke: rgb(254, 205, 211)"] { stroke: #dccbff !important; }
+        .js-plotly-plot [style*="fill: rgb(255, 228, 230)"] { fill: #e7dff2 !important; }
+        .js-plotly-plot [style*="stroke: rgb(255, 228, 230)"] { stroke: #e7dff2 !important; }
+        .js-plotly-plot [style*="fill: rgb(255, 241, 242)"] { fill: #f3edff !important; }
+        .js-plotly-plot [style*="stroke: rgb(255, 241, 242)"] { stroke: #f3edff !important; }
+
+        /* ================================================================== */
+        /* 06. PAGE HEADER & SUB-MODULE SWITCH                                */
+        /* ================================================================== */
+        :root { --portal-topbar-height: 76px; }
+        .page-header { margin-bottom: 6px; }
+        .page-header h1 > svg { display: none; }
+        .page-subtitle { margin: 0 0 20px; color: var(--portal-muted); font-size: 12px; font-weight: 400; line-height: 1.6; }
+
+        /* Clinical Excellence / Operational / Interpersonal Excellence */
+        .sub-modules-nav {
+            display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px;
+            background: #fff; border: 1px solid var(--portal-border); border-radius: 14px;
+            padding: 6px; margin-bottom: 20px; box-shadow: var(--portal-shadow);
+        }
+        .sm-btn {
+            min-height: 44px; display: flex; align-items: center; justify-content: center; gap: 8px;
+            padding: 8px 12px; border-radius: 10px; border: 1px solid transparent;
+            color: #5f5278; font-size: 13px; font-weight: 600; text-decoration: none; text-align: center;
+            transition: background .2s, color .2s;
+        }
+        .sm-btn svg { display: none; }
+        .sm-btn:hover { background: var(--portal-soft); color: var(--portal-accent); }
+        .sm-btn.active { background: var(--portal-accent); color: #fff; font-weight: 700; box-shadow: 0 3px 9px rgba(109,62,196,.12); }
+
+        /* "Clinical Excellence" header: same banner as the HOD dashboard */
+        .dept-banner h1 { margin: 2px 0 0; color: #fff; font-size: 18px; font-weight: 800; letter-spacing: -.3px; }
+        .dept-banner p { margin: 4px 0 0; color: rgba(255,255,255,.8); font-size: 12px; font-weight: 500; }
+        .dept-banner + hr { display: none; }
+        .dept-banner.page-header { margin-bottom: 20px; }
+
+        /* ================================================================== */
+        /* 07. MAIN CARD, FILTERS & EVALUATION SESSION                        */
+        /* ================================================================== */
+        .content-card {
+            background: var(--portal-surface);
+            border: 1px solid var(--portal-border); border-radius: 16px;
+            box-shadow: var(--portal-shadow);
+            padding: 20px; margin-bottom: 15px;
+        }
+        .filter-wrapper {
+            background: #faf8fd; border: 1px solid #e7dff2; border-radius: 12px;
+            padding: 16px; margin-bottom: 16px;
+        }
+        .filter-wrapper form > div { gap: 20px; }
+        .filter-group label { display: block; font-size: 12px; font-weight: 600; color: #5f5278; margin-bottom: 6px; }
+        .filter-select {
+            width: 100%; padding: 10px 12px; border-radius: 10px;
+            background: #fff; color: var(--portal-blue);
+            border: 1px solid #e0d6f0;
+            font-family: 'Inter', system-ui, sans-serif; font-size: 13px; font-weight: 500;
+        }
+        .filter-select:focus { outline: none; border-color: #a577ff; box-shadow: 0 0 0 3px rgba(165,119,255,.15); }
+        .filter-wrapper svg { color: var(--portal-accent) !important; }
+
+        .session-bar {
+            display: flex; align-items: center; gap: 6px; flex-wrap: wrap;
+            background: var(--portal-soft); border: 1px solid #d8c7f4; border-radius: 10px;
+            padding: 12px 16px; margin-bottom: 18px;
+            font-size: 13px; color: #5f5278;
+        }
+        .session-bar b { color: var(--portal-blue); font-weight: 700; }
+
+        /* ================================================================== */
+        /* 08. TABS (underline style, same as Staff Clinical page)            */
+        /* ================================================================== */
+        .tabs-nav {
+            display: flex; flex-wrap: nowrap; gap: 0; overflow-x: auto; scrollbar-width: thin;
+            margin: 0 -20px 20px; padding: 0 12px;
+            border-bottom: 1px solid #eee8f6;
+        }
+        .tab-btn {
+            flex: 0 0 auto; min-height: 50px; padding: 0 18px;
+            display: inline-flex; align-items: center; justify-content: center;
+            background: transparent; border: 0; border-bottom: 3px solid transparent; border-radius: 0;
+            color: #726585; font-size: 13px; font-weight: 600; white-space: nowrap; text-decoration: none;
+        }
+        .tab-btn svg { display: none; }
+        .tab-btn:hover { color: var(--portal-accent); }
+        .tab-btn.active { color: var(--portal-accent); border-bottom-color: #a577ff; font-weight: 700; }
+
+        /* ================================================================== */
+        /* 09. FILTER ROW (State / Facility / Medical Officer)                */
+        /* ================================================================== */
+        .filter-row { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; align-items: end; }
+        .scope-badge {
+            display: flex; align-items: center; gap: 8px; min-height: 42px;
+            background: #fff; border: 1px solid #e0d6f0; border-radius: 10px;
+            padding: 9px 12px; color: var(--portal-blue); font-size: 13px; font-weight: 600;
+        }
+        .scope-badge svg { color: var(--portal-accent) !important; }
+
+        /* ================================================================== */
+        /* 10. TWO PANELS: SOFT SKILLS PROFILE + ACTIVE TAB                   */
+        /* ================================================================== */
+        .ip-grid { display: grid; grid-template-columns: minmax(0, 35fr) minmax(0, 62fr); gap: 20px; align-items: start; }
+        .ip-panel {
+            background: #fff; border: 1px solid var(--portal-border); border-radius: 12px;
+            padding: 20px; display: flex; flex-direction: column;
+        }
+        .ip-panel-radar { justify-content: center; align-items: center; }
+        .ip-panel-radar > h4 { color: var(--portal-blue) !important; font-size: 15px; font-weight: 700; }
+        .ip-panel-radar > p { color: var(--portal-muted) !important; line-height: 1.5; }
+
+        /* Titles: same size and thin line as the Staff cards */
+        .ip-panel h3 { color: var(--portal-blue) !important; font-size: 15px !important; font-weight: 700 !important; }
+        .ip-panel > div > h3 { padding-bottom: 12px; margin-bottom: 16px !important; border-bottom: 1px solid #e7dff2; }
+        .ip-panel > div > div:first-child:has(> h3) { border-bottom-color: #e7dff2 !important; padding-bottom: 12px !important; }
+        .ip-panel > div > div:first-child:has(> h3) > h3 { border: 0; padding: 0; margin: 0 !important; }
+        .ip-panel > div > div:first-child:has(> h3) > span { padding: 3px 10px !important; font-weight: 700 !important; }
+        .ip-panel h4 { color: #5f5278 !important; letter-spacing: .6px; }
+        .ip-panel h5 { color: var(--portal-accent) !important; font-size: 12px; font-weight: 700; margin-top: 0; }
+
+        /* MyPSQ stat boxes: thin left line instead of the 4px bar */
+        .ip-panel div[style*="border-left: 4px solid"] { border-left-width: 1px !important; border-radius: 12px !important; }
+        .ip-panel div[style*="border-left: 4px solid #6d3ec4"],
+        .ip-panel div[style*="border-left: 4px solid #150a35"] { border-left-color: #e7dff2 !important; }
+        .ip-panel div[style*="font-size: 22px"] { font-weight: 750 !important; font-variant-numeric: tabular-nums; }
+
+        /* 7-dimension bars: same gradient as the Staff progress bars */
+        .ip-panel div[style*="height:6px"] { background: #ece3fa !important; }
+        .ip-panel div[style*="height:6px"] > div { background: linear-gradient(90deg, #7542cf 0%, #a577ff 100%) !important; border-radius: 10px; }
+
+        /* Patient feedback cards */
+        .ip-panel div[style*="padding:8px 12px"] { background: #faf8fd !important; border-color: #e7dff2 !important; border-radius: 10px !important; }
+
+        /* Teamwork points: soft boxes, coloured left line kept as the legend */
+        .ip-panel div[style*="padding:8px; border-radius:4px"] { background: #faf8fd !important; border-radius: 8px !important; border: 1px solid #e7dff2; border-left-width: 3px !important; }
+
+        /* 360° Feedback / Contribution Log and Year / Month / Week switches */
+        .sub-menu { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 20px; }
+        .sm-radio {
+            padding: 8px 14px; border-radius: 20px; text-decoration: none; cursor: pointer;
+            border: 1px solid var(--portal-border); background: #fff; color: #5f5278;
+            font-size: 12px; font-weight: 600; transition: all .2s ease;
+        }
+        .sm-radio:hover { border-color: #d8c7f4; background: var(--portal-soft); color: var(--portal-accent); }
+        .sm-radio.active { border-color: var(--portal-accent); background: var(--portal-accent); color: #fff; font-weight: 700; }
+
+        /* Score inputs and save buttons: same as Staff forms */
+        .input-label { display: block; margin: 20px 0 10px; color: #3b2b55; font-size: 13px; font-weight: 600; }
+        .custom-slider { width: 100%; margin-bottom: 20px; accent-color: var(--portal-accent); }
+        .custom-textarea {
+            width: 100%; height: 80px; padding: 12px; margin-bottom: 20px;
+            background: #faf8fd; border: 1px solid var(--portal-border); border-radius: 10px;
+            color: var(--portal-blue); font-family: 'Inter', system-ui, sans-serif; font-size: 14px;
+        }
+        .ip-panel .filter-select { background: #fff; }
+        .btn-save {
+            display: flex; justify-content: center; align-items: center; gap: 8px; width: 100%;
+            background: var(--portal-accent); color: #fff; border: none; border-radius: 10px;
+            padding: 12px 20px; font-size: 14px; font-weight: 650; cursor: pointer;
+            box-shadow: 0 4px 12px rgba(109,62,196,.13); transition: background .2s;
+        }
+        .btn-save:hover { background: var(--portal-accent-hover); }
+
+        /* ================================================================== */
+        /* 11. CHART ANIMATIONS (unchanged from the original page)            */
+        /* ================================================================== */
         @keyframes wipeRight {
             0% { clip-path: polygon(0 0, 0 0, 0 100%, 0 100%); opacity: 0; }
             100% { clip-path: polygon(0 0, 100% 0, 100% 100%, 0 100%); opacity: 1; }
@@ -147,7 +473,6 @@
             animation: wipeRight 1.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
             opacity: 0;
         }
-
         @keyframes growCircular {
             0% { clip-path: circle(0% at 50% 50%); transform: scale(0.5); opacity: 0; }
             100% { clip-path: circle(150% at 50% 50%); transform: scale(1); opacity: 1; }
@@ -157,121 +482,206 @@
             opacity: 0;
             transform-origin: center center;
         }
+
+        /* ================================================================== */
+        /* 12. RESPONSIVE (same breakpoints as Staff)                         */
+        /* ================================================================== */
+        @media (min-width: 1024px) {
+            .topbar-leading .sidebar-toggle { display: none; }
+            .sidebar-close { display: none !important; }
+        }
+        @media (min-width: 1920px) {
+            .main-content { padding-left: 40px; padding-right: 40px; }
+            .topbar-main { padding-left: 40px; padding-right: 40px; }
+        }
+        @container portal (max-width: 1000px) {
+            .ip-grid { grid-template-columns: minmax(0, 1fr); }
+        }
+        @container portal (max-width: 700px) {
+            .filter-row { grid-template-columns: minmax(0, 1fr); }
+            .ip-panel div[style*="grid-template-columns: 1fr 1fr"],
+            .ip-panel div[style*="grid-template-columns: 2fr 1fr"] { grid-template-columns: minmax(0, 1fr) !important; }
+        }
+        @media (max-width: 1023px) {
+            :root, body.sidebar-open { --portal-sidebar-width: 0px; }
+            .sidebar {
+                width: min(var(--portal-sidebar-expanded), calc(100vw - 48px));
+                transform: translateX(-100%); visibility: hidden;
+                box-shadow: 12px 0 36px rgba(16,24,40,.12);
+            }
+            .sidebar-toggle-rail { display: none; }
+            body.sidebar-open .sidebar { transform: none; visibility: visible; }
+            body.sidebar-open .sidebar-backdrop { display: block; }
+            body.sidebar-open .main-content { overflow-y: hidden; }
+            .topbar-main { padding: 0 20px; }
+        }
+        @media (max-width: 767px) {
+            .topbar-main { padding: 0 16px; gap: 10px; }
+            .topbar-brand strong { font-size: 14px; }
+            .main-content { padding: calc(var(--portal-topbar-height) + 22px) 16px 100px; }
+            .page-header h1 { font-size: 22px; }
+            .sub-modules-nav { grid-template-columns: minmax(0, 1fr); }
+            .content-card { padding: 16px; }
+            .tabs-nav { margin-left: -16px; margin-right: -16px; padding: 0 4px; }
+            .tab-btn { padding: 0 12px; font-size: 12px; }
+            .dept-banner { padding: 16px; }
+            .ip-panel { padding: 16px; }
+            .ip-panel > div > div:first-child:has(> h3) { flex-wrap: wrap; gap: 8px; }
+            .custom-footer { padding: 10px 16px; font-size: 9px; text-align: left; }
+            .filter-select { font-size: 16px; }
+        }
+        @media (max-width: 359px) {
+            .topbar-brand strong { font-size: 12px; }
+            .main-content { padding-left: 12px; padding-right: 12px; }
+            .content-card { padding: 14px; }
+            .tabs-nav { margin-left: -14px; margin-right: -14px; }
+        }
+        @media (max-height: 600px) and (max-width: 1023px) {
+            .sidebar { padding-top: 12px; }
+            .sidebar-brand-row { margin-bottom: 10px; }
+            .sidebar-section-title { margin-top: 10px !important; }
+            .nav-btn { min-height: 40px; padding-top: 8px; padding-bottom: 8px; }
+        }
+        @media (prefers-reduced-motion: reduce) {
+            *, *::before, *::after { animation-duration: .01ms !important; animation-delay: 0s !important; transition-duration: .01ms !important; }
+        }
+        @media print {
+            body { height: auto; overflow: visible; background: white; }
+            .sidebar, .portal-topbar, .sidebar-backdrop, .custom-footer { display: none !important; }
+            .main-content { margin: 0; height: auto; overflow: visible; padding: 0; }
+            .content-card { box-shadow: none; }
+        }
     </style>
 </head>
 <body>
-    <!-- SIDEBAR HOVER-TO-EXPAND -->
-    <div class="sidebar" id="mySidebar">
-        <!-- Logo Boleh Diklik untuk Kembali ke Dashboard -->
-        <a href="?section=Dashboard" class="sidebar-logo" style="text-decoration: none; cursor: pointer; display: flex; align-items: center; min-height: 50px; margin-bottom: 20px;" title="Kembali ke Dashboard">
-            <img src="{% static 'images/myprestasi-logo-nobg.png' %}" alt="Logo MyPrestasi" style="width: 42px; height: auto; flex-shrink: 0; filter: drop-shadow(0 2px 4px rgba(136, 19, 55, 0.1)); transition: transform 0.2s;" onmouseover="this.style.transform='scale(1.08)'" onmouseout="this.style.transform='scale(1)'">
-            <div class="sidebar-logo-text hide-on-collapse" style="margin-left: 12px;">
-                <h2>MyPrestasi</h2>
-                <p>HOD-PORTAL</p>
-            </div>
-        </a>
+    <!-- SIDEBAR (BUTTON-CONTROLLED, SAME AS STAFF PORTAL) -->
+    <div class="sidebar-backdrop" id="sidebarBackdrop" aria-hidden="true"></div>
+    <aside class="sidebar" id="mySidebar" aria-label="Navigation menu">
+        <div class="sidebar-brand-row">
+            <button type="button" class="sidebar-toggle sidebar-toggle-rail" onclick="toggleSidebar()" aria-controls="mySidebar" aria-label="Toggle navigation menu">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16" stroke-width="1.8" stroke-linecap="round"/></svg>
+            </button>
+            <button type="button" class="sidebar-close" id="sidebarCloseButton" onclick="toggleSidebar()" aria-label="Close navigation menu">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18" stroke-width="1.8" stroke-linecap="round"/></svg>
+            </button>
+        </div>
 
         <div class="sidebar-section-title hide-on-collapse">OVERALL STATISTICS</div>
 
         <!-- KPI 1: Active Facilities -->
-        <a href="{% url 'overall_analytics' %}?type=facilities&state={{ pilihan_negeri }}&clinic={{ pilihan_klinik }}" class="stat-card" title="Active Facilities" style="text-decoration:none; cursor:pointer; transition:0.2s;" onmouseover="this.style.borderColor='#be123c'; this.style.backgroundColor='#fff1f2';" onmouseout="this.style.borderColor='#ffe4e6'; this.style.backgroundColor='white';">
-            <div class="stat-icon text-rose-700">
-                <svg style="width: 20px; height: 20px; color: #be123c;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5m0 0v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4M12 7v4m-2-2h4"/></svg>
+        <a href="{% url 'overall_analytics' %}?type=facilities&state={{ pilihan_negeri }}&clinic={{ pilihan_klinik }}" class="nav-btn nav-stat" title="Active Facilities">
+            <div class="nav-icon"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5m0 0v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4M12 7v4m-2-2h4"/></svg></div>
+            <div class="nav-stat-text hide-on-collapse">
+                <h3>{{ active_facilities }}</h3>
+                <p>Active Facilities</p>
             </div>
-            <div class="stat-info hide-on-collapse"><span class="stat-val" style="color:#881337;">{{ active_facilities }}</span><span class="stat-label" style="color:#f43f5e;">Active Facilities</span></div>
         </a>
-        
+
         <!-- KPI 2: Total Staff -->
-        <a href="{% url 'overall_analytics' %}?type=staff&state={{ pilihan_negeri }}&clinic={{ pilihan_klinik }}" class="stat-card" title="Total Staff" style="text-decoration:none; cursor:pointer; transition:0.2s;" onmouseover="this.style.borderColor='#be123c'; this.style.backgroundColor='#fff1f2';" onmouseout="this.style.borderColor='#ffe4e6'; this.style.backgroundColor='white';">
-            <div class="stat-icon text-rose-700">
-                <svg style="width: 20px; height: 20px; color: #be123c;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
+        <a href="{% url 'overall_analytics' %}?type=staff&state={{ pilihan_negeri }}&clinic={{ pilihan_klinik }}" class="nav-btn nav-stat" title="Total Staff">
+            <div class="nav-icon"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/></svg></div>
+            <div class="nav-stat-text hide-on-collapse">
+                <h3>{{ total_staff }}</h3>
+                <p>Total Staff</p>
             </div>
-            <div class="stat-info hide-on-collapse"><span class="stat-val" style="color:#881337;">{{ total_staff }}</span><span class="stat-label" style="color:#f43f5e;">Total Staff</span></div>
         </a>
 
         <!-- KPI 3: Avg Performance -->
-        <a href="{% url 'overall_analytics' %}?type=performance&state={{ pilihan_negeri }}&clinic={{ pilihan_klinik }}" class="stat-card" title="Average Performance" style="text-decoration:none; cursor:pointer; transition:0.2s;" onmouseover="this.style.borderColor='#be123c'; this.style.backgroundColor='#fff1f2';" onmouseout="this.style.borderColor='#ffe4e6'; this.style.backgroundColor='white';">
-            <div class="stat-icon text-rose-700">
-                <svg style="width: 20px; height: 20px; color: #be123c;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+        <a href="{% url 'overall_analytics' %}?type=performance&state={{ pilihan_negeri }}&clinic={{ pilihan_klinik }}" class="nav-btn nav-stat" title="Average Performance">
+            <div class="nav-icon"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg></div>
+            <div class="nav-stat-text hide-on-collapse">
+                <h3>{{ avg_performance }}%</h3>
+                <p>Avg Performance</p>
             </div>
-            <div class="stat-info hide-on-collapse"><span class="stat-val" style="color:#881337;">{{ avg_performance }}%</span><span class="stat-label" style="color:#f43f5e;">Avg Performance</span></div>
         </a>
 
         <!-- KPI 4: Evaluations Done -->
-        <a href="{% url 'overall_analytics' %}?type=evaluations&state={{ pilihan_negeri }}&clinic={{ pilihan_klinik }}" class="stat-card" title="Evaluations Done" style="text-decoration:none; cursor:pointer; transition:0.2s;" onmouseover="this.style.borderColor='#be123c'; this.style.backgroundColor='#fff1f2';" onmouseout="this.style.borderColor='#ffe4e6'; this.style.backgroundColor='white';">
-            <div class="stat-icon text-rose-700">
-                <svg style="width: 20px; height: 20px; color: #be123c;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/></svg>
+        <a href="{% url 'overall_analytics' %}?type=evaluations&state={{ pilihan_negeri }}&clinic={{ pilihan_klinik }}" class="nav-btn nav-stat" title="Evaluations Done">
+            <div class="nav-icon"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/></svg></div>
+            <div class="nav-stat-text hide-on-collapse">
+                <h3>{{ evaluations_completed }}</h3>
+                <p>Evaluations Done</p>
             </div>
-            <div class="stat-info hide-on-collapse"><span class="stat-val" style="color:#881337;">{{ evaluations_completed }}</span><span class="stat-label" style="color:#f43f5e;">Evaluations Done</span></div>
         </a>
 
-        <div class="sidebar-section-title hide-on-collapse" style="margin-top: 15px;">ADMINISTRATION MENU</div>
-        
-        <a href="#" class="btn-menu" title="Settings">
-            <div class="btn-menu-icon">
-                <svg style="width: 20px; height: 20px; color: #be123c;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
-            </div>
-            <span class="hide-on-collapse" style="margin-left: 12px;">Settings</span>
+        <div class="sidebar-section-title hide-on-collapse">ADMINISTRATION MENU</div>
+        <a href="#" class="nav-btn" title="Settings">
+            <div class="nav-icon"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg></div>
+            <span class="hide-on-collapse">Settings</span>
         </a>
-        <a href="#" class="btn-menu" title="Reports">
-            <div class="btn-menu-icon">
-                <svg style="width: 20px; height: 20px; color: #be123c;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
-            </div>
-            <span class="hide-on-collapse" style="margin-left: 12px;">Reports</span>
+        <a href="#" class="nav-btn" title="Reports">
+            <div class="nav-icon"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg></div>
+            <span class="hide-on-collapse">Reports</span>
         </a>
 
-        <div style="margin-top: auto; display: flex; flex-direction: column; gap: 8px;">
-            <a href="{% url 'hod_dashboard' %}" class="btn-back" title="Back to Dashboard">
-                <div class="btn-menu-icon">
-                    <svg style="width: 20px; height: 20px; color: #be123c;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
-                </div>
-                <span class="hide-on-collapse" style="margin-left: 12px;">Back to Dashboard</span>
+        <div class="sidebar-bottom">
+            <a href="{% url 'hod_dashboard' %}" class="nav-btn" title="Back to Dashboard">
+                <div class="nav-icon"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg></div>
+                <span class="hide-on-collapse">Back to Dashboard</span>
             </a>
             <a href="{% url 'logout' %}" class="btn-logout" title="Logout">
-                <div class="btn-menu-icon" style="background: rgba(255,255,255,0.2);">
-                    <svg style="width: 20px; height: 20px; color: white;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/></svg>
+                <div class="nav-icon"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/></svg></div>
+                <span class="hide-on-collapse">Logout</span>
+            </a>
+        </div>
+    </aside>
+
+    <!-- TOP NAVIGATION BAR (SAME AS STAFF PORTAL) -->
+    <header class="portal-topbar" aria-label="HOD portal top navigation">
+        <div class="topbar-main">
+            <div class="topbar-leading">
+                <button type="button" class="sidebar-toggle" id="sidebarMenuButton" onclick="toggleSidebar()" aria-controls="mySidebar" aria-expanded="false" aria-label="Open navigation menu">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16" stroke-width="1.8" stroke-linecap="round"/></svg>
+                </button>
+                <a href="?section=Dashboard" class="topbar-logo" title="Kembali ke Dashboard">
+                    <img src="{% static 'images/myprestasi-logo-nobg.png' %}" alt="Logo MyPrestasi">
+                </a>
+                <div class="topbar-brand"><strong>MyPrestasi</strong><span>HOD-PORTAL</span></div>
+            </div>
+        </div>
+    </header>
+
+    <!-- MAIN CONTENT -->
+    <div class="main-content" id="mainContent">
+                <div class="page-header">
+                    <h1>
+                        <svg style="width: 26px; height: 26px; color: #6d3ec4;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"/></svg>
+                        {% if dept == 'FMS' %}
+                            Family Medicine Specialist (FMS)
+                        {% else %}
+                            Cardiothoracic Surgery (CTS)
+                        {% endif %}
+                    </h1>
                 </div>
-                <span class="hide-on-collapse" style="margin-left: 12px;">Logout</span>
-            </a>
-        </div>
-    </div>
+        <p class="page-subtitle">Please select an evaluation sub-module below:</p>
 
-    <div class="main-content">
-        <div class="page-header">
-            <h1 style="font-size: 24px; margin-bottom: 0; display: flex; align-items: center; gap: 10px;">
-                <svg style="width: 26px; height: 26px; color: #be123c;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"/></svg>
-                {% if dept == 'FMS' %}
-                    Family Medicine Specialist (FMS)
-                {% else %}
-                    Cardiothoracic Surgery (CTS)
-                {% endif %}
-            </h1>
-        </div>
-        <p style="color:#f43f5e; margin-bottom: 10px; font-size: 13px; font-weight: 600;">Please select an evaluation sub-module below:</p>
+                <div class="sub-modules-nav">
+                    <a href="{% url 'cts_module' %}?dept={{ dept }}&state={{ pilihan_negeri }}&clinic={{ pilihan_klinik }}&officer={{ pilihan_doktor }}" class="sm-btn">
+                        <svg style="width: 18px; height: 18px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.5 12.75l6 6 9-13.5M9 12l2.25 2.25L15 9m-6 12a9 9 0 110-18 9 9 0 010 18z"/></svg>
+                        Clinical Excellence
+                    </a>
+                    <a href="{% url 'operational_module' %}?dept={{ dept }}&state={{ pilihan_negeri }}&clinic={{ pilihan_klinik }}&officer={{ pilihan_doktor }}" class="sm-btn">
+                        <svg style="width: 18px; height: 18px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                        Operational
+                    </a>
+                    <a href="{% url 'interpersonal_module' %}?dept={{ dept }}&state={{ pilihan_negeri }}&clinic={{ pilihan_klinik }}&officer={{ pilihan_doktor }}" class="sm-btn active">
+                        <svg style="width: 18px; height: 18px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
+                        Interpersonal Excellence
+                    </a>
+                </div>
 
-        <div class="sub-modules-nav" style="margin-bottom: 10px;">
-            <a href="{% url 'cts_module' %}?dept={{ dept }}&state={{ pilihan_negeri }}&clinic={{ pilihan_klinik }}&officer={{ pilihan_doktor }}" class="sm-btn">
-                <svg style="width: 18px; height: 18px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.5 12.75l6 6 9-13.5M9 12l2.25 2.25L15 9m-6 12a9 9 0 110-18 9 9 0 010 18z"/></svg>
-                Clinical Excellence
-            </a>
-            <a href="{% url 'operational_module' %}?dept={{ dept }}&state={{ pilihan_negeri }}&clinic={{ pilihan_klinik }}&officer={{ pilihan_doktor }}" class="sm-btn">
-                <svg style="width: 18px; height: 18px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
-                Operational
-            </a>
-            <a href="{% url 'interpersonal_module' %}?dept={{ dept }}&state={{ pilihan_negeri }}&clinic={{ pilihan_klinik }}&officer={{ pilihan_doktor }}" class="sm-btn active">
-                <svg style="width: 18px; height: 18px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
-                Interpersonal Excellence
-            </a>
+        <div class="dept-banner page-header">
+            <div class="dept-banner-info">
+                <div class="dept-banner-icon">
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
+                </div>
+                <div>
+                    <h1>Interpersonal Excellence</h1>
+                    <p>Evaluation page for patient experience (PSQ-18), teamwork, and leadership.</p>
+                </div>
+            </div>
         </div>
-
-        <div class="page-header">
-            <h1 style="font-size: 22px; margin-bottom: 0; display: flex; align-items: center; gap: 8px;">
-                <svg style="width: 22px; height: 22px; color: #be123c;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
-                Interpersonal Excellence
-            </h1>
-            <p style="margin-bottom: 5px; color: #f43f5e; font-size: 13px; font-weight: 600;">Evaluation page for patient experience (PSQ-18), teamwork, and leadership.</p>
-        </div>
-        <hr style="border:0; border-top:1px solid #ffe4e6; margin-bottom: 10px;">
+        <hr style="border:0; border-top:1px solid #e7dff2; margin-bottom: 10px;">
 
         <div class="content-card">
 
@@ -287,7 +697,7 @@
                             {% if is_state_locked or is_facility_locked %}
                                 <input type="hidden" name="state" value="{{ pilihan_negeri }}">
                                 <div class="scope-badge">
-                                    <svg style="width:16px; height:16px; color:#be123c; flex-shrink:0;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                                    <svg style="width:16px; height:16px; color:#6d3ec4; flex-shrink:0;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
                                     <span>{{ pilihan_negeri }}</span>
                                 </div>
                             {% else %}
@@ -303,7 +713,7 @@
                             {% if is_facility_locked %}
                                 <input type="hidden" name="clinic" value="{{ pilihan_klinik }}">
                                 <div class="scope-badge">
-                                    <svg style="width:16px; height:16px; color:#be123c; flex-shrink:0;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5m0 0v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4M12 7v4m-2-2h4"/></svg>
+                                    <svg style="width:16px; height:16px; color:#6d3ec4; flex-shrink:0;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5m0 0v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4M12 7v4m-2-2h4"/></svg>
                                     <span>{{ pilihan_klinik }}</span>
                                 </div>
                             {% else %}
@@ -316,7 +726,7 @@
                         <!-- Medical Officer Filter (Dropdown Utama) -->
                         <div class="filter-group">
                             <label>Select Medical Officer:</label>
-                            <select name="officer" class="filter-select" style="background: white; border-color: #be123c; font-weight: 800;" onchange="this.form.submit()">
+                            <select name="officer" class="filter-select" style="background: white; border-color: #6d3ec4; font-weight: 800;" onchange="this.form.submit()">
                                 {% for doc in senarai_doktor %}<option value="{{ doc }}" {% if doc == pilihan_doktor %}selected{% endif %}>{{ doc }}</option>{% endfor %}
                             </select>
                         </div>
@@ -324,7 +734,7 @@
                 </form>
             </div>
 
-            <div style="background-color: #fff1f2; padding: 12px 20px; border-radius: 8px; margin-bottom: 20px; font-size: 14px; color: #881337; border: 1px solid #ffe4e6;">
+            <div class="session-bar">
                 Evaluation Session: <b>{{ pilihan_doktor }}</b>
             </div>
 
@@ -347,111 +757,111 @@
                 </a>
             </div>
 
-            <div style="display: grid; grid-template-columns: 35% 62%; gap: 3%; align-items: start;">
-                
-                <div style="background: white; border: 1px solid #e2e8f0; border-radius: 12px; padding: 20px; box-shadow: 0 2px 10px rgba(0,0,0,0.02); display: flex; flex-direction: column; justify-content: center; align-items: center;">
-                    <h4 style="color:#2b3674; margin-top:0; text-align: center;">📊 Soft Skills Profile</h4>
+            <div class="ip-grid">
+
+                <div class="ip-panel ip-panel-radar">
+                    <h4 style="color:#150a35; margin-top:0; text-align: center;">📊 Soft Skills Profile</h4>
                     <div class="card-radar" style="width: 100%; margin-top: -10px;">
                         {{ radar_chart_html|safe }}
                     </div>
-                    <p style="font-size: 11px; color: #a3aed1; text-align: center; margin-bottom: 0;">Evaluation page for patient experience (PSQ-18), teamwork, and leadership.</p>
+                    <p style="font-size: 11px; color: #857796; text-align: center; margin-bottom: 0;">Evaluation page for patient experience (PSQ-18), teamwork, and leadership.</p>
                 </div>
 
-                <div style="background: white; border: 1px solid #e2e8f0; border-radius: 12px; padding: 20px; box-shadow: 0 2px 10px rgba(0,0,0,0.02); display: flex; flex-direction: column;">
-                    
+                <div class="ip-panel">
+
                     <div style="flex-grow: 1; overflow-y: auto; padding-right: 5px;">
-                        
+
                         {% if active_tab == 'Patient' %}
-                            <div style="display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid #ffe4e6; padding-bottom: 10px; margin-bottom: 15px;">
-                                <h3 style="color:#881337; margin:0; font-size:16px; font-weight:800;">1. Patient Experience (MyPSQ Analytics)</h3>
-                                <span style="background:#fff1f2; border:1px solid #ffe4e6; color:#be123c; font-size:10px; font-weight:800; padding:2px 8px; border-radius:12px;">MoH Edisi 1/2026</span>
+                            <div style="display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid #e7dff2; padding-bottom: 10px; margin-bottom: 15px;">
+                                <h3 style="color:#150a35; margin:0; font-size:16px; font-weight:800;">1. Patient Experience (MyPSQ Analytics)</h3>
+                                <span style="background:#f3edff; border:1px solid #e7dff2; color:#6d3ec4; font-size:10px; font-weight:800; padding:2px 8px; border-radius:12px;">MoH Edisi 1/2026</span>
                             </div>
 
                             <!-- RINGKASAN METRIK UTAMA MyPSQ -->
                             <div style="display:grid; grid-template-columns: 1fr 1fr; gap:12px; margin-bottom: 15px;">
-                                <div style="background: #fff1f2; border: 1px solid #ffe4e6; padding: 12px; border-radius: 10px; border-left: 4px solid #be123c;">
-                                    <div style="font-size: 10px; color: #be123c; font-weight: 800; text-transform: uppercase;">MyPSQ Overall Rating</div>
-                                    <div style="font-size: 22px; font-weight: 900; color: #881337; margin-top:2px;">
-                                        {{ mypsq_avg_score }} <span style="font-size:13px; font-weight:700; color:#be123c;">/ 5.0</span>
+                                <div style="background: #f3edff; border: 1px solid #e7dff2; padding: 12px; border-radius: 10px; border-left: 4px solid #6d3ec4;">
+                                    <div style="font-size: 10px; color: #6d3ec4; font-weight: 800; text-transform: uppercase;">MyPSQ Overall Rating</div>
+                                    <div style="font-size: 22px; font-weight: 900; color: #150a35; margin-top:2px;">
+                                        {{ mypsq_avg_score }} <span style="font-size:13px; font-weight:700; color:#6d3ec4;">/ 5.0</span>
                                         <span style="font-size: 11px; font-weight: 800; color: #16a34a; margin-left:4px;">({{ mypsq_pct }}%)</span>
                                     </div>
                                 </div>
-                                <div style="background: white; border: 1px solid #ffe4e6; padding: 12px; border-radius: 10px; border-left: 4px solid #881337;">
-                                    <div style="font-size: 10px; color: #be123c; font-weight: 800; text-transform: uppercase;">Sample Size (Responden)</div>
-                                    <div style="font-size: 22px; font-weight: 900; color: #881337; margin-top:2px;">{{ mypsq_count }} <span style="font-size:10px; font-weight:bold; color:#16a34a;">(Real-Time Scans)</span></div>
+                                <div style="background: white; border: 1px solid #e7dff2; padding: 12px; border-radius: 10px; border-left: 4px solid #150a35;">
+                                    <div style="font-size: 10px; color: #6d3ec4; font-weight: 800; text-transform: uppercase;">Sample Size (Responden)</div>
+                                    <div style="font-size: 22px; font-weight: 900; color: #150a35; margin-top:2px;">{{ mypsq_count }} <span style="font-size:10px; font-weight:bold; color:#16a34a;">(Real-Time Scans)</span></div>
                                 </div>
                             </div>
 
                             <!-- BREAKDOWN 7 DIMENSI MyPSQ -->
-                            <h4 style="color:#881337; margin:0 0 10px 0; font-size:12px; font-weight:800; text-transform:uppercase;">7-Dimension Performance Breakdown</h4>
+                            <h4 style="color:#150a35; margin:0 0 10px 0; font-size:12px; font-weight:800; text-transform:uppercase;">7-Dimension Performance Breakdown</h4>
                             <div style="display:flex; flex-direction:column; gap:8px; margin-bottom: 15px;">
                                 <div>
-                                    <div style="display:flex; justify-content:space-between; font-size:11px; font-weight:700; color:#881337; margin-bottom:2px;">
+                                    <div style="display:flex; justify-content:space-between; font-size:11px; font-weight:700; color:#150a35; margin-bottom:2px;">
                                         <span>1. General Satisfaction</span><span>{{ dim_scores.q1 }} / 5.0</span>
                                     </div>
-                                    <div style="background:#fff1f2; height:6px; border-radius:10px; overflow:hidden;"><div style="background:#be123c; width: {% widthratio dim_scores.q1 5 100 %}%; height:100%;"></div></div>
+                                    <div style="background:#f3edff; height:6px; border-radius:10px; overflow:hidden;"><div style="background:#6d3ec4; width: {% widthratio dim_scores.q1 5 100 %}%; height:100%;"></div></div>
                                 </div>
                                 <div>
-                                    <div style="display:flex; justify-content:space-between; font-size:11px; font-weight:700; color:#881337; margin-bottom:2px;">
+                                    <div style="display:flex; justify-content:space-between; font-size:11px; font-weight:700; color:#150a35; margin-bottom:2px;">
                                         <span>2. Technical Quality & Competence</span><span>{{ dim_scores.q2 }} / 5.0</span>
                                     </div>
-                                    <div style="background:#fff1f2; height:6px; border-radius:10px; overflow:hidden;"><div style="background:#be123c; width: {% widthratio dim_scores.q2 5 100 %}%; height:100%;"></div></div>
+                                    <div style="background:#f3edff; height:6px; border-radius:10px; overflow:hidden;"><div style="background:#6d3ec4; width: {% widthratio dim_scores.q2 5 100 %}%; height:100%;"></div></div>
                                 </div>
                                 <div>
-                                    <div style="display:flex; justify-content:space-between; font-size:11px; font-weight:700; color:#881337; margin-bottom:2px;">
+                                    <div style="display:flex; justify-content:space-between; font-size:11px; font-weight:700; color:#150a35; margin-bottom:2px;">
                                         <span>3. Interpersonal Manner</span><span>{{ dim_scores.q3 }} / 5.0</span>
                                     </div>
-                                    <div style="background:#fff1f2; height:6px; border-radius:10px; overflow:hidden;"><div style="background:#be123c; width: {% widthratio dim_scores.q3 5 100 %}%; height:100%;"></div></div>
+                                    <div style="background:#f3edff; height:6px; border-radius:10px; overflow:hidden;"><div style="background:#6d3ec4; width: {% widthratio dim_scores.q3 5 100 %}%; height:100%;"></div></div>
                                 </div>
                                 <div>
-                                    <div style="display:flex; justify-content:space-between; font-size:11px; font-weight:700; color:#881337; margin-bottom:2px;">
+                                    <div style="display:flex; justify-content:space-between; font-size:11px; font-weight:700; color:#150a35; margin-bottom:2px;">
                                         <span>4. Communication Clarity</span><span>{{ dim_scores.q4 }} / 5.0</span>
                                     </div>
-                                    <div style="background:#fff1f2; height:6px; border-radius:10px; overflow:hidden;"><div style="background:#be123c; width: {% widthratio dim_scores.q4 5 100 %}%; height:100%;"></div></div>
+                                    <div style="background:#f3edff; height:6px; border-radius:10px; overflow:hidden;"><div style="background:#6d3ec4; width: {% widthratio dim_scores.q4 5 100 %}%; height:100%;"></div></div>
                                 </div>
                                 <div>
-                                    <div style="display:flex; justify-content:space-between; font-size:11px; font-weight:700; color:#881337; margin-bottom:2px;">
+                                    <div style="display:flex; justify-content:space-between; font-size:11px; font-weight:700; color:#150a35; margin-bottom:2px;">
                                         <span>5. Financial Value</span><span>{{ dim_scores.q5 }} / 5.0</span>
                                     </div>
-                                    <div style="background:#fff1f2; height:6px; border-radius:10px; overflow:hidden;"><div style="background:#be123c; width: {% widthratio dim_scores.q5 5 100 %}%; height:100%;"></div></div>
+                                    <div style="background:#f3edff; height:6px; border-radius:10px; overflow:hidden;"><div style="background:#6d3ec4; width: {% widthratio dim_scores.q5 5 100 %}%; height:100%;"></div></div>
                                 </div>
                                 <div>
-                                    <div style="display:flex; justify-content:space-between; font-size:11px; font-weight:700; color:#881337; margin-bottom:2px;">
+                                    <div style="display:flex; justify-content:space-between; font-size:11px; font-weight:700; color:#150a35; margin-bottom:2px;">
                                         <span>6. Time Spent with Patient</span><span>{{ dim_scores.q6 }} / 5.0</span>
                                     </div>
-                                    <div style="background:#fff1f2; height:6px; border-radius:10px; overflow:hidden;"><div style="background:#be123c; width: {% widthratio dim_scores.q6 5 100 %}%; height:100%;"></div></div>
+                                    <div style="background:#f3edff; height:6px; border-radius:10px; overflow:hidden;"><div style="background:#6d3ec4; width: {% widthratio dim_scores.q6 5 100 %}%; height:100%;"></div></div>
                                 </div>
                                 <div>
-                                    <div style="display:flex; justify-content:space-between; font-size:11px; font-weight:700; color:#881337; margin-bottom:2px;">
+                                    <div style="display:flex; justify-content:space-between; font-size:11px; font-weight:700; color:#150a35; margin-bottom:2px;">
                                         <span>7. Accessibility & Wait Time</span><span>{{ dim_scores.q7 }} / 5.0</span>
                                     </div>
-                                    <div style="background:#fff1f2; height:6px; border-radius:10px; overflow:hidden;"><div style="background:#be123c; width: {% widthratio dim_scores.q7 5 100 %}%; height:100%;"></div></div>
+                                    <div style="background:#f3edff; height:6px; border-radius:10px; overflow:hidden;"><div style="background:#6d3ec4; width: {% widthratio dim_scores.q7 5 100 %}%; height:100%;"></div></div>
                                 </div>
                             </div>
 
                             <!-- RECENT PATIENT REMARKS (READ-ONLY) -->
-                            <h4 style="color:#881337; margin:0 0 8px 0; font-size:12px; font-weight:800; text-transform:uppercase;">Recent Patient Feedback Log</h4>
+                            <h4 style="color:#150a35; margin:0 0 8px 0; font-size:12px; font-weight:800; text-transform:uppercase;">Recent Patient Feedback Log</h4>
                             <div style="max-height:140px; overflow-y:auto; display:flex; flex-direction:column; gap:8px; padding-right:4px;">
                                 {% if mypsq_feedbacks %}
                                     {% for fb in mypsq_feedbacks %}
                                         {% if fb.patient_comments %}
-                                            <div style="background:#fff1f2; border:1px solid #ffe4e6; padding:8px 12px; border-radius:8px; font-size:11px; color:#881337;">
+                                            <div style="background:#f3edff; border:1px solid #e7dff2; padding:8px 12px; border-radius:8px; font-size:11px; color:#150a35;">
                                                 <b>"{{ fb.patient_comments }}"</b>
-                                                <div style="font-size:9px; color:#f43f5e; margin-top:2px;">Rating: {{ fb.average_score|floatformat:1 }} ⭐ • {{ fb.created_at|date:"d M Y" }}</div>
+                                                <div style="font-size:9px; color:#726585; margin-top:2px;">Rating: {{ fb.average_score|floatformat:1 }} ⭐ • {{ fb.created_at|date:"d M Y" }}</div>
                                             </div>
                                         {% endif %}
                                     {% endfor %}
                                 {% else %}
-                                    <div style="background:#fff1f2; border:1px solid #ffe4e6; padding:8px 12px; border-radius:8px; font-size:11px; color:#881337;">
+                                    <div style="background:#f3edff; border:1px solid #e7dff2; padding:8px 12px; border-radius:8px; font-size:11px; color:#150a35;">
                                         <b>"Dr. Ramesh was exceptionally clear and empathetic during my consultation today."</b>
-                                        <div style="font-size:9px; color:#f43f5e; margin-top:2px;">Rating: 4.9 ⭐ • Live Post-Consult Scan</div>
+                                        <div style="font-size:9px; color:#726585; margin-top:2px;">Rating: 4.9 ⭐ • Live Post-Consult Scan</div>
                                     </div>
                                 {% endif %}
                             </div>
 
                         {% elif active_tab == 'EI' %}
-                            <h3 style="color:#881337; margin-top:0;">2. Emotional Intelligence (EI)</h3>
-                            <h5 style="color:#be123c; margin-bottom: 5px;">Component Breakdown</h5>
+                            <h3 style="color:#150a35; margin-top:0;">2. Emotional Intelligence (EI)</h3>
+                            <h5 style="color:#6d3ec4; margin-bottom: 5px;">Component Breakdown</h5>
                             <div class="card-ei-bar" style="margin-bottom: 20px;">{{ ei_chart_html|safe }}</div>
                             <label class="input-label" style="margin-top:0;">Self-Awareness & Emotional Management</label>
                             <input type="range" class="custom-slider" min="0" max="100" value="85" style="margin-bottom: 10px;">
@@ -463,7 +873,7 @@
                             </button>
 
                         {% elif active_tab == 'Teamwork' %}
-                            <h3 style="color:#881337; margin-top:0; margin-bottom: 15px;">3. Teamwork & Collaboration</h3>
+                            <h3 style="color:#150a35; margin-top:0; margin-bottom: 15px;">3. Teamwork & Collaboration</h3>
                             <div class="sub-menu">
                                 <a href="?state={{ pilihan_negeri }}&clinic={{ pilihan_klinik }}&officer={{ pilihan_doktor }}&tab=Teamwork&t_view=360" class="sm-radio {% if t_view == '360' %}active{% endif %}">360° Feedback</a>
                                 <a href="?state={{ pilihan_negeri }}&clinic={{ pilihan_klinik }}&officer={{ pilihan_doktor }}&tab=Teamwork&t_view=Log" class="sm-radio {% if t_view == 'Log' %}active{% endif %}">Contribution Log</a>
@@ -487,21 +897,21 @@
                                 <div style="display:grid; grid-template-columns: 2fr 1fr; gap: 10px;">
                                     <div>{{ team_scatter_html|safe }}</div>
                                     <div style="display: flex; flex-direction: column; justify-content: center;">
-                                        <div style="background-color:#fff1f2; border-left:4px solid #881337; padding:8px; border-radius:4px; margin-bottom:8px; display:flex; justify-content:space-between; align-items:center;">
-                                            <span style="font-size:11px; color:#be123c; font-weight: 600;">General</span><b style="font-size:12px; color:#881337;">{{ pts_gen }} <span style="font-size:9px; color:#fb7185;">/ 100</span></b>
+                                        <div style="background-color:#f3edff; border-left:4px solid #150a35; padding:8px; border-radius:4px; margin-bottom:8px; display:flex; justify-content:space-between; align-items:center;">
+                                            <span style="font-size:11px; color:#6d3ec4; font-weight: 600;">General</span><b style="font-size:12px; color:#150a35;">{{ pts_gen }} <span style="font-size:9px; color:#b4a1cf;">/ 100</span></b>
                                         </div>
-                                        <div style="background-color:#fff1f2; border-left:4px solid #e11d48; padding:8px; border-radius:4px; margin-bottom:8px; display:flex; justify-content:space-between; align-items:center;">
-                                            <span style="font-size:11px; color:#be123c; font-weight: 600;">Procedure</span><b style="font-size:12px; color:#881337;">{{ pts_proc }} <span style="font-size:9px; color:#fb7185;">/ 100</span></b>
+                                        <div style="background-color:#f3edff; border-left:4px solid #8554d4; padding:8px; border-radius:4px; margin-bottom:8px; display:flex; justify-content:space-between; align-items:center;">
+                                            <span style="font-size:11px; color:#6d3ec4; font-weight: 600;">Procedure</span><b style="font-size:12px; color:#150a35;">{{ pts_proc }} <span style="font-size:9px; color:#b4a1cf;">/ 100</span></b>
                                         </div>
-                                        <div style="background-color:#fff1f2; border-left:4px solid #fb7185; padding:8px; border-radius:4px; display:flex; justify-content:space-between; align-items:center;">
-                                            <span style="font-size:11px; color:#be123c; font-weight: 600;">Consult</span><b style="font-size:12px; color:#881337;">{{ pts_cons }} <span style="font-size:9px; color:#fb7185;">/ 100</span></b>
+                                        <div style="background-color:#f3edff; border-left:4px solid #b4a1cf; padding:8px; border-radius:4px; display:flex; justify-content:space-between; align-items:center;">
+                                            <span style="font-size:11px; color:#6d3ec4; font-weight: 600;">Consult</span><b style="font-size:12px; color:#150a35;">{{ pts_cons }} <span style="font-size:9px; color:#b4a1cf;">/ 100</span></b>
                                         </div>
                                     </div>
                                 </div>
                             {% endif %}
 
                         {% elif active_tab == 'Mentorship' %}
-                            <h3 style="color:#881337; margin-top:0;">4. Mentorship & Guidance</h3>
+                            <h3 style="color:#150a35; margin-top:0;">4. Mentorship & Guidance</h3>
                             <label class="input-label">Number of Staff Mentored (Mentees)</label>
                             <input type="number" class="filter-select" min="0" value="2" style="background:white; width: 100px; margin-bottom: 20px;">
                             <label class="input-label">Mentorship Effectiveness Score</label>
@@ -516,9 +926,470 @@
             </div>
         </div>
     </div> <!-- PENUTUP DIV main-content -->
-            
+
     <div class="custom-footer">
         Copyright © 2026 MyPrestasi HPU | Health Performance Unit
     </div>
+
+    <!-- SIDEBAR SHELL SCRIPT (SAME AS STAFF PORTAL) -->
+    <script>
+        // Instant button-controlled sidebar (same as Staff Portal).
+        function toggleSidebar() {
+            if (window.myPrestasiShell) window.myPrestasiShell.toggle();
+        }
+
+        // Dashboard shell only. Forms, module handlers and backend routes are unchanged.
+        (function () {
+            'use strict';
+            var sidebar = document.getElementById('mySidebar');
+            var menuButton = document.getElementById('sidebarMenuButton');
+            var closeButton = document.getElementById('sidebarCloseButton');
+            var backdrop = document.getElementById('sidebarBackdrop');
+            var main = document.querySelector('.main-content');
+            var smallScreen = window.matchMedia('(max-width: 1023px)');
+            var preferenceKey = 'myprestasi.sidebar.expanded';
+            var resizeTimer;
+            var desktopExpanded = false;
+            try { desktopExpanded = localStorage.getItem(preferenceKey) === 'true'; } catch (error) { /* Storage may be disabled. */ }
+
+            function resizeCharts() {
+                clearTimeout(resizeTimer);
+                resizeTimer = setTimeout(function () {
+                    if (!window.Plotly || !window.Plotly.Plots) return;
+                    document.querySelectorAll('.main-content .js-plotly-plot').forEach(function (chart) {
+                        // Hidden/uninitialized charts are not safe to resize.
+                        if (!chart._fullLayout || chart.clientWidth === 0 || chart.clientHeight === 0) return;
+                        try {
+                            var result = window.Plotly.Plots.resize(chart);
+                            if (result && typeof result.catch === 'function') result.catch(function () {});
+                        } catch (error) { /* A chart may still be initializing. */ }
+                    });
+                }, 120);
+            }
+
+            function applySidebar(open, moveFocus) {
+                var isDrawer = smallScreen.matches;
+                document.body.classList.toggle('sidebar-open', open);
+                menuButton.setAttribute('aria-expanded', String(open));
+                menuButton.setAttribute('aria-label', open ? 'Close navigation menu' : 'Open navigation menu');
+                sidebar.setAttribute('aria-hidden', String(isDrawer && !open));
+                sidebar.inert = isDrawer && !open;
+                backdrop.setAttribute('aria-hidden', String(!isDrawer || !open));
+                if (isDrawer && open) {
+                    sidebar.setAttribute('role', 'dialog');
+                    sidebar.setAttribute('aria-modal', 'true');
+                } else {
+                    sidebar.removeAttribute('role');
+                    sidebar.removeAttribute('aria-modal');
+                }
+                // Keep keyboard focus inside the mobile drawer, not behind it.
+                document.querySelectorAll('.main-content, .portal-topbar, .custom-footer, .aura-fab, .aura-chat-window').forEach(function (element) {
+                    element.inert = isDrawer && open;
+                });
+                if (!isDrawer) {
+                    desktopExpanded = open;
+                    try { localStorage.setItem(preferenceKey, String(open)); } catch (error) { /* Optional preference only. */ }
+                }
+                if (moveFocus) {
+                    if (isDrawer && open) closeButton.focus();
+                    else if (!open) menuButton.focus();
+                }
+                resizeCharts();
+            }
+
+            window.myPrestasiShell = {
+                toggle: function () { applySidebar(!document.body.classList.contains('sidebar-open'), true); },
+                close: function () { applySidebar(false, true); }
+            };
+            backdrop.addEventListener('click', window.myPrestasiShell.close);
+            sidebar.addEventListener('click', function (event) {
+                if (smallScreen.matches && event.target.closest('a[href]')) applySidebar(false, false);
+            });
+            document.addEventListener('keydown', function (event) {
+                if (!document.body.classList.contains('sidebar-open')) return;
+                var visibleModal = Array.from(document.querySelectorAll('.modal-overlay')).some(function (modal) {
+                    return getComputedStyle(modal).display !== 'none';
+                });
+                if (visibleModal) return;
+                if (event.key === 'Escape') {
+                    event.preventDefault();
+                    applySidebar(false, true);
+                }
+                if (event.key === 'Tab' && smallScreen.matches) {
+                    var focusable = Array.from(sidebar.querySelectorAll('a[href], button:not([disabled])')).filter(function (element) {
+                        return element.getClientRects().length && getComputedStyle(element).visibility !== 'hidden';
+                    });
+                    if (!focusable.length) return;
+                    var first = focusable[0];
+                    var last = focusable[focusable.length - 1];
+                    if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last.focus(); }
+                    else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first.focus(); }
+                }
+            });
+            // Enable keyboard activation for existing non-button header controls.
+            document.querySelector('.portal-topbar').addEventListener('keydown', function (event) {
+                var control = event.target.closest('[role="button"]');
+                if (control && (event.key === 'Enter' || event.key === ' ')) {
+                    event.preventDefault();
+                    control.click();
+                }
+            });
+            // Observe the original handler's class changes rather than replacing it.
+            document.querySelectorAll('.portal-topbar .dropdown-menu').forEach(function (dropdown) {
+                var trigger = document.querySelector('.portal-topbar [aria-controls="' + dropdown.id + '"]');
+                if (!trigger) return;
+                function synchronizeDropdownState() {
+                    trigger.setAttribute('aria-expanded', String(dropdown.classList.contains('show')));
+                }
+                synchronizeDropdownState();
+                new MutationObserver(synchronizeDropdownState).observe(dropdown, { attributes: true, attributeFilter: ['class'] });
+            });
+            function screenModeChanged() {
+                applySidebar(smallScreen.matches ? false : desktopExpanded, false);
+                if (sidebar.contains(document.activeElement) && smallScreen.matches) menuButton.focus();
+            }
+            if (smallScreen.addEventListener) smallScreen.addEventListener('change', screenModeChanged);
+            else smallScreen.addListener(screenModeChanged);
+            window.addEventListener('resize', resizeCharts);
+            window.addEventListener('load', resizeCharts);
+            if (window.ResizeObserver && main) {
+                var previousWidth = -1;
+                new ResizeObserver(function (entries) {
+                    var width = entries[0].contentRect.width;
+                    if (Math.abs(width - previousWidth) > 1) { previousWidth = width; resizeCharts(); }
+                }).observe(main);
+            }
+            document.addEventListener('click', function (event) {
+                if (event.target.closest('.tab-btn, .sub-menu, .sm-radio')) resizeCharts();
+            });
+            applySidebar(smallScreen.matches ? false : desktopExpanded, false);
+        })();
+    </script>
+    {# --- JS: Score colours (red -> yellow -> green), same palette as the Staff dashboard --- #}
+    <script data-score-palette="gradient">
+        // Presentation-only: colours charts, % bars and % numbers by their value
+        // (low = red, middle = yellow, high = green). Data and layout are not changed.
+        window.MPScorePalette = window.MPScorePalette || (function () {
+            'use strict';
+            var RED = [220, 38, 38], YELLOW = [250, 204, 21], GREEN = [22, 163, 74];
+            // Darker yellow for text so numbers stay readable on white
+            var T_RED = [220, 38, 38], T_YELLOW = [202, 138, 4], T_GREEN = [22, 163, 74];
+            var SVG_NS = 'http://www.w3.org/2000/svg';
+            var GAUGE_STEPS = 121;
+            var frame = null, uid = 0, defs = null, pageConfig = { texts: [], bars: [] };
+            var attached = new WeakSet();
+
+            function mix(from, to, f) {
+                return '#' + from.map(function (c, i) {
+                    return Math.round(c + (to[i] - c) * f).toString(16).padStart(2, '0');
+                }).join('');
+            }
+            function clamp01(p) { return Math.max(0, Math.min(1, p)); }
+            function colorAt(p) { p = clamp01(p); return p <= 0.5 ? mix(RED, YELLOW, p * 2) : mix(YELLOW, GREEN, (p - 0.5) * 2); }
+            function textColorAt(p) { p = clamp01(p); return p <= 0.5 ? mix(T_RED, T_YELLOW, p * 2) : mix(T_YELLOW, T_GREEN, (p - 0.5) * 2); }
+            function list(v) { return v && (Array.isArray(v) || ArrayBuffer.isView(v)) ? Array.from(v) : null; }
+            function sameList(a, b) { return Array.isArray(a) && a.length === b.length && b.every(function (x, i) { return a[i] === x; }); }
+            function safeRestyle(chart, update, idx) {
+                try { var r = window.Plotly.restyle(chart, update, [idx]); if (r && r.catch) r.catch(function () {}); } catch (e) { }
+            }
+
+            // ---------- shared hidden <svg> for gradients ----------
+            function getDefs() {
+                if (defs && document.body.contains(defs)) return defs;
+                var svg = document.createElementNS(SVG_NS, 'svg');
+                svg.setAttribute('width', '0'); svg.setAttribute('height', '0'); svg.setAttribute('aria-hidden', 'true');
+                svg.style.cssText = 'position:absolute; width:0; height:0; overflow:hidden;';
+                defs = document.createElementNS(SVG_NS, 'defs');
+                svg.appendChild(defs);
+                document.body.appendChild(svg);
+                return defs;
+            }
+            function gradient(id, kind) {
+                var g = document.getElementById(id);
+                if (g) return g;
+                g = document.createElementNS(SVG_NS, kind);
+                g.setAttribute('id', id);
+                g.setAttribute('gradientUnits', 'userSpaceOnUse');
+                [['0', '#dc2626'], ['0.5', '#facc15'], ['1', '#16a34a']].forEach(function (s) {
+                    var stop = document.createElementNS(SVG_NS, 'stop');
+                    stop.setAttribute('offset', s[0]); stop.setAttribute('stop-color', s[1]);
+                    g.appendChild(stop);
+                });
+                getDefs().appendChild(g);
+                return g;
+            }
+            function chartId(chart) { if (!chart.__mpPaletteId) chart.__mpPaletteId = 'mpScore' + (++uid); return chart.__mpPaletteId; }
+            function traceGroups(chart, index) {
+                return Array.prototype.filter.call(chart.querySelectorAll('.scatterlayer .trace'), function (g) {
+                    var d = g.__data__; return d && d[0] && d[0].trace && d[0].trace.index === index;
+                });
+            }
+
+            // ---------- value scale per trace: returns {lo, hi} (lo = red, hi = green) ----------
+            function axisScale(ax, values) {
+                var range = ax && ax.range ? ax.range.slice() : [0, 100];
+                var lo = Math.max(0, Math.min(range[0], range[1])), hi = Math.max(range[0], range[1]);
+                var maxVal = Math.max.apply(null, values);
+                if (hi <= 1.05 && maxVal <= 1) hi = 1;            // probability 0–1
+                else if (hi > 100 && maxVal <= 100) hi = 100;     // percentage axis with headroom
+                if (hi <= lo) { lo = 0; hi = 100; }
+                return { lo: lo, hi: hi };
+            }
+            function lineScale(trace, values, ya) {
+                var name = String(trace.name || '');
+                if (/cusum/i.test(name)) {                       // above 0 = good, below 0 = poor
+                    var m = Math.max.apply(null, values.map(Math.abs)) || 1;
+                    return { lo: -m, hi: m };
+                }
+                if (/gee|hba1c/i.test(name)) return { lo: 12, hi: 7 };   // HbA1c: lower is better (target < 7%)
+                return axisScale(ya, values);
+            }
+            function pos(v, s) { return (v - s.lo) / (s.hi - s.lo); }
+
+            // ---------- line / area charts ----------
+            function paintLine(chart, trace, index) {
+                var ys = list(trace.y);
+                if (!ys || !ys.length || typeof ys[0] !== 'number') return;
+                var ya = chart._fullLayout[(trace.yaxis || 'y').replace('y', 'yaxis')] || chart._fullLayout.yaxis;
+                if (!ya || !ya.c2p) return;
+                var s = lineScale(trace, ys, ya);
+                var mode = trace.mode || '';
+                if (mode.indexOf('markers') > -1) {
+                    var colors = ys.map(function (v) { return colorAt(pos(v, s)); });
+                    if (!sameList(trace.marker && trace.marker.color, colors)) {
+                        safeRestyle(chart, { 'marker.color': [colors], 'marker.line.color': '#ffffff', 'marker.line.width': 2 }, index);
+                    }
+                }
+                var id = chartId(chart) + 'L' + index, g = gradient(id, 'linearGradient');
+                var y1 = ya.c2p(s.lo), y2 = ya.c2p(s.hi);
+                if (!isFinite(y1) || !isFinite(y2)) return;
+                g.setAttribute('x1', '0'); g.setAttribute('x2', '0');
+                g.setAttribute('y1', y1); g.setAttribute('y2', y2);
+                traceGroups(chart, index).forEach(function (grp) {
+                    grp.querySelectorAll('.js-line').forEach(function (p) { p.style.setProperty('stroke', 'url(#' + id + ')', 'important'); });
+                    grp.querySelectorAll('.js-fill').forEach(function (p) {
+                        p.style.setProperty('fill', 'url(#' + id + ')', 'important');
+                        p.style.setProperty('fill-opacity', '.30', 'important');
+                    });
+                });
+            }
+
+            // ---------- marker-only score charts (e.g. lollipop) ----------
+            function paintMarkers(chart, trace, index) {
+                var xs = list(trace.x), ys = list(trace.y);
+                var horizontal = xs && typeof xs[0] === 'number' && ys && typeof ys[0] !== 'number';
+                var vals = horizontal ? xs : ys;
+                if (!vals || typeof vals[0] !== 'number') return;
+                var s = axisScale(horizontal ? chart._fullLayout.xaxis : chart._fullLayout.yaxis, vals);
+                var colors = vals.map(function (v) { return colorAt(pos(v, s)); });
+                if (!sameList(trace.marker && trace.marker.color, colors)) safeRestyle(chart, { 'marker.color': [colors] }, index);
+                // Lollipop stems: give each stem the colour of its own score
+                var shapes = chart.layout.shapes;
+                if (horizontal && Array.isArray(shapes) && shapes.length) {
+                    var changed = false;
+                    var next = shapes.map(function (sh) {
+                        if (sh.type !== 'line' || sh.y0 !== sh.y1 || typeof sh.x1 !== 'number') return sh;
+                        var c = colorAt(pos(sh.x1, s));
+                        if (sh.line && sh.line.color === c) return sh;
+                        changed = true;
+                        return Object.assign({}, sh, { line: Object.assign({}, sh.line, { color: c }) });
+                    });
+                    if (changed) { try { var r = window.Plotly.relayout(chart, { shapes: next }); if (r && r.catch) r.catch(function () {}); } catch (e) { } }
+                }
+            }
+
+            // ---------- bars ----------
+            var STATUS_BARS = [[/on-?time/i, '#16a34a', '#ffffff'], [/delay/i, '#facc15', '#1f2937'], [/overdue|late/i, '#dc2626', '#ffffff']];
+            function paintBar(chart, trace, index, barCount) {
+                var name = String(trace.name || '');
+                for (var k = 0; k < STATUS_BARS.length; k++) {   // stacked status bars: semantic colours
+                    if (STATUS_BARS[k][0].test(name)) {
+                        if (trace.marker && trace.marker.color === STATUS_BARS[k][1]) return;
+                        safeRestyle(chart, { 'marker.color': STATUS_BARS[k][1], 'textfont.color': STATUS_BARS[k][2] }, index);
+                        return;
+                    }
+                }
+                if (barCount > 1) return;                          // multi-series bars: colours mean the series
+                var horizontal = trace.orientation === 'h';
+                var vals = list(horizontal ? trace.x : trace.y);
+                if (!vals || typeof vals[0] !== 'number') return;
+                var s = axisScale(horizontal ? chart._fullLayout.xaxis : chart._fullLayout.yaxis, vals);
+                var colors = vals.map(function (v) { return colorAt(pos(v, s)); });
+                if (sameList(trace.marker && trace.marker.color, colors)) return;
+                safeRestyle(chart, { 'marker.color': [colors], 'textfont.color': '#1f2937' }, index);
+            }
+            function paintBarpolar(chart, trace, index) {
+                var rs = list(trace.r);
+                if (!rs || typeof rs[0] !== 'number') return;
+                var ra = chart._fullLayout.polar && chart._fullLayout.polar.radialaxis;
+                var s = axisScale(ra, rs);
+                var colors = rs.map(function (v) { return colorAt(pos(v, s)); });
+                if (!sameList(trace.marker && trace.marker.color, colors)) safeRestyle(chart, { 'marker.color': [colors] }, index);
+            }
+
+            // ---------- radar: radial gradient (centre red -> edge green) ----------
+            function paintRadar(chart, trace, index) {
+                var rs = list(trace.r);
+                if (!rs || typeof rs[0] !== 'number') return;
+                var ra = chart._fullLayout.polar && chart._fullLayout.polar.radialaxis;
+                var s = axisScale(ra, rs);
+                var colors = rs.map(function (v) { return colorAt(pos(v, s)); });
+                if (!sameList(trace.marker && trace.marker.color, colors)) {
+                    safeRestyle(chart, { 'marker.color': [colors], 'marker.line.color': '#ffffff', 'marker.line.width': 2 }, index);
+                }
+                var id = chartId(chart) + 'R' + index, g = gradient(id, 'radialGradient');
+                var bg = chart.querySelector('.polarlayer .plotbg');
+                traceGroups(chart, index).forEach(function (grp) {
+                    var shape = grp.querySelector('.js-fill') || grp.querySelector('.js-line');
+                    if (bg && shape && bg.getBBox && shape.getCTM && bg.getCTM) {
+                        var box = bg.getBBox(), m1 = bg.getCTM(), m2 = shape.getCTM();
+                        if (box.width && m1 && m2) {
+                            var pt = bg.ownerSVGElement.createSVGPoint();
+                            pt.x = box.x + box.width / 2; pt.y = box.y + box.height / 2;
+                            var local = pt.matrixTransform(m1).matrixTransform(m2.inverse());
+                            ['cx', 'fx'].forEach(function (k) { g.setAttribute(k, local.x); });
+                            ['cy', 'fy'].forEach(function (k) { g.setAttribute(k, local.y); });
+                            g.setAttribute('r', Math.abs((box.width / 2) * (m1.a / m2.a)));
+                        }
+                    }
+                    grp.querySelectorAll('.js-fill').forEach(function (p) {
+                        p.style.setProperty('fill', 'url(#' + id + ')', 'important');
+                        p.style.setProperty('fill-opacity', '.55', 'important');
+                    });
+                    grp.querySelectorAll('.js-line').forEach(function (p) { p.style.setProperty('stroke', 'url(#' + id + ')', 'important'); });
+                });
+            }
+
+            // ---------- gauges ----------
+            function gaugeSteps(range) {
+                var lo = range[0], hi = range[1], steps = [];
+                for (var i = 0; i < GAUGE_STEPS; i++) {
+                    var c = colorAt(i / (GAUGE_STEPS - 1));
+                    steps.push({ range: [lo + (hi - lo) * i / GAUGE_STEPS, lo + (hi - lo) * (i + 1) / GAUGE_STEPS], color: c, thickness: 1, line: { color: c, width: 0 } });
+                }
+                return steps;
+            }
+            function keepIndicatorsVisible(chart) {
+                chart.querySelectorAll('.angular').forEach(function (angular) {
+                    var bgs = Array.from(angular.children).filter(function (el) { return el.classList.contains('bg-arc'); });
+                    var last = bgs[bgs.length - 1];
+                    if (!last) return;
+                    var fg = ['value-arc', 'threshold-arc', 'gauge-outline'].map(function (cls) {
+                        return Array.from(angular.children).find(function (el) { return el.classList.contains(cls); });
+                    }).filter(Boolean);
+                    if (fg.some(function (el) { return Boolean(el.compareDocumentPosition(last) & 4); })) fg.forEach(function (el) { angular.appendChild(el); });
+                });
+            }
+            function paintGauge(chart, trace, index) {
+                if (trace.gauge && trace.gauge.shape === 'bullet') return;
+                var full = chart._fullData && chart._fullData[index];
+                var range = (full && full.gauge && full.gauge.axis && full.gauge.axis.range) || [0, 100];
+                var steps = gaugeSteps(range), current = trace.gauge && trace.gauge.steps;
+                keepIndicatorsVisible(chart);
+                if (Array.isArray(current) && current.length === steps.length && current[0].color === steps[0].color &&
+                    current[0].range[1] === steps[0].range[1]) return;
+                try {
+                    var r = window.Plotly.restyle(chart, { 'gauge.steps': [steps] }, [index]);
+                    if (r && r.then) r.then(function () { keepIndicatorsVisible(chart); }).catch(function () {});
+                } catch (e) { }
+            }
+
+            // ---------- heatmaps (same as HOD MO Competency Matrix) ----------
+            function paintHeatmap(chart, trace, index) {
+                if (trace.zmin === 60 && trace.zmax === 100) return;
+                safeRestyle(chart, {
+                    zmin: 60, zmax: 100, zauto: false,
+                    colorscale: [[[0, '#f87171'], [0.5, '#fcd34d'], [1.0, '#4ade80']]],
+                    'textfont.color': '#1f2937'
+                }, index);
+            }
+
+            function paintChart(chart) {
+                if (!chart._fullLayout || !Array.isArray(chart.data)) return;
+                if (!attached.has(chart) && typeof chart.on === 'function') {
+                    attached.add(chart);
+                    chart.on('plotly_afterplot', schedule);
+                }
+                var barCount = chart.data.filter(function (t) { return (t.type || 'scatter') === 'bar'; }).length;
+                var markerOnly = chart.data.filter(function (t) { return (t.type || 'scatter') === 'scatter' && (t.mode || '').indexOf('lines') === -1; }).length;
+                chart.data.forEach(function (trace, index) {
+                    var type = trace.type || 'scatter';
+                    var hidden = trace.hoverinfo === 'skip' || (typeof trace.opacity === 'number' && trace.opacity < 0.5);
+                    var dashed = trace.line && trace.line.dash && trace.line.dash !== 'solid';
+                    if (type === 'indicator' && (trace.mode || '').indexOf('gauge') > -1) paintGauge(chart, trace, index);
+                    else if (type === 'heatmap') paintHeatmap(chart, trace, index);
+                    else if (type === 'bar') paintBar(chart, trace, index, barCount);
+                    else if (type === 'barpolar') paintBarpolar(chart, trace, index);
+                    else if (type === 'scatterpolar') paintRadar(chart, trace, index);
+                    else if (type === 'scatter' && !hidden && !dashed) {
+                        if ((trace.mode || '').indexOf('lines') > -1) paintLine(chart, trace, index);
+                        else if (markerOnly === 1) paintMarkers(chart, trace, index);   // several marker groups = categories, keep
+                    }
+                });
+            }
+
+            // ---------- HTML % bars and % numbers ----------
+            function readPercent(el) {
+                var m = /width\s*:\s*([\d.]+)\s*%/i.exec(el.getAttribute('style') || '');
+                return m ? parseFloat(m[1]) : null;
+            }
+            function barLabel(bar) {
+                var track = bar.parentElement;
+                if (!track) return null;
+                var next = track.nextElementSibling;
+                if (next && /%/.test(next.textContent)) return next;
+                var row = track.previousElementSibling;
+                if (row) { var spans = row.querySelectorAll(':scope > span'); if (spans.length >= 2) return spans[spans.length - 1]; }
+                return null;
+            }
+            function paintBars(selector) {
+                document.querySelectorAll(selector).forEach(function (bar) {
+                    var pct = readPercent(bar);
+                    if (pct === null || pct <= 0) return;
+                    pct = Math.min(pct, 100);
+                    // Gradient spans the full track (0–100) and is revealed up to the bar's own %
+                    bar.style.setProperty('background-color', 'transparent', 'important');
+                    bar.style.setProperty('background-image', 'linear-gradient(90deg, #dc2626 0%, #facc15 50%, #16a34a 100%)', 'important');
+                    bar.style.setProperty('background-size', (10000 / pct) + '% 100%', 'important');
+                    bar.style.setProperty('background-repeat', 'no-repeat', 'important');
+                    bar.style.setProperty('background-position', 'left center', 'important');
+                    var label = barLabel(bar);
+                    if (label) label.style.setProperty('color', textColorAt(pct / 100), 'important');
+                });
+            }
+            function paintTexts(selector) {
+                document.querySelectorAll(selector).forEach(function (el) {
+                    var m = /^\(?\s*(\d+(?:\.\d+)?)\s*%\s*\)?$/.exec(el.textContent.trim());
+                    if (m) el.style.setProperty('color', textColorAt(parseFloat(m[1]) / 100), 'important');
+                });
+            }
+
+            function apply() {
+                if (window.Plotly && typeof window.Plotly.restyle === 'function') {
+                    document.querySelectorAll('.js-plotly-plot').forEach(paintChart);
+                }
+                pageConfig.bars.forEach(paintBars);
+                pageConfig.texts.forEach(paintTexts);
+            }
+            function schedule() {
+                if (frame !== null) return;
+                frame = window.requestAnimationFrame(function () { frame = null; apply(); });
+            }
+            function run(config) {
+                pageConfig = { texts: (config && config.texts) || [], bars: (config && config.bars) || [] };
+                if (window.MutationObserver) {
+                    new MutationObserver(function (records) {
+                        // Only react to newly added nodes outside our own hidden gradient <svg>
+                        if (records.some(function (r) { return r.addedNodes.length && !(defs && defs.contains(r.target)); })) schedule();
+                    }).observe(document.body, { childList: true, subtree: true });
+                }
+                window.addEventListener('load', schedule, { once: true });
+                window.addEventListener('resize', schedule);
+                schedule();
+            }
+            return { run: run, colorAt: colorAt, textColorAt: textColorAt };
+        })();
+        window.MPScorePalette.run({"bars": [".ip-panel div[style*=\"height:6px\"] > div"], "texts": [".ip-panel span"]});
+    </script>
 </body>
 </html>
