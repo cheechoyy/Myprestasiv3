@@ -1,4 +1,5 @@
 {% load static %}
+<div class="clinical-page">
 <!-- MODERN FLOATING OFFICER PROFILE BANNER (NO LEFT BORDER) -->
             <div style="background: white; border: 1px solid #d8c7f4; padding: 12px 20px; border-radius: 16px; margin-bottom: 20px; box-shadow: 0 10px 25px -5px rgba(21, 10, 53, 0.05); display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 15px;">
                 <div style="display: flex; align-items: center; gap: 14px;">
@@ -22,33 +23,27 @@
 
             <div class="tabs-nav">
                 <div class="tab-btn active" onclick="openTab(event, 'tab-preclerking')">
-                    <svg style="width:16px; height:16px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
                     Clinical Delivery
                 </div>
                 <div class="tab-btn" onclick="openTab(event, 'tab-doc')">
-                    <svg style="width:16px; height:16px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
                     Documentation
                 </div>
                 <div class="tab-btn" onclick="openTab(event, 'tab-cpd')">
-                    <svg style="width:16px; height:16px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>
                     Knowledge & Competency
                 </div>
                 <div class="tab-btn" onclick="openTab(event, 'tab-policy')">
-                    <svg style="width:16px; height:16px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
                     Adherence To Policies & Protocols
                 </div>
             </div>
 
             <div class="card tab-content active" id="tab-preclerking" style="max-height: 65vh; overflow-y: auto;">
                 <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 15px; border-bottom: 2px solid #e7dff2; padding-bottom: 10px;">
-                    <svg style="width: 20px; height: 20px; color: #6d3ec4;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/></svg>
                     <h3 style="color:#150a35; margin:0; font-size:16px;">New Clinical / Procedural Record</h3>
                 </div>
 
                 <div style="margin-bottom: 20px;">
                     <label style="margin-top:0; margin-bottom:10px; color:#6d3ec4; font-size:12px; font-weight:700;">Active Evaluation Module:</label>
                     <div style="background: #f3edff; color: #150a35; font-weight: 800; padding: 10px 15px; border-radius: 8px; display: inline-flex; align-items: center; gap: 8px; border: 1px solid #e7dff2;">
-                        <svg style="width: 16px; height: 16px; color: #6d3ec4;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.5 12.75l6 6 9-13.5M9 12l2.25 2.25L15 9m-6 12a9 9 0 110-18 9 9 0 010 18z"/></svg>
                         {% if staff_dept == 'CTS' %} Cardiothoracic Surgery (CTS) {% else %} Family Medicine Specialist (FMS) {% endif %}
                     </div>
                 </div>
@@ -77,15 +72,15 @@
                         <div class="grid-3" style="margin-top: 15px;">
                             <div><label style="margin-top:0;">Date of Birth <span style="color:red;">*</span></label><input type="date" required style="background:white;"></div>
                             <div>
+                                <label style="margin-top:0;">Ethnic Group</label>
+                                <select style="background:white;"><option>Malay</option><option>Chinese</option><option>Indian</option><option>Others</option></select>
+                            </div>
+                            <div>
                                 <label style="margin-top:0;">Gender <span style="color:red;">*</span></label>
                                 <div class="radio-group">
                                     <label style="margin:0; font-weight:normal;"><input type="radio" name="gender_cts" value="Male" required> Male</label>
                                     <label style="margin:0; font-weight:normal;"><input type="radio" name="gender_cts" value="Female"> Female</label>
                                 </div>
-                            </div>
-                            <div>
-                                <label style="margin-top:0;">Ethnic Group</label>
-                                <select style="background:white;"><option>Malay</option><option>Chinese</option><option>Indian</option><option>Others</option></select>
                             </div>
                         </div>
 
@@ -188,15 +183,15 @@
                         <div class="grid-3" style="margin-top: 15px;">
                             <div><label style="margin-top:0;">Date of Birth <span style="color:red;">*</span></label><input type="date" required style="background:white;"></div>
                             <div>
+                                <label style="margin-top:0;">Ethnic Group</label>
+                                <select style="background:white;"><option>Malay</option><option>Chinese</option><option>Indian</option><option>Others</option></select>
+                            </div>
+                            <div>
                                 <label style="margin-top:0;">Gender <span style="color:red;">*</span></label>
                                 <div class="radio-group">
                                     <label style="margin:0; font-weight:normal;"><input type="radio" name="gender_fms" value="Male" required> Male</label>
                                     <label style="margin:0; font-weight:normal;"><input type="radio" name="gender_fms" value="Female"> Female</label>
                                 </div>
-                            </div>
-                            <div>
-                                <label style="margin-top:0;">Ethnic Group</label>
-                                <select style="background:white;"><option>Malay</option><option>Chinese</option><option>Indian</option><option>Others</option></select>
                             </div>
                         </div>
 
@@ -269,7 +264,6 @@
 
             </div> <div class="card tab-content" id="tab-cpd">
                 <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 15px; border-bottom: 2px solid #e7dff2; padding-bottom: 10px;">
-                    <svg style="width: 20px; height: 20px; color: #6d3ec4;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>
                     <h3 style="color:#150a35; margin:0; font-size:16px;">CPD / CME Management</h3>
                 </div>
 
@@ -293,7 +287,6 @@
 
                 <div style="background: #f3edff; padding: 20px; border-radius: 12px; border: 1px solid #e7dff2; margin-bottom: 35px;">
                     <div style="display: flex; align-items: center; gap: 8px; margin-bottom:15px;">
-                        <svg style="width: 18px; height: 18px; color: #6d3ec4;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/></svg>
                         <h4 style="color:#150a35; margin:0; font-size:14px;">Submit New CPD Claim</h4>
                     </div>
 
@@ -331,14 +324,12 @@
                         </div>
 
                         <button type="submit" class="submit-btn" style="margin-top: 15px; display: flex; align-items: center; justify-content: center; gap: 8px;">
-                            <svg style="width: 18px; height: 18px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
                             Submit CPD Claim
                         </button>
                     </form>
                 </div>
 
                 <div style="display: flex; align-items: center; gap: 8px; margin-bottom:15px;">
-                    <svg style="width: 18px; height: 18px; color: #6d3ec4;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
                     <h4 style="color:#150a35; margin:0; font-size:14px;">CPD Claim History (2026)</h4>
                 </div>
                 <div style="overflow-x: auto; border: 1px solid #e2e8f0; border-radius: 8px;">
@@ -397,7 +388,6 @@
 
             <div class="card tab-content" id="tab-doc">
                 <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 15px; border-bottom: 2px solid #e7dff2; padding-bottom: 10px;">
-                    <svg style="width: 20px; height: 20px; color: #6d3ec4;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
                     <h3 style="color:#150a35; margin:0; font-size:16px;">Clinical Documentation Log</h3>
                 </div>
 
@@ -445,14 +435,12 @@
                         <div class="grid-2" style="margin-bottom: 15px;">
                             <div>
                                 <label style="margin-top:0; display:flex; align-items:center; gap:6px; color:#150a35;">
-                                    <svg style="width: 16px; height: 16px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
                                     Encounter Date & Time <span style="color:red;">*</span>
                                 </label>
                                 <input type="datetime-local" required style="background:white;">
                             </div>
                             <div>
                                 <label style="margin-top:0; display:flex; align-items:center; gap:6px; color:#15803d;">
-                                    <svg style="width: 16px; height: 16px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
                                     Documentation Completion <span style="color:red;">*</span>
                                 </label>
                                 <input type="datetime-local" required style="background:white;">
@@ -474,14 +462,12 @@
                         </div>
 
                         <button type="submit" class="submit-btn" style="margin-top: 20px; display:flex; align-items:center; justify-content:center; gap:8px;">
-                            <svg style="width: 18px; height: 18px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
                             Save Documentation Record
                         </button>
                     </form>
                 </div>
 
                 <div style="display: flex; align-items: center; gap: 8px; margin-bottom:15px;">
-                    <svg style="width: 18px; height: 18px; color: #6d3ec4;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
                     <h4 style="color:#150a35; margin:0; font-size:14px;">Recent Submissions</h4>
                 </div>
                 <div style="overflow-x: auto; border: 1px solid #e7dff2; border-radius: 8px;">
@@ -539,7 +525,6 @@
 
             <div class="card tab-content" id="tab-policy">
                 <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 15px; border-bottom: 2px solid #e7dff2; padding-bottom: 10px;">
-                    <svg style="width: 20px; height: 20px; color: #6d3ec4;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
                     <h3 style="color:#150a35; margin:0; font-size:16px;">Annual Policy & Clinical SOP Declaration</h3>
                 </div>
 
@@ -703,8 +688,8 @@
                     </div>
 
                     <button type="submit" class="submit-btn" style="margin-top: 15px; display:flex; align-items:center; justify-content:center; gap:8px;">
-                        <svg style="width: 18px; height: 18px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
                         Submit Annual SOP Declaration
                     </button>
                 </form>
             </div>
+</div>

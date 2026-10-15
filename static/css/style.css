@@ -577,6 +577,419 @@ input[type="text"]:focus, input[type="number"]:focus, input[type="date"]:focus, 
 /* Pemilihan teks */
 ::selection { background: #dccbff; color: #150a35; }
 
+/* =====================================================================
+   TOP NAVIGATION (STAFF): LOGO + BUTANG PANTAS
+   ===================================================================== */
+.top-nav {
+    /* top negatif = padding .main-content, supaya bar melekat rapat di tepi atas skrin */
+    position: sticky; top: -35px; z-index: 900;
+    display: flex; align-items: center; justify-content: space-between; gap: 20px;
+    min-height: 72px; box-sizing: border-box;
+    margin: -35px -35px 30px; padding: 14px 35px;
+    background: rgba(255, 255, 255, 0.92);
+    -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px);
+    border-bottom: 1px solid #e2e8f0;
+    box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+}
+.top-nav-brand { display: flex; align-items: center; gap: 12px; text-decoration: none; flex-shrink: 0; border-radius: 10px; }
+.top-nav-brand:focus-visible { outline: none; box-shadow: 0 0 0 4px rgba(133, 84, 212, 0.2); }
+.top-nav-brand img { height: 40px; width: auto; display: block; }
+.top-nav-brand-text { padding-left: 12px; border-left: 1px solid #e2e8f0; }
+.top-nav-brand-text h2 { color: #150a35; font-weight: 900; margin: 0; font-size: 1.15rem; letter-spacing: -0.5px; line-height: 1.2; }
+.top-nav-brand-text p { color: #6f628b; font-size: 0.68rem; font-weight: 800; margin: 2px 0 0; text-transform: uppercase; letter-spacing: 1px; }
+.top-nav .top-header-right { flex-wrap: nowrap; }
+.top-nav .header-tool, .top-nav .icon-btn, .top-nav #inlineSearchBox { box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04) !important; }
+.top-nav .header-avatar { box-shadow: 0 2px 8px rgba(85, 40, 166, 0.3); }
+
+/* ---------------------------------------------------------------------
+   RESPONSIF TOP NAVIGATION
+   >= 1280px : penuh (logo + teks jenama + semua butang sebaris)
+   1024-1279 : teks jenama disembunyikan, butang dirapatkan
+   769-1023  : tablet - carian turun ke baris kedua
+   <= 768    : telefon - logo + ikon / Dept + tarikh / carian penuh
+   --------------------------------------------------------------------- */
+.top-nav .header-tool { white-space: nowrap; }
+
+@media (max-width: 1279px) and (min-width: 769px) {
+    .top-nav { gap: 14px; }
+    .top-nav-brand-text { display: none; }
+    .top-nav .top-header-right { gap: 8px; }
+    .top-nav .header-tool { padding: 9px 14px; }
+    .top-nav .inline-search-container { width: 230px !important; }
+}
+
+@media (max-width: 1023px) and (min-width: 769px) {
+    .top-nav .top-header-right { flex: 1; flex-wrap: wrap; justify-content: flex-end; row-gap: 10px; }
+    .top-nav .inline-search-container { order: 99; width: 100% !important; }
+    .top-nav #inlineSuggestionsDropdown { width: 100% !important; }
+}
+
+/* ---------------------------------------------------------------------
+   TELEFON (<= 768px)
+   --------------------------------------------------------------------- */
+@media (max-width: 768px) {
+    /* Betulkan anjakan desktop 80px yang menolak kandungan keluar skrin */
+    .main-content, .sidebar:hover ~ .main-content { margin-left: 0 !important; }
+
+    /* Top navigation: susun semula tanpa mengubah HTML */
+    .top-nav {
+        position: relative; top: 0;
+        flex-wrap: wrap; gap: 10px;
+        margin: -15px -15px 20px; padding: 12px 15px;
+    }
+    .top-nav .top-header-right { display: contents; }
+    .top-nav-brand { flex: 1 1 auto; order: 0; }
+    .top-nav-brand img { height: 34px; }
+    .top-nav .dropdown-wrapper, .top-nav .header-avatar { order: 1; flex-shrink: 0; }
+    .top-nav .header-tool { order: 2; flex: 1 1 calc(50% - 5px); box-sizing: border-box; justify-content: center; padding: 9px 8px; font-size: 12px; min-width: 0; gap: 4px; }
+    .top-nav .inline-search-container { order: 3; width: 100% !important; }
+    .top-nav #inlineSuggestionsDropdown { width: 100% !important; }
+    .top-nav .dropdown-menu { min-width: 0; width: min(320px, calc(100vw - 30px)); }
+
+    /* Sidebar telefon: bar menu mendatar yang boleh diskrol, label kelihatan */
+    .sidebar {
+        flex-direction: row !important; align-items: center; gap: 8px;
+        overflow-x: auto !important; overflow-y: hidden !important;
+        padding: 10px 15px !important;
+        -webkit-overflow-scrolling: touch; scrollbar-width: none;
+    }
+    .sidebar::-webkit-scrollbar { display: none; }
+    .sidebar:hover { box-shadow: none; }
+    .sidebar .hide-on-collapse { opacity: 1 !important; pointer-events: auto !important; }
+    .sidebar-section-title { display: none !important; }
+    .sidebar .nav-btn, .sidebar .btn-logout { flex-shrink: 0; margin: 0 !important; min-height: 40px; padding: 9px 14px; }
+    .sidebar > div[style*="margin-top: auto"] { margin-top: 0 !important; flex-shrink: 0; display: flex; gap: 8px; }
+    /* Logo sudah ada di top navigation, jadi sembunyikan dari sidebar */
+    body:has(.top-nav) .sidebar .sidebar-logo { display: none; }
+    .sidebar .sidebar-logo { flex-shrink: 0; margin: 0 8px 0 0; min-height: 0; }
+
+    /* Kad AI di dashboard: butang tindakan turun ke bawah teks */
+    .ai-alert-row { flex-direction: column; align-items: stretch !important; }
+    .ai-alert-actions { min-width: 0 !important; width: 100%; align-self: stretch !important; }
+}
+
+/* Telefon kecil: hanya logo di bar atas supaya ikon muat sebaris */
+@media (max-width: 400px) {
+    .top-nav-brand-text { display: none; }
+}
+
+/* ---------------------------------------------------------------------
+   RESPONSIF KANDUNGAN MODUL STAFF
+   --------------------------------------------------------------------- */
+/* Tablet: grid Performance jadi 2 lajur, Update Tracker merentang penuh */
+@media (max-width: 1023px) {
+    .perf-grid { grid-template-columns: 1fr 1fr !important; }
+    .perf-grid > .card:first-child { grid-column: 1 / -1; grid-row: auto !important; }
+}
+@media (max-width: 768px) {
+    .perf-grid { grid-template-columns: 1fr !important; }
+    /* Jadual lebar boleh diskrol mendatar dalam kad, bukan melimpah halaman */
+    .staff-table, .roster-table { display: block; max-width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+    /* Tab Coaching turun ke baris baru jika tidak muat */
+    .coach-tabs { flex-wrap: wrap; }
+}
+
+/* =====================================================================
+   SIDEBAR STAFF: BUTANG MENU (KLIK UNTUK BUKA / TUTUP)
+   Hanya untuk .sidebar-toggleable; sidebar HOD kekal seperti asal.
+   ===================================================================== */
+
+/* Buang kesan auto-buka bila hover */
+.sidebar.sidebar-toggleable:hover { width: 80px; box-shadow: none; }
+.sidebar.sidebar-toggleable:hover ~ .main-content { margin-left: 80px; }
+.sidebar.sidebar-toggleable:hover ~ .custom-footer { left: 80px; }
+.sidebar.sidebar-toggleable:hover .hide-on-collapse { opacity: 0; pointer-events: none; }
+
+/* Keadaan terbuka (selepas butang menu ditekan) */
+.sidebar.sidebar-toggleable.is-expanded { width: 280px; box-shadow: 10px 0 30px rgba(21, 10, 53, 0.08); }
+.sidebar.sidebar-toggleable.is-expanded ~ .main-content { margin-left: 280px; }
+.sidebar.sidebar-toggleable.is-expanded ~ .custom-footer { left: 280px; }
+.sidebar.sidebar-toggleable.is-expanded .hide-on-collapse { opacity: 1; pointer-events: auto; }
+
+/* Elak animasi semasa memulihkan keadaan terbuka ketika halaman dimuatkan */
+.sidebar.no-transition, .sidebar.no-transition ~ .main-content, .sidebar.no-transition ~ .custom-footer,
+.sidebar.no-transition .hide-on-collapse { transition: none !important; }
+
+/* Kawasan butang menu: tinggi 72px, garis bawah sejajar dengan top navigation */
+.sidebar.sidebar-toggleable { padding-top: 14px; }
+.sidebar-top {
+    display: flex; align-items: center; flex-shrink: 0;
+    height: 58px; box-sizing: border-box;
+    margin: 0 -14px 20px; padding: 0 14px 14px;
+    border-bottom: 1px solid #e2e8f0;
+}
+.sidebar-menu-btn {
+    display: flex; align-items: center; justify-content: center;
+    width: 100%; height: 44px; padding: 0; flex-shrink: 0;
+    background: #ffffff; color: #150a35;
+    border: 1px solid #e2e8f0; border-radius: 10px;
+    box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+    cursor: pointer;
+    transition: background-color 0.2s, border-color 0.2s, color 0.2s, box-shadow 0.2s;
+}
+.sidebar-menu-btn:hover { background: #f3edff; border-color: #6d3ec4; color: #6d3ec4; }
+.sidebar-menu-btn:focus { outline: none; }
+.sidebar-menu-btn:focus-visible { border-color: #6d3ec4; box-shadow: 0 0 0 4px rgba(133, 84, 212, 0.2); }
+.sidebar-menu-btn svg { width: 20px; height: 20px; }
+.sidebar-menu-btn .icon-close { display: none; }
+.sidebar-toggleable.is-expanded .sidebar-top { justify-content: flex-end; }
+.sidebar-toggleable.is-expanded .sidebar-menu-btn { width: 44px; }
+.sidebar-toggleable.is-expanded .sidebar-menu-btn .icon-open { display: none; }
+.sidebar-toggleable.is-expanded .sidebar-menu-btn .icon-close { display: block; }
+
+/* Tablet: sidebar terbuka di atas kandungan (overlay), tidak menolak kandungan */
+@media (max-width: 1023px) and (min-width: 769px) {
+    .sidebar.sidebar-toggleable.is-expanded ~ .main-content { margin-left: 80px; }
+    .sidebar.sidebar-toggleable.is-expanded ~ .custom-footer { left: 80px; }
+    .sidebar.sidebar-toggleable.is-expanded { box-shadow: 16px 0 40px rgba(21, 10, 53, 0.18); }
+}
+
+/* Telefon: hanya butang menu kelihatan; tekan untuk papar bar menu mendatar */
+@media (max-width: 768px) {
+    .sidebar.sidebar-toggleable { padding-top: 10px !important; }
+    .sidebar-toggleable .sidebar-top { height: auto; margin: 0; padding: 0; border-bottom: none; }
+    .sidebar-toggleable .sidebar-menu-btn { width: 44px; }
+    .sidebar-toggleable.is-expanded .sidebar-top { justify-content: flex-start; }
+    .sidebar-toggleable:not(.is-expanded) > :not(.sidebar-top) { display: none !important; }
+    .sidebar.sidebar-toggleable.is-expanded { box-shadow: none; }
+    .sidebar.sidebar-toggleable:hover .hide-on-collapse,
+    .sidebar.sidebar-toggleable .hide-on-collapse { opacity: 1 !important; pointer-events: auto !important; }
+}
+
+/* =====================================================================
+   HALAMAN PERFORMANCE (STAFF): SUSUN ATUR KEMAS
+   ===================================================================== */
+/* Update Tracker: item padat, tajuk & status kekal sebaris */
+.perf-tracker { min-height: 0; }
+.perf-tracker .timeline-container { min-height: 0; overflow-y: auto; padding-top: 2px; }
+.perf-tracker .timeline-item { padding: 10px 12px; margin-bottom: 8px; gap: 10px; border-color: #e2e8f0; }
+.perf-tracker .timeline-item:last-child { margin-bottom: 0; }
+.perf-tracker .ti-left { min-width: 0; }
+.perf-tracker .ti-title { font-size: 13px; line-height: 1.3; }
+.perf-tracker .ti-status { flex-shrink: 0; white-space: nowrap; font-size: 11px; }
+
+/* Score Summary: kotak metrik dibahagi sama rata mengisi ketinggian kad */
+.perf-score .metric-box { flex: 1; display: flex; flex-direction: column; justify-content: center; margin-bottom: 12px; }
+.perf-score .metric-box:last-child { margin-bottom: 0; }
+
+/* =====================================================================
+   HALAMAN CLINICAL (STAFF): SUSUN ATUR LEBIH BERSIH
+   ===================================================================== */
+/* Satu scroll sahaja: buang scroll dalaman kad borang */
+:is(.clinical-page, .operational-page, .interpersonal-page) .tab-content { max-height: none !important; overflow: visible !important; padding: 28px; }
+
+/* Tab: gaya formal bergaris bawah (seperti borang rasmi) */
+:is(.clinical-page, .operational-page, .interpersonal-page) .tabs-nav {
+    display: flex; flex-wrap: wrap; gap: 0; padding: 0 4px;
+    background: transparent; border: none; border-bottom: 1px solid #d8d3e6;
+    border-radius: 0; box-shadow: none; margin-bottom: 20px;
+}
+:is(.clinical-page, .operational-page, .interpersonal-page) .tab-btn {
+    flex: 0 0 auto; min-width: 0; height: 46px; padding: 0 22px; margin-bottom: -1px;
+    background: transparent; border: none; border-bottom: 3px solid transparent; border-radius: 0;
+    color: #64748b; font-size: 13px; font-weight: 700; letter-spacing: 0.2px;
+    box-shadow: none; transition: color 0.15s, border-color 0.15s;
+}
+:is(.clinical-page, .operational-page, .interpersonal-page) .tab-btn svg { opacity: 0.8; }
+:is(.clinical-page, .operational-page, .interpersonal-page) .tab-btn:hover { background: transparent; color: #150a35; border-bottom-color: #d8c7f4; transform: none; }
+:is(.clinical-page, .operational-page, .interpersonal-page) .tab-btn.active { background: transparent; color: #150a35; border-bottom-color: #5528a6; box-shadow: none; }
+:is(.clinical-page, .operational-page, .interpersonal-page) .tab-btn.active svg { color: #5528a6; opacity: 1; }
+
+/* Tab digabungkan dengan kad borang: satu kotak (tab di atas, borang di bawah) */
+:is(.clinical-page, .operational-page, .interpersonal-page) .tabs-nav {
+    background: #ffffff; padding: 0 18px; margin-bottom: 0;
+    border: 1px solid #e2e8f0; border-bottom: 1px solid #e2e8f0;
+    border-radius: 16px 16px 0 0;
+}
+:is(.clinical-page, .operational-page, .interpersonal-page) .tab-content { margin-top: 0; border-top: none; border-radius: 0 0 16px 16px; }
+
+/* Tajuk kad borang: garis pemisah nipis */
+:is(.clinical-page, .operational-page, .interpersonal-page) .tab-content > div:first-child { border-bottom: 1px solid #e2e8f0 !important; padding-bottom: 14px !important; margin-bottom: 20px !important; }
+
+/* Blok maklumat am: bingkai penuh nipis, tiada garis kiri tebal */
+.clinical-page [style*="border-left: 4px solid #6d3ec4"] {
+    border-left: 1px solid #e7dff2 !important; border: 1px solid #e7dff2;
+    border-radius: 12px !important; background: #faf8ff !important; padding: 18px 20px !important;
+}
+
+/* Tajuk seksyen: label ringkas dengan aksen kecil, bukan blok berlatar penuh */
+.clinical-page h4[style*="background: #e7dff2"] {
+    background: transparent !important; padding: 0 0 8px 12px !important;
+    border-left: 4px solid #5528a6; border-bottom: 2px solid #c8b6e8;
+    border-radius: 0 !important; color: #150a35 !important;
+    font-size: 12px !important; letter-spacing: 0.6px;
+}
+
+/* =====================================================================
+   HALAMAN SETTINGS (STAFF): SENARAI TETAPAN TERATUR
+   ===================================================================== */
+.settings-card { padding: 28px 32px; }
+.settings-head { padding-bottom: 16px; margin-bottom: 8px; border-bottom: 1px solid #e2e8f0; }
+.settings-head h3 { margin: 0; color: #150a35; font-size: 18px; font-weight: 800; }
+.settings-head p { margin: 4px 0 0; color: #64748b; font-size: 13px; font-weight: 500; }
+
+.settings-list { display: flex; flex-direction: column; }
+.settings-row {
+    display: flex; align-items: center; justify-content: space-between; gap: 24px;
+    padding: 18px 0; border-bottom: 1px solid #eef0f4;
+}
+.settings-label strong { display: block; color: #150a35; font-size: 14px; font-weight: 700; }
+.settings-label span { display: block; margin-top: 3px; color: #6f628b; font-size: 12px; font-weight: 500; }
+.settings-control { flex: 0 0 340px; max-width: 100%; }
+.settings-control select { margin: 0; font-weight: 600; color: #150a35; }
+.settings-control-switch { display: flex; justify-content: flex-end; }
+
+.settings-actions { display: flex; justify-content: flex-end; padding-top: 22px; }
+.settings-actions .submit-btn { width: auto; margin-top: 0; padding: 12px 28px; border-radius: 10px; font-size: 14px; font-weight: 800; }
+
+@media (max-width: 768px) {
+    .settings-card { padding: 20px; }
+    .settings-row { flex-direction: column; align-items: stretch; gap: 10px; }
+    .settings-control { flex-basis: auto; }
+    .settings-control-switch { justify-content: flex-start; }
+    .settings-actions .submit-btn { width: 100%; }
+}
+
+/* --- Operational > Innovation: sub-tab gaya formal bergaris bawah (sama seperti tab utama) --- */
+/* Gaya ikut kelas .active (bukan gaya sebaris), jadi tab aktif sentiasa betul selepas diklik */
+.operational-page #innov-selector {
+    gap: 0 !important; flex-wrap: wrap; margin-bottom: 25px !important; padding: 0 2px;
+    border-bottom: 1px solid #d8d3e6;
+}
+.operational-page #innov-selector + hr { display: none; }
+.operational-page #innov-selector .sm-radio {
+    margin-bottom: -1px; padding: 10px 18px !important;
+    background: transparent !important; border: none !important; border-bottom: 3px solid transparent !important;
+    border-radius: 0 !important; color: #64748b !important; font-size: 13px !important; font-weight: 700 !important;
+    transition: color 0.15s, border-color 0.15s;
+}
+.operational-page #innov-selector .sm-radio:hover { color: #150a35 !important; border-bottom-color: #d8c7f4 !important; }
+.operational-page #innov-selector .sm-radio.active { color: #150a35 !important; border-bottom-color: #5528a6 !important; }
+
+/* =====================================================================
+   DARK MODE (STAFF) - aktif bila <html class="dark">
+   Tema gelap separa: latar, kad, sidebar, top nav, input, jadual & teks utama.
+   ===================================================================== */
+html.dark {
+    --dk-bg: #0f0a1f; --dk-surface: #1a1330; --dk-surface-2: #231a3d; --dk-border: #33295a;
+    --dk-text: #ece8f7; --dk-muted: #a99fc4; --dk-accent: #a577ff;
+    color-scheme: dark;
+}
+html.dark body {
+    background-color: var(--dk-bg);
+    background-image:
+        linear-gradient(rgba(165,119,255,0.05) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(165,119,255,0.05) 1px, transparent 1px);
+    color: var(--dk-text);
+}
+
+/* Permukaan utama */
+html.dark .card, html.dark .eval-card, html.dark .kpi-card, html.dark .timeline-item, html.dark .metric-box,
+html.dark .dropdown-menu, html.dark .modal-content, html.dark .btn-menu, html.dark .checkbox-container,
+html.dark .header-tool, html.dark .icon-btn, html.dark #inlineSearchBox, html.dark #inlineSuggestionsDropdown {
+    background-color: var(--dk-surface) !important; border-color: var(--dk-border) !important; color: var(--dk-text);
+    box-shadow: 0 1px 2px rgba(0,0,0,0.3), 0 12px 32px -12px rgba(0,0,0,0.5);
+}
+html.dark .sidebar, html.dark .top-nav, html.dark .custom-footer {
+    background: var(--dk-surface) !important; border-color: var(--dk-border) !important; color: var(--dk-muted);
+}
+html.dark .nav-btn { background: transparent; color: var(--dk-text); }
+html.dark .nav-btn:hover { background: var(--dk-surface-2); border-color: var(--dk-accent); }
+html.dark .sidebar-menu-btn, html.dark .sidebar-top { background: transparent; border-color: var(--dk-border); color: var(--dk-text); }
+html.dark .dropdown-header { background: var(--dk-surface-2); color: var(--dk-text); border-color: var(--dk-border); }
+html.dark .dropdown-item { border-color: var(--dk-border); color: var(--dk-muted); }
+html.dark .dropdown-item:hover { background: var(--dk-surface-2); }
+html.dark .dropdown-item strong { color: var(--dk-text); }
+
+/* Teks utama */
+html.dark .top-header-left h1, html.dark .top-header-left h1 strong, html.dark .top-nav-brand-text h2,
+html.dark .settings-head h3, html.dark .settings-label strong, html.dark .metric-val, html.dark .kpi-text h3,
+html.dark h1, html.dark h2, html.dark h3, html.dark h4, html.dark h5, html.dark label, html.dark strong { color: var(--dk-text); }
+html.dark .top-header-left p, html.dark .top-nav-brand-text p, html.dark .settings-head p, html.dark .settings-label span { color: var(--dk-muted); }
+html.dark .settings-head, html.dark .settings-row { border-color: var(--dk-border); }
+
+/* Warna sebaris yang biasa (teks gelap, latar putih/ungu cair, bingkai cair) */
+html.dark [style*="color:#150a35"], html.dark [style*="color: #150a35"],
+html.dark [style*="color:#5528a6"], html.dark [style*="color: #5528a6"] { color: var(--dk-text) !important; }
+html.dark [style*="color:#6f628b"], html.dark [style*="color: #6f628b"],
+html.dark [style*="color:#64748b"], html.dark [style*="color: #64748b"] { color: var(--dk-muted) !important; }
+html.dark [style*="background: white"], html.dark [style*="background:white"], html.dark [style*="background-color: white"],
+html.dark [style*="background: #ffffff"], html.dark [style*="background:#ffffff"] { background: var(--dk-surface) !important; }
+html.dark [style*="background: #f3edff"], html.dark [style*="background:#f3edff"], html.dark [style*="background-color: #f3edff"],
+html.dark [style*="background: #faf8ff"], html.dark [style*="background:#faf8ff"],
+html.dark [style*="background: #f8fafc"], html.dark [style*="background:#f8fafc"],
+html.dark [style*="background: linear-gradient(135deg, #f3edff"], html.dark [style*="background: linear-gradient(135deg, #ffffff"] {
+    background: var(--dk-surface-2) !important;
+}
+html.dark [style*="border: 1px solid #e7dff2"], html.dark [style*="border:1px solid #e7dff2"],
+html.dark [style*="border: 1px solid #d8c7f4"], html.dark [style*="border-bottom: 2px solid #e7dff2"],
+html.dark [style*="border-bottom: 1px solid #e7dff2"], html.dark [style*="border-top:1px solid #e7dff2"] { border-color: var(--dk-border) !important; }
+
+/* Borang */
+html.dark input[type="text"], html.dark input[type="number"], html.dark input[type="date"], html.dark input[type="datetime-local"],
+html.dark input[type="email"], html.dark input[type="password"], html.dark input[type="file"], html.dark select, html.dark textarea {
+    background-color: var(--dk-surface-2) !important; color: var(--dk-text) !important; border-color: var(--dk-border) !important;
+}
+html.dark input::placeholder, html.dark textarea::placeholder { color: #7d7399; }
+html.dark .slider { background-color: #3a3060; }
+
+/* Tab */
+html.dark :is(.clinical-page, .operational-page, .interpersonal-page) .tabs-nav { background: var(--dk-surface) !important; border-color: var(--dk-border) !important; }
+html.dark .tab-btn { color: var(--dk-muted) !important; }
+html.dark .tab-btn.active, html.dark .tab-btn:hover { color: var(--dk-text) !important; }
+html.dark .tab-btn.active { border-bottom-color: var(--dk-accent) !important; }
+html.dark .operational-page #innov-selector { border-color: var(--dk-border); }
+html.dark .operational-page #innov-selector .sm-radio.active { color: var(--dk-text) !important; border-bottom-color: var(--dk-accent) !important; }
+
+/* Jadual */
+html.dark .staff-table tr, html.dark .roster-table td { border-color: var(--dk-border); }
+html.dark .staff-table td, html.dark .roster-table td { color: var(--dk-text); }
+html.dark .staff-table tr:nth-child(even), html.dark .roster-table tr:nth-child(even) { background-color: var(--dk-surface-2); }
+html.dark .staff-table tr:hover, html.dark .roster-table tr:hover { background-color: #2c2250; }
+
+/* Carta Plotly: teks & grid terang supaya boleh dibaca */
+html.dark .js-plotly-plot .main-svg text { fill: #d6d0ea !important; }
+html.dark .js-plotly-plot .gridlayer path, html.dark .js-plotly-plot .angularaxisgrid path,
+html.dark .js-plotly-plot .radial-grid path { stroke: rgba(214,208,234,0.15) !important; }
+html.dark .js-plotly-plot .polarsublayer.plotbg path { fill: #1f1838 !important; }
+/* Kekalkan butang tindakan putih dalam kad AI ungu supaya menonjol */
+html.dark [style*="background: white; color: #5528a6"] { background: #ffffff !important; color: #5528a6 !important; }
+
+/* =====================================================================
+   SLIDER EQ (INTERPERSONAL): TREK GRADIENT MERAH -> KUNING -> HIJAU + SKALA
+   Bahagian kiri tombol menunjukkan gradient; bahagian kanan kelabu.
+   ===================================================================== */
+.eq-field label { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
+.eq-value { flex-shrink: 0; font-size: 14px; font-weight: 900; }
+
+input[type="range"].eq-slider {
+    -webkit-appearance: none; appearance: none;
+    width: 100%; height: 10px; margin: 10px 0 4px; padding: 0; border: none; border-radius: 999px;
+    background:
+        linear-gradient(90deg, transparent var(--pct, 50%), #e2e8f0 var(--pct, 50%)),
+        linear-gradient(90deg, #ff0000 0%, #FFD700 50%, #008000 100%);
+    accent-color: auto; cursor: pointer; outline: none;
+}
+input[type="range"].eq-slider::-webkit-slider-thumb {
+    -webkit-appearance: none; appearance: none;
+    width: 20px; height: 20px; border-radius: 50%;
+    background: #ffffff; border: 3px solid #5528a6; box-shadow: 0 2px 6px rgba(21, 10, 53, 0.3);
+}
+input[type="range"].eq-slider::-moz-range-thumb {
+    width: 16px; height: 16px; border-radius: 50%;
+    background: #ffffff; border: 3px solid #5528a6; box-shadow: 0 2px 6px rgba(21, 10, 53, 0.3);
+}
+input[type="range"].eq-slider::-moz-range-track { background: transparent; border: none; }
+input[type="range"].eq-slider:focus-visible::-webkit-slider-thumb { box-shadow: 0 0 0 5px rgba(133, 84, 212, 0.25); }
+
+.eq-scale { display: flex; justify-content: space-between; font-size: 10px; font-weight: 600; color: #94a3b8; padding: 0 2px; }
+
+html.dark input[type="range"].eq-slider {
+    background:
+        linear-gradient(90deg, transparent var(--pct, 50%), #3a3060 var(--pct, 50%)),
+        linear-gradient(90deg, #ff0000 0%, #FFD700 50%, #008000 100%);
+}
+html.dark .eq-scale { color: #7d7399; }
 /* ==========================================================================
    CSS LENGKAP 3 PILAR HOD (CLINICAL, OPERATIONAL, INTERPERSONAL)
    ========================================================================== */
