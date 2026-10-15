@@ -1,28 +1,28 @@
 {% load static %}
 <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px;">
     <div style="display: flex; align-items: center; gap: 12px;">
-        <div style="width: 35px; height: 35px; background: #fff1f2; border: 1px solid #ffe4e6; border-radius: 8px; display: flex; align-items: center; justify-content: center;">
-            <svg style="width: 20px; height: 20px; color: #be123c;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
+        <div style="width: 35px; height: 35px; background: #f3edff; border: 1px solid #e7dff2; border-radius: 8px; display: flex; align-items: center; justify-content: center;">
+            <svg style="width: 20px; height: 20px; color: #6d3ec4;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
         </div>
-        <h2 style="color: #881337; font-weight: 900; margin: 0; letter-spacing: -0.5px;">Individual Performance Dashboard</h2>
+        <h2 style="color: #150a35; font-weight: 900; margin: 0; letter-spacing: -0.5px;">Individual Performance Dashboard</h2>
     </div>
 </div>
 
 <!-- KAD HERO: AI PERFORMANCE COACH & DIAGNOSTIC ENGINE (MODERN FLOATING NO LEFT BORDER) -->
 {% if ai_risk_tier == 'RED' %}
-<div style="background: linear-gradient(135deg, #ffffff 0%, #fff1f2 100%); border: 1px solid #fecdd3; border-radius: 18px; padding: 22px 25px; margin-bottom: 25px; box-shadow: 0 10px 25px -5px rgba(190, 18, 60, 0.08);">
+<div style="background: linear-gradient(135deg, #ffffff 0%, #f3edff 100%); border: 1px solid #d8c7f4; border-radius: 18px; padding: 22px 25px; margin-bottom: 25px; box-shadow: 0 10px 25px -5px rgba(21, 10, 53, 0.08);">
     <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 20px;">
         <div style="flex: 1;">
-            <div style="display: inline-flex; align-items: center; gap: 6px; background: #ffe4e6; color: #be123c; padding: 4px 10px; border-radius: 20px; font-size: 11px; font-weight: 800; text-transform: uppercase; margin-bottom: 10px;">
-                <svg style="width: 14px; height: 14px; color: #be123c;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+            <div style="display: inline-flex; align-items: center; gap: 6px; background: #e7dff2; color: #6d3ec4; padding: 4px 10px; border-radius: 20px; font-size: 11px; font-weight: 800; text-transform: uppercase; margin-bottom: 10px;">
+                <svg style="width: 14px; height: 14px; color: #6d3ec4;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
                 <span>AI Evaluator Diagnostic</span>
                 <span>•</span>
-                <span style="color: #9f1239;">Action Needed</span>
+                <span style="color: #5528a6;">Action Needed</span>
             </div>
-            <h3 style="margin: 0 0 8px 0; color: #881337; font-weight: 900; font-size: 18px; letter-spacing: -0.3px;">{{ ai_alert_title }}</h3>
-            <p style="margin: 0 0 15px 0; color: #be123c; font-size: 13px; font-weight: 600; line-height: 1.5;">{{ ai_alert_msg }}</p>
+            <h3 style="margin: 0 0 8px 0; color: #150a35; font-weight: 900; font-size: 18px; letter-spacing: -0.3px;">{{ ai_alert_title }}</h3>
+            <p style="margin: 0 0 15px 0; color: #6d3ec4; font-size: 13px; font-weight: 600; line-height: 1.5;">{{ ai_alert_msg }}</p>
             <div style="display: flex; gap: 12px; margin-bottom: 15px; flex-wrap: wrap; align-items: center;">
-                <div style="background: white; border: 1px solid #ffe4e6; padding: 6px 12px; border-radius: 8px; font-size: 12px; color: #881337; font-weight: 700; display: inline-flex; align-items: center; gap: 6px;">
+                <div style="background: white; border: 1px solid #e7dff2; padding: 6px 12px; border-radius: 8px; font-size: 12px; color: #150a35; font-weight: 700; display: inline-flex; align-items: center; gap: 6px;">
                     <svg style="width: 14px; height: 14px; color: #16a34a; flex-shrink: 0;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>
                     <span>Clinical: {{ score_clinical }}%</span>
                 </div>
@@ -30,14 +30,14 @@
                     <svg style="width: 14px; height: 14px; color: #dc2626; flex-shrink: 0;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
                     <span>Ops Coding: {{ score_ops_coding }}% (Lag)</span>
                 </div>
-                <div style="background: white; border: 1px solid #ffe4e6; padding: 6px 12px; border-radius: 8px; font-size: 12px; color: #881337; font-weight: 700; display: inline-flex; align-items: center; gap: 6px;">
+                <div style="background: white; border: 1px solid #e7dff2; padding: 6px 12px; border-radius: 8px; font-size: 12px; color: #150a35; font-weight: 700; display: inline-flex; align-items: center; gap: 6px;">
                     <svg style="width: 14px; height: 14px; color: #16a34a; flex-shrink: 0;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>
                     <span>Interpersonal: {{ score_interpersonal }}%</span>
                 </div>
             </div>
         </div>
         <div style="display: flex; flex-direction: column; gap: 10px; min-width: 220px; align-self: center;">
-            <a href="?section=Coaching" style="background: #be123c; color: white; border: none; padding: 12px 18px; border-radius: 10px; font-weight: 800; font-size: 13px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; box-shadow: 0 4px 12px rgba(190, 18, 60, 0.25); text-decoration: none;">
+            <a href="?section=Coaching" style="background: #6d3ec4; color: white; border: none; padding: 12px 18px; border-radius: 10px; font-weight: 800; font-size: 13px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; box-shadow: 0 4px 12px rgba(21, 10, 53, 0.25); text-decoration: none;">
                 <svg style="width: 18px; height: 18px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
                 {{ ai_action_text }}
             </a>
@@ -117,52 +117,52 @@
 {% endif %}
 
 <!-- PROMOTION READINESS METER & CAREER PROGRESSION WIDGET -->
-<div style="background: white; border: 1px solid #ffe4e6; border-radius: 16px; padding: 20px 25px; margin-bottom: 25px; box-shadow: 0 4px 12px rgba(190, 18, 60, 0.03);">
-    <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #ffe4e6; padding-bottom: 12px; margin-bottom: 15px;">
+<div style="background: white; border: 1px solid #e7dff2; border-radius: 16px; padding: 20px 25px; margin-bottom: 25px; box-shadow: 0 4px 12px rgba(21, 10, 53, 0.03);">
+    <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #e7dff2; padding-bottom: 12px; margin-bottom: 15px;">
         <div style="display: flex; align-items: center; gap: 10px;">
-            <div style="width: 36px; height: 36px; background: #fff1f2; border: 1px solid #ffe4e6; border-radius: 10px; display: flex; justify-content: center; align-items: center;">
-                <svg style="width: 20px; height: 20px; color: #be123c;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/></svg>
+            <div style="width: 36px; height: 36px; background: #f3edff; border: 1px solid #e7dff2; border-radius: 10px; display: flex; justify-content: center; align-items: center;">
+                <svg style="width: 20px; height: 20px; color: #6d3ec4;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/></svg>
             </div>
             <div>
-                <h3 style="margin: 0; color: #881337; font-weight: 900; font-size: 15px;">Promotion Readiness Index (PRI)</h3>
-                <span style="font-size: 11px; color: #f43f5e; font-weight: 600;">Target Track: Current Role → {{ next_grade }}</span>
+                <h3 style="margin: 0; color: #150a35; font-weight: 900; font-size: 15px;">Promotion Readiness Index (PRI)</h3>
+                <span style="font-size: 11px; color: #6f628b; font-weight: 600;">Target Track: Current Role → {{ next_grade }}</span>
             </div>
         </div>
-        <span style="background: #fff1f2; color: {{ promotion_color }}; border: 1px solid #ffe4e6; padding: 6px 14px; border-radius: 20px; font-size: 12px; font-weight: 800;">
+        <span style="background: #f3edff; color: {{ promotion_color }}; border: 1px solid #e7dff2; padding: 6px 14px; border-radius: 20px; font-size: 12px; font-weight: 800;">
             {{ promotion_tier }}
         </span>
     </div>
 
     <div style="display: flex; align-items: center; gap: 25px; flex-wrap: wrap;">
-        <div style="min-width: 140px; text-align: center; border-right: 1px solid #ffe4e6; padding-right: 20px;">
-            <div style="font-size: 32px; font-weight: 900; color: #881337;">{{ pri_score }}<span style="font-size: 16px; color: #f43f5e;">%</span></div>
-            <div style="font-size: 11px; color: #be123c; font-weight: 700; text-transform: uppercase;">Composite Score</div>
+        <div style="min-width: 140px; text-align: center; border-right: 1px solid #e7dff2; padding-right: 20px;">
+            <div style="font-size: 32px; font-weight: 900; color: #150a35;">{{ pri_score }}<span style="font-size: 16px; color: #6f628b;">%</span></div>
+            <div style="font-size: 11px; color: #6d3ec4; font-weight: 700; text-transform: uppercase;">Composite Score</div>
         </div>
 
         <div style="flex: 1; min-width: 260px;">
-            <div style="display: flex; justify-content: space-between; font-size: 12px; font-weight: 700; color: #881337; margin-bottom: 6px;">
+            <div style="display: flex; justify-content: space-between; font-size: 12px; font-weight: 700; color: #150a35; margin-bottom: 6px;">
                 <span>Progress to Fast-Track Eligibility (85% Threshold)</span>
                 <span style="color: {{ promotion_color }};">{{ pri_score }}/100</span>
             </div>
-            <div style="background: #fff1f2; height: 12px; border-radius: 10px; overflow: hidden; border: 1px solid #ffe4e6;">
+            <div style="background: #f3edff; height: 12px; border-radius: 10px; overflow: hidden; border: 1px solid #e7dff2;">
                 <div style="background: {{ promotion_color }}; width: {{ pri_score }}%; height: 100%; border-radius: 10px; transition: width 1s ease;"></div>
             </div>
         </div>
 
         <div style="display: flex; gap: 10px; flex-wrap: wrap; align-items: center;">
-            <div style="background: #fff1f2; padding: 8px 12px; border-radius: 8px; font-size: 11px; color: #881337; font-weight: 700; display: inline-flex; align-items: center; gap: 6px;">
+            <div style="background: #f3edff; padding: 8px 12px; border-radius: 8px; font-size: 11px; color: #150a35; font-weight: 700; display: inline-flex; align-items: center; gap: 6px;">
                 <svg style="width: 14px; height: 14px; color: #16a34a; flex-shrink: 0;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>
                 <span>Service Delivery (40%)</span>
             </div>
-            <div style="background: #fff1f2; padding: 8px 12px; border-radius: 8px; font-size: 11px; color: #881337; font-weight: 700; display: inline-flex; align-items: center; gap: 6px;">
+            <div style="background: #f3edff; padding: 8px 12px; border-radius: 8px; font-size: 11px; color: #150a35; font-weight: 700; display: inline-flex; align-items: center; gap: 6px;">
                 {% if score_ops_coding >= 75 %}
                     <svg style="width: 14px; height: 14px; color: #16a34a; flex-shrink: 0;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>
                 {% else %}
-                    <svg style="width: 14px; height: 14px; color: #be123c; flex-shrink: 0;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+                    <svg style="width: 14px; height: 14px; color: #6d3ec4; flex-shrink: 0;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
                 {% endif %}
                 <span>Ops Velocity (30%)</span>
             </div>
-            <div style="background: #fff1f2; padding: 8px 12px; border-radius: 8px; font-size: 11px; color: #881337; font-weight: 700; display: inline-flex; align-items: center; gap: 6px;">
+            <div style="background: #f3edff; padding: 8px 12px; border-radius: 8px; font-size: 11px; color: #150a35; font-weight: 700; display: inline-flex; align-items: center; gap: 6px;">
                 <svg style="width: 14px; height: 14px; color: #16a34a; flex-shrink: 0;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>
                 <span>Interpersonal 360° (20%)</span>
             </div>
@@ -173,27 +173,27 @@
 <div class="grid-3" style="margin-bottom: 20px;">
     <div class="card" style="margin-bottom: 0; display: flex; flex-direction: column; justify-content: space-between;">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
-            <h3 style="color:#881337; margin:0; font-size:13px; font-weight: 800; letter-spacing: 0.5px; text-transform: uppercase;">Today's Schedule & Due Tracker</h3>
-            <button onclick="openScheduleModal()" style="background: #fff1f2; border: 1px solid #fecdd3; color: #be123c; font-size: 11px; font-weight: 800; border-radius: 6px; padding: 4px 10px; cursor: pointer; transition: 0.2s;" onmouseover="this.style.background='#be123c'; this.style.color='white';" onmouseout="this.style.background='#fff1f2'; this.style.color='#be123c';">
+            <h3 style="color:#150a35; margin:0; font-size:13px; font-weight: 800; letter-spacing: 0.5px; text-transform: uppercase;">Today's Schedule & Due Tracker</h3>
+            <button onclick="openScheduleModal()" style="background: #f3edff; border: 1px solid #d8c7f4; color: #6d3ec4; font-size: 11px; font-weight: 800; border-radius: 6px; padding: 4px 10px; cursor: pointer; transition: 0.2s;" onmouseover="this.style.background='#6d3ec4'; this.style.color='white';" onmouseout="this.style.background='#f3edff'; this.style.color='#6d3ec4';">
                 + Add / View Calendar
             </button>
         </div>
 
         <div class="animate-cascade" style="display: flex; flex-direction: column; gap: 10px;">
-            <div style="background:#fff1f2; padding:12px 14px; border-radius:12px; font-size:12px; color:#881337; border:1px solid #fecdd3; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 6px rgba(136, 19, 55, 0.02);">
+            <div style="background:#f3edff; padding:12px 14px; border-radius:12px; font-size:12px; color:#150a35; border:1px solid #d8c7f4; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 6px rgba(21, 10, 53, 0.02);">
                 <div>
                     <b>10:30 AM</b> | Grand Rounds (Ward 4)
-                    <span style="display: block; font-size: 10px; color: #f43f5e; font-weight: 600; margin-top: 2px;">Clinical Shift • Inpatient Ward</span>
+                    <span style="display: block; font-size: 10px; color: #6f628b; font-weight: 600; margin-top: 2px;">Clinical Shift • Inpatient Ward</span>
                 </div>
-                <span style="background: white; border: 1px solid #ffe4e6; color: #881337; font-size: 9px; font-weight: 800; padding: 3px 8px; border-radius: 6px;">Duty</span>
+                <span style="background: white; border: 1px solid #e7dff2; color: #150a35; font-size: 9px; font-weight: 800; padding: 3px 8px; border-radius: 6px;">Duty</span>
             </div>
 
-            <div style="background:#fff1f2; padding:12px 14px; border-radius:12px; font-size:12px; color:#be123c; border:1px solid #fecdd3; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 6px rgba(136, 19, 55, 0.02);">
+            <div style="background:#f3edff; padding:12px 14px; border-radius:12px; font-size:12px; color:#6d3ec4; border:1px solid #d8c7f4; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 6px rgba(21, 10, 53, 0.02);">
                 <div>
                     <b>13:30 PM</b> | New Patient Exam
-                    <span style="display: block; font-size: 10px; color: #f43f5e; font-weight: 600; margin-top: 2px;">Outpatient Clinic • Room 3</span>
+                    <span style="display: block; font-size: 10px; color: #6f628b; font-weight: 600; margin-top: 2px;">Outpatient Clinic • Room 3</span>
                 </div>
-                <span style="background: white; border: 1px solid #ffe4e6; color: #be123c; font-size: 9px; font-weight: 800; padding: 3px 8px; border-radius: 6px;">Clinic</span>
+                <span style="background: white; border: 1px solid #e7dff2; color: #6d3ec4; font-size: 9px; font-weight: 800; padding: 3px 8px; border-radius: 6px;">Clinic</span>
             </div>
 
             <!-- ITEM TUGASAN MYPRESTASI DUE -->
@@ -208,42 +208,42 @@
     </div>
 
     <div class="card card-donut" style="margin-bottom: 0; text-align: center; display:flex; flex-direction:column; justify-content:center;">
-        <h3 style="color:#881337; margin-top:0; font-size:13px; font-weight: 800; letter-spacing: 0.5px; text-transform: uppercase;">Patient Acuity Mix</h3>
+        <h3 style="color:#150a35; margin-top:0; font-size:13px; font-weight: 800; letter-spacing: 0.5px; text-transform: uppercase;">Patient Acuity Mix</h3>
         <div style="overflow:hidden; flex-grow:1;">{{ donut_html|safe }}</div>
-        <p style="font-size: 10px; color:#f43f5e; margin:0; margin-top:5px;"><i>p-value < 0.05 (Sig. difference in critical ward)</i></p>
+        <p style="font-size: 10px; color:#6f628b; margin:0; margin-top:5px;"><i>p-value < 0.05 (Sig. difference in critical ward)</i></p>
     </div>
 
     <div class="card" style="margin-bottom: 0; display:flex; flex-direction:column; justify-content:center;">
-        <h3 style="color:#881337; margin-top:0; font-size:13px; font-weight: 800; letter-spacing: 0.5px; text-transform: uppercase;">Task Velocity</h3>
+        <h3 style="color:#150a35; margin-top:0; font-size:13px; font-weight: 800; letter-spacing: 0.5px; text-transform: uppercase;">Task Velocity</h3>
 
-        <div style="display:flex; justify-content:space-between; font-size:12px; font-weight:bold; color:#881337; margin-bottom:5px; margin-top:15px;">
-            <span>Discharge Summaries</span><span style="color:#881337;">8/10 (80%)</span>
+        <div style="display:flex; justify-content:space-between; font-size:12px; font-weight:bold; color:#150a35; margin-bottom:5px; margin-top:15px;">
+            <span>Discharge Summaries</span><span style="color:#150a35;">8/10 (80%)</span>
         </div>
         <div class="progress-bg" style="height:10px; margin-top:0; margin-bottom:20px;">
-            <div class="progress-bar" style="width: 80%; background-color:#881337;"></div>
+            <div class="progress-bar" style="width: 80%; background-color:#150a35;"></div>
         </div>
 
-        <div style="display:flex; justify-content:space-between; font-size:12px; font-weight:bold; color:#881337; margin-bottom:5px;">
-            <span>Clinical Coding</span><span style="color:#be123c;">5/12 (41%)</span>
+        <div style="display:flex; justify-content:space-between; font-size:12px; font-weight:bold; color:#150a35; margin-bottom:5px;">
+            <span>Clinical Coding</span><span style="color:#6d3ec4;">5/12 (41%)</span>
         </div>
         <div class="progress-bg" style="height:10px; margin-top:0; margin-bottom:15px;">
-            <div class="progress-bar" style="width: 41%; background-color:#be123c;"></div>
+            <div class="progress-bar" style="width: 41%; background-color:#6d3ec4;"></div>
         </div>
 
-        <p style="font-size: 10px; color:#f43f5e; margin:0; text-align:center;"><i>95% CI [35%, 85%] for task completion rate</i></p>
+        <p style="font-size: 10px; color:#6f628b; margin:0; text-align:center;"><i>95% CI [35%, 85%] for task completion rate</i></p>
     </div>
 </div>
 
 <div class="grid-2">
     <div class="card card-area" style="margin-bottom: 0;">
-        <h3 style="color:#881337; margin-top:0; font-size:13px; font-weight: 800; letter-spacing: 0.5px; text-transform: uppercase;">6-Month Productivity Trend</h3>
+        <h3 style="color:#150a35; margin-top:0; font-size:13px; font-weight: 800; letter-spacing: 0.5px; text-transform: uppercase;">6-Month Productivity Trend</h3>
         <div style="overflow:hidden;">{{ area_html|safe }}</div>
-        <p style="font-size: 10px; color:#f43f5e; margin:0; text-align:center;"><i>Trend displays a steady upward trajectory (R² = 0.89)</i></p>
+        <p style="font-size: 10px; color:#6f628b; margin:0; text-align:center;"><i>Trend displays a steady upward trajectory (R² = 0.89)</i></p>
     </div>
 
     <div class="card card-gauge" style="margin-bottom: 0; text-align: center;">
-        <h3 style="color:#881337; margin-top:0; font-size:13px; font-weight: 800; letter-spacing: 0.5px; text-transform: uppercase;">Performance Index vs Target</h3>
+        <h3 style="color:#150a35; margin-top:0; font-size:13px; font-weight: 800; letter-spacing: 0.5px; text-transform: uppercase;">Performance Index vs Target</h3>
         <div style="overflow:hidden;">{{ gauge_html|safe }}</div>
-        <p style="font-size: 10px; color:#f43f5e; margin:0;"><i>KPI Target: 4.5 | Current: 4.2 (Standard Dev: ±0.3)</i></p>
+        <p style="font-size: 10px; color:#6f628b; margin:0;"><i>KPI Target: 4.5 | Current: 4.2 (Standard Dev: ±0.3)</i></p>
     </div>
 </div>
