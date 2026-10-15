@@ -1,5 +1,5 @@
 {% load static %}
-<div style="background: linear-gradient(135deg, #881337 0%, #be123c 100%); padding: 22px 25px; border-radius: 16px; margin-bottom: 25px; color: white; display: flex; align-items: center; justify-content: space-between; box-shadow: 0 10px 25px rgba(136, 19, 55, 0.25);">
+<div style="background: linear-gradient(135deg, #150a35 0%, #6d3ec4 100%); padding: 22px 25px; border-radius: 16px; margin-bottom: 25px; color: white; display: flex; align-items: center; justify-content: space-between; box-shadow: 0 10px 25px rgba(21, 10, 53, 0.25);">
     <div>
         <div style="display: inline-flex; align-items: center; gap: 6px; background: rgba(255,255,255,0.2); padding: 4px 12px; border-radius: 20px; font-size: 11px; font-weight: 800; text-transform: uppercase; margin-bottom: 8px;">
             <svg style="width: 14px; height: 14px; color: white;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
@@ -8,7 +8,7 @@
         <h2 style="margin: 0 0 4px 0; font-size: 22px; font-weight: 900;">Personalized Performance Remediation Plan</h2>
         <p style="margin: 0; font-size: 13px; font-weight: 500; opacity: 0.9;">Tailored AI guidance to elevate {{ staff_name }}'s Operational Task Velocity to >80% Target.</p>
     </div>
-    <a href="?section=Dashboard" style="background: rgba(255,255,255,0.2); color: white; border: 1px solid rgba(255,255,255,0.4); padding: 10px 18px; border-radius: 10px; font-size: 12px; font-weight: 800; text-decoration: none; backdrop-filter: blur(4px); transition: 0.2s;" onmouseover="this.style.background='white'; this.style.color='#be123c';" onmouseout="this.style.background='rgba(255,255,255,0.2)'; this.style.color='white';">
+    <a href="?section=Dashboard" style="background: rgba(255,255,255,0.2); color: white; border: 1px solid rgba(255,255,255,0.4); padding: 10px 18px; border-radius: 10px; font-size: 12px; font-weight: 800; text-decoration: none; backdrop-filter: blur(4px); transition: 0.2s;" onmouseover="this.style.background='white'; this.style.color='#6d3ec4';" onmouseout="this.style.background='rgba(255,255,255,0.2)'; this.style.color='white';">
         ← Back to Dashboard
     </a>
 </div>
@@ -18,20 +18,20 @@
     <!-- KAD KIRI: AI DIAGNOSTIC REPORT & REMEDIATION SUMMARY -->
     <div style="display: flex; flex-direction: column; gap: 20px;">
         <div class="card" style="margin-bottom: 0;">
-            <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 15px; border-bottom: 2px solid #ffe4e6; padding-bottom: 10px;">
-                <svg style="width: 20px; height: 20px; color: #be123c;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
-                <h3 style="color:#881337; margin:0; font-size:15px; font-weight: 800;">1. AI Diagnostic Summary</h3>
+            <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 15px; border-bottom: 2px solid #e7dff2; padding-bottom: 10px;">
+                <svg style="width: 20px; height: 20px; color: #6d3ec4;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
+                <h3 style="color:#150a35; margin:0; font-size:15px; font-weight: 800;">1. AI Diagnostic Summary</h3>
             </div>
             
-            <div style="background: #fff1f2; padding: 15px; border-radius: 12px; border-left: 4px solid #be123c; margin-bottom: 15px;">
-                <b style="color: #881337; font-size: 12px; display: block; margin-bottom: 6px; text-transform: uppercase;">Performance Gap Identified:</b>
-                <p style="font-size: 12px; color: #be123c; font-weight: 600; margin: 0; line-height: 1.5;">
+            <div style="background: #f3edff; padding: 15px; border-radius: 12px; border-left: 4px solid #6d3ec4; margin-bottom: 15px;">
+                <b style="color: #150a35; font-size: 12px; display: block; margin-bottom: 6px; text-transform: uppercase;">Performance Gap Identified:</b>
+                <p style="font-size: 12px; color: #6d3ec4; font-weight: 600; margin: 0; line-height: 1.5;">
                     Your Clinical ({{ score_clinical }}%) & Interpersonal ({{ score_interpersonal }}%) performance remain outstanding. However, <b>Task Velocity (Clinical Coding) is lagging at {{ score_ops_coding }}%.</b>
                 </p>
             </div>
 
-            <div style="background: white; border: 1px solid #ffe4e6; padding: 15px; border-radius: 12px;">
-                <b style="color: #881337; font-size: 12px; display: block; margin-bottom: 8px; text-transform: uppercase;">Estimated Root Causes:</b>
+            <div style="background: white; border: 1px solid #e7dff2; padding: 15px; border-radius: 12px;">
+                <b style="color: #150a35; font-size: 12px; display: block; margin-bottom: 8px; text-transform: uppercase;">Estimated Root Causes:</b>
                 <ul style="margin: 0; padding-left: 18px; font-size: 12px; color: #64748b; line-height: 1.6; font-weight: 500;">
                     <li>High patient volume during ward rounds delayed documentation.</li>
                     <li>Unfamiliarity with updated ICD-10 quick codes in eHIS.</li>
@@ -40,9 +40,9 @@
         </div>
 
         <!-- KAD AMBIL TINDAKAN / PENGESAHAN -->
-        <div class="card" style="margin-bottom: 0; background: #fff1f2; border-color: #fecdd3;">
-            <h4 style="color: #881337; margin: 0 0 10px 0; font-size: 14px; font-weight: 800;">2. Remediation Verification</h4>
-            <p style="font-size: 12px; color: #be123c; font-weight: 500; margin-bottom: 15px; line-height: 1.4;">
+        <div class="card" style="margin-bottom: 0; background: #f3edff; border-color: #d8c7f4;">
+            <h4 style="color: #150a35; margin: 0 0 10px 0; font-size: 14px; font-weight: 800;">2. Remediation Verification</h4>
+            <p style="font-size: 12px; color: #6d3ec4; font-weight: 500; margin-bottom: 15px; line-height: 1.4;">
                 Complete the inline refresher module on the right and batch-process pending coding entries to verify your remediation.
             </p>
             
@@ -59,97 +59,97 @@
 
     <!-- KAD KANAN: MODULE EMBEDDED MICRO-LEARNING (STEPPER INLINE SAAS) -->
     <div class="card" style="margin-bottom: 0;">
-        <div style="display: flex; align-items: center; justify-content: space-between; border-bottom: 2px solid #ffe4e6; padding-bottom: 12px; margin-bottom: 20px;">
+        <div style="display: flex; align-items: center; justify-content: space-between; border-bottom: 2px solid #e7dff2; padding-bottom: 12px; margin-bottom: 20px;">
             <div style="display: flex; align-items: center; gap: 10px;">
-                <div style="width: 32px; height: 32px; background: #fff1f2; border: 1px solid #ffe4e6; border-radius: 8px; display: flex; align-items: center; justify-content: center;">
-                    <svg style="width: 18px; height: 18px; color: #be123c;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 14l9-5-9-5-9 5 9 5z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 14l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 14l9-5-9-5-9 5 9 5zm0 0l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14zm-4 6v-7.5l4-2.222"/></svg>
+                <div style="width: 32px; height: 32px; background: #f3edff; border: 1px solid #e7dff2; border-radius: 8px; display: flex; align-items: center; justify-content: center;">
+                    <svg style="width: 18px; height: 18px; color: #6d3ec4;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 14l9-5-9-5-9 5 9 5z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 14l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 14l9-5-9-5-9 5 9 5zm0 0l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14zm-4 6v-7.5l4-2.222"/></svg>
                 </div>
                 <div>
-                    <h3 style="color:#881337; margin:0; font-size:15px; font-weight: 800;">Interactive Micro-Learning Module</h3>
-                    <p style="margin: 0; color: #f43f5e; font-size: 11px; font-weight: 600;">Topic: Rapid Clinical Coding in eHIS Environment</p>
+                    <h3 style="color:#150a35; margin:0; font-size:15px; font-weight: 800;">Interactive Micro-Learning Module</h3>
+                    <p style="margin: 0; color: #6f628b; font-size: 11px; font-weight: 600;">Topic: Rapid Clinical Coding in eHIS Environment</p>
                 </div>
             </div>
-            <span id="saasStepBadge" style="background: #fff1f2; border: 1px solid #fecdd3; color: #be123c; font-size: 11px; font-weight: 800; padding: 4px 12px; border-radius: 20px;">
+            <span id="saasStepBadge" style="background: #f3edff; border: 1px solid #d8c7f4; color: #6d3ec4; font-size: 11px; font-weight: 800; padding: 4px 12px; border-radius: 20px;">
                 Step 1 of 3
             </span>
         </div>
 
         <!-- STEPPER NAVIGATION BUTTONS -->
-        <div style="display: flex; gap: 8px; margin-bottom: 20px; border-bottom: 1px solid #ffe4e6; padding-bottom: 12px;">
-            <button type="button" id="tabBtnStep1" onclick="switchSaasStep(1)" style="flex: 1; padding: 8px; border-radius: 8px; font-size: 11px; font-weight: 800; border: 1px solid #be123c; background: #be123c; color: white; cursor: pointer;">1. ICD-10 Rules</button>
-            <button type="button" id="tabBtnStep2" onclick="switchSaasStep(2)" style="flex: 1; padding: 8px; border-radius: 8px; font-size: 11px; font-weight: 800; border: 1px solid #ffe4e6; background: #fff1f2; color: #881337; cursor: pointer;">2. eHIS Macros</button>
-            <button type="button" id="tabBtnStep3" onclick="switchSaasStep(3)" style="flex: 1; padding: 8px; border-radius: 8px; font-size: 11px; font-weight: 800; border: 1px solid #ffe4e6; background: #fff1f2; color: #881337; cursor: pointer;">3. Knowledge Check</button>
+        <div style="display: flex; gap: 8px; margin-bottom: 20px; border-bottom: 1px solid #e7dff2; padding-bottom: 12px;">
+            <button type="button" id="tabBtnStep1" onclick="switchSaasStep(1)" style="flex: 1; padding: 8px; border-radius: 8px; font-size: 11px; font-weight: 800; border: 1px solid #6d3ec4; background: #6d3ec4; color: white; cursor: pointer;">1. ICD-10 Rules</button>
+            <button type="button" id="tabBtnStep2" onclick="switchSaasStep(2)" style="flex: 1; padding: 8px; border-radius: 8px; font-size: 11px; font-weight: 800; border: 1px solid #e7dff2; background: #f3edff; color: #150a35; cursor: pointer;">2. eHIS Macros</button>
+            <button type="button" id="tabBtnStep3" onclick="switchSaasStep(3)" style="flex: 1; padding: 8px; border-radius: 8px; font-size: 11px; font-weight: 800; border: 1px solid #e7dff2; background: #f3edff; color: #150a35; cursor: pointer;">3. Knowledge Check</button>
         </div>
 
         <!-- STEP 1 CONTENT -->
         <div id="saasStep1" style="display: block;">
-            <div style="background: #fff1f2; padding: 18px; border-radius: 12px; border-left: 4px solid #be123c; margin-bottom: 20px;">
-                <h4 style="margin: 0 0 8px 0; color: #881337; font-size: 14px; font-weight: 800; display: flex; align-items: center; gap: 6px;">
-                    <svg style="width: 16px; height: 16px; color: #be123c;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z"/></svg>
+            <div style="background: #f3edff; padding: 18px; border-radius: 12px; border-left: 4px solid #6d3ec4; margin-bottom: 20px;">
+                <h4 style="margin: 0 0 8px 0; color: #150a35; font-size: 14px; font-weight: 800; display: flex; align-items: center; gap: 6px;">
+                    <svg style="width: 16px; height: 16px; color: #6d3ec4;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z"/></svg>
                     High-Frequency ICD-10 Diagnostic Codes
                 </h4>
-                <p style="margin: 0; color: #9f1239; font-size: 12px; line-height: 1.5; font-weight: 500;">
+                <p style="margin: 0; color: #5528a6; font-size: 12px; line-height: 1.5; font-weight: 500;">
                     Proper ICD-10 coding directly impacts clinic operational metrics and national health reporting. Always document primary diagnosis with specific sub-types:
                 </p>
-                <div style="margin-top: 12px; background: white; border: 1px solid #ffe4e6; border-radius: 8px; padding: 12px;">
-                    <ul style="margin: 0; padding-left: 18px; font-size: 12px; color: #881337; line-height: 1.8; font-weight: 600;">
+                <div style="margin-top: 12px; background: white; border: 1px solid #e7dff2; border-radius: 8px; padding: 12px;">
+                    <ul style="margin: 0; padding-left: 18px; font-size: 12px; color: #150a35; line-height: 1.8; font-weight: 600;">
                         <li><b>E11.9</b> — Type 2 Diabetes Mellitus without complications</li>
                         <li><b>I10</b> — Essential (primary) Hypertension</li>
                         <li><b>E78.5</b> — Hyperlipidemia, unspecified</li>
                     </ul>
                 </div>
             </div>
-            <button type="button" onclick="switchSaasStep(2)" style="width: 100%; background: #be123c; color: white; border: none; padding: 12px; border-radius: 8px; font-weight: 800; font-size: 12px; cursor: pointer;">
+            <button type="button" onclick="switchSaasStep(2)" style="width: 100%; background: #6d3ec4; color: white; border: none; padding: 12px; border-radius: 8px; font-weight: 800; font-size: 12px; cursor: pointer;">
                 Next: eHIS Shortcuts & Macros →
             </button>
         </div>
 
         <!-- STEP 2 CONTENT -->
         <div id="saasStep2" style="display: none;">
-            <div style="background: #fff1f2; padding: 18px; border-radius: 12px; border-left: 4px solid #be123c; margin-bottom: 20px;">
-                <h4 style="margin: 0 0 8px 0; color: #881337; font-size: 14px; font-weight: 800; display: flex; align-items: center; gap: 6px;">
-                    <svg style="width: 16px; height: 16px; color: #be123c;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+            <div style="background: #f3edff; padding: 18px; border-radius: 12px; border-left: 4px solid #6d3ec4; margin-bottom: 20px;">
+                <h4 style="margin: 0 0 8px 0; color: #150a35; font-size: 14px; font-weight: 800; display: flex; align-items: center; gap: 6px;">
+                    <svg style="width: 16px; height: 16px; color: #6d3ec4;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
                     Smart eHIS Time-Saving Macros
                 </h4>
-                <p style="margin: 0; color: #9f1239; font-size: 12px; line-height: 1.5; font-weight: 500;">
+                <p style="margin: 0; color: #5528a6; font-size: 12px; line-height: 1.5; font-weight: 500;">
                     Speed up documentation velocity by 60% using pre-configured clinical macros in the Outpatient Clerking Module:
                 </p>
-                <div style="margin-top: 12px; background: white; border: 1px solid #ffe4e6; border-radius: 8px; padding: 12px; font-size: 12px; color: #881337; font-weight: 600; line-height: 1.8;">
+                <div style="margin-top: 12px; background: white; border: 1px solid #e7dff2; border-radius: 8px; padding: 12px; font-size: 12px; color: #150a35; font-weight: 600; line-height: 1.8;">
                     • Type <code>.dm2</code> → Auto-populates T2DM monitoring template (BP, HbA1c, Fundoscopy).<br>
                     • Type <code>.dis</code> → Auto-populates Discharge Summary checklist.
                 </div>
             </div>
             <div style="display: flex; gap: 10px;">
-                <button type="button" onclick="switchSaasStep(1)" style="width: 30%; background: #ffe4e6; color: #be123c; border: none; padding: 12px; border-radius: 8px; font-weight: 800; font-size: 12px; cursor: pointer;">← Back</button>
-                <button type="button" onclick="switchSaasStep(3)" style="width: 70%; background: #be123c; color: white; border: none; padding: 12px; border-radius: 8px; font-weight: 800; font-size: 12px; cursor: pointer;">Next: Knowledge Check Quiz →</button>
+                <button type="button" onclick="switchSaasStep(1)" style="width: 30%; background: #e7dff2; color: #6d3ec4; border: none; padding: 12px; border-radius: 8px; font-weight: 800; font-size: 12px; cursor: pointer;">← Back</button>
+                <button type="button" onclick="switchSaasStep(3)" style="width: 70%; background: #6d3ec4; color: white; border: none; padding: 12px; border-radius: 8px; font-weight: 800; font-size: 12px; cursor: pointer;">Next: Knowledge Check Quiz →</button>
             </div>
         </div>
 
         <!-- STEP 3 CONTENT (KNOWLEDGE CHECK) -->
         <div id="saasStep3" style="display: none;">
-            <div style="background: #fff1f2; padding: 18px; border-radius: 12px; border: 1px solid #ffe4e6; margin-bottom: 20px;">
-                <h4 style="margin: 0 0 10px 0; color: #881337; font-size: 14px; font-weight: 800; display: flex; align-items: center; gap: 6px;">
-                    <svg style="width: 16px; height: 16px; color: #be123c;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+            <div style="background: #f3edff; padding: 18px; border-radius: 12px; border: 1px solid #e7dff2; margin-bottom: 20px;">
+                <h4 style="margin: 0 0 10px 0; color: #150a35; font-size: 14px; font-weight: 800; display: flex; align-items: center; gap: 6px;">
+                    <svg style="width: 16px; height: 16px; color: #6d3ec4;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
                     Knowledge Check Quiz (Earn +5 CPD Points)
                 </h4>
-                <p style="margin: 0 0 12px 0; color: #881337; font-size: 12px; font-weight: 600;">
+                <p style="margin: 0 0 12px 0; color: #150a35; font-size: 12px; font-weight: 600;">
                     Which ICD-10 code represents Type 2 Diabetes Mellitus without complications?
                 </p>
                 <div style="display: flex; flex-direction: column; gap: 8px;">
-                    <label style="background: white; padding: 10px 14px; border-radius: 8px; border: 1px solid #ffe4e6; margin: 0; font-size: 12px; cursor: pointer; color: #881337; font-weight: 600;">
+                    <label style="background: white; padding: 10px 14px; border-radius: 8px; border: 1px solid #e7dff2; margin: 0; font-size: 12px; cursor: pointer; color: #150a35; font-weight: 600;">
                         <input type="radio" name="saasQuiz" value="E10.9"> E10.9 (Type 1 Diabetes Mellitus)
                     </label>
-                    <label style="background: white; padding: 10px 14px; border-radius: 8px; border: 1px solid #ffe4e6; margin: 0; font-size: 12px; cursor: pointer; color: #881337; font-weight: 600;">
+                    <label style="background: white; padding: 10px 14px; border-radius: 8px; border: 1px solid #e7dff2; margin: 0; font-size: 12px; cursor: pointer; color: #150a35; font-weight: 600;">
                         <input type="radio" name="saasQuiz" value="E11.9"> E11.9 (Type 2 Diabetes Mellitus without complications)
                     </label>
-                    <label style="background: white; padding: 10px 14px; border-radius: 8px; border: 1px solid #ffe4e6; margin: 0; font-size: 12px; cursor: pointer; color: #881337; font-weight: 600;">
+                    <label style="background: white; padding: 10px 14px; border-radius: 8px; border: 1px solid #e7dff2; margin: 0; font-size: 12px; cursor: pointer; color: #150a35; font-weight: 600;">
                         <input type="radio" name="saasQuiz" value="I10"> I10 (Essential Hypertension)
                     </label>
                 </div>
             </div>
             <div style="display: flex; gap: 10px;">
-                <button type="button" onclick="switchSaasStep(2)" style="width: 30%; background: #ffe4e6; color: #be123c; border: none; padding: 12px; border-radius: 8px; font-weight: 800; font-size: 12px; cursor: pointer;">← Back</button>
-                <button type="button" onclick="submitSaasQuiz()" style="width: 70%; background: #be123c; color: white; border: none; padding: 12px; border-radius: 8px; font-weight: 800; font-size: 12px; cursor: pointer;">Submit Quiz & Claim +5 CPD Points</button>
+                <button type="button" onclick="switchSaasStep(2)" style="width: 30%; background: #e7dff2; color: #6d3ec4; border: none; padding: 12px; border-radius: 8px; font-weight: 800; font-size: 12px; cursor: pointer;">← Back</button>
+                <button type="button" onclick="submitSaasQuiz()" style="width: 70%; background: #6d3ec4; color: white; border: none; padding: 12px; border-radius: 8px; font-weight: 800; font-size: 12px; cursor: pointer;">Submit Quiz & Claim +5 CPD Points</button>
             </div>
         </div>
 
@@ -177,13 +177,13 @@
                 for (let i = 1; i <= 3; i++) {
                     let btn = document.getElementById('tabBtnStep' + i);
                     if (i === step) {
-                        btn.style.background = '#be123c';
+                        btn.style.background = '#6d3ec4';
                         btn.style.color = 'white';
-                        btn.style.borderColor = '#be123c';
+                        btn.style.borderColor = '#6d3ec4';
                     } else {
-                        btn.style.background = '#fff1f2';
-                        btn.style.color = '#881337';
-                        btn.style.borderColor = '#ffe4e6';
+                        btn.style.background = '#f3edff';
+                        btn.style.color = '#150a35';
+                        btn.style.borderColor = '#e7dff2';
                     }
                 }
             }

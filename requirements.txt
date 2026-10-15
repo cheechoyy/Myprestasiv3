@@ -1,3 +1,8 @@
 Django==4.2.0
 djangorestframework==3.14.0
 python-decouple==3.8
+PyMySQL
+pandas
+numpy
+plotly
+folium
