@@ -236,7 +236,7 @@ def hod_dashboard(request):
         
         # Link terus ke borang penilaian pegawai
         df_docs['Officer Name'] = df_docs['Officer Name'].apply(
-            lambda x: f"<a href='{clinical_url}?officer={urllib.parse.quote(x)}&clinic={urllib.parse.quote(pilihan_klinik)}&state={urllib.parse.quote(pilihan_negeri)}&tab=Skills' style='color:#be123c; font-weight:800; text-decoration:none;' onmouseover='this.style.textDecoration=\"underline\"' onmouseout='this.style.textDecoration=\"none\"'>{x}</a>"
+            lambda x: f"<a href='{clinical_url}?officer={urllib.parse.quote(x)}&clinic={urllib.parse.quote(pilihan_klinik)}&state={urllib.parse.quote(pilihan_negeri)}&tab=Skills' style='color:#6d3ec4; font-weight:800; text-decoration:none;' onmouseover='this.style.textDecoration=\"underline\"' onmouseout='this.style.textDecoration=\"none\"'>{x}</a>"
         )
         roster_html = df_docs.to_html(index=False, classes="roster-table", escape=False)
     else:
@@ -247,7 +247,7 @@ def hod_dashboard(request):
     hod_name = f"{request.user.first_name} {request.user.last_name}".strip() or request.user.username
     hod_facility_label = hod_facility if hod_scope == 'FACILITY' and hod_facility else "HPU Putrajaya"
 
-    # B. CARTA BAR KPI JABATAN (ROUNDED MODERN BARS)
+    # B. CARTA BAR KPI JABATAN (ROYAL PURPLE)
     kpi_categories = ["Clinical Excellence", "CPD & Knowledge", "Doc Audit", "Policy Compliance"]
     kpi_targets = [85, 80, 90, 100]
     kpi_actuals = [88, 75, 82, 95]
@@ -255,14 +255,14 @@ def hod_dashboard(request):
     fig_kpi = go.Figure()
     fig_kpi.add_trace(go.Bar(
         x=kpi_categories, y=kpi_targets, name="Target KPI",
-        marker=dict(color="#ffe4e6", line=dict(color="#f43f5e", width=1), cornerradius=8),
+        marker=dict(color="#e7dff2", line=dict(color="#a577ff", width=1), cornerradius=8),
         text=[f"{v}%" for v in kpi_targets], textposition='auto',
-        textfont=dict(color='#be123c', size=11, family='Inter', weight='bold'),
+        textfont=dict(color='#6d3ec4', size=11, family='Inter', weight='bold'),
         hovertemplate="<b>%{x}</b><br>Target: %{y}%<extra></extra>"
     ))
     fig_kpi.add_trace(go.Bar(
         x=kpi_categories, y=kpi_actuals, name="Actual Score",
-        marker=dict(color="#be123c", line=dict(color="#881337", width=1), cornerradius=8),
+        marker=dict(color="#6d3ec4", line=dict(color="#150a35", width=1), cornerradius=8),
         text=[f"{v}%" for v in kpi_actuals], textposition='auto',
         textfont=dict(color='#ffffff', size=11, family='Inter', weight='bold'),
         hovertemplate="<b>%{x}</b><br>Actual: %{y}%<extra></extra>"
@@ -272,13 +272,13 @@ def hod_dashboard(request):
         barmode='group', height=240,
         margin=dict(l=25, r=15, t=15, b=25), bargap=0.28, bargroupgap=0.12,
         paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)',
-        legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1, font=dict(size=10, color='#881337', family='Inter')),
-        xaxis=dict(fixedrange=True, showgrid=False, tickfont=dict(size=9.5, color='#881337', weight='bold', family='Inter')),
-        yaxis=dict(fixedrange=True, showgrid=True, gridcolor='#ffe4e6', range=[0, 110], tickfont=dict(size=9, color='#881337'))
+        legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1, font=dict(size=10, color='#150a35', family='Inter')),
+        xaxis=dict(fixedrange=True, showgrid=False, tickfont=dict(size=9.5, color='#150a35', weight='bold', family='Inter')),
+        yaxis=dict(fixedrange=True, showgrid=True, gridcolor='#e7dff2', range=[0, 110], tickfont=dict(size=9, color='#150a35'))
     )
     dept_kpi_html = fig_kpi.to_html(full_html=False, include_plotlyjs=False, config={'displayModeBar': False, 'responsive': True})
 
-    # C. MO COMPETENCY HEATMAP (GLASS & SOFT GRADIENT LOOK)
+    # C. MO COMPETENCY HEATMAP (PURPLE GLASS)
     if not df_docs.empty:
         mo_names = df_docs['Officer Name'].str.replace(r'<[^>]*>', '', regex=True).tolist()[:5]
     else:
@@ -295,7 +295,7 @@ def hod_dashboard(request):
 
     fig_mo_heat = go.Figure(data=go.Heatmap(
         z=z_mo_data, x=tunjang_labels, y=mo_names,
-        colorscale=[[0, '#fff1f2'], [0.4, '#fecdd3'], [0.7, '#f43f5e'], [1.0, '#be123c']],
+        colorscale=[[0, '#f3edff'], [0.4, '#d8c7f4'], [0.7, '#a577ff'], [1.0, '#6d3ec4']],
         texttemplate="<b>%{z}%</b>", textfont=dict(size=12, color="#ffffff", family='Inter'),
         showscale=False, xgap=6, ygap=6,
         hovertemplate="<b>Pegawai:</b> %{y}<br><b>Tunjang:</b> %{x}<br><b>Skor:</b> %{z}%<extra></extra>"
@@ -304,28 +304,60 @@ def hod_dashboard(request):
         autosize=True, height=250,
         margin=dict(l=10, r=10, t=10, b=25),
         paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)',
-        xaxis=dict(fixedrange=True, tickfont=dict(size=10, color='#881337', weight='bold', family='Inter')),
+        xaxis=dict(fixedrange=True, tickfont=dict(size=10, color='#150a35', weight='bold', family='Inter')),
         yaxis=dict(showticklabels=False, fixedrange=True, autorange="reversed")
     )
     mo_heatmap_html = fig_mo_heat.to_html(full_html=False, include_plotlyjs=False, config={'displayModeBar': False, 'responsive': True})
 
-    # D. DYNAMIC SUNBURST FRAMEWORK (HIGH-CONTRAST PALETTE)
-    data_nav = {
-        "labels": ["HPU", "Clinical<br>Excellence", "Operational", "Interpersonal<br>Excellence", "Skills", "Knowledge &<br>Capacity", "Policies &<br>Protocols", "Documentation", "Productivity &<br>Efficiency", "Innovation &<br>Problem Solving", "Patient<br>Experience", "Emotional<br>Intelligence", "Teamwork &<br>Collaboration", "Mentorship"],
-        "parents": ["", "HPU", "HPU", "HPU", "Clinical<br>Excellence", "Clinical<br>Excellence", "Clinical<br>Excellence", "Clinical<br>Excellence", "Operational", "Operational", "Interpersonal<br>Excellence", "Interpersonal<br>Excellence", "Interpersonal<br>Excellence", "Interpersonal<br>Excellence"],
-        "colors": ["Base", "Clinical", "Operational", "Interpersonal"] + ["Clinical"]*4 + ["Operational"]*2 + ["Interpersonal"]*4
-    }
-    color_map = {"Base": "#ffffff", "Clinical": "#881337", "Operational": "#be123c", "Interpersonal": "#e11d48"}
-    fig_sunburst = px.sunburst(pd.DataFrame(data_nav), names='labels', parents='parents', color='colors', color_discrete_map=color_map)
-    fig_sunburst.update_traces(
-        insidetextorientation='horizontal', textinfo='label',
+    # D. MODERN RADIAL SUNBURST (CENTER ROOT LABEL & PURPLE COLORWAYS)
+    sunburst_ids = [
+        "root",
+        "clinical", "operational", "interpersonal",
+        "skills", "knowledge", "policies", "documentation",
+        "productivity", "innovation",
+        "patient", "ei", "teamwork", "mentorship"
+    ]
+    sunburst_labels = [
+        "<span style='color:#150a35; font-size:11px; font-weight:900;'>FRAMEWORK<br><span style='color:#6d3ec4; font-size:9px; font-weight:700;'>MAP</span><br><span style='color:#a577ff; font-size:8px; font-weight:600;'>[ ↺ RESET ]</span></span>",
+        "Clinical<br>Excellence", "Operational", "Interpersonal<br>Excellence",
+        "Skills", "Knowledge &<br>Capacity", "Policies &<br>Protocols", "Documentation",
+        "Productivity &<br>Efficiency", "Innovation &<br>Problem Solving",
+        "Patient<br>Experience", "Emotional<br>Intelligence", "Teamwork &<br>Collaboration", "Mentorship"
+    ]
+    sunburst_parents = [
+        "",
+        "root", "root", "root",
+        "clinical", "clinical", "clinical", "clinical",
+        "operational", "operational",
+        "interpersonal", "interpersonal", "interpersonal", "interpersonal"
+    ]
+    sunburst_colors = [
+        "#ffffff",                      # Center Core 
+        "#150a35", "#6d3ec4", "#5528a6", # Tunjang Utama (Level 1)
+        "#201243", "#3b1e70", "#5528a6", "#6d3ec4", # Sub-modul Klinikal (Level 2)
+        "#8554d4", "#a577ff",                      # Sub-modul Operasional (Level 2)
+        "#6d3ec4", "#8554d4", "#a577ff", "#c8b6e8"  # Sub-modul Interpersonal (Level 2)
+    ]
+
+    fig_sunburst = go.Figure(go.Sunburst(
+        ids=sunburst_ids,
+        labels=sunburst_labels,
+        parents=sunburst_parents,
+        marker=dict(
+            colors=sunburst_colors,
+            line=dict(color="#ffffff", width=2.5)
+        ),
+        insidetextorientation='horizontal',
         textfont=dict(size=9.5, color='#ffffff', family='Inter', weight='bold'),
-        marker=dict(line=dict(color='#ffffff', width=2.5)),
-        hovertemplate="<b>%{label}</b><br>Modul MyPrestasi<extra></extra>"
-    )
+        hovertemplate="<b>%{label}</b><br><span style='font-size:10px; color:#f3edff;'>Click to Zoom or Navigate</span><extra></extra>"
+    ))
+
     fig_sunburst.update_layout(
-        height=250, margin=dict(t=5, l=5, r=5, b=5),
-        paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)'
+        height=350, width=350,
+        margin=dict(t=0, l=0, r=0, b=0),
+        paper_bgcolor='rgba(0,0,0,0)',
+        plot_bgcolor='rgba(0,0,0,0)',
+        autosize=False
     )
     sunburst_html = fig_sunburst.to_html(full_html=False, include_plotlyjs=False, config={'displayModeBar': False})
 
@@ -481,17 +513,17 @@ def cts_view(request):
             
             if doc_skill >= 66:
                 prestasi = 'Excellent'
-                box_bg, box_border, box_text = '#fff1f2', '#be123c', '#881337'
+                box_bg, box_border, box_text = '#f3edff', '#6d3ec4', '#150a35'
                 base_drop = np.random.uniform(0.6, 0.9) 
                 fms_p_value = "< 0.001"
             elif doc_skill >= 33:
                 prestasi = 'Moderate'
-                box_bg, box_border, box_text = '#fff1f2', '#be123c', '#881337'
+                box_bg, box_border, box_text = '#f3edff', '#6d3ec4', '#150a35'
                 base_drop = np.random.uniform(0.2, 0.45) 
                 fms_p_value = f"0.0{np.random.randint(11, 49)}" 
             else:
                 prestasi = 'Needs Improvement'
-                box_bg, box_border, box_text = '#ffe4e6', '#be123c', '#881337' 
+                box_bg, box_border, box_text = '#e7dff2', '#6d3ec4', '#150a35' 
                 base_drop = np.random.uniform(-0.1, 0.1) 
                 fms_p_value = f"0.{np.random.randint(150, 600)}" 
 
@@ -545,13 +577,13 @@ def cts_view(request):
             fig_km = go.Figure()
             fig_km.add_trace(go.Scatter(
                 x=km_x, y=km_y, mode='lines+markers', line_shape='hv',
-                line=dict(color='#881337', width=3), marker=dict(size=8, color='#be123c'),
+                line=dict(color='#150a35', width=3), marker=dict(size=8, color='#6d3ec4'),
                 name='Achievement Probability'
             ))
             fig_km.update_layout(
-                title=dict(text="<b>Kaplan-Meier Survival Analysis</b><br><span style='font-size:11px; color:#f43f5e;'>Probability of Achieving Target HbA1c < 7.0% Over Time</span>", font=dict(size=13, color="#881337")),
+                title=dict(text="<b>Kaplan-Meier Survival Analysis</b><br><span style='font-size:11px; color:#a577ff;'>Probability of Achieving Target HbA1c < 7.0% Over Time</span>", font=dict(size=13, color="#150a35")),
                 xaxis_title="Monitoring Time (Months)", yaxis_title="Probability",
-                yaxis=dict(tickformat='.0%', range=[0, 1.05], gridcolor='#ffe4e6'), xaxis=dict(gridcolor='#ffe4e6'), height=300,
+                yaxis=dict(tickformat='.0%', range=[0, 1.05], gridcolor='#e7dff2'), xaxis=dict(gridcolor='#e7dff2'), height=300,
                 margin=dict(t=50, l=40, r=20, b=40), paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)'
             )
             chart_km_html = fig_km.to_html(full_html=False, include_plotlyjs=False, config={'displayModeBar': False})
@@ -575,7 +607,7 @@ def cts_view(request):
                 ))
             
             # B. LUKIS GARISAN GEE (Purata Marginal / Estimated Marginal Means)
-            line_color = '#881337' if prestasi == 'Excellent' else ('#be123c' if prestasi == 'Moderate' else '#fb7185')
+            line_color = '#150a35' if prestasi == 'Excellent' else ('#6d3ec4' if prestasi == 'Moderate' else '#fb7185')
             fig_gee.add_trace(go.Scatter(
                 x=df_agg['Bulan'], y=df_agg['mean'], mode='lines+markers',
                 line=dict(color=line_color, width=4), marker=dict(size=10),
@@ -590,15 +622,15 @@ def cts_view(request):
                 name="Clinic Benchmark"
             ))
             
-            fig_gee.add_hline(y=7.0, line_dash="solid", line_color="#be123c", line_width=1.5, annotation_text="Target (<7.0%)")
+            fig_gee.add_hline(y=7.0, line_dash="solid", line_color="#6d3ec4", line_width=1.5, annotation_text="Target (<7.0%)")
             
             fig_gee.update_layout(
-                title=dict(text="<b>Longitudinal Trend (GEE Model)</b><br><span style='font-size:11px; color:#f43f5e;'>Individual Trajectories (Spaghetti) overlayed with Population-Averaged Mean</span>", font=dict(size=13, color="#881337")),
+                title=dict(text="<b>Longitudinal Trend (GEE Model)</b><br><span style='font-size:11px; color:#a577ff;'>Individual Trajectories (Spaghetti) overlayed with Population-Averaged Mean</span>", font=dict(size=13, color="#150a35")),
                 xaxis_title="Visit (Months)", yaxis_title="Mean HbA1c (%)",
                 height=300, margin=dict(t=50, l=40, r=20, b=40),
                 paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)',
-                yaxis=dict(range=[5.0, 12.0], gridcolor='#ffe4e6'), xaxis=dict(gridcolor='#ffe4e6'),
-                legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1, font=dict(size=10, color='#881337'))
+                yaxis=dict(range=[5.0, 12.0], gridcolor='#e7dff2'), xaxis=dict(gridcolor='#e7dff2'),
+                legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1, font=dict(size=10, color='#150a35'))
             )
             chart_gee_html = fig_gee.to_html(full_html=False, include_plotlyjs=False, config={'displayModeBar': False})
 
@@ -648,17 +680,17 @@ def cts_view(request):
 
             fig.add_trace(go.Scatter(
                 x=procedures, y=cusum_values, mode='lines+markers',
-                name='CUSUM', line=dict(color='#881337', width=3), marker=dict(size=8, color='#be123c')
+                name='CUSUM', line=dict(color='#150a35', width=3), marker=dict(size=8, color='#6d3ec4')
             ))
             
             fig.add_hline(y=0, line_dash="dash", line_color="#fecdd3", annotation_text="Baseline KPI (80)")
             fig.update_layout(
-                title=dict(text=f"<b>Analisis CUSUM: {pilihan_doktor}</b>", font=dict(size=13, color="#881337")),
+                title=dict(text=f"<b>Analisis CUSUM: {pilihan_doktor}</b>", font=dict(size=13, color="#150a35")),
                 margin=dict(t=35, l=0, r=0, b=0), 
                 height=250, 
                 paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)',
                 xaxis_title="Number of LIMA-LAD Procedures", yaxis_title="CUSUM Variation",
-                xaxis=dict(tickmode='linear', tick0=1, dtick=1, gridcolor='#ffe4e6'), yaxis=dict(gridcolor='#ffe4e6')
+                xaxis=dict(tickmode='linear', tick0=1, dtick=1, gridcolor='#e7dff2'), yaxis=dict(gridcolor='#e7dff2')
             )
             
             chart_html = fig.to_html(full_html=False, include_plotlyjs=False, config={'displayModeBar': False})
@@ -689,12 +721,12 @@ def cts_view(request):
         # GAUGE DOKTOR INDIVIDU (TEMA ROSE)
         fig_ind = go.Figure(go.Indicator(
             mode = "gauge+number", value = cpd_score,
-            title = {'text': "Your Clinical Score (%)", 'font': {'size': 16, 'color': '#881337'}},
-            number = {'font': {'color': '#881337'}},
+            title = {'text': "Your Clinical Score (%)", 'font': {'size': 16, 'color': '#150a35'}},
+            number = {'font': {'color': '#150a35'}},
             gauge = {
-                'axis': {'range': [0, 100], 'tickfont': {'color': '#881337'}}, 
-                'bar': {'color': "#881337", 'thickness': 0.15},
-                'steps': [{'range': [0, 65], 'color': "#fecdd3"}, {'range': [65, 75], 'color': "#fb7185"}, {'range': [75, 85], 'color': "#f43f5e"}, {'range': [85, 100], 'color': "#be123c"}]
+                'axis': {'range': [0, 100], 'tickfont': {'color': '#150a35'}}, 
+                'bar': {'color': "#150a35", 'thickness': 0.15},
+                'steps': [{'range': [0, 65], 'color': "#fecdd3"}, {'range': [65, 75], 'color': "#fb7185"}, {'range': [75, 85], 'color': "#a577ff"}, {'range': [85, 100], 'color': "#6d3ec4"}]
             }
         ))
         fig_ind.update_layout(height=260, margin=dict(t=40, b=10, l=30, r=30), paper_bgcolor='rgba(0,0,0,0)')
@@ -703,11 +735,11 @@ def cts_view(request):
         # GAUGE PURATA RAKAN SEKERJA (PEER TEMA ROSE)
         fig_peer = go.Figure(go.Indicator(
             mode = "gauge+number", value = peer_score,
-            title = {'text': "Peer Average (%)", 'font': {'size': 16, 'color': '#881337'}},
-            number = {'font': {'color': '#881337'}},
+            title = {'text': "Peer Average (%)", 'font': {'size': 16, 'color': '#150a35'}},
+            number = {'font': {'color': '#150a35'}},
             gauge = {
-                'axis': {'range': [0, 100], 'tickfont': {'color': '#881337'}}, 
-                'bar': {'color': "#be123c", 'thickness': 0.15},
+                'axis': {'range': [0, 100], 'tickfont': {'color': '#150a35'}}, 
+                'bar': {'color': "#6d3ec4", 'thickness': 0.15},
                 'steps': [{'range': [0, 65], 'color': "rgba(254, 205, 211, 0.5)"}, {'range': [65, 75], 'color': "rgba(251, 113, 133, 0.5)"}, {'range': [75, 85], 'color': "rgba(244, 63, 94, 0.5)"}, {'range': [85, 100], 'color': "rgba(190, 18, 60, 0.5)"}]
             }
         ))
@@ -733,11 +765,11 @@ def cts_view(request):
         
         fig_time.add_trace(go.Bar(
             y=["Patient Records"], x=[85], name="On-time", orientation='h',
-            marker=dict(color="#881337"), text="85%", textposition="inside", insidetextanchor="middle"
+            marker=dict(color="#150a35"), text="85%", textposition="inside", insidetextanchor="middle"
         ))
         fig_time.add_trace(go.Bar(
             y=["Patient Records"], x=[10], name="Delayed", orientation='h',
-            marker=dict(color="#f43f5e"), text="10%", textposition="inside", insidetextanchor="middle"
+            marker=dict(color="#a577ff"), text="10%", textposition="inside", insidetextanchor="middle"
         ))
         fig_time.add_trace(go.Bar(
             y=["Patient Records"], x=[5], name="Overdue", orientation='h',
@@ -917,8 +949,8 @@ def operational_view(request):
             y=pesakit_harian, 
             mode='lines+markers',
             fill='tozeroy', 
-            line=dict(color='#be123c', width=3, shape='spline', smoothing=1.0),
-            marker=dict(size=8, color='#881337', line=dict(color='white', width=2)),
+            line=dict(color='#6d3ec4', width=3, shape='spline', smoothing=1.0),
+            marker=dict(size=8, color='#150a35', line=dict(color='white', width=2)),
             fillcolor='rgba(190, 18, 60, 0.15)',
             name='Patients Cleared'
         ))
@@ -928,8 +960,8 @@ def operational_view(request):
             margin=dict(l=0, r=0, t=10, b=0), 
             paper_bgcolor='rgba(0,0,0,0)', 
             plot_bgcolor='rgba(0,0,0,0)',
-            font=dict(color="#881337"),
-            yaxis=dict(range=[0, 80], gridcolor='#ffe4e6'), 
+            font=dict(color="#150a35"),
+            yaxis=dict(range=[0, 80], gridcolor='#e7dff2'), 
             xaxis_title="Date",               
             yaxis_title="Patients Cleared",   
             xaxis=dict(showgrid=False)
@@ -956,20 +988,20 @@ def operational_view(request):
         fig_pop.add_trace(go.Scatter(
             x=markah, y=kategori,
             mode='markers+text',
-            marker=dict(color='#be123c', size=16, line=dict(color='white', width=2)),
+            marker=dict(color='#6d3ec4', size=16, line=dict(color='white', width=2)),
             text=markah,
             textposition='middle right',
-            textfont=dict(color='#881337', size=13, weight='bold'),
+            textfont=dict(color='#150a35', size=13, weight='bold'),
             hoverinfo='none'
         ))
 
         fig_pop.update_layout(
             height=320, margin=dict(t=30, b=30, l=10, r=40),
             paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)',
-            font=dict(color="#881337"),
+            font=dict(color="#150a35"),
             showlegend=False,
-            xaxis=dict(range=[0, 105], showgrid=True, gridcolor='#ffe4e6', title=dict(text='Score (%)', font=dict(color='#881337'))),
-            yaxis=dict(showgrid=False, tickfont=dict(size=12, color='#881337', weight='bold'))
+            xaxis=dict(range=[0, 105], showgrid=True, gridcolor='#e7dff2', title=dict(text='Score (%)', font=dict(color='#150a35'))),
+            yaxis=dict(showgrid=False, tickfont=dict(size=12, color='#150a35', weight='bold'))
         )
         
         radar_chart_html = fig_pop.to_html(full_html=False, include_plotlyjs=False, config={'displayModeBar': False})
@@ -1136,7 +1168,7 @@ def interpersonal_view(request):
     markah_radar = [random.randint(65, 95) for _ in range(5)]
     
     # 5 tona warna pelbagai untuk nampak menarik (TEMA ROSE KORPORAT)
-    warna_rose = ['#881337', '#be123c', '#e11d48', '#fb7185', '#fecdd3']
+    warna_rose = ['#150a35', '#6d3ec4', '#e11d48', '#fb7185', '#fecdd3']
 
     fig_rose = go.Figure()
     fig_rose.add_trace(go.Barpolar(
@@ -1165,7 +1197,7 @@ def interpersonal_view(request):
         ei_scores = [random.randint(65, 95) for _ in range(4)]
         
         # Berikan 4 warna berbeza (Tona Rose MyPrestasi)
-        warna_palang = ['#fecdd3', '#fda4af', '#e11d48', '#881337']
+        warna_palang = ['#fecdd3', '#fda4af', '#e11d48', '#150a35']
         
         fig_ei = go.Figure(go.Bar(
             x=ei_scores, y=ei_comp, orientation='h', 
@@ -1189,7 +1221,7 @@ def interpersonal_view(request):
             fb_scores = [np.random.randint(80, 98) for _ in range(3)]
             
             fig_team = go.Figure(go.Bar(
-                x=roles, y=fb_scores, marker_color='#be123c', text=fb_scores, textposition='auto'
+                x=roles, y=fb_scores, marker_color='#6d3ec4', text=fb_scores, textposition='auto'
             ))
             fig_team.update_layout(
                 height=220, margin=dict(t=20, b=20, l=0, r=0), 
@@ -1231,7 +1263,7 @@ def interpersonal_view(request):
             
             # Scatter Plot 
             fig_scatter = go.Figure()
-            color_map = {"General Clinical": "#881337", "Procedural": "#e11d48", "Consultation": "#fb7185"}
+            color_map = {"General Clinical": "#150a35", "Procedural": "#e11d48", "Consultation": "#fb7185"}
             
             for cat in categories:
                 cat_df = df_contrib[df_contrib['Category'] == cat]
@@ -1447,7 +1479,7 @@ def staff_dashboard_view(request):
         # 1. DONUT CHART (Patient Acuity Mix)
         fig_donut = go.Figure(go.Pie(
             labels=["Critical (Red)", "Urgent (Yellow)", "Stable (Green)"], values=[15, 35, 50], hole=0.65,
-            marker=dict(colors=["#881337", "#be123c", "#fecdd3"]), textinfo='none' # Tema Rose
+            marker=dict(colors=["#150a35", "#6d3ec4", "#fecdd3"]), textinfo='none' # Tema Rose
         ))
         fig_donut.update_layout(height=190, margin=dict(t=0, b=0, l=0, r=0), showlegend=True, legend=dict(orientation="h", yanchor="bottom", y=-0.2, xanchor="center", x=0.5, font=dict(size=10)), paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)')
         fig_donut.add_annotation(text="<b>100%</b><br>Capacity", x=0.5, y=0.5, font_size=14, showarrow=False)
@@ -1460,8 +1492,8 @@ def staff_dashboard_view(request):
         fig_area = go.Figure()
         fig_area.add_trace(go.Scatter(
             x=bulan_label, y=output_data, mode='lines+markers', fill='tozeroy', 
-            line=dict(color='#be123c', width=4, shape='spline'),
-            marker=dict(size=8, color='#881337'),
+            line=dict(color='#6d3ec4', width=4, shape='spline'),
+            marker=dict(size=8, color='#150a35'),
             fillcolor='rgba(190, 18, 60, 0.2)', # Tema Rose
             name='Tasks'
         ))
@@ -1469,25 +1501,25 @@ def staff_dashboard_view(request):
         fig_area.update_layout(
             height=220, margin=dict(t=10, b=0, l=0, r=10), paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)', 
             xaxis_title="", yaxis_title="Tasks Completed", 
-            xaxis=dict(showgrid=False), yaxis=dict(showgrid=True, gridcolor='#ffe4e6')
+            xaxis=dict(showgrid=False), yaxis=dict(showgrid=True, gridcolor='#e7dff2')
         )
         area_html = fig_area.to_html(full_html=False, include_plotlyjs=False, config={'displayModeBar': False})
 
         # 3. GAUGE CHART (Performance Index - MyPrestasi Rose & Burgundy DNA)
         fig_gauge = go.Figure(go.Indicator(
-            mode="gauge+number", value=4.2, number={'font':{'size':36, 'color':'#881337', 'family':'Inter'}},
+            mode="gauge+number", value=4.2, number={'font':{'size':36, 'color':'#150a35', 'family':'Inter'}},
             gauge={
-                'axis': {'range': [0, 5], 'tickwidth': 1, 'tickcolor': "#881337", 'tickfont': {'color': '#881337', 'family': 'Inter', 'size': 11}}, 
-                'bar': {'color': "#881337", 'thickness': 0.22},
+                'axis': {'range': [0, 5], 'tickwidth': 1, 'tickcolor': "#150a35", 'tickfont': {'color': '#150a35', 'family': 'Inter', 'size': 11}}, 
+                'bar': {'color': "#150a35", 'thickness': 0.22},
                 'bgcolor': "white",
                 'borderwidth': 1,
-                'bordercolor': "#ffe4e6",
+                'bordercolor': "#e7dff2",
                 'steps': [
-                    {'range': [0, 3], 'color': "#fff1f2"}, 
-                    {'range': [3, 4], 'color': "#ffe4e6"}, 
+                    {'range': [0, 3], 'color': "#f3edff"}, 
+                    {'range': [3, 4], 'color': "#e7dff2"}, 
                     {'range': [4, 5], 'color': "#fecdd3"}
                 ],
-                'threshold': {'line': {'color': "#be123c", 'width': 5}, 'thickness': 0.8, 'value': 4.5}
+                'threshold': {'line': {'color': "#6d3ec4", 'width': 5}, 'thickness': 0.8, 'value': 4.5}
             }
         ))
         fig_gauge.update_layout(height=220, margin=dict(t=30, b=10, l=20, r=20), paper_bgcolor='rgba(0,0,0,0)')
@@ -1505,16 +1537,16 @@ def staff_dashboard_view(request):
         fig_radar.add_trace(go.Scatterpolar(
             r=markah_penuh, theta=kategori_penuh, fill='toself',
             fillcolor='rgba(190, 18, 60, 0.25)', # Warna Merah Rose Lutsinar
-            line=dict(color='#881337', width=3), # Garisan Burgundy
-            marker=dict(size=8, color='#be123c', symbol='circle'),
+            line=dict(color='#150a35', width=3), # Garisan Burgundy
+            marker=dict(size=8, color='#6d3ec4', symbol='circle'),
             hoverinfo='r+theta', name='My Score'
         ))
         
         fig_radar.update_layout(
             polar=dict(
                 bgcolor='rgba(255, 241, 242, 0.5)', # Latar belakang bulatan Rose cair
-                radialaxis=dict(visible=True, range=[0, 100], showgrid=True, gridcolor='#fecdd3', tickfont=dict(size=10, color='#881337'), angle=90),
-                angularaxis=dict(showgrid=True, gridcolor='#fecdd3', linecolor='#fecdd3', tickfont=dict(size=11, color='#881337', weight='bold'))
+                radialaxis=dict(visible=True, range=[0, 100], showgrid=True, gridcolor='#fecdd3', tickfont=dict(size=10, color='#150a35'), angle=90),
+                angularaxis=dict(showgrid=True, gridcolor='#fecdd3', linecolor='#fecdd3', tickfont=dict(size=11, color='#150a35', weight='bold'))
             ), 
             showlegend=False, height=380, margin=dict(t=40, b=40, l=60, r=60), paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)'
         )
@@ -1613,7 +1645,7 @@ def staff_dashboard_view(request):
             next_grade = "UD48 (Time-Based)"
         else:
             promotion_tier = "Tier 3: Action Required"
-            promotion_color = "#be123c"
+            promotion_color = "#6d3ec4"
             next_grade = "UD48 (Deferred)"
 
     # Tarik rekod DocumentationLog & ProductivityLog sebenar dari DB bagi staf ini
@@ -1679,33 +1711,80 @@ from django.http import HttpResponse
 @login_required(login_url='/login/')
 def hpu_dashboard(request):
     """
-    Paparan Pusat Kawalan Khas untuk Admin HPU / Developer
+    Pusat Kawalan HPU: Pengurusan Pengguna, Agihan Fasiliti, & Selenggara Peranan
     """
     if request.session.get('role') != 'admin_hpu':
         return redirect('login')
 
-    # LOGIK MENDAFTAR PENGGUNA BAHARU
-    if request.method == 'POST' and request.POST.get('form_type') == 'create_user':
-        username = request.POST.get('username').strip()
-        password = request.POST.get('password').strip()
-        role = request.POST.get('role')
-        department = request.POST.get('department')
+    if request.method == 'POST':
+        form_type = request.POST.get('form_type')
 
-        # Semak jika username sudah wujud
-        if User.objects.filter(username=username).exists():
-            messages.error(request, f"Ralat: ID Pengguna '{username}' sudah wujud di dalam sistem!")
-        else:
-            # Cipta User & Profil serentak
-            new_user = User.objects.create_user(username=username, password=password)
-            UserProfile.objects.create(user=new_user, role=role, department=department)
-            messages.success(request, f"✅ Akaun '{username}' ({role} - {department}) berjaya didaftarkan!")
+        # 1. CIPTA PENGGUNA BAHARU DARI DASHBOARD HPU
+        if form_type == 'create_user':
+            username = request.POST.get('username', '').strip()
+            password = request.POST.get('password', '').strip()
+            role = request.POST.get('role', 'STAFF')
+            department = request.POST.get('department', 'FMS')
+            facility = request.POST.get('facility', 'Klinik Kesihatan Medong').strip()
+            state = request.POST.get('state', 'Sarawak').strip()
+
+            if User.objects.filter(username=username).exists():
+                messages.error(request, f"Error: User ID '{username}' already exists in database.")
+            else:
+                new_user = User.objects.create_user(username=username, password=password)
+                UserProfile.objects.create(
+                    user=new_user,
+                    role=role,
+                    department=department,
+                    assigned_facility=facility,
+                    assigned_state=state,
+                    hod_scope='FACILITY' if role == 'HOD' else 'NATIONAL'
+                )
+                messages.success(request, f"✅ User account '{username}' successfully registered and assigned to {facility}.")
             return redirect('hpu_dashboard')
 
-    # Dapatkan senarai semua profil untuk dipaparkan di dalam jadual
-    all_users = UserProfile.objects.all().select_related('user').order_axis('-id') if hasattr(UserProfile.objects, 'order_axis') else UserProfile.objects.all().select_related('user').order_by('-id')
+        # 2. KEMAS KINI PROFIL PENGGUNA (ROLE, DEPT, FASILITI)
+        elif form_type == 'edit_user':
+            original_username = request.POST.get('original_username', '').strip()
+            target_user = User.objects.filter(username=original_username).first()
+
+            if target_user:
+                new_role = request.POST.get('role', 'STAFF')
+                new_dept = request.POST.get('department', 'FMS')
+                new_facility = request.POST.get('facility', 'Klinik Kesihatan Medong').strip()
+                new_state = request.POST.get('state', 'Sarawak').strip()
+
+                profile, _ = UserProfile.objects.get_or_create(user=target_user)
+                profile.role = new_role
+                profile.department = new_dept
+                profile.assigned_facility = new_facility
+                profile.assigned_state = new_state
+                if new_role == 'HOD':
+                    profile.hod_scope = 'FACILITY'
+                profile.save()
+
+                messages.success(request, f"✅ Profile for '{original_username}' updated ({new_role} • {new_facility}).")
+            else:
+                messages.error(request, f"Error: User '{original_username}' not found.")
+            return redirect('hpu_dashboard')
+
+        # 3. PADAM PENGGUNA
+        elif form_type == 'delete_user':
+            target_username = request.POST.get('target_username', '').strip()
+            if target_username != request.user.username:
+                User.objects.filter(username=target_username).delete()
+                messages.success(request, f"🗑️ User account '{target_username}' has been deleted.")
+            else:
+                messages.error(request, "Error: You cannot delete your own administrative account.")
+            return redirect('hpu_dashboard')
+
+    # Dapatkan senarai semua profil pengguna
+    all_users = UserProfile.objects.all().select_related('user').order_by('-id')
 
     context = {
-        'users': all_users
+        'users': all_users,
+        'senarai_negeri': list(STATE_CENTERS.keys()),
+        'senarai_klinik': [k['name'] for k in MOCK_KLINIK],
     }
     return render(request, 'dashboard/hpu_dashboard.html', context)
 
@@ -1837,13 +1916,13 @@ def officer_profile_view(request):
         theta=categories + [categories[0]],
         fill='toself',
         fillcolor='rgba(190, 18, 60, 0.2)',
-        line=dict(color='#be123c', width=2),
-        marker=dict(size=6, color='#881337')
+        line=dict(color='#6d3ec4', width=2),
+        marker=dict(size=6, color='#150a35')
     ))
     fig_radar.update_layout(
         polar=dict(
-            radialaxis=dict(visible=True, range=[0, 100], tickfont=dict(size=9, color='#881337')),
-            angularaxis=dict(tickfont=dict(size=10, color='#881337', weight='bold'))
+            radialaxis=dict(visible=True, range=[0, 100], tickfont=dict(size=9, color='#150a35')),
+            angularaxis=dict(tickfont=dict(size=10, color='#150a35', weight='bold'))
         ),
         margin=dict(t=20, b=20, l=30, r=30),
         paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)',
@@ -1939,19 +2018,19 @@ def kpi_analytics_insight_view(request):
     fig_trend = go.Figure()
     fig_trend.add_trace(go.Scatter(
         x=months, y=target_trend, mode='lines', name="Target KPI (85%)",
-        line=dict(color="#f43f5e", width=2, dash='dash')
+        line=dict(color="#a577ff", width=2, dash='dash')
     ))
     fig_trend.add_trace(go.Scatter(
         x=months, y=actual_trend, mode='lines+markers', name="Actual Performance",
-        line=dict(color="#881337", width=3), marker=dict(size=8, color="#be123c"),
+        line=dict(color="#150a35", width=3), marker=dict(size=8, color="#6d3ec4"),
         fill='tozeroy', fillcolor='rgba(190, 18, 60, 0.08)'
     ))
     fig_trend.update_layout(
         height=320, margin=dict(l=30, r=20, t=20, b=30),
         paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)',
-        legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1, font=dict(size=11, color='#881337', family='Inter')),
-        xaxis=dict(showgrid=False, tickfont=dict(size=11, color='#881337', weight='bold', family='Inter')),
-        yaxis=dict(showgrid=True, gridcolor='#ffe4e6', range=[60, 100], tickfont=dict(size=10, color='#881337', family='Inter'))
+        legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1, font=dict(size=11, color='#150a35', family='Inter')),
+        xaxis=dict(showgrid=False, tickfont=dict(size=11, color='#150a35', weight='bold', family='Inter')),
+        yaxis=dict(showgrid=True, gridcolor='#e7dff2', range=[60, 100], tickfont=dict(size=10, color='#150a35', family='Inter'))
     )
     trend_chart_html = fig_trend.to_html(full_html=False, include_plotlyjs=False, config={'displayModeBar': False})
 
@@ -2012,7 +2091,7 @@ def competency_matrix_insight_view(request):
 
     fig_heat = go.Figure(data=go.Heatmap(
         z=z_data, x=tunjang_labels, y=mo_names,
-        colorscale=[[0, '#fff1f2'], [0.4, '#fecdd3'], [0.7, '#f43f5e'], [1.0, '#be123c']],
+        colorscale=[[0, '#f3edff'], [0.4, '#fecdd3'], [0.7, '#a577ff'], [1.0, '#6d3ec4']],
         texttemplate="<b>%{z}%</b>", textfont=dict(size=11, color="#ffffff", family='Inter'),
         showscale=False, xgap=5, ygap=5,
         hovertemplate="<b>Pegawai:</b> %{y}<br><b>Tunjang:</b> %{x}<br><b>Skor:</b> %{z}%<extra></extra>"
@@ -2020,8 +2099,8 @@ def competency_matrix_insight_view(request):
     fig_heat.update_layout(
         height=380, margin=dict(l=120, r=20, t=20, b=30),
         paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)',
-        xaxis=dict(fixedrange=True, tickfont=dict(size=11, color='#881337', weight='bold', family='Inter')),
-        yaxis=dict(fixedrange=True, tickfont=dict(size=10, color='#881337', weight='bold', family='Inter'), autorange="reversed")
+        xaxis=dict(fixedrange=True, tickfont=dict(size=11, color='#150a35', weight='bold', family='Inter')),
+        yaxis=dict(fixedrange=True, tickfont=dict(size=10, color='#150a35', weight='bold', family='Inter'), autorange="reversed")
     )
     heatmap_html = fig_heat.to_html(full_html=False, include_plotlyjs=False, config={'displayModeBar': False})
 

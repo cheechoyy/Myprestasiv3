@@ -1,146 +1,219 @@
 {% load static %}
 
-<!-- SINGLE DEPARTMENT BADGE BASED ON HOD PROFILE (MODERN CLEAN LOOK) -->
-<div style="background: linear-gradient(135deg, #ffffff 0%, #fff1f2 100%); border: 1px solid #ffe4e6; border-radius: 16px; padding: 16px 22px; margin-bottom: 20px; display: flex; align-items: center; justify-content: space-between; box-shadow: 0 4px 15px rgba(190, 18, 60, 0.03);">
+<!-- SINGLE DEPARTMENT BADGE -->
+<div style="background: linear-gradient(135deg, #ffffff 0%, #f3edff 100%); border: 1px solid #e7dff2; border-radius: 16px; padding: 16px 22px; margin-bottom: 20px; display: flex; align-items: center; justify-content: space-between; box-shadow: 0 4px 15px rgba(21, 10, 53, 0.03);">
     <div style="display: flex; align-items: center; gap: 14px;">
-        <div style="width: 42px; height: 42px; background: #fff1f2; border: 1px solid #ffe4e6; border-radius: 12px; display: flex; align-items: center; justify-content: center; color: #be123c; shrink-0;">
+        <div style="width: 42px; height: 42px; background: #f3edff; border: 1px solid #e7dff2; border-radius: 12px; display: flex; align-items: center; justify-content: center; color: #6d3ec4; shrink-0;">
             <svg style="width: 22px; height: 22px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5m0 0v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4M12 7v4m-2-2h4"/></svg>
         </div>
         <div>
-            <span style="font-size: 11px; font-weight: 800; color: #f43f5e; text-transform: uppercase; letter-spacing: 0.5px;">Monitored Department Module</span>
-            <h3 style="margin: 2px 0 0 0; color: #881337; font-size: 16px; font-weight: 900;">
+            <span style="font-size: 11px; font-weight: 800; color: #a577ff; text-transform: uppercase; letter-spacing: 0.5px;">Monitored Department Module</span>
+            <h3 style="margin: 2px 0 0 0; color: #150a35; font-size: 16px; font-weight: 900;">
                 {% if user.profile.department == 'FMS' %}Family Medicine Specialist (FMS)
-                {% elif user.profile.department == 'CTS' %}Cardiothoracic Surgery (CTS)
-                {% elif user.profile.department == 'PEDS' %}Pediatrics
-                {% elif user.profile.department == 'ONG' %}Obstetrics & Gynaecology (O&G)
                 {% else %}{{ user.profile.department|default:"Family Medicine Specialist (FMS)" }}{% endif %}
             </h3>
         </div>
     </div>
-    <a href="{% url 'cts_module' %}?dept={{ user.profile.department|default:'FMS' }}" style="background: #be123c; color: white; padding: 10px 18px; border-radius: 10px; font-size: 12px; font-weight: 800; text-decoration: none; display: flex; align-items: center; gap: 8px; transition: 0.2s; box-shadow: 0 4px 12px rgba(190, 18, 60, 0.2);" onmouseover="this.style.background='#881337'" onmouseout="this.style.background='#be123c'">
+    <a href="{% url 'cts_module' %}?dept={{ user.profile.department|default:'FMS' }}" style="background: #6d3ec4; color: white; padding: 10px 18px; border-radius: 10px; font-size: 12px; font-weight: 800; text-decoration: none; display: flex; align-items: center; gap: 8px; transition: 0.2s; box-shadow: 0 4px 12px rgba(109, 62, 196, 0.2);" onmouseover="this.style.background='#150a35'" onmouseout="this.style.background='#6d3ec4'">
         <span>Enter Evaluation Module</span>
         <svg style="width: 14px; height: 14px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>
     </a>
 </div>
 
-<div class="content-grid">
-    <!-- Card 1: Action Center & Red Flag Triage -->
-    <div class="card card-action">
-        <div class="card-title">
-            <a href="{% url 'action_center_insight' %}?state={{ pilihan_negeri }}&clinic={{ pilihan_klinik }}" class="flex items-center gap-2" style="text-decoration:none; color:inherit;" onmouseover="this.style.color='#be123c'" onmouseout="this.style.color='inherit'">
-                <svg style="width: 18px; height: 18px; color: #be123c;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
-                <span>HOD Action Center (Red Flags & Triage) ↗</span>
-            </a>
-            <span style="font-size: 11px; background: #be123c; color: white; padding: 2px 8px; border-radius: 12px; font-weight: 800;">3 Action Needed</span>
+<div class="orbital-hub-wrapper">
+
+    <!-- 1. POD KIRI ATAS: ACTION CENTER (Semua elemen selamat di zon kiri) -->
+    <div class="orbital-pod pod-top-left">
+        <div>
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px;">
+                <a href="{% url 'action_center_insight' %}?state={{ pilihan_negeri }}&clinic={{ pilihan_klinik }}" style="font-size: 15px; font-weight: 900; color: #150a35; text-decoration: none; display: flex; align-items: center; gap: 8px;">
+                    <svg style="width: 19px; height: 19px; color: #6d3ec4;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+                    <span>Action Center ↗</span>
+                </a>
+                <span style="background: #6d3ec4; color: white; padding: 4px 10px; border-radius: 20px; font-size: 10px; font-weight: 800; letter-spacing: 0.5px;">3 URGENT</span>
+            </div>
+
+            <!-- Senarai Teaser Mini (Dikecilkan sedikit lebar supaya tidak masuk bucu lengkuk) -->
+            <div style="display: flex; flex-direction: column; gap: 8px; max-width: 82%;">
+                <div style="background: #f3edff; border: 1.5px solid #e7dff2; padding: 10px 14px; border-radius: 12px; display: flex; align-items: center; justify-content: space-between;">
+                    <div style="display:flex; align-items:center; gap:8px;">
+                        <span style="width:8px; height:8px; border-radius:50%; background:#6d3ec4;" class="animate-pulse"></span>
+                        <strong style="color:#150a35; font-size:13px;">CUSUM Breach</strong>
+                    </div>
+                    <span style="font-size:12px; color:#6d3ec4; font-weight:800;">Dr. Ramesh Lee</span>
+                </div>
+
+                <div style="background: #f0fdf4; border: 1.5px solid #bbf7d0; padding: 10px 14px; border-radius: 12px; display: flex; align-items: center; justify-content: space-between;">
+                    <div style="display:flex; align-items:center; gap:8px;">
+                        <span style="width:8px; height:8px; border-radius:50%; background:#16a34a;"></span>
+                        <strong style="color:#14532d; font-size:13px;">Fast-Track Promotion</strong>
+                    </div>
+                    <span style="font-size:12px; color:#15803d; font-weight:900;">24 MOs Eligible</span>
+                </div>
+
+                <div style="background: #fffbeb; border: 1.5px solid #fef3c7; padding: 10px 14px; border-radius: 12px; display: flex; align-items: center; justify-content: space-between;">
+                    <div style="display:flex; align-items:center; gap:8px;">
+                        <span style="width:8px; height:8px; border-radius:50%; background:#d97706;"></span>
+                        <strong style="color:#92400e; font-size:13px;">Validation Backlog</strong>
+                    </div>
+                    <span style="font-size:12px; color:#b45309; font-weight:800;">8 Pending</span>
+                </div>
+            </div>
         </div>
-        <div style="flex-grow: 1; overflow-y: auto; overflow-x: hidden; padding-right: 2px;">
-            <div class="alert-item urgent">
-                <div>
-                    <p class="alert-title" style="display: flex; align-items: center; gap: 6px;">
-                        <svg style="width: 15px; height: 15px; color: #be123c; flex-shrink: 0;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
-                        <span>CUSUM Breach Warning</span>
-                    </p>
-                    <p class="alert-desc">Dr. Ramesh Lee breached safety control limit in LIMA-LAD Procedure.</p>
-                </div>
-                <a href="{% url 'cts_module' %}?officer=Dr.%20Ramesh%20Lee&tab=Skills" class="btn-action-xs">Review Case</a>
-            </div>
-            <div class="alert-item" style="background: #f0fdf4; border: 1px solid #bbf7d0;">
-                <div>
-                    <p class="alert-title" style="color: #14532d; display: flex; align-items: center; gap: 6px;">
-                        <svg style="width: 15px; height: 15px; color: #16a34a; flex-shrink: 0;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"/></svg>
-                        <span>Fast-Track Candidates (PRI ≥ 85%)</span>
-                    </p>
-                    <p class="alert-desc" style="color: #15803d;">AI shortlisted 24 Officers eligible for Fast-Track UD48 promotion.</p>
-                </div>
-                <a href="{% url 'overall_analytics' %}?type=performance" class="btn-action-xs" style="background: #16a34a;">View Shortlist</a>
-            </div>
-            <div class="alert-item">
-                <div>
-                    <p class="alert-title" style="display: flex; align-items: center; gap: 6px;">
-                        <svg style="width: 15px; height: 15px; color: #be123c; flex-shrink: 0;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-                        <span>Pending Approval Log</span>
-                    </p>
-                    <p class="alert-desc">8 Procedure logs & 3 CPD claims require your validation.</p>
-                </div>
-                <a href="{% url 'overall_analytics' %}?type=evaluations" class="btn-action-xs">Approve All</a>
-            </div>
-            <div class="alert-item">
-                <div>
-                    <p class="alert-title" style="display: flex; align-items: center; gap: 6px;">
-                        <svg style="width: 15px; height: 15px; color: #be123c; flex-shrink: 0;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
-                        <span>SOP Documentation Drop</span>
-                    </p>
-                    <p class="alert-desc">Clinic Outpatient records timeliness dropped below 80% target.</p>
-                </div>
-                <a href="{% url 'cts_module' %}?tab=Documentation" class="btn-action-xs">View Audit</a>
-            </div>
+
+        <!-- Footer diletakkan di sebelah KIRI (Bebas dari potongan bucu kanan) -->
+        <div style="display:flex; align-items:center; gap:12px; border-top:1px dashed #e7dff2; padding-top:8px; margin-top:6px; max-width: 65%;">
+            <span style="font-size:11px; color:#94a3b8; font-weight:600;">Hover to inspect</span>
+            <span style="color:#d8c7f4;">•</span>
+            <a href="{% url 'action_center_insight' %}?state={{ pilihan_negeri }}&clinic={{ pilihan_klinik }}" style="font-size:12px; font-weight:800; color:#6d3ec4; text-decoration:none;">View All →</a>
         </div>
     </div>
 
-    <!-- Card 2: Department KPI Target vs Actual -->
-    <div class="card card-kpi">
-        <h3 class="card-title flex items-center justify-center gap-2">
-            <a href="{% url 'kpi_analytics_insight' %}?state={{ pilihan_negeri }}&clinic={{ pilihan_klinik }}" style="text-decoration:none; color:inherit; display:flex; align-items:center; gap:8px;" onmouseover="this.style.color='#be123c'" onmouseout="this.style.color='inherit'">
-                <svg style="width: 18px; height: 18px; color: #be123c;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
-                <span>Department Monthly KPI ↗</span>
-            </a>
-        </h3>
-        <div style="flex-grow:1; width:100%; height:100%; overflow:hidden;">
-            {{ dept_kpi_html|safe }}
-        </div>
-    </div>
+    <!-- 2. POD KANAN ATAS: MONTHLY KPI (Semua elemen selamat di zon kanan) -->
+    <div class="orbital-pod pod-top-right">
+        <div>
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;">
+                <a href="{% url 'kpi_analytics_insight' %}?state={{ pilihan_negeri }}&clinic={{ pilihan_klinik }}" style="font-size: 15px; font-weight: 900; color: #150a35; text-decoration: none; display: flex; align-items: center; gap: 8px;">
+                    <svg style="width: 19px; height: 19px; color: #6d3ec4;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
+                    <span>Monthly KPI ↗</span>
+                </a>
+                <span style="background: #f0fdf4; color: #15803d; border: 1px solid #bbf7d0; padding: 4px 10px; border-radius: 20px; font-size: 10px; font-weight: 800;">TARGET: 85%</span>
+            </div>
 
-    <!-- Card 3: Medical Officers Roster -->
-    <div class="card card-roster">
-        <div class="card-title flex items-center justify-between">
-            <a href="{% url 'officers_directory_insight' %}?state={{ pilihan_negeri }}&clinic={{ pilihan_klinik }}" class="flex items-center gap-2" style="text-decoration:none; color:inherit;" onmouseover="this.style.color='#be123c'" onmouseout="this.style.color='inherit'">
-                <svg style="width: 18px; height: 18px; color: #be123c;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
-                <span>Medical Officers Directory ↗</span>
-            </a>
-            {% if is_facility_locked %}
-                <!-- PAPARAN LENCANA STATIK (APABILA SKOP DIKUNCI) -->
-                <div style="background: #fff1f2; color: #881337; border: 1px solid #ffe4e6; padding: 6px 12px; border-radius: 8px; font-size: 11px; font-weight: 800; display: flex; align-items: center; gap: 6px;">
-                    <svg style="width: 14px; height: 14px; color: #be123c;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5m0 0v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4M12 7v4m-2-2h4"/></svg>
-                    <span>{{ pilihan_klinik }}</span>
+            <div style="display: flex; align-items: flex-end; justify-content: space-between; margin-bottom: 12px;">
+                <div>
+                    <div style="font-size: 32px; font-weight: 900; color: #150a35; line-height: 1;">88.4%</div>
+                    <div style="font-size: 11px; font-weight: 800; color: #16a34a; margin-top: 3px;">▲ +3.4% baseline</div>
                 </div>
-            {% else %}
-                <!-- DROPDOWN PILIHAN (APABILA MEMPUNYAI AKSES BANYAK KLINIK) -->
-                <form method="GET" style="width: 50%;">
-                    <input type="hidden" name="state" value="{{ pilihan_negeri }}">
-                    <select name="clinic" class="filter-select" style="margin:0;" onchange="this.form.submit()">
-                        {% for clinic in senarai_klinik %}
-                            <option value="{{ clinic }}" {% if clinic == pilihan_klinik %}selected{% endif %}>{{ clinic }}</option>
-                        {% endfor %}
-                    </select>
-                </form>
-            {% endif %}
+                <div style="text-align: right;">
+                    <div style="font-size: 12.5px; font-weight: 900; color: #150a35;">100% Policy SOP</div>
+                    <div style="font-size: 10.5px; color: #64748b; font-weight: 600;">Full Compliance</div>
+                </div>
+            </div>
+
+            <!-- Progress Bars (Ditolak sedikit ke kanan) -->
+            <div style="display:flex; flex-direction:column; gap:6px; width: 85%; margin-left: auto;">
+                <div>
+                    <div style="display:flex; justify-content:space-between; font-size:11px; font-weight:800; color:#150a35; margin-bottom:2px;">
+                        <span>Clinical Delivery</span><span>88%</span>
+                    </div>
+                    <div style="background:#f3edff; height:6px; border-radius:10px; overflow:hidden;"><div style="background:#6d3ec4; width:88%; height:100%;"></div></div>
+                </div>
+                <div>
+                    <div style="display:flex; justify-content:space-between; font-size:11px; font-weight:800; color:#150a35; margin-bottom:2px;">
+                        <span>Documentation Quality</span><span>82%</span>
+                    </div>
+                    <div style="background:#f3edff; height:6px; border-radius:10px; overflow:hidden;"><div style="background:#a577ff; width:82%; height:100%;"></div></div>
+                </div>
+            </div>
         </div>
-        <div class="roster-scroll" style="border: 1px solid #ffe4e6; border-radius: 8px;">
-            {{ roster_html|safe }}
+
+        <!-- Footer diletakkan di sebelah KANAN (Bebas dari potongan bucu kiri) -->
+        <div style="display:flex; justify-content:flex-end; align-items:center; gap:12px; border-top:1px dashed #e7dff2; padding-top:8px; margin-top:6px; margin-left:auto; width:68%;">
+            <span style="font-size:11px; color:#94a3b8; font-weight:600;">Monthly review cycle</span>
+            <span style="color:#d8c7f4;">•</span>
+            <a href="{% url 'kpi_analytics_insight' %}?state={{ pilihan_negeri }}&clinic={{ pilihan_klinik }}" style="font-size:12px; font-weight:800; color:#6d3ec4; text-decoration:none;">Deep-Dive →</a>
         </div>
     </div>
 
-    <!-- Card 4: MO Competency Heatmap -->
-    <div class="card card-heatmap">
-        <h3 class="card-title flex items-center justify-center gap-2">
-            <a href="{% url 'competency_matrix_insight' %}?state={{ pilihan_negeri }}&clinic={{ pilihan_klinik }}" style="text-decoration:none; color:inherit; display:flex; align-items:center; gap:8px;" onmouseover="this.style.color='#be123c'" onmouseout="this.style.color='inherit'">
-                <svg style="width: 18px; height: 18px; color: #be123c;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 18.657A8 8 0 016.343 7.343S7 9 9 10c0-2 1-4 4-6 0 3 3 3 3 6 1-1 2-2 2-3.657a8 8 0 01.657 12.314z"/></svg>
-                <span>MO Competency Matrix ↗</span>
-            </a>
-        </h3>
-        <div style="flex-grow:1; width:100%; height:100%; overflow:hidden;">
-            {{ mo_heatmap_html|safe }}
-        </div>
-    </div>
-
-    <!-- Card 5: Dynamic Sunburst Framework -->
-    <div class="card card-sunburst" title="Click any sector to jump to module">
-        <h3 class="card-title flex items-center justify-center gap-2">
-            <svg style="width: 18px; height: 18px; color: #be123c;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 10l-2 1m0 0l-2-1m2 1v2.5M20 7l-2 1m2-1l-2-1m2 1v2.5M14 4l-2-1-2 1M4 7l2-1M4 7l2 1M4 7v2.5M12 21l-2-1m2 1l2-1m-2 1v-2.5M6 18l-2-1v-2.5M18 18l2-1v-2.5"/></svg>
-            Framework (Click to Navigate)
-        </h3>
-        <div style="flex-grow:1; width:100%; height:100%; overflow:hidden;">
+    <!-- 3. PUSAT TERAPUNG BULAT (ORBITAL CORE SUNBURST FRAMEWORK) -->
+    <div class="orbital-center-hub" title="Click center to Reset / Click segments to Navigate">
+        <div style="display:flex; justify-content:center; align-items:center; width:100%; height:100%;">
             {{ sunburst_html|safe }}
         </div>
     </div>
+
+    <!-- 4. POD KIRI BAWAH: OFFICERS DIRECTORY (Semua elemen selamat di zon kiri) -->
+    <div class="orbital-pod pod-bottom-left">
+        <div>
+            <!-- Header tersusun di sebelah KIRI (Lencana di bawah tajuk, tiada yang kena potong di atas kanan) -->
+            <div style="display: flex; flex-direction: column; gap: 4px; margin-bottom: 12px;">
+                <div style="display: flex; align-items: center; justify-content: space-between;">
+                    <a href="{% url 'officers_directory_insight' %}?state={{ pilihan_negeri }}&clinic={{ pilihan_klinik }}" style="font-size: 15px; font-weight: 900; color: #150a35; text-decoration: none; display: flex; align-items: center; gap: 8px;">
+                        <svg style="width: 19px; height: 19px; color: #6d3ec4;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
+                        <span>Officers Directory ↗</span>
+                    </a>
+                </div>
+                <span style="background: #f3edff; color: #150a35; border: 1px solid #e7dff2; padding: 2px 8px; border-radius: 6px; font-size: 10.5px; font-weight: 800; width: fit-content;">
+                    📍 {{ pilihan_klinik|default:"Klinik Kesihatan Medong" }}
+                </span>
+            </div>
+
+            <!-- Senarai Doktor (Dikecilkan lebar supaya selamat dari bucu kanan atas) -->
+            <div style="display: flex; flex-direction: column; gap: 7px; max-width: 82%;">
+                <div style="background: white; border: 1.5px solid #e7dff2; padding: 7px 12px; border-radius: 10px; display: flex; align-items: center; justify-content: space-between;">
+                    <div style="display:flex; align-items:center; gap:6px;">
+                        <span style="width:7px; height:7px; border-radius:50%; background:#16a34a;"></span>
+                        <strong style="color:#150a35; font-size:12px;">Dr. dr_abu (Live)</strong>
+                    </div>
+                    <span style="font-size:10px; font-weight:900; color:#16a34a; background:#f0fdf4; padding:2px 6px; border-radius:5px;">83% Tier 1</span>
+                </div>
+
+                <div style="background: white; border: 1.5px solid #e7dff2; padding: 7px 12px; border-radius: 10px; display: flex; align-items: center; justify-content: space-between;">
+                    <div style="display:flex; align-items:center; gap:6px;">
+                        <span style="width:7px; height:7px; border-radius:50%; background:#16a34a;"></span>
+                        <strong style="color:#150a35; font-size:12px;">Dr. dr_mail (Live)</strong>
+                    </div>
+                    <span style="font-size:10px; font-weight:900; color:#d97706; background:#fffbeb; padding:2px 6px; border-radius:5px;">84% Tier 2</span>
+                </div>
+
+                <div style="background: white; border: 1.5px solid #e7dff2; padding: 7px 12px; border-radius: 10px; display: flex; align-items: center; justify-content: space-between;">
+                    <div style="display:flex; align-items:center; gap:6px;">
+                        <span style="width:7px; height:7px; border-radius:50%; background:#a577ff;"></span>
+                        <strong style="color:#150a35; font-size:12px;">Dr. Farhana Lee</strong>
+                    </div>
+                    <span style="font-size:10px; font-weight:900; color:#150a35; background:#f3edff; padding:2px 6px; border-radius:5px;">78% Good</span>
+                </div>
+            </div>
+        </div>
+
+        <div style="display:flex; align-items:center; gap:12px; border-top:1px dashed #e7dff2; padding-top:8px; margin-top:6px; max-width: 65%;">
+            <span style="font-size:11px; color:#94a3b8; font-weight:600;">Active Roster</span>
+            <span style="color:#d8c7f4;">•</span>
+            <a href="{% url 'officers_directory_insight' %}?state={{ pilihan_negeri }}&clinic={{ pilihan_klinik }}" style="font-size:12px; font-weight:800; color:#6d3ec4; text-decoration:none;">View All MOs →</a>
+        </div>
+    </div>
+
+    <!-- 5. POD KANAN BAWAH: COMPETENCY MATRIX (Semua elemen selamat di zon kanan) -->
+    <div class="orbital-pod pod-bottom-right">
+        <div>
+            <!-- Header ditolak ke sebelah KANAN (Bebas dari potongan bucu kiri atas) -->
+            <div style="display: flex; align-items: center; justify-content: flex-end; gap: 10px; margin-bottom: 12px; margin-left: auto; width: fit-content;">
+                <a href="{% url 'competency_matrix_insight' %}?state={{ pilihan_negeri }}&clinic={{ pilihan_klinik }}" style="font-size: 15px; font-weight: 900; color: #150a35; text-decoration: none; display: flex; align-items: center; gap: 8px;">
+                    <svg style="width: 19px; height: 19px; color: #6d3ec4;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M17.657 18.657A8 8 0 016.343 7.343S7 9 9 10c0-2 1-4 4-6 0 3 3 3 3 6 1-1 2-2 2-3.657a8 8 0 01.657 12.314z"/></svg>
+                    <span>Competency Matrix ↗</span>
+                </a>
+                <span style="background: #f3edff; color: #150a35; border: 1px solid #e7dff2; padding: 3px 8px; border-radius: 20px; font-size: 10px; font-weight: 800;">PRI HEATMAP</span>
+            </div>
+
+            <!-- 3 Kad Skor Mini (Ditolak ke sebelah kanan) -->
+            <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 8px; width: 85%; margin-left: auto;">
+                <div style="background:#f3edff; border:1px solid #e7dff2; border-radius:10px; padding:8px 4px; text-align:center;">
+                    <div style="font-size:10px; font-weight:800; color:#a577ff; text-transform:uppercase;">Clinical</div>
+                    <div style="font-size:19px; font-weight:900; color:#150a35; margin-top:1px;">86%</div>
+                </div>
+
+                <div style="background:#f3edff; border:1px solid #e7dff2; border-radius:10px; padding:8px 4px; text-align:center;">
+                    <div style="font-size:10px; font-weight:800; color:#a577ff; text-transform:uppercase;">Ops</div>
+                    <div style="font-size:19px; font-weight:900; color:#150a35; margin-top:1px;">82%</div>
+                </div>
+
+                <div style="background:#f3edff; border:1px solid #e7dff2; border-radius:10px; padding:8px 4px; text-align:center;">
+                    <div style="font-size:10px; font-weight:800; color:#a577ff; text-transform:uppercase;">Interp</div>
+                    <div style="font-size:19px; font-weight:900; color:#150a35; margin-top:1px;">86%</div>
+                </div>
+            </div>
+
+            <p style="font-size:11px; color:#64748b; margin:0; line-height:1.35; font-weight:500; text-align:right; width:85%; margin-left:auto;">
+                Holistic performance across surgical skills, task velocity, & patient satisfaction.
+            </p>
+        </div>
+
+        <div style="display:flex; justify-content:flex-end; align-items:center; gap:12px; border-top:1px dashed #e7dff2; padding-top:8px; margin-top:6px; margin-left:auto; width:68%;">
+            <span style="font-size:11px; color:#94a3b8; font-weight:600;">Distribution Heatmap</span>
+            <span style="color:#d8c7f4;">•</span>
+            <a href="{% url 'competency_matrix_insight' %}?state={{ pilihan_negeri }}&clinic={{ pilihan_klinik }}" style="font-size:12px; font-weight:800; color:#6d3ec4; text-decoration:none;">View Full Matrix →</a>
+        </div>
+    </div>
+
 </div>

@@ -9,7 +9,7 @@
     <script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
     <style>
         body { 
-            margin: 0; font-family: 'Inter', sans-serif; background-color: #fff1f2; 
+            margin: 0; font-family: 'Inter', sans-serif; background-color: #f3edff; 
             background-image: url("data:image/svg+xml,%3Csvg width='12' height='12' viewBox='0 0 12 12' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M0 0h12v12H0z' fill='none'/%3E%3Cpath d='M0 12L12 0M0 0l12 12' stroke='%23fecdd3' stroke-width='0.6' stroke-opacity='0.45'/%3E%3C/svg%3E");
             display: flex; flex-direction: column; min-height: 100vh;
         }
@@ -17,7 +17,7 @@
         .navbar { 
             background: rgba(255, 255, 255, 0.95); 
             backdrop-filter: blur(10px); 
-            border-bottom: 1px solid #ffe4e6; 
+            border-bottom: 1px solid #e7dff2; 
             padding: 12px 45px; 
             display: flex; 
             align-items: center; 
@@ -31,7 +31,7 @@
         .btn-back { 
             background: white; 
             border: 1px solid #fecdd3; 
-            color: #be123c; 
+            color: #6d3ec4; 
             padding: 8px 16px; 
             border-radius: 8px; 
             text-decoration: none; 
@@ -44,9 +44,9 @@
             box-shadow: 0 2px 4px rgba(190, 18, 60, 0.02); 
         }
         .btn-back:hover { 
-            background: #be123c; 
+            background: #6d3ec4; 
             color: white; 
-            border-color: #be123c; 
+            border-color: #6d3ec4; 
             transform: translateY(-1px); 
             box-shadow: 0 4px 12px rgba(190, 18, 60, 0.15); 
         }
@@ -64,11 +64,11 @@
             animation: smoothFadeUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
         }
         .page-title-box { margin-bottom: 25px; }
-        .page-title-box h1 { color: #881337; font-size: 26px; font-weight: 900; margin: 0 0 6px 0; }
-        .page-title-box p { color: #f43f5e; font-size: 13px; margin: 0; font-weight: 600; }
-        .card { background: white; border-radius: 16px; border: 1px solid #ffe4e6; box-shadow: 0 4px 15px rgba(190, 18, 60, 0.04); padding: 25px; margin-bottom: 20px; }
+        .page-title-box h1 { color: #150a35; font-size: 26px; font-weight: 900; margin: 0 0 6px 0; }
+        .page-title-box p { color: #a577ff; font-size: 13px; margin: 0; font-weight: 600; }
+        .card { background: white; border-radius: 16px; border: 1px solid #e7dff2; box-shadow: 0 4px 15px rgba(190, 18, 60, 0.04); padding: 25px; margin-bottom: 20px; }
         
-        .footer { text-align: center; padding: 15px; background: white; border-top: 1px solid #ffe4e6; color: #881337; font-size: 12px; font-weight: 600; }
+        .footer { text-align: center; padding: 15px; background: white; border-top: 1px solid #e7dff2; color: #150a35; font-size: 12px; font-weight: 600; }
     </style>
 </head>
 <body>
@@ -82,17 +82,17 @@
             <span style="color: #fecdd3; font-size: 18px;">|</span>
             <div style="display: flex; align-items: center; gap: 8px;">
                 <img src="{% static 'images/myprestasi-logo-nobg.png' %}" alt="Logo" style="height: 26px; filter: drop-shadow(0 2px 4px rgba(136, 19, 55, 0.1));">
-                <span style="font-weight: 900; color: #881337; font-size: 15px; letter-spacing: -0.5px;">MyPrestasi <span style="color: #f43f5e;">Insights</span></span>
+                <span style="font-weight: 900; color: #150a35; font-size: 15px; letter-spacing: -0.5px;">MyPrestasi <span style="color: #a577ff;">Insights</span></span>
             </div>
         </div>
 
         <!-- KANAN: Maklumat Profil HOD -->
         <div style="display: flex; align-items: center; gap: 12px;">
             <div style="text-align: right;">
-                <div style="font-size: 13px; font-weight: 900; color: #881337; text-transform: capitalize;">{{ hod_name }}</div>
-                <div style="font-size: 10px; font-weight: 800; color: #f43f5e; text-transform: uppercase; letter-spacing: 0.5px;">Head of Department</div>
+                <div style="font-size: 13px; font-weight: 900; color: #150a35; text-transform: capitalize;">{{ hod_name }}</div>
+                <div style="font-size: 10px; font-weight: 800; color: #a577ff; text-transform: uppercase; letter-spacing: 0.5px;">Head of Department</div>
             </div>
-            <div style="width: 38px; height: 38px; border-radius: 50%; background: #be123c; color: white; display: flex; justify-content: center; align-items: center; box-shadow: 0 4px 10px rgba(190, 18, 60, 0.25); border: 2px solid #fff1f2;">
+            <div style="width: 38px; height: 38px; border-radius: 50%; background: #6d3ec4; color: white; display: flex; justify-content: center; align-items: center; box-shadow: 0 4px 10px rgba(190, 18, 60, 0.25); border: 2px solid #f3edff;">
                 <svg style="width: 18px; height: 18px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
             </div>
         </div>
@@ -100,18 +100,18 @@
     <div class="container">
         <div class="page-title-box">
             <h1 style="display: flex; align-items: center; gap: 12px;">
-                <div style="width: 38px; height: 38px; border-radius: 10px; background: #fff1f2; border: 1px solid #ffe4e6; display: flex; justify-content: center; align-items: center; flex-shrink: 0;">
-                    <svg style="width: 22px; height: 22px; color: #be123c;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 18.657A8 8 0 016.343 7.343S7 9 9 10c0-2 1-4 4-6 0 3 3 3 3 6 1-1 2-2 2-3.657a8 8 0 01.657 12.314z"/></svg>
+                <div style="width: 38px; height: 38px; border-radius: 10px; background: #f3edff; border: 1px solid #e7dff2; display: flex; justify-content: center; align-items: center; flex-shrink: 0;">
+                    <svg style="width: 22px; height: 22px; color: #6d3ec4;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 18.657A8 8 0 016.343 7.343S7 9 9 10c0-2 1-4 4-6 0 3 3 3 3 6 1-1 2-2 2-3.657a8 8 0 01.657 12.314z"/></svg>
                 </div>
                 <span>MO Competency Matrix & 3-Pillar Analytics</span>
             </h1>
             <p>Macro-level 3-Pillar evaluation heatmaps across Clinical, Operational, and Interpersonal excellence.</p>
         </div>
         <div class="card">
-            <h3 style="color:#881337; margin-top:0; margin-bottom: 15px; font-size: 16px; border-bottom: 1px solid #ffe4e6; padding-bottom: 10px;">Expanded Officers Competency Heatmap</h3>
+            <h3 style="color:#150a35; margin-top:0; margin-bottom: 15px; font-size: 16px; border-bottom: 1px solid #e7dff2; padding-bottom: 10px;">Expanded Officers Competency Heatmap</h3>
             {{ heatmap_html|safe }}
         </div>
     </div>
-    <div class="footer">Copyright © 2026 MyPrestasi HPU | Health Performance Unit</div>
+    <div class="footer">Copyright © 2026 MyPrestasi KKM | Health Performance Unit</div>
 </body>
 </html>

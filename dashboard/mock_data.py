@@ -19,11 +19,11 @@ def generate_doctors_list(clinic_name):
         if score >= 85:
             status = '<span style="background: #dcfce7; color: #15803d; border: 1px solid #bbf7d0; padding: 3px 8px; border-radius: 12px; font-weight: 800; font-size: 10px;">Outstanding</span>'
         elif score >= 75:
-            status = '<span style="background: #fff1f2; color: #be123c; border: 1px solid #ffe4e6; padding: 3px 8px; border-radius: 12px; font-weight: 800; font-size: 10px;">Good</span>'
+            status = '<span style="background: #f3edff; color: #6d3ec4; border: 1px solid #e7dff2; padding: 3px 8px; border-radius: 12px; font-weight: 800; font-size: 10px;">Good</span>'
         elif score >= 65:
             status = '<span style="background: #fef3c7; color: #b45309; border: 1px solid #fde68a; padding: 3px 8px; border-radius: 12px; font-weight: 800; font-size: 10px;">Competent</span>'
         else:
-            status = '<span style="background: #ffe4e6; color: #9f1239; border: 1px solid #fecdd3; padding: 3px 8px; border-radius: 12px; font-weight: 800; font-size: 10px;">Needs Attention</span>'
+            status = '<span style="background: #e7dff2; color: #9f1239; border: 1px solid #fecdd3; padding: 3px 8px; border-radius: 12px; font-weight: 800; font-size: 10px;">Needs Attention</span>'
         
         full_name = f"Dr. {random.choice(first_names)} {random.choice(last_names)}"
         doctors.append({

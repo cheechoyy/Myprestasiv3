@@ -14,9 +14,9 @@
                     fontFamily: { sans: ['Inter', 'sans-serif'] },
                     colors: {
                         rose: {
-                            50: '#fff1f2', 100: '#ffe4e6', 200: '#fecdd3',
-                            500: '#f43f5e', 600: '#e11d48', 700: '#be123c',
-                            800: '#9f1239', 900: '#881337', 950: '#4c0519',
+                            50: '#f3edff', 100: '#e7dff2', 200: '#fecdd3',
+                            500: '#a577ff', 600: '#e11d48', 700: '#6d3ec4',
+                            800: '#9f1239', 900: '#150a35', 950: '#4c0519',
                         }
                     },
                     animation: {
@@ -162,8 +162,8 @@
                             <label class="block text-[11px] font-extrabold text-slate-500 uppercase tracking-widest mb-2">Jabatan / Modul</label>
                             <div class="relative">
                                 <select name="department" class="w-full appearance-none bg-slate-50 border-2 border-slate-200 rounded-xl px-4 py-3.5 text-sm font-bold text-slate-700 focus:border-rose-500 focus:bg-white focus:ring-4 focus:ring-rose-500/10 outline-none transition-all cursor-pointer">
-                                    <option value="CTS">Cardiothoracic Surgery (CTS)</option>
                                     <option value="FMS">Family Medicine Specialist (FMS)</option>
+                                    <option value="CTS">Cardiothoracic Surgery (CTS)</option>
                                     <option value="PEDS">Pediatrics</option>
                                     <option value="ONG">O&G</option>
                                 </select>
@@ -171,6 +171,16 @@
                                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
                                 </div>
                             </div>
+                        </div>
+
+                        <div>
+                            <label class="block text-[11px] font-extrabold text-slate-500 uppercase tracking-widest mb-2">Assigned Facility / Clinic</label>
+                            <input type="text" name="facility" value="Klinik Kesihatan Medong" required class="w-full bg-slate-50 border-2 border-slate-200 rounded-xl px-4 py-3.5 text-sm font-semibold text-slate-800 focus:border-rose-500 focus:bg-white focus:ring-4 focus:ring-rose-500/10 outline-none transition-all">
+                        </div>
+
+                        <div>
+                            <label class="block text-[11px] font-extrabold text-slate-500 uppercase tracking-widest mb-2">State</label>
+                            <input type="text" name="state" value="Sarawak" required class="w-full bg-slate-50 border-2 border-slate-200 rounded-xl px-4 py-3.5 text-sm font-semibold text-slate-800 focus:border-rose-500 focus:bg-white focus:ring-4 focus:ring-rose-500/10 outline-none transition-all">
                         </div>
 
                         <button type="submit" class="w-full flex justify-center gap-2 bg-rose-700 hover:bg-rose-900 text-white font-black text-base py-4 rounded-xl mt-2 transition-all duration-300 shadow-xl shadow-rose-700/20 hover:shadow-rose-900/40 hover:-translate-y-1">
@@ -236,16 +246,12 @@
                                             <button onclick="alert('Fungsi Log Masuk Sebagai {{ u.user.username }} akan diaktifkan.')" class="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors" title="Log Masuk Sebagai">
                                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
                                             </button>
-                                            <!-- Edit -->
-                                            <button onclick="openEditModal('{{ u.user.username }}', '{{ u.role }}', '{{ u.department }}')" class="p-2 text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors" title="Kemas Kini Profil">
+                                            <!-- Edit (Menghantar maklumat fasiliti & negeri ke modal) -->
+                                            <button type="button" onclick="openEditModal('{{ u.user.username }}', '{{ u.role }}', '{{ u.department }}', '{{ u.assigned_facility|default:'Klinik Kesihatan Medong' }}', '{{ u.assigned_state|default:'Sarawak' }}')" class="p-2 text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors" title="Edit Profile & Facility">
                                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
                                             </button>
-                                            <!-- Reset Password -->
-                                            <button onclick="alert('Fungsi Set Semula Kata Laluan untuk {{ u.user.username }} akan diaktifkan.')" class="p-2 text-slate-400 hover:text-amber-600 hover:bg-amber-50 rounded-lg transition-colors" title="Set Semula Kata Laluan">
-                                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"/></svg>
-                                            </button>
                                             <!-- Delete -->
-                                            <button onclick="alert('Fungsi Padam Akaun {{ u.user.username }} akan diaktifkan.')" class="p-2 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors" title="Padam Akaun">
+                                            <button type="button" onclick="confirmDeleteUser('{{ u.user.username }}')" class="p-2 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors" title="Delete User">
                                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
                                             </button>
                                         </div>
@@ -317,90 +323,94 @@
             </div>
 
             <div class="mt-12 text-center text-xs font-semibold text-slate-400 pb-8">
-                Hak Cipta &copy; 2026 MyPrestasi HPU | Antaramuka SaaS Prestasi Tinggi
+                Copyright &copy; 2026 MyPrestasi KKM | Health Performance Unit
             </div>
             
         </div>
     </div>
 
-    <!-- MODAL KEMAS KINI PROFIL (Disembunyikan pada awalnya) -->
+    <!-- MODAL KEMAS KINI PROFIL -->
     <div id="editProfileModal" class="fixed inset-0 z-[100] hidden flex items-center justify-center">
-        <!-- Latar Belakang Kabur -->
         <div class="absolute inset-0 bg-slate-900/40 backdrop-blur-sm" onclick="closeEditModal()"></div>
         
-        <!-- Kotak Modal -->
         <div class="relative bg-white rounded-3xl shadow-2xl w-full max-w-md mx-4 overflow-hidden transform transition-all duration-300 scale-95 opacity-0" id="modalContent">
             <div class="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
                 <h3 class="text-lg font-black text-slate-800 flex items-center gap-2">
-                    <span class="text-rose-600">✏️</span> Kemas Kini Profil
+                    <span class="text-rose-600">✏️</span> Edit User & Facility Assignment
                 </h3>
                 <button onclick="closeEditModal()" class="text-slate-400 hover:text-rose-600 transition-colors">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
                 </button>
             </div>
             
-            <form method="POST" action="" class="p-6 space-y-5" id="editForm">
+            <form method="POST" class="p-6 space-y-4" id="editForm">
                 {% csrf_token %}
                 <input type="hidden" name="form_type" value="edit_user">
-                <!-- Kita hantar ID pengguna asal secara tersembunyi -->
                 <input type="hidden" name="original_username" id="edit_original_username">
                 
                 <div>
-                    <label class="block text-[11px] font-extrabold text-slate-500 uppercase tracking-widest mb-2">ID Pengguna (Baca Sahaja)</label>
-                    <input type="text" id="edit_username" name="new_username" readonly class="w-full bg-slate-100 border-2 border-slate-200 rounded-xl px-4 py-3 text-sm font-bold text-slate-500 outline-none cursor-not-allowed">
+                    <label class="block text-[11px] font-extrabold text-slate-500 uppercase tracking-widest mb-1.5">User ID / Username</label>
+                    <input type="text" id="edit_username" name="new_username" readonly class="w-full bg-slate-100 border-2 border-slate-200 rounded-xl px-4 py-2.5 text-sm font-bold text-slate-500 outline-none cursor-not-allowed">
                 </div>
 
                 <div>
-                    <label class="block text-[11px] font-extrabold text-slate-500 uppercase tracking-widest mb-2">Peranan (Role)</label>
-                    <div class="relative">
-                        <select name="role" id="edit_role" class="w-full appearance-none bg-slate-50 border-2 border-slate-200 rounded-xl px-4 py-3 text-sm font-bold text-slate-700 focus:border-rose-500 focus:bg-white focus:ring-4 focus:ring-rose-500/10 outline-none transition-all cursor-pointer">
-                            <option value="HOD">Ketua Jabatan / Pakar (HOD)</option>
-                            <option value="STAFF">Pegawai Perubatan (MO)</option>
-                            <option value="AUDITOR">Pegawai Audit Kualiti</option>
-                        </select>
-                        <div class="absolute inset-y-0 right-4 flex items-center pointer-events-none text-slate-400">▼</div>
-                    </div>
+                    <label class="block text-[11px] font-extrabold text-slate-500 uppercase tracking-widest mb-1.5">Role</label>
+                    <select name="role" id="edit_role" class="w-full bg-slate-50 border-2 border-slate-200 rounded-xl px-4 py-2.5 text-sm font-bold text-slate-700 focus:border-rose-500 focus:bg-white outline-none cursor-pointer">
+                        <option value="STAFF">Medical Officer (MO / Staff)</option>
+                        <option value="HOD">Head of Department (HOD)</option>
+                        <option value="HPU_ADMIN">Super Admin (HPU HQ)</option>
+                        <option value="AUDITOR">Quality Auditor</option>
+                    </select>
                 </div>
 
                 <div>
-                    <label class="block text-[11px] font-extrabold text-slate-500 uppercase tracking-widest mb-2">Jabatan / Modul</label>
-                    <div class="relative">
-                        <select name="department" id="edit_department" class="w-full appearance-none bg-slate-50 border-2 border-slate-200 rounded-xl px-4 py-3 text-sm font-bold text-slate-700 focus:border-rose-500 focus:bg-white focus:ring-4 focus:ring-rose-500/10 outline-none transition-all cursor-pointer">
-                            <option value="CTS">Cardiothoracic Surgery (CTS)</option>
-                            <option value="FMS">Family Medicine Specialist (FMS)</option>
-                            <option value="PEDS">Pediatrics</option>
-                            <option value="ONG">O&G</option>
-                        </select>
-                        <div class="absolute inset-y-0 right-4 flex items-center pointer-events-none text-slate-400">▼</div>
-                    </div>
+                    <label class="block text-[11px] font-extrabold text-slate-500 uppercase tracking-widest mb-1.5">Department</label>
+                    <select name="department" id="edit_department" class="w-full bg-slate-50 border-2 border-slate-200 rounded-xl px-4 py-2.5 text-sm font-bold text-slate-700 focus:border-rose-500 focus:bg-white outline-none cursor-pointer">
+                        <option value="FMS">Family Medicine Specialist (FMS)</option>
+                        <option value="CTS">Cardiothoracic Surgery (CTS)</option>
+                        <option value="PEDS">Pediatrics</option>
+                        <option value="ONG">O&G</option>
+                        <option value="HQ">Ibu Pejabat (HQ)</option>
+                    </select>
                 </div>
 
-                <div class="pt-4 flex gap-3">
-                    <button type="button" onclick="closeEditModal()" class="flex-1 bg-white border-2 border-slate-200 hover:border-slate-300 hover:bg-slate-50 text-slate-600 font-bold text-sm py-3 rounded-xl transition-all">
-                        Batal
-                    </button>
-                    <button type="submit" class="flex-1 bg-rose-600 hover:bg-rose-700 text-white font-bold text-sm py-3 rounded-xl shadow-lg shadow-rose-600/20 transition-all">
-                        Simpan Perubahan
-                    </button>
+                <div>
+                    <label class="block text-[11px] font-extrabold text-slate-500 uppercase tracking-widest mb-1.5">Assigned Facility / Clinic</label>
+                    <input type="text" name="facility" id="edit_facility" required class="w-full bg-slate-50 border-2 border-slate-200 rounded-xl px-4 py-2.5 text-sm font-bold text-slate-700 focus:border-rose-500 focus:bg-white outline-none">
+                </div>
+
+                <div>
+                    <label class="block text-[11px] font-extrabold text-slate-500 uppercase tracking-widest mb-1.5">Assigned State</label>
+                    <input type="text" name="state" id="edit_state" required class="w-full bg-slate-50 border-2 border-slate-200 rounded-xl px-4 py-2.5 text-sm font-bold text-slate-700 focus:border-rose-500 focus:bg-white outline-none">
+                </div>
+
+                <div class="pt-3 flex gap-3">
+                    <button type="button" onclick="closeEditModal()" class="flex-1 bg-white border-2 border-slate-200 hover:border-slate-300 text-slate-600 font-bold text-sm py-3 rounded-xl transition-all">Cancel</button>
+                    <button type="submit" class="flex-1 bg-rose-600 hover:bg-rose-700 text-white font-bold text-sm py-3 rounded-xl shadow-lg shadow-rose-600/20 transition-all">Save Changes</button>
                 </div>
             </form>
         </div>
     </div>
 
-    <!-- SCRIPT LOGIK SISTEM -->
+    <!-- BORANG TERSEMBUNYI UNTUK PADAM PENGGUNA -->
+    <form method="POST" id="deleteUserForm" style="display: none;">
+        {% csrf_token %}
+        <input type="hidden" name="form_type" value="delete_user">
+        <input type="hidden" name="target_username" id="delete_target_username">
+    </form>
+
     <script>
-        // --- LOGIK MODAL EDIT ---
         const modal = document.getElementById('editProfileModal');
         const modalContent = document.getElementById('modalContent');
 
-        function openEditModal(username, role, dept) {
-            // Isikan data sedia ada ke dalam borang
+        function openEditModal(username, role, dept, facility, state) {
             document.getElementById('edit_original_username').value = username;
             document.getElementById('edit_username').value = username;
             document.getElementById('edit_role').value = role;
             document.getElementById('edit_department').value = dept;
+            document.getElementById('edit_facility').value = facility || 'Klinik Kesihatan Medong';
+            document.getElementById('edit_state').value = state || 'Sarawak';
 
-            // Buka Modal dengan animasi
             modal.classList.remove('hidden');
             setTimeout(() => {
                 modalContent.classList.remove('scale-95', 'opacity-0');
@@ -409,48 +419,37 @@
         }
 
         function closeEditModal() {
-            // Tutup Modal dengan animasi
             modalContent.classList.remove('scale-100', 'opacity-100');
             modalContent.classList.add('scale-95', 'opacity-0');
             setTimeout(() => {
                 modal.classList.add('hidden');
-            }, 300);
+            }, 250);
         }
+
+        function confirmDeleteUser(username) {
+            if (confirm(`Are you sure you want to delete user account '${username}'?`)) {
+                document.getElementById('delete_target_username').value = username;
+                document.getElementById('deleteUserForm').submit();
+            }
+        }
+
         function switchTab(tabId) {
-            // 1. Sembunyikan semua tab content
-            document.querySelectorAll('.tab-section').forEach(el => {
-                el.classList.add('hidden');
-            });
-            
-            // 2. Tunjuk tab yang dipilih
-            document.getElementById('section-' + tabId).classList.remove('hidden');
-            
-            // 3. Reset semua butang sidebar ke styling tidak aktif (inactive)
+            document.querySelectorAll('.tab-section').forEach(el => el.classList.add('hidden'));
+            const targetSection = document.getElementById('section-' + tabId);
+            if (targetSection) targetSection.classList.remove('hidden');
+
             const defaultClass = "nav-item hover:bg-rose-900/40 text-rose-200/70 hover:text-white font-semibold p-3 rounded-xl flex items-center gap-4 transition-all w-full text-left relative";
             document.querySelectorAll('.nav-item').forEach(el => {
                 el.className = defaultClass;
-                // Sembunyikan bar merah (active indicator)
-                el.querySelector('.active-indicator').classList.add('hidden');
+                const ind = el.querySelector('.active-indicator');
+                if (ind) ind.classList.add('hidden');
             });
-            
-            // 4. Set butang yang ditekan sebagai aktif (active style)
-            const activeBtn = document.getElementById('nav-' + tabId);
-            activeBtn.className = "nav-item bg-rose-900/80 text-rose-50 font-bold p-3 rounded-xl flex items-center gap-4 border border-rose-700/50 shadow-sm relative w-full text-left transition-all";
-            activeBtn.querySelector('.active-indicator').classList.remove('hidden');
 
-            // 5. Ubah Tajuk Halaman Mengikut Tab
-            const titleEl = document.getElementById('page-title');
-            const subtitleEl = document.getElementById('page-subtitle');
-            
-            if(tabId === 'users') {
-                titleEl.textContent = 'Pusat Kawalan Utama';
-                subtitleEl.textContent = 'Uruskan akaun, peranan pengguna, dan selenggara sistem MyPrestasi.';
-            } else if (tabId === 'db') {
-                titleEl.textContent = 'Pangkalan Data';
-                subtitleEl.textContent = 'Pengurusan simpanan rekod dan arkib data sistem.';
-            } else if (tabId === 'settings') {
-                titleEl.textContent = 'Tetapan Modul';
-                subtitleEl.textContent = 'Ubah parameter dan kebenaran global aplikasi.';
+            const activeBtn = document.getElementById('nav-' + tabId);
+            if (activeBtn) {
+                activeBtn.className = "nav-item bg-rose-900/80 text-rose-50 font-bold p-3 rounded-xl flex items-center gap-4 border border-rose-700/50 shadow-sm relative w-full text-left transition-all";
+                const ind = activeBtn.querySelector('.active-indicator');
+                if (ind) ind.classList.remove('hidden');
             }
         }
     </script>
