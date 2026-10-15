@@ -1,18 +1,14 @@
 {% load static %}
 
-<div class="top-header">
-            <div class="top-header-left">
-                {% if section == 'Dashboard' or section == 'Performance' %}
-                    <h1>Good Morning, <strong>{{ staff_name }}</strong></h1>
-                    <p>Your {{ section|lower }} summary and analysis for today.</p>
-                {% elif section == 'Profile' or section == 'Settings' %}
-                    <h1>Update <strong>{{ section }}</strong></h1>
-                    <p>Manage your personal data and system preferences.</p>
-                {% else %}
-                    <h1>Update Data: <strong>{{ section }} Excellence</strong></h1>
-                    <p>Please enter your latest records to be verified by the HOD.</p>
-                {% endif %}
-            </div>
+<!-- TOP NAVIGATION (LOGO + BUTANG PANTAS) -->
+<nav class="top-nav">
+            <a href="/" class="top-nav-brand">
+                <img src="{% static 'images/myprestasi-logo-nobg.png' %}" alt="Logo MyPrestasi">
+                <div class="top-nav-brand-text">
+                    <h2>MyPrestasi</h2>
+                    <p>STAFF PORTAL</p>
+                </div>
+            </a>
 
             <div class="top-header-right">
                 <div class="header-tool">
@@ -75,5 +71,21 @@
                 <div class="header-avatar" onclick="window.location.href='?section=Profile'" title="Update Profile" style="cursor: pointer;">
                     <svg style="width: 20px; height: 20px; color: white;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
                 </div>
+            </div>
+</nav>
+
+<!-- TAJUK HALAMAN -->
+<div class="top-header">
+            <div class="top-header-left">
+                {% if section == 'Dashboard' or section == 'Performance' %}
+                    <h1>Good Morning, <strong>{{ staff_name }}</strong></h1>
+                    <p>Your {{ section|lower }} summary and analysis for today.</p>
+                {% elif section == 'Profile' or section == 'Settings' %}
+                    <h1>Update <strong>{{ section }}</strong></h1>
+                    <p>Manage your personal data and system preferences.</p>
+                {% else %}
+                    <h1>Update Data: <strong>{{ section }} Excellence</strong></h1>
+                    <p>Please enter your latest records to be verified by the HOD.</p>
+                {% endif %}
             </div>
         </div>
