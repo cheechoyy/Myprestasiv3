@@ -97,7 +97,7 @@ def calculate_pri_score(user):
         next_grade = "UD48 (Time-Based)"
     else:
         tier = "Tier 3: Action Required"
-        color = "#be123c"
+        color = "#6d3ec4"
         next_grade = "UD48 (Deferred)"
 
     return {

@@ -8,14 +8,14 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&display=swap" rel="stylesheet">
     <script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
     <style>
-        body { margin: 0; font-family: 'Inter', sans-serif; background-color: #fff1f2; display: flex; flex-direction: column; min-height: 100vh; }
+        body { margin: 0; font-family: 'Inter', sans-serif; background-color: #f3edff; display: flex; flex-direction: column; min-height: 100vh; }
         
         /* TOPBAR MENGIKUT DNA DASHBOARD */
-        .topbar { background: white; padding: 15px 35px; border-bottom: 1px solid #ffe4e6; display: flex; align-items: center; justify-content: space-between; }
+        .topbar { background: white; padding: 15px 35px; border-bottom: 1px solid #e7dff2; display: flex; align-items: center; justify-content: space-between; }
         
         /* BUTANG KEMBALI YANG SERAGAM */
-        .btn-back { background-color: white; border: 1px solid #ffe4e6; color: #be123c; padding: 8px 16px; border-radius: 12px; text-decoration: none; font-weight: bold; display: inline-flex; align-items: center; gap: 10px; transition: 0.2s; box-shadow: 0 2px 5px rgba(190, 18, 60, 0.03); }
-        .btn-back:hover { border-color: #be123c; background-color: #fff1f2; transform: translateY(-1px); }
+        .btn-back { background-color: white; border: 1px solid #e7dff2; color: #6d3ec4; padding: 8px 16px; border-radius: 12px; text-decoration: none; font-weight: bold; display: inline-flex; align-items: center; gap: 10px; transition: 0.2s; box-shadow: 0 2px 5px rgba(190, 18, 60, 0.03); }
+        .btn-back:hover { border-color: #6d3ec4; background-color: #f3edff; transform: translateY(-1px); }
         
         /* MAIN CONTAINER FLUID (EDGE-TO-EDGE) */
         .main-container { 
@@ -34,16 +34,16 @@
             display: flex; 
             align-items: center; 
             gap: 20px; 
-            border: 1px solid #ffe4e6; 
+            border: 1px solid #e7dff2; 
             box-shadow: 0 4px 12px rgba(190, 18, 60, 0.03); 
             margin-bottom: 20px; 
             width: 100%;
             box-sizing: border-box;
         }
         
-        .avatar { width: 70px; height: 70px; border-radius: 50%; background: #be123c; color: white; display: flex; justify-content: center; align-items: center; font-size: 28px; }
-        .doc-info h1 { margin: 0; color: #881337; font-size: 24px; font-weight: 900; }
-        .doc-info p { margin: 5px 0 0 0; color: #f43f5e; font-weight: 600; font-size: 13px; }
+        .avatar { width: 70px; height: 70px; border-radius: 50%; background: #6d3ec4; color: white; display: flex; justify-content: center; align-items: center; font-size: 28px; }
+        .doc-info h1 { margin: 0; color: #150a35; font-size: 24px; font-weight: 900; }
+        .doc-info p { margin: 5px 0 0 0; color: #a577ff; font-weight: 600; font-size: 13px; }
         .status-badge { padding: 6px 12px; border-radius: 8px; font-size: 12px; font-weight: 800; text-transform: uppercase; margin-left: auto; }
         .bg-green { background: #D1FAE5; color: #16A34A; border: 1px solid #BBF7D0; }
         .bg-yellow { background: #FEF3C7; color: #D97706; border: 1px solid #FDE68A; }
@@ -56,23 +56,23 @@
             box-sizing: border-box;
         }
         
-        .content-card { background: white; border-radius: 16px; padding: 25px; border: 1px solid #ffe4e6; box-shadow: 0 4px 12px rgba(190, 18, 60, 0.03); margin-bottom: 20px; }
-        .card-title { margin: 0 0 15px 0; color: #881337; font-size: 16px; font-weight: 800; border-bottom: 1px solid #ffe4e6; padding-bottom: 10px; display: flex; align-items: center; gap: 8px; }
+        .content-card { background: white; border-radius: 16px; padding: 25px; border: 1px solid #e7dff2; box-shadow: 0 4px 12px rgba(190, 18, 60, 0.03); margin-bottom: 20px; }
+        .card-title { margin: 0 0 15px 0; color: #150a35; font-size: 16px; font-weight: 800; border-bottom: 1px solid #e7dff2; padding-bottom: 10px; display: flex; align-items: center; gap: 8px; }
         
-        .metric-row { display: flex; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid #fff1f2; }
-        .metric-label { color: #be123c; font-weight: 700; font-size: 13px; }
-        .metric-val { color: #881337; font-weight: 900; font-size: 14px; }
+        .metric-row { display: flex; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid #f3edff; }
+        .metric-label { color: #6d3ec4; font-weight: 700; font-size: 13px; }
+        .metric-val { color: #150a35; font-weight: 900; font-size: 14px; }
         
-        .note-box { background: #fff1f2; padding: 15px; border-radius: 8px; border-left: 4px solid #be123c; font-size: 13px; color: #881337; line-height: 1.5; margin-top: 15px; }
+        .note-box { background: #f3edff; padding: 15px; border-radius: 8px; border-left: 4px solid #6d3ec4; font-size: 13px; color: #150a35; line-height: 1.5; margin-top: 15px; }
         
-        .btn-action { background: #be123c; color: white; padding: 12px 20px; border-radius: 8px; text-decoration: none; font-weight: bold; display: inline-block; text-align: center; font-size: 13px; transition: 0.2s; border: none; cursor: pointer; width: 100%; box-sizing: border-box; margin-top: 10px; }
-        .btn-action:hover { background: #881337; transform: translateY(-2px); }
+        .btn-action { background: #6d3ec4; color: white; padding: 12px 20px; border-radius: 8px; text-decoration: none; font-weight: bold; display: inline-block; text-align: center; font-size: 13px; transition: 0.2s; border: none; cursor: pointer; width: 100%; box-sizing: border-box; margin-top: 10px; }
+        .btn-action:hover { background: #150a35; transform: translateY(-2px); }
 
         /* GAYA CETAKAN RASMI (PDF / PRINT) */
         @media print {
             body { background-color: white !important; }
             .btn-back, .no-print { display: none !important; }
-            .topbar { border-bottom: 2px solid #881337 !important; padding: 10px 0 !important; }
+            .topbar { border-bottom: 2px solid #150a35 !important; padding: 10px 0 !important; }
             .main-container { padding: 10px 0 !important; }
             .content-card, .header-card { box-shadow: none !important; border: 1px solid #cbd5e1 !important; page-break-inside: avoid; }
         }
@@ -82,17 +82,17 @@
 
     <div class="topbar">
         <a href="javascript:history.back()" class="btn-back">
-            <svg style="width:20px; height:20px; color:#be123c;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
+            <svg style="width:20px; height:20px; color:#6d3ec4;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
             Back to Leaderboard
         </a>
         <div style="display: flex; align-items: center; gap: 12px;">
-            <button onclick="window.print()" class="btn-back no-print" style="cursor: pointer; background: #be123c; color: white; border: none; font-size: 12px; padding: 8px 14px;">
+            <button onclick="window.print()" class="btn-back no-print" style="cursor: pointer; background: #6d3ec4; color: white; border: none; font-size: 12px; padding: 8px 14px;">
                 <svg style="width: 16px; height: 16px; color: white;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/></svg>
                 Print Dossier (PDF)
             </button>
             <div style="display: flex; align-items: center; gap: 8px;">
-                <svg style="width: 24px; height: 24px; color: #be123c;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5m0 0v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4M12 7v4m-2-2h4"/></svg>
-                <span style="font-weight: 900; color: #881337; font-size: 18px; letter-spacing: -0.5px;">Executive Talent Dossier</span>
+                <svg style="width: 24px; height: 24px; color: #6d3ec4;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5m0 0v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4M12 7v4m-2-2h4"/></svg>
+                <span style="font-weight: 900; color: #150a35; font-size: 18px; letter-spacing: -0.5px;">Executive Talent Dossier</span>
             </div>
         </div>
     </div>
@@ -149,7 +149,7 @@
                     
                     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
                         <a href="{% url 'cts_module' %}?officer={{ officer_name|urlencode }}&clinic={{ clinic_name|urlencode }}&state={{ state_name|urlencode }}&tab=Skills" class="btn-action">Perform Clinical Audit</a>
-                        <a href="{% url 'interpersonal_module' %}?officer={{ officer_name|urlencode }}&clinic={{ clinic_name|urlencode }}&state={{ state_name|urlencode }}&tab=Teamwork" class="btn-action" style="background: white; color: #be123c; border: 2px solid #be123c;">Log Teamwork Review</a>
+                        <a href="{% url 'interpersonal_module' %}?officer={{ officer_name|urlencode }}&clinic={{ clinic_name|urlencode }}&state={{ state_name|urlencode }}&tab=Teamwork" class="btn-action" style="background: white; color: #6d3ec4; border: 2px solid #6d3ec4;">Log Teamwork Review</a>
                     </div>
                 </div>
             </div>

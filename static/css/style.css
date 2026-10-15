@@ -341,17 +341,134 @@ input:checked + .slider:before { transform: translateX(22px); }
 .btn-back { background-color: white; border: 1px solid #e7dff2; color: #6d3ec4; padding: 7px; border-radius: 12px; text-decoration: none; font-weight: bold; display: flex; align-items: center; margin-bottom: 10px; transition: 0.2s; min-height: 52px; box-sizing: border-box; width: 100%; }
 .btn-back:hover { border-color: #6d3ec4; background-color: #f3edff; }
 
-/* KANDUNGAN GRID HOD */
-.content-grid {
-    display: grid; grid-template-columns: 42% 29% 29%;
-    grid-template-areas: "action action kpi" "roster heatmap sunburst";
-    grid-template-rows: 1fr 1fr; gap: 15px; flex-grow: 1; min-height: 0; min-width: 0; width: 100%;
+/* ==========================================================================
+   HOD RADIAL COMMAND HUB (ROYAL PURPLE AMBIENT PODS)
+   ========================================================================== */
+.orbital-hub-wrapper {
+    position: relative;
+    width: 100%;
+    min-height: 590px;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    grid-template-rows: 1fr 1fr;
+    gap: 24px;
+    margin-top: 10px;
+    margin-bottom: 25px;
 }
-.card-action { grid-area: action; display: flex; flex-direction: column; min-height: 0; min-width: 0; overflow: hidden; }
-.card-kpi { grid-area: kpi; display: flex; flex-direction: column; min-height: 0; min-width: 0; overflow: hidden; }
-.card-roster { grid-area: roster; display: flex; flex-direction: column; min-height: 0; min-width: 0; overflow: hidden; }
-.card-heatmap { grid-area: heatmap; display: flex; flex-direction: column; min-height: 0; min-width: 0; overflow: hidden; }
-.card-sunburst { grid-area: sunburst; display: flex; flex-direction: column; min-height: 0; min-width: 0; overflow: hidden; cursor: pointer; }
+
+.orbital-pod {
+    background: linear-gradient(145deg, #ffffff 0%, #faf8ff 100%);
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    box-sizing: border-box;
+    transition: all 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+    z-index: 1;
+    /* Layer Glowing Neon Royal Purple */
+    filter: drop-shadow(0 10px 25px rgba(21, 10, 53, 0.09)) 
+            drop-shadow(0 0 18px rgba(165, 119, 255, 0.45));
+}
+
+/* LENGKUK DALAMAN KEMAS (RADIUS 195px) & PADDING ZON SELAMAT */
+.pod-top-left {
+    border-radius: 26px;
+    -webkit-mask-image: radial-gradient(circle 195px at 100% 100%, transparent 0, transparent 188px, black 189px);
+    mask-image: radial-gradient(circle 195px at 100% 100%, transparent 0, transparent 188px, black 189px);
+    padding: 26px 180px 22px 28px;
+}
+
+.pod-top-right {
+    border-radius: 26px;
+    -webkit-mask-image: radial-gradient(circle 195px at 0% 100%, transparent 0, transparent 188px, black 189px);
+    mask-image: radial-gradient(circle 195px at 0% 100%, transparent 0, transparent 188px, black 189px);
+    padding: 26px 28px 22px 180px;
+}
+
+.pod-bottom-left {
+    border-radius: 26px;
+    -webkit-mask-image: radial-gradient(circle 195px at 100% 0%, transparent 0, transparent 188px, black 189px);
+    mask-image: radial-gradient(circle 195px at 100% 0%, transparent 0, transparent 188px, black 189px);
+    padding: 22px 180px 26px 28px;
+}
+
+.pod-bottom-right {
+    border-radius: 26px;
+    -webkit-mask-image: radial-gradient(circle 195px at 0% 0%, transparent 0, transparent 188px, black 189px);
+    mask-image: radial-gradient(circle 195px at 0% 0%, transparent 0, transparent 188px, black 189px);
+    padding: 22px 28px 26px 180px;
+}
+
+/* KESAN MAGNETIK & GLOWING LEBIH TERANG PADA HOVER */
+.pod-top-left:hover { 
+    transform: translate(-10px, -10px) scale(1.025); 
+    z-index: 30; 
+    filter: drop-shadow(0 20px 40px rgba(109, 62, 196, 0.28)) drop-shadow(0 0 30px rgba(165, 119, 255, 0.7)); 
+}
+.pod-top-right:hover { 
+    transform: translate(10px, -10px) scale(1.025); 
+    z-index: 30; 
+    filter: drop-shadow(0 20px 40px rgba(109, 62, 196, 0.28)) drop-shadow(0 0 30px rgba(165, 119, 255, 0.7)); 
+}
+.pod-bottom-left:hover { 
+    transform: translate(-10px, 10px) scale(1.025); 
+    z-index: 30; 
+    filter: drop-shadow(0 20px 40px rgba(109, 62, 196, 0.28)) drop-shadow(0 0 30px rgba(165, 119, 255, 0.7)); 
+}
+.pod-bottom-right:hover { 
+    transform: translate(10px, 10px) scale(1.025); 
+    z-index: 30; 
+    filter: drop-shadow(0 20px 40px rgba(109, 62, 196, 0.28)) drop-shadow(0 0 30px rgba(165, 119, 255, 0.7)); 
+}
+
+/* PUSAT HUB BULATAN DENGAN HALO GLOWING */
+.orbital-center-hub {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 360px;
+    height: 360px;
+    background: #ffffff;
+    border-radius: 50%;
+    border: 7px solid #ffffff;
+    box-shadow: 0 16px 45px rgba(21, 10, 53, 0.2), 0 0 40px rgba(165, 119, 255, 0.5);
+    z-index: 15;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-sizing: border-box;
+    transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+    cursor: pointer;
+}
+
+.orbital-center-hub:hover {
+    transform: translate(-50%, -50%) scale(1.05);
+    box-shadow: 0 25px 65px rgba(21, 10, 53, 0.32), 0 0 55px rgba(109, 62, 196, 0.8);
+}
+
+@media (max-width: 1100px) {
+    .orbital-hub-wrapper { display: flex; flex-direction: column; min-height: auto; }
+    .orbital-pod { -webkit-mask-image: none !important; mask-image: none !important; padding: 24px !important; }
+    .orbital-center-hub { position: relative; top: 0; left: 0; transform: none; margin: 20px auto; }
+}
+
+.card-action { grid-area: action; display: flex; flex-direction: column; min-height: 420px; overflow: hidden; }
+.card-sunburst { grid-area: sunburst; display: flex; flex-direction: column; min-height: 420px; overflow: hidden; cursor: pointer; }
+.card-kpi { grid-area: kpi; display: flex; flex-direction: column; min-height: 420px; overflow: hidden; }
+
+.card-roster { grid-area: roster; display: flex; flex-direction: column; min-height: 300px; overflow: hidden; }
+.card-heatmap { grid-area: heatmap; display: flex; flex-direction: column; min-height: 300px; overflow: hidden; }
+
+@media (max-width: 1200px) {
+    .content-grid {
+        grid-template-columns: 1fr 1fr;
+        grid-template-areas: 
+            "sunburst sunburst"
+            "action kpi"
+            "roster heatmap";
+    }
+}
 
 /* ALERTS & TRIAGE */
 .alert-item { background: #f3edff; border: 1px solid #e7dff2; border-radius: 12px; padding: 12px 16px; margin-bottom: 10px; display: flex; align-items: center; justify-content: space-between; transition: all 0.2s ease-in-out; }
@@ -873,3 +990,320 @@ html.dark input[type="range"].eq-slider {
         linear-gradient(90deg, #ff0000 0%, #FFD700 50%, #008000 100%);
 }
 html.dark .eq-scale { color: #7d7399; }
+/* ==========================================================================
+   CSS LENGKAP 3 PILAR HOD (CLINICAL, OPERATIONAL, INTERPERSONAL)
+   ========================================================================== */
+
+/* 1. TATA LETAK UTAMA KONTEN PILAR */
+.content-card {
+    background: white;
+    border-radius: 16px;
+    padding: 20px 25px;
+    border: 1px solid #e7dff2;
+    box-shadow: 0 4px 12px rgba(190, 18, 60, 0.03);
+    flex-grow: 1;
+    display: block;
+    overflow-y: auto;
+    margin-bottom: 15px;
+}
+.content-card::-webkit-scrollbar { width: 6px; }
+.content-card::-webkit-scrollbar-thumb { background-color: #fecdd3; border-radius: 10px; }
+
+/* 2. SUB-MODULES TOP NAVIGATION (3 TOMBOL BESAR DI ATAS) */
+.sub-modules-nav {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 15px;
+    margin-bottom: 15px;
+    flex-shrink: 0;
+}
+.sm-btn {
+    background: white;
+    border: 1px solid #e7dff2;
+    border-radius: 12px;
+    height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    font-weight: 800;
+    font-size: 13px;
+    color: #150a35;
+    text-decoration: none;
+    box-shadow: 0 2px 5px rgba(190, 18, 60, 0.03);
+    transition: all 0.2s ease;
+}
+.sm-btn:hover {
+    border-color: #fecdd3;
+    background: #f3edff;
+    transform: translateY(-2px);
+}
+.sm-btn.active {
+    border: 1px solid #6d3ec4;
+    background: linear-gradient(135deg, #6d3ec4 0%, #150a35 100%);
+    color: white !important;
+    box-shadow: 0 4px 15px rgba(190, 18, 60, 0.25);
+}
+
+/* 3. TABS NAVIGASI DALAM MODUL */
+.tabs-nav {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-bottom: 15px;
+    flex-shrink: 0;
+}
+.tab-btn {
+    background: white;
+    border: 1px solid #e7dff2;
+    border-radius: 10px;
+    height: 45px;
+    padding: 0 20px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    font-weight: 800;
+    font-size: 13px;
+    color: #150a35;
+    text-decoration: none;
+    transition: 0.2s;
+    box-shadow: 0 2px 5px rgba(190, 18, 60, 0.02);
+    flex: 1;
+}
+.tab-btn:hover {
+    border-color: #fecdd3;
+    background: #f3edff;
+    transform: translateY(-2px);
+}
+.tab-btn.active {
+    border: 1px solid #6d3ec4;
+    background: #6d3ec4;
+    color: white !important;
+    box-shadow: 0 4px 12px rgba(190, 18, 60, 0.2);
+}
+.tab-content-area {
+    flex-grow: 1;
+    overflow-y: auto;
+    padding-right: 5px;
+    min-height: 0;
+}
+.tab-content-area::-webkit-scrollbar { width: 5px; }
+.tab-content-area::-webkit-scrollbar-thumb { background-color: #fecdd3; border-radius: 10px; }
+
+/* 4. FILTER WRAPPER & SCOPE BADGE */
+.filter-wrapper {
+    background: #f3edff;
+    border: 1px solid #e7dff2;
+    padding: 15px;
+    border-radius: 12px;
+    margin-bottom: 20px;
+}
+.filter-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 15px;
+    align-items: end;
+}
+.scope-badge {
+    background: white;
+    border: 1px solid #fecdd3;
+    padding: 8px 14px;
+    border-radius: 8px;
+    color: #150a35;
+    font-weight: 800;
+    font-size: 13px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-height: 38px;
+    box-sizing: border-box;
+    box-shadow: 0 1px 3px rgba(190, 18, 60, 0.04);
+}
+.filter-group label {
+    display: block;
+    font-size: 12px;
+    color: #6d3ec4;
+    margin-bottom: 5px;
+    font-weight: 700;
+}
+.filter-select {
+    width: 100%;
+    padding: 8px 12px;
+    border-radius: 8px;
+    border: 1px solid #e7dff2;
+    font-family: 'Inter';
+    font-size: 13px;
+    background: #f3edff;
+    color: #150a35;
+    font-weight: 600;
+}
+.filter-select:focus {
+    outline: none;
+    border-color: #6d3ec4;
+    background: white;
+    box-shadow: 0 0 0 2px rgba(190, 18, 60, 0.1);
+}
+
+/* 5. FORMULIR, SLIDER, & TOMBOL SIMPAN (ROSE DNA) */
+.input-label {
+    font-weight: 800;
+    color: #150a35;
+    font-size: 14px;
+    margin-top: 20px;
+    margin-bottom: 10px;
+    display: block;
+}
+.custom-slider {
+    width: 100%;
+    margin-bottom: 20px;
+    accent-color: #6d3ec4;
+    cursor: pointer;
+}
+.custom-textarea {
+    width: 100%;
+    height: 80px;
+    padding: 15px;
+    border-radius: 10px;
+    border: 1px solid #e7dff2;
+    box-sizing: border-box;
+    font-family: 'Inter';
+    font-size: 14px;
+    margin-bottom: 20px;
+    color: #150a35;
+}
+.custom-textarea:focus {
+    outline: none;
+    border-color: #6d3ec4;
+}
+.btn-save {
+    background-color: #6d3ec4;
+    color: white !important;
+    border: none;
+    border-radius: 8px;
+    padding: 12px 25px;
+    font-weight: bold;
+    font-size: 14px;
+    cursor: pointer;
+    display: block;
+    width: 100%;
+    transition: 0.2s;
+    text-align: center;
+    box-shadow: 0 4px 10px rgba(190, 18, 60, 0.15);
+}
+.btn-save:hover {
+    background-color: #150a35;
+    transform: translateY(-2px);
+}
+
+/* 6. TOMBOL KUARTAL FMS (QUARTER PILLS) */
+.quarter-btn {
+    padding: 8px 14px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 700;
+    text-decoration: none;
+    border: 1px solid #e7dff2;
+    background: white;
+    color: #150a35;
+    transition: all 0.2s ease;
+    display: inline-block;
+}
+.quarter-btn:hover {
+    border-color: #6d3ec4;
+    color: #6d3ec4;
+    background: #f3edff;
+    transform: translateY(-2px);
+}
+.quarter-btn.active {
+    border-color: #6d3ec4;
+    background: linear-gradient(135deg, #6d3ec4 0%, #150a35 100%);
+    color: white !important;
+    box-shadow: 0 4px 10px rgba(190, 18, 60, 0.25);
+}
+.quarter-divider {
+    height: 20px;
+    border-right: 2px dashed #fecdd3;
+    margin: 0 4px;
+    display: inline-block;
+}
+
+/* 7. GRID SISTEM */
+.grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+.grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px; }
+.grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; }
+
+/* 8. KARTU METRIK & EVALUASI OPERASIONAL & INTERPERSONAL */
+.eval-card {
+    border: 1px solid #e7dff2;
+    border-radius: 12px;
+    padding: 20px;
+    margin-bottom: 20px;
+    background: white;
+}
+.metric-label { font-size: 11px; color: #6d3ec4; text-transform: uppercase; font-weight: 800; }
+.metric-value { font-size: 24px; font-weight: 900; color: #150a35; line-height: 1.2; margin: 5px 0; }
+.metric-trend-up { font-size: 11px; color: #16a34a; font-weight: bold; }
+.metric-trend-down { font-size: 11px; color: #6d3ec4; font-weight: bold; }
+.radio-group { display: flex; gap: 15px; margin-bottom: 20px; font-size: 14px; color: #150a35; font-weight: 600; }
+
+.sub-menu { display: flex; gap: 15px; margin-bottom: 20px; }
+.sm-radio {
+    padding: 8px 16px;
+    border-radius: 8px;
+    font-weight: 700;
+    font-size: 13px;
+    cursor: pointer;
+    border: 1px solid #e7dff2;
+    background: white;
+    color: #150a35;
+    text-decoration: none;
+}
+.sm-radio.active {
+    border: 1px solid #6d3ec4;
+    background: #f3edff;
+    color: #6d3ec4 !important;
+}
+
+/* 9. JADUAL (TABLE) */
+.custom-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+    margin-bottom: 20px;
+    text-align: left;
+}
+.custom-table th {
+    padding: 12px 10px;
+    color: white;
+    background-color: #6d3ec4;
+    border-bottom: 2px solid #6d3ec4;
+    font-weight: 800;
+    text-transform: uppercase;
+    font-size: 11px;
+    letter-spacing: 0.5px;
+}
+.custom-table tr:nth-child(even) { background-color: #f3edff; }
+.custom-table tr:hover { background-color: #e7dff2; transition: 0.2s; }
+.custom-table td { padding: 10px; border-bottom: 1px solid #fecdd3; color: #150a35; font-weight: 600; }
+
+.btn-reminder {
+    background-color: #6d3ec4;
+    color: white !important;
+    padding: 10px 18px;
+    border-radius: 8px;
+    text-decoration: none;
+    font-weight: bold;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    transition: 0.2s;
+    font-size: 13px;
+    border: none;
+    cursor: pointer;
+    box-shadow: 0 4px 10px rgba(190, 18, 60, 0.2);
+}
+.btn-reminder:hover {
+    background-color: #150a35;
+    transform: translateY(-2px);
+}
