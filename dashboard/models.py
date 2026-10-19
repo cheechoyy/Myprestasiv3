@@ -215,3 +215,25 @@ class MentorshipSession(models.Model):
 
     def __str__(self):
         return f"Mentorship by {self.mentor.username} for {self.mentee_name}"
+
+# ==========================================
+# 6. KOMUNIKASI DUA HALA (TWO-WAY COMMUNICATION)
+# ==========================================
+class HODFeedback(models.Model):
+    SEVERITY_CHOICES = (
+        ('INFO', 'General Info'),
+        ('WARNING', 'Warning / Needs Attention'),
+        ('URGENT', 'Urgent Action Required'),
+        ('KUDOS', 'Praise / Commendation'),
+    )
+    
+    sender_hod = models.ForeignKey(User, on_delete=models.CASCADE, related_name='sent_feedbacks')
+    receiver_staff = models.ForeignKey(User, on_delete=models.CASCADE, related_name='received_feedbacks')
+    module_reference = models.CharField(max_length=100, default='General Dashboard') # Cth: Documentation, Policies
+    severity = models.CharField(max_length=20, choices=SEVERITY_CHOICES, default='WARNING')
+    message_text = models.TextField()
+    is_acknowledged = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"From {self.sender_hod.username} to {self.receiver_staff.username} ({self.severity})"

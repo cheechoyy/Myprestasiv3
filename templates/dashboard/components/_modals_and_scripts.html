@@ -644,6 +644,60 @@
         btnA.style.borderColor = view === 'add' ? '#6d3ec4' : 'transparent';
     }
 
+    // --- ENJIN KALENDAR DINAMIK DARI PANGKALAN DATA (STAFF) ---
+    document.addEventListener("DOMContentLoaded", function() {
+        const staffEvents = {{ calendar_events_json|default:"[]"|safe }};
+        if (staffEvents.length > 0) {
+            // 1. Kemas kini lencana tajuk
+            const staffBadge = document.querySelector('#calAreaMonth span[style*="border-radius: 12px"]');
+            if (staffBadge) {
+                staffBadge.innerText = staffEvents.length + " Due Items Registered";
+            }
+
+            // 2. Suntik acara ke Month Grid
+            staffEvents.forEach(function(ev) {
+                const dayNum = parseInt(ev.day);
+                if (!dayNum) return;
+
+                const dayCells = document.querySelectorAll('#calAreaMonth div[style*="grid-template-columns: repeat(7, 1fr)"] > div');
+                dayCells.forEach(function(cell) {
+                    const daySpan = cell.querySelector('span');
+                    if (daySpan && parseInt(daySpan.innerText.trim()) === dayNum && !cell.style.opacity) {
+                        const badge = document.createElement('div');
+                        const colorBg = ev.type === 'pending' ? '#d97706' : (ev.type === 'fast-track' ? '#16a34a' : '#6d3ec4');
+                        badge.style.cssText = `background: ${colorBg}; color: white; font-size: 9px; padding: 3px 5px; border-radius: 4px; font-weight: 800; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 3px;`;
+                        badge.title = ev.title;
+                        badge.innerText = ev.title;
+                        cell.appendChild(badge);
+                    }
+                });
+            });
+
+            // 3. Suntik ke List View
+            const listContainer = document.querySelector('#calAreaList > div');
+            if (listContainer) {
+                listContainer.innerHTML = '';
+                staffEvents.forEach(function(ev) {
+                    const borderCol = ev.type === 'pending' ? '#d97706' : (ev.type === 'fast-track' ? '#16a34a' : '#6d3ec4');
+                    const textCol = ev.type === 'pending' ? '#92400e' : (ev.type === 'fast-track' ? '#14532d' : '#150a35');
+                    const bgBox = ev.type === 'pending' ? '#fffbeb' : (ev.type === 'fast-track' ? '#f0fdf4' : '#f3edff');
+
+                    const row = document.createElement('div');
+                    row.style.cssText = `background: ${bgBox}; border-left: 5px solid ${borderCol}; padding: 12px 16px; border-radius: 12px; display: flex; justify-content: space-between; align-items: center; border: 1px solid #e7dff2; border-left-width: 5px;`;
+                    row.innerHTML = `
+                        <div>
+                            <span style="font-size: 10px; font-weight: 800; color: ${borderCol}; text-transform: uppercase;">${ev.date} • MY SCHEDULE ITEM</span>
+                            <div style="font-size: 14px; font-weight: 800; color: ${textCol}; margin-top: 2px;">${ev.title}</div>
+                            <span style="font-size: 11px; color: #6f628b; font-weight: 600;">${ev.desc || 'Action item registered in database.'}</span>
+                        </div>
+                        <span style="background: ${borderCol}; color: white; padding: 5px 12px; border-radius: 6px; font-size: 11px; font-weight: 800;">My Task</span>
+                    `;
+                    listContainer.appendChild(row);
+                });
+            }
+        }
+    });
+
     // 12. INLINE GOOGLE-STYLE SEARCH SCRIPT & INDEX
     const myPrestasiModules = [
         { title: "Clinical Delivery (CUSUM Log)", category: "Clinical Excellence", keywords: "cusum procedure lima-lad clinical skills surgery preclerking", url: "/staff/?section=Clinical" },

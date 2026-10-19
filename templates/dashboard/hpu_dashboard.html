@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="ms">
+<html lang="en" {% if request.session.dark_mode %}class="dark"{% endif %}>
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -356,7 +356,7 @@
                 <div>
                     <label class="block text-[11px] font-extrabold text-slate-500 uppercase tracking-widest mb-1.5">Role</label>
                     <select name="role" id="edit_role" class="w-full bg-slate-50 border-2 border-slate-200 rounded-xl px-4 py-2.5 text-sm font-bold text-slate-700 focus:border-rose-500 focus:bg-white outline-none cursor-pointer">
-                        <option value="STAFF">Medical Officer (MO / Staff)</option>
+                        <option value="STAFF">Staff (MO / Staff)</option>
                         <option value="HOD">Head of Department (HOD)</option>
                         <option value="HPU_ADMIN">Super Admin (HPU HQ)</option>
                         <option value="AUDITOR">Quality Auditor</option>

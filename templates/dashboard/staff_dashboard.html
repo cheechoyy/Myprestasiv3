@@ -1,6 +1,6 @@
 {% load static %}
 <!DOCTYPE html>
-<html lang="ms">
+<html lang="en" {% if request.session.dark_mode %}class="dark"{% endif %}>
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
@@ -307,6 +307,38 @@
             {% endfor %}
         {% endif %}
 
+        <!-- KAD MAKLUM BALAS RASMI DARI HOD (TWO-WAY COMMUNICATION) -->
+        {% if active_hod_feedbacks %}
+            {% for fb in active_hod_feedbacks %}
+            <div style="background: #fff0f2; border: 2px solid #fecdd3; padding: 20px; border-radius: 12px; margin-bottom: 25px; display: flex; flex-direction: column; gap: 10px; box-shadow: 0 4px 15px rgba(225, 29, 72, 0.1);">
+                <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                        <div style="width: 40px; height: 40px; background: #e11d48; color: white; border-radius: 50%; display: flex; justify-content: center; align-items: center;">
+                            <svg style="width:20px; height:20px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+                        </div>
+                        <div>
+                            <h3 style="margin: 0; color: #9f1239; font-size: 16px; font-weight: 900;">Official HOD Feedback: {{ fb.module_reference }}</h3>
+                            <p style="margin: 2px 0 0 0; color: #be123c; font-size: 12px; font-weight: 700;">From: Dr. {{ fb.sender_hod.first_name }} {{ fb.sender_hod.last_name }} • {{ fb.created_at|date:"d M Y, h:i A" }}</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div style="background: white; border: 1px solid #fecdd3; padding: 15px; border-radius: 8px; color: #150a35; font-size: 14px; line-height: 1.5; font-weight: 600;">
+                    "{{ fb.message_text }}"
+                </div>
+                
+                <form method="POST" style="margin-top: 5px; text-align: right;">
+                    {% csrf_token %}
+                    <input type="hidden" name="form_type" value="acknowledge_feedback">
+                    <input type="hidden" name="feedback_id" value="{{ fb.id }}">
+                    <button type="submit" style="background: #e11d48; color: white; border: none; padding: 10px 20px; border-radius: 8px; font-weight: bold; cursor: pointer; transition: 0.2s;" onmouseover="this.style.background='#9f1239'" onmouseout="this.style.background='#e11d48'">
+                        I Have Acknowledged This
+                    </button>
+                </form>
+            </div>
+            {% endfor %}
+        {% endif %}
+
         {% if section == 'Dashboard' %}
             {% include 'dashboard/modules/_dashboard_main.html' %}
 
@@ -334,7 +366,7 @@
 
                 <form method="POST" style="width: 100%;">
                     {% csrf_token %}
-                    <input type="hidden" name="form_type" value="settings">
+                    <input type="hidden" name="form_type" value="system_settings">
 
                     <!-- Senarai tetapan: nama di kiri, kawalan di kanan -->
                     <div class="settings-list">
@@ -377,7 +409,7 @@
                             </div>
                             <div class="settings-control settings-control-switch">
                                 <label class="switch">
-                                    <input type="checkbox" name="dark_mode">
+                                    <input type="checkbox" name="dark_mode" {% if request.session.dark_mode %}checked{% endif %}>
                                     <span class="slider"></span>
                                 </label>
                             </div>
@@ -405,7 +437,7 @@
                     </div>
                     <div>
                         <h4 style="margin: 0; color: #150a35; font-size: 18px;">{{ staff_name }}</h4>
-                        <p style="margin: 5px 0 0 0; color: #6f628b; font-size: 13px; font-weight: 600;">Medical Officer • {{ staff_dept }} Dept</p>
+                        <p style="margin: 5px 0 0 0; color: #6f628b; font-size: 13px; font-weight: 600;">Staff • {{ staff_dept }} Dept</p>
                         <button style="margin-top: 10px; background: #f3edff; border: 1px solid #e7dff2; padding: 6px 15px; border-radius: 6px; font-size: 12px; font-weight: bold; color: #6d3ec4; cursor: pointer; transition: 0.2s;" onmouseover="this.style.background='#e7dff2'" onmouseout="this.style.background='#f3edff'">Upload New Photo</button>
                     </div>
                 </div>
@@ -415,22 +447,22 @@
                     <div class="grid-2">
                         <div>
                             <label>Full Name</label>
-                            <input type="text" name="full_name" value="Dr. Aminah" required>
+                            <input type="text" name="full_name" value="{{ user.first_name }} {{ user.last_name }}" required>
                         </div>
                         <div>
-                            <label>Staff ID / MMC Number</label>
-                            <input type="text" name="staff_id" value="MMC123456" readonly style="background-color: #f3edff; cursor: not-allowed; color: #6d3ec4; opacity: 0.7; border-color: #e7dff2;">
+                            <label>Staff ID / IC Number</label>
+                            <input type="text" name="staff_id" value="{{ user.username }}" readonly style="background-color: #f3edff; cursor: not-allowed; color: #6d3ec4; opacity: 0.7; border-color: #e7dff2;">
                         </div>
                     </div>
 
                     <div class="grid-2">
                         <div>
                             <label>Email Address</label>
-                            <input type="email" name="email" value="dr.portal@myprestasi.gov.my" required>
+                            <input type="email" name="email" value="{{ user.email }}" required>
                         </div>
                         <div>
                             <label>Phone Number</label>
-                            <input type="text" name="phone" value="+6012-3456789">
+                            <input type="text" name="phone" value="{{ user.profile.phone_number|default:'' }}">
                         </div>
                     </div>
 

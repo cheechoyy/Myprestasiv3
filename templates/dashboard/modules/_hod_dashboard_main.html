@@ -82,12 +82,12 @@
 
             <div style="display: flex; align-items: flex-end; justify-content: space-between; margin-bottom: 12px;">
                 <div>
-                    <div style="font-size: 32px; font-weight: 900; color: #150a35; line-height: 1;">88.4%</div>
-                    <div style="font-size: 11px; font-weight: 800; color: #16a34a; margin-top: 3px;">▲ +3.4% baseline</div>
+                    <div style="font-size: 32px; font-weight: 900; color: #150a35; line-height: 1;">{{ avg_performance|default:"88" }}%</div>
+                    <div style="font-size: 11px; font-weight: 800; color: #16a34a; margin-top: 3px;">▲ Current DB Average</div>
                 </div>
                 <div style="text-align: right;">
-                    <div style="font-size: 12.5px; font-weight: 900; color: #150a35;">100% Policy SOP</div>
-                    <div style="font-size: 10.5px; color: #64748b; font-weight: 600;">Full Compliance</div>
+                    <div style="font-size: 12.5px; font-weight: 900; color: #150a35;">{{ actual_policy|default:"100" }}% Policy SOP</div>
+                    <div style="font-size: 10.5px; color: #64748b; font-weight: 600;">Compliance Rate</div>
                 </div>
             </div>
 
@@ -95,15 +95,15 @@
             <div style="display:flex; flex-direction:column; gap:6px; width: 85%; margin-left: auto;">
                 <div>
                     <div style="display:flex; justify-content:space-between; font-size:11px; font-weight:800; color:#150a35; margin-bottom:2px;">
-                        <span>Clinical Delivery</span><span>88%</span>
+                        <span>Clinical Delivery</span><span>{{ actual_clinical|default:"88" }}%</span>
                     </div>
-                    <div style="background:#f3edff; height:6px; border-radius:10px; overflow:hidden;"><div style="background:#6d3ec4; width:88%; height:100%;"></div></div>
+                    <div style="background:#f3edff; height:6px; border-radius:10px; overflow:hidden;"><div style="background:#6d3ec4; width:{{ actual_clinical|default:'88' }}%; height:100%;"></div></div>
                 </div>
                 <div>
                     <div style="display:flex; justify-content:space-between; font-size:11px; font-weight:800; color:#150a35; margin-bottom:2px;">
-                        <span>Documentation Quality</span><span>82%</span>
+                        <span>Documentation Quality</span><span>{{ actual_doc|default:"82" }}%</span>
                     </div>
-                    <div style="background:#f3edff; height:6px; border-radius:10px; overflow:hidden;"><div style="background:#a577ff; width:82%; height:100%;"></div></div>
+                    <div style="background:#f3edff; height:6px; border-radius:10px; overflow:hidden;"><div style="background:#a577ff; width:{{ actual_doc|default:'82' }}%; height:100%;"></div></div>
                 </div>
             </div>
         </div>
@@ -188,19 +188,20 @@
 
             <!-- 3 Kad Skor Mini (Ditolak ke sebelah kanan) -->
             <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 8px; width: 85%; margin-left: auto;">
+                <!-- Papar data MO yang berada pada kedudukan pertama (Index 0) dalam Heatmap -->
                 <div style="background:#f3edff; border:1px solid #e7dff2; border-radius:10px; padding:8px 4px; text-align:center;">
                     <div style="font-size:10px; font-weight:800; color:#a577ff; text-transform:uppercase;">Clinical</div>
-                    <div style="font-size:19px; font-weight:900; color:#150a35; margin-top:1px;">86%</div>
+                    <div style="font-size:19px; font-weight:900; color:#150a35; margin-top:1px;">{{ z_mo_data.0.0|default:"86" }}%</div>
                 </div>
 
                 <div style="background:#f3edff; border:1px solid #e7dff2; border-radius:10px; padding:8px 4px; text-align:center;">
                     <div style="font-size:10px; font-weight:800; color:#a577ff; text-transform:uppercase;">Ops</div>
-                    <div style="font-size:19px; font-weight:900; color:#150a35; margin-top:1px;">82%</div>
+                    <div style="font-size:19px; font-weight:900; color:#150a35; margin-top:1px;">{{ z_mo_data.0.1|default:"82" }}%</div>
                 </div>
 
                 <div style="background:#f3edff; border:1px solid #e7dff2; border-radius:10px; padding:8px 4px; text-align:center;">
                     <div style="font-size:10px; font-weight:800; color:#a577ff; text-transform:uppercase;">Interp</div>
-                    <div style="font-size:19px; font-weight:900; color:#150a35; margin-top:1px;">86%</div>
+                    <div style="font-size:19px; font-weight:900; color:#150a35; margin-top:1px;">{{ z_mo_data.0.2|default:"86" }}%</div>
                 </div>
             </div>
 

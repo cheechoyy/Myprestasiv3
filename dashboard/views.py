@@ -3,7 +3,7 @@ from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.contrib.auth.models import User
-from datetime import date
+from datetime import date, timedelta
 import pandas as pd
 import numpy as np
 import plotly.express as px
@@ -13,6 +13,8 @@ import random
 import math
 import hashlib
 import urllib.parse
+import json
+from django.core.serializers.json import DjangoJSONEncoder
 
 # Import Data Simulasi (Mock Data)
 from .mock_data import STATE_CENTERS, MOCK_KLINIK, generate_mock_doctors, MOCK_CUSUM_DATA
@@ -22,7 +24,8 @@ from .services import calculate_pri_score
 from .models import (
     UserProfile, MyPSQFeedback, ProcedureLog, PolicyDeclaration,
     PolicyItemResponse, DocumentationLog, CPDClaim, ProductivityLog,
-    InnovationProject, EmotionalReflection, PeerKudos, MentorshipSession
+    InnovationProject, EmotionalReflection, PeerKudos, MentorshipSession,
+    HODFeedback  # <--- IMPORT MODEL BARU INI
 )
 
 
@@ -142,15 +145,52 @@ def register_view(request):
 @login_required(login_url='/login/')
 def hod_dashboard(request):
 
+    from django.contrib.auth import update_session_auth_hash
+
     # 1. TAMBAH BARIS INI: Tangkap isyarat tab (Default: Dashboard)
     section = request.GET.get('section', 'Dashboard')
     
     # 2. TAMBAH BARIS INI: Logik untuk paparkan mesej berjaya bila butang Save ditekan
     if request.method == 'POST':
-        if request.POST.get('form_type') == 'settings':
-            messages.success(request, "✅ HOD Profile & Account Settings successfully updated.")
+        form_type = request.POST.get('form_type')
+        
+        if form_type == 'settings':
+            user = request.user
+            # Kemas kini maklumat asas
+            full_name = request.POST.get('full_name', '').strip()
+            if full_name:
+                parts = full_name.split(' ', 1)
+                user.first_name = parts[0]
+                user.last_name = parts[1] if len(parts) > 1 else ''
+            
+            user.email = request.POST.get('email', '').strip()
+            user.profile.phone_number = request.POST.get('phone', '').strip()
+            user.save()
+            user.profile.save()
+
+            # Proses Penukaran Kata Laluan
+            new_pass = request.POST.get('new_pass', '')
+            confirm_pass = request.POST.get('confirm_pass', '')
+            
+            if new_pass:
+                if new_pass == confirm_pass:
+                    user.set_password(new_pass)
+                    user.save()
+                    update_session_auth_hash(request, user) # Elak auto-logout
+                    messages.success(request, "✅ HOD Profile & Password successfully updated.")
+                else:
+                    messages.error(request, "❌ Passwords do not match!")
+                    return redirect(request.path + '?section=Profile')
+            else:
+                messages.success(request, "✅ HOD Profile settings successfully updated.")
+                
             return redirect(request.path + '?section=Profile')
         elif request.POST.get('form_type') == 'system_settings':
+            # Simpan tetapan ke dalam Session Django
+            request.session['dark_mode'] = (request.POST.get('dark_mode') == 'on')
+            request.session['language'] = request.POST.get('language')
+            request.session['timezone'] = request.POST.get('timezone')
+            
             messages.success(request, "✅ System preferences successfully updated.")
             return redirect(request.path + '?section=Settings')
         
@@ -247,10 +287,43 @@ def hod_dashboard(request):
     hod_name = f"{request.user.first_name} {request.user.last_name}".strip() or request.user.username
     hod_facility_label = hod_facility if hod_scope == 'FACILITY' and hod_facility else "HPU Putrajaya"
 
-    # B. CARTA BAR KPI JABATAN (ROYAL PURPLE)
+    # B. CARTA BAR KPI JABATAN (DATA SEBENAR DARI DB)
     kpi_categories = ["Clinical Excellence", "CPD & Knowledge", "Doc Audit", "Policy Compliance"]
     kpi_targets = [85, 80, 90, 100]
-    kpi_actuals = [88, 75, 82, 95]
+    
+    # Nilai asal jika tiada data langsung
+    actual_clinical, actual_cpd, actual_doc, actual_policy = 88, 75, 82, 95
+    
+    # Tapis pegawai berdasarkan klinik/fasiliti semasa HOD
+    staff_for_kpi = User.objects.filter(profile__role='STAFF')
+    if pilihan_klinik and pilihan_klinik != 'All Clinics':
+        staff_for_kpi = staff_for_kpi.filter(profile__assigned_facility=pilihan_klinik)
+        
+    if staff_for_kpi.exists():
+        # 1. Clinical Delivery (CUSUM Score Purata)
+        proc_logs = ProcedureLog.objects.filter(officer__in=staff_for_kpi)
+        if proc_logs.exists():
+            actual_clinical = int(sum(p.score for p in proc_logs) / proc_logs.count())
+            
+        # 2. CPD & Knowledge (Andaikan sasaran 50 mata = 100%)
+        cpd_claims = CPDClaim.objects.filter(officer__in=staff_for_kpi)
+        if cpd_claims.exists():
+            total_pts = sum(c.points for c in cpd_claims)
+            actual_cpd = min(100, int((total_pts / (50.0 * staff_for_kpi.count())) * 100))
+            
+        # 3. Doc Audit (Peratusan Siap Tepat Masa)
+        doc_logs = DocumentationLog.objects.filter(officer__in=staff_for_kpi)
+        if doc_logs.exists():
+            ontime_count = doc_logs.filter(is_ontime=True).count()
+            actual_doc = int((ontime_count / doc_logs.count()) * 100)
+            
+        # 4. Policy Compliance (Purata keseluruhan 5 domain)
+        policies = PolicyDeclaration.objects.filter(officer__in=staff_for_kpi)
+        if policies.exists():
+            total_policy = sum((p.score_domain_a + p.score_domain_b + p.score_domain_c + p.score_domain_d + p.score_domain_e)/5 for p in policies)
+            actual_policy = int(total_policy / policies.count())
+
+    kpi_actuals = [actual_clinical, actual_cpd, actual_doc, actual_policy]
 
     fig_kpi = go.Figure()
     fig_kpi.add_trace(go.Bar(
@@ -278,19 +351,44 @@ def hod_dashboard(request):
     )
     dept_kpi_html = fig_kpi.to_html(full_html=False, include_plotlyjs=False, config={'displayModeBar': False, 'responsive': True})
 
-    # C. MO COMPETENCY HEATMAP (PURPLE GLASS)
-    if not df_docs.empty:
-        mo_names = df_docs['Officer Name'].str.replace(r'<[^>]*>', '', regex=True).tolist()[:5]
+    # C. MO COMPETENCY HEATMAP (DATA SEBENAR DARI DB)
+    mo_names = []
+    z_mo_data = []
+    
+    # Ambil 5 Staf teratas untuk dipaparkan di Heatmap HOD
+    top_staff = staff_for_kpi[:5]
+    
+    if top_staff.exists():
+        for staff in top_staff:
+            fname = f"Dr. {staff.first_name} {staff.last_name}".strip()
+            mo_names.append(fname if fname != "Dr." else f"Dr. {staff.username}")
+            
+            # Gunakan Enjin MyPrestasi (calculate_pri_score) untuk tarik 3 Tunjang Utama!
+            scores = calculate_pri_score(staff)
+            z_mo_data.append([
+                scores.get('score_clinical', 85),
+                scores.get('score_operational', 80),
+                scores.get('score_interpersonal', 88)
+            ])
+            
+        # Fallback rawak jika staf sebenar kurang dari 5 orang supaya Heatmap tidak nampak kosong
+        if len(mo_names) < 5 and not df_docs.empty:
+            mock_names = df_docs['Officer Name'].str.replace(r'<[^>]*>', '', regex=True).tolist()
+            for name in mock_names:
+                if name not in mo_names and len(mo_names) < 5:
+                    mo_names.append(name)
+                    z_mo_data.append([random.randint(70,95), random.randint(70,95), random.randint(70,95)])
     else:
-        mo_names = ["Dr. Ramesh Lee", "Dr. Siti Abu", "Dr. Chong Ali", "Dr. Mei Ismail", "Dr. Mohammad"]
+        # Fallback jika pangkalan data 100% kosong
+        if not df_docs.empty:
+            mo_names = df_docs['Officer Name'].str.replace(r'<[^>]*>', '', regex=True).tolist()[:5]
+        else:
+            mo_names = ["Dr. Ramesh Lee", "Dr. Siti Abu", "Dr. Chong Ali", "Dr. Mei Ismail", "Dr. Mohammad"]
 
-    z_mo_data = [
-        [88, 92, 78],
-        [65, 70, 82],
-        [94, 85, 90],
-        [72, 68, 75],
-        [85, 88, 92]
-    ]
+        z_mo_data = [
+            [88, 92, 78], [65, 70, 82], [94, 85, 90], [72, 68, 75], [85, 88, 92]
+        ]
+        
     tunjang_labels = ['Clinical', 'Operational', 'Interpersonal']
 
     fig_mo_heat = go.Figure(data=go.Heatmap(
@@ -357,12 +455,107 @@ def hod_dashboard(request):
         margin=dict(t=0, l=0, r=0, b=0),
         paper_bgcolor='rgba(0,0,0,0)',
         plot_bgcolor='rgba(0,0,0,0)',
-        autosize=False
+        autosize=False,
+        clickmode='event'
     )
-    sunburst_html = fig_sunburst.to_html(full_html=False, include_plotlyjs=False, config={'displayModeBar': False})
+    sunburst_html_raw = fig_sunburst.to_html(full_html=False, include_plotlyjs=False, config={'displayModeBar': False})
+    
+    # Skrip JavaScript khas untuk menangkap acara klik Plotly dan redirect ke URL modul
+    js_click_handler = """
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            var plotElements = document.querySelectorAll('.js-plotly-plot');
+            plotElements.forEach(function(plotElement) {
+                if(plotElement.closest('.orbital-center-hub')) {
+                    plotElement.on('plotly_sunburstclick', function(data) {
+                        if (data.points && data.points.length > 0) {
+                            var clicked_id = data.points[0].id.toLowerCase();
+                            var dept_val = "%s";
+                            var state_val = "%s";
+                            var clinic_val = "%s";
+                            
+                            // Logik Pautan Terus: HANYA 10 SUB-MODUL (Dan terus buka tab spesifik)
+                            var targetUrl = "";
+                            
+                            // 1. Modul Klinikal (4 Sub)
+                            if (clicked_id === 'skills') targetUrl = "/cts-module/?tab=Skills";
+                            else if (clicked_id === 'knowledge') targetUrl = "/cts-module/?tab=Knowledge";
+                            else if (clicked_id === 'documentation') targetUrl = "/cts-module/?tab=Documentation";
+                            else if (clicked_id === 'policies') targetUrl = "/cts-module/?tab=Policies";
+                            
+                            // 2. Modul Operasional (2 Sub)
+                            else if (clicked_id === 'productivity') targetUrl = "/operational-module/?tab=Productivity";
+                            else if (clicked_id === 'innovation') targetUrl = "/operational-module/?tab=Innovation";
+                            
+                            // 3. Modul Interpersonal (4 Sub)
+                            else if (clicked_id === 'patient') targetUrl = "/interpersonal-module/?tab=Patient";
+                            else if (clicked_id === 'ei') targetUrl = "/interpersonal-module/?tab=EI";
+                            else if (clicked_id === 'teamwork') targetUrl = "/interpersonal-module/?tab=Teamwork";
+                            else if (clicked_id === 'mentorship') targetUrl = "/interpersonal-module/?tab=Mentorship";
+
+                            // Lakukan redirect hanya jika salah satu dari 10 sub-modul ini ditekan
+                            if (targetUrl !== "") {
+                                window.location.href = targetUrl + "&dept=" + dept_val + "&state=" + state_val + "&clinic=" + clinic_val;
+                            }
+                            // Jika 3 Tunjang utama diklik, kod ini diabaikan dan carta hanya akan di-zoom.
+                        }
+                    });
+                }
+            });
+        });
+    </script>
+    """ % (getattr(request.user.profile, 'department', 'FMS'), pilihan_negeri, pilihan_klinik)
+    
+    sunburst_html = sunburst_html_raw + js_click_handler
+
+    # --- JANA DATA KALENDAR DINAMIK HOD DARI DB SEBENAR ---
+    hod_calendar_events = []
+    
+    # 1. Tuntutan CPD Menunggu Pengesahan HOD
+    for cpd in CPDClaim.objects.filter(status='PENDING'):
+        ev_day = cpd.submitted_at.day if hasattr(cpd, 'submitted_at') and cpd.submitted_at else date.today().day
+        ev_date = cpd.submitted_at.strftime('%Y-%m-%d') if hasattr(cpd, 'submitted_at') and cpd.submitted_at else date.today().strftime('%Y-%m-%d')
+        c_name = f"{cpd.officer.first_name} {cpd.officer.last_name}".strip() or cpd.officer.username
+        hod_calendar_events.append({
+            'title': f"CPD Claim: Dr. {c_name} ({cpd.points} Pts)",
+            'date': ev_date,
+            'day': ev_day,
+            'type': 'pending',
+            'desc': f"Topic: {cpd.topic}"
+        })
+
+    # 2. Amaran Dokumentasi Lewat dari Staf
+    for ddoc in DocumentationLog.objects.filter(is_ontime=False)[:4]:
+        ev_day = ddoc.created_at.day if hasattr(ddoc, 'created_at') and ddoc.created_at else date.today().day
+        ev_date = ddoc.created_at.strftime('%Y-%m-%d') if hasattr(ddoc, 'created_at') and ddoc.created_at else date.today().strftime('%Y-%m-%d')
+        d_name = f"{ddoc.officer.first_name} {ddoc.officer.last_name}".strip() or ddoc.officer.username
+        hod_calendar_events.append({
+            'title': f"Late Doc Audit: Dr. {d_name}",
+            'date': ev_date,
+            'day': ev_day,
+            'type': 'duty',
+            'desc': f"Patient ID: {ddoc.patient_id} ({ddoc.delay_hours}h delay)"
+        })
+
+    # 3. Pegawai Berpotensi Fast-Track (PRI >= 85)
+    for staff_u in User.objects.filter(profile__role='STAFF'):
+        sc = calculate_pri_score(staff_u)
+        if sc.get('pri_score', 0) >= 85:
+            st_name = f"{staff_u.first_name} {staff_u.last_name}".strip() or staff_u.username
+            hod_calendar_events.append({
+                'title': f"Fast-Track Review: Dr. {st_name}",
+                'date': date.today().strftime('%Y-%m-%d'),
+                'day': date.today().day,
+                'type': 'fast-track',
+                'desc': f"PRI Score: {sc.get('pri_score')}% ({sc.get('next_grade')})"
+            })
+            break
+
+    calendar_events_json = json.dumps(hod_calendar_events, cls=DjangoJSONEncoder)
 
     context = {
         'section': section,
+        'calendar_events_json': calendar_events_json,
         'roster_html': roster_html,
         'dept_kpi_html': dept_kpi_html,
         'mo_heatmap_html': mo_heatmap_html,
@@ -384,15 +577,57 @@ def hod_dashboard(request):
         'total_staff': total_staff,
         'avg_performance': avg_performance,
         'evaluations_completed': evaluations_completed,
+
+        # --- DATA DINAMIK HOD DASHBOARD ---
+        'actual_clinical': actual_clinical,
+        'actual_cpd': actual_cpd,
+        'actual_doc': actual_doc,
+        'actual_policy': actual_policy,
+        'mo_names': mo_names,
+        'z_mo_data': z_mo_data,
     }
     return render(request, 'dashboard/hod_dashboard.html', context)
 
 # --- LOGIK MODUL KLINIKAL (CTS) LENGKAP ---
 @login_required(login_url='/login/')
 def cts_view(request):
+    
+    # --- LOGIK HANTAR FEEDBACK DUA HALA (HOD -> STAFF) ---
+    if request.method == 'POST' and request.POST.get('form_type') == 'send_hod_feedback':
+        target_username = request.POST.get('target_username', '').strip()
+        message_content = request.POST.get('message_text', '').strip()
+        mod_ref = request.POST.get('module_ref', 'Clinical Excellence')
+        severity = request.POST.get('severity', 'WARNING')
+        
+        # Bersihkan label "🟢", "Dr.", dan "(Live)" untuk mendapatkan username asal
+        clean_target = target_username.replace("🟢", "").replace("Dr.", "").split(" (")[0].strip()
+        
+        target_user = User.objects.filter(username__icontains=clean_target).first()
+        if not target_user:
+            target_user = User.objects.filter(first_name__icontains=clean_target).first()
+            
+        if target_user and message_content:
+            HODFeedback.objects.create(
+                sender_hod=request.user,
+                receiver_staff=target_user,
+                module_reference=mod_ref,
+                severity=severity,
+                message_text=message_content
+            )
+            messages.success(request, f"✅ Feedback sent successfully to Dr. {target_user.first_name} {target_user.last_name}.")
+        else:
+            messages.error(request, "❌ Failed to send feedback. Officer not found or message empty.")
+            
+        return redirect(request.get_full_path())
+
     sub_module = request.GET.get('sub_module', 'Clinical')
     active_tab = request.GET.get('tab', 'Skills')
-    dept = request.GET.get('dept', 'CTS')
+    
+    # Utamakan Jabatan dari Profil Pengguna berbanding parameter URL
+    if hasattr(request.user, 'profile') and request.user.profile.department:
+        dept = request.user.profile.department
+    else:
+        dept = request.GET.get('dept', 'FMS')
 
     # === LOGIK SKOP HOD ===
     hod_scope = getattr(request.user.profile, 'hod_scope', 'NATIONAL')
@@ -433,23 +668,47 @@ def cts_view(request):
         hod_name = request.user.username
     hod_facility_label = hod_facility if hod_scope == 'FACILITY' and hod_facility else "HPU Putrajaya"
 
-    # --- 3. TAPIS DOKTOR & KIRA STATISTIK ---
+    from django.db.models import Q
+
+    # --- 3. TAPIS DOKTOR & KIRA STATISTIK (SEBENAR + MOCK) ---
     senarai_doktor = []
     semua_markah = [] 
+
+    # A. Tarik Staf Sebenar dari SQLite Database
+    real_staff = User.objects.filter(profile__role='STAFF')
     
+    # Tapisan 1: Jabatan (Tebaan anda tepat! Asingkan staf FMS dan CTS)
+    if dept:
+        real_staff = real_staff.filter(profile__department=dept)
+        
+    # Tapisan 2: Fasiliti (Guna 'Q' untuk benarkan akaun baru yang belum ada fasiliti masuk ke senarai)
+    if pilihan_klinik and pilihan_klinik != "All Clinics":
+        real_staff = real_staff.filter(
+            Q(profile__assigned_facility=pilihan_klinik) | 
+            Q(profile__assigned_facility__isnull=True) | 
+            Q(profile__assigned_facility__exact='')
+        )
+
+    for s in real_staff:
+        full_name = f"{s.first_name} {s.last_name}".strip()
+        display_name = f"🟢 Dr. {full_name} (Live)" if full_name else f"🟢 Dr. {s.username} (Live)"
+        senarai_doktor.append(display_name)
+        scores = calculate_pri_score(s)
+        semua_markah.append(scores.get('pri_score', 85))
+
+    # B. Tarik Mock Doctors sebagai Tambahan
     if pilihan_klinik == "All Clinics":
         for k in klinik_tersedia:
             df_docs = generate_mock_doctors(k['name'])
             senarai_doktor.extend(df_docs['Officer Name'].tolist())
-            semua_markah.extend(df_docs['Current Score'].tolist()) # Tarik markah untuk kira purata
+            semua_markah.extend(df_docs['Current Score'].tolist())
     else:
         df_docs = generate_mock_doctors(pilihan_klinik)
         senarai_doktor.extend(df_docs['Officer Name'].tolist())
         semua_markah.extend(df_docs['Current Score'].tolist())
 
-    # Buang nama pendua dan susun
-    senarai_doktor = list(set(senarai_doktor))
-    senarai_doktor.sort()
+    # Buang duplikasi dengan mengekalkan staf sebenar di kedudukan teratas
+    senarai_doktor = list(dict.fromkeys(senarai_doktor))
 
     pilihan_doktor = request.GET.get('officer')
     if not pilihan_doktor or pilihan_doktor not in senarai_doktor:
@@ -699,16 +958,37 @@ def cts_view(request):
     # TAB 2: KNOWLEDGE (GAUGES & TABLE)
     # ==========================================
     elif active_tab == 'Knowledge':
-        import random
-        
-        # 1. Jana markah unik untuk setiap doktor (berubah ikut nama)
-        random.seed(pilihan_doktor)
-        cpd_score = random.randint(60, 98)
-        
-        # 2. Peer average ambil dari purata sebenar klinik (avg_performance)
+        # 1. Dapatkan markah sebenar dari Database (Asumsi 50 mata = 100%)
+        doc_username_clean = pilihan_doktor.replace("🟢", "").replace("Dr.", "").split(" (")[0].strip()
+        target_user = User.objects.filter(username__icontains=doc_username_clean).first()
+        if not target_user:
+            target_user = User.objects.filter(first_name__icontains=doc_username_clean).first()
+
+        cpd_score = 0
+        history_df = pd.DataFrame(columns=["Date", "Category", "Topic", "Marks"])
+
+        if target_user:
+            cpd_claims = CPDClaim.objects.filter(officer=target_user)
+            if cpd_claims.exists():
+                # Hanya kira mata dari status APPROVED
+                total_pts = sum(c.points for c in cpd_claims if c.status == 'APPROVED')
+                cpd_score = min(100, int((total_pts / 50.0) * 100))
+                
+                # Bina Jadual Sejarah (5 terkini)
+                history_data = []
+                for claim in cpd_claims.order_by('-event_date')[:5]:
+                    history_data.append({
+                        "Date": claim.event_date.strftime("%d/%m/%Y"),
+                        "Category": claim.category,
+                        "Topic": claim.topic,
+                        "Marks": f"{claim.points} pts ({claim.status})"
+                    })
+                history_df = pd.DataFrame(history_data)
+
+        # 2. Peer average ambil dari purata sebenar klinik
         peer_score = avg_performance if avg_performance > 0 else 75
 
-        # 3. Fungsi untuk tentukan teks dan status secara automatik (Clean Text)
+        # 3. Fungsi status automatik
         def get_status_info(score):
             if score >= 85: return "Outstanding", "outstanding"
             elif score >= 75: return "Good", "good"
@@ -718,7 +998,7 @@ def cts_view(request):
         cpd_text, cpd_css_class = get_status_info(cpd_score)
         peer_text, peer_css_class = get_status_info(peer_score)
 
-        # GAUGE DOKTOR INDIVIDU (TEMA ROSE)
+        # GAUGE DOKTOR INDIVIDU
         fig_ind = go.Figure(go.Indicator(
             mode = "gauge+number", value = cpd_score,
             title = {'text': "Your Clinical Score (%)", 'font': {'size': 16, 'color': '#150a35'}},
@@ -732,7 +1012,7 @@ def cts_view(request):
         fig_ind.update_layout(height=260, margin=dict(t=40, b=10, l=30, r=30), paper_bgcolor='rgba(0,0,0,0)')
         gauge_score_html = fig_ind.to_html(full_html=False, include_plotlyjs=False, config={'displayModeBar': False})
 
-        # GAUGE PURATA RAKAN SEKERJA (PEER TEMA ROSE)
+        # GAUGE PEER
         fig_peer = go.Figure(go.Indicator(
             mode = "gauge+number", value = peer_score,
             title = {'text': "Peer Average (%)", 'font': {'size': 16, 'color': '#150a35'}},
@@ -746,56 +1026,90 @@ def cts_view(request):
         fig_peer.update_layout(height=260, margin=dict(t=40, b=10, l=30, r=30), paper_bgcolor='rgba(0,0,0,0)')
         gauge_peer_html = fig_peer.to_html(full_html=False, include_plotlyjs=False, config={'displayModeBar': False})
 
-        # JADUAL SEJARAH (Topik dinamik mengikut FMS / CTS)
-        topik_2 = "Diabetes Management" if dept == "FMS" else "LIMA-LAD Technique"
-        history_df = pd.DataFrame({
-            "Date": ["20/02/2026", "12/02/2026", "05/01/2026"], 
-            "Category": ["CME", "Workshop", "Online Quiz"],
-            "Topic": ["Trauma Management", topik_2, "Medical Ethics"], 
-            "Marks": [min(100, cpd_score+2), min(100, cpd_score+5), max(0, cpd_score-4)]
-        })
-        history_html = history_df.to_html(index=False, classes="custom-table", escape=False)
+        if not target_user:
+            # Sandaran (Fallback) bagi Doktor Simulasi supaya tolok tidak menjadi 0%
+            random.seed(pilihan_doktor)
+            cpd_score = random.randint(72, 92)
+            history_df = pd.DataFrame([
+                {"Date": "14/03/2026", "Category": "CME Workshop", "Topic": "Hypertension Clinical Guidelines", "Marks": "15 pts (APPROVED)"},
+                {"Date": "22/02/2026", "Category": "Online Quiz", "Topic": "Medical Ethics & Law", "Marks": "10 pts (APPROVED)"},
+                {"Date": "05/01/2026", "Category": "Seminar", "Topic": "Primary Care Dermatology", "Marks": "10 pts (APPROVED)"},
+            ])
+
+        if history_df.empty:
+            history_html = "<div style='color:#a577ff; font-style:italic;'>No CPD claims found in database.</div>"
+        else:
+            history_html = history_df.to_html(index=False, classes="custom-table", escape=False)
 
     # ==========================================
     # TAB 3: DOCUMENTATION (BAR & TABLE)
     # ==========================================
     elif active_tab == 'Documentation':
-        # Guna PURE Graph Objects untuk Bar Mendatar Bertindan (Stacked Horizontal Bar)
+        # Tarik data dari DB untuk Staf Spesifik
+        doc_username_clean = pilihan_doktor.replace("🟢", "").replace("Dr.", "").split(" (")[0].strip()
+        target_user = User.objects.filter(username__icontains=doc_username_clean).first()
+        if not target_user:
+            target_user = User.objects.filter(first_name__icontains=doc_username_clean).first()
+
+        # Isytiharkan nilai awal secara mutlak untuk elak UnboundLocalError
+        total_logs = 0
+        ontime_pct, delayed_pct, overdue_pct = 0, 0, 0
+        delayed_html = "<div style='color:#a577ff; font-style:italic;'>No delayed documentation recorded.</div>"
+
+        if target_user:
+            doc_logs = DocumentationLog.objects.filter(officer=target_user)
+            total_logs = doc_logs.count()
+            if total_logs > 0:
+                ontime_count = doc_logs.filter(is_ontime=True).count()
+                delayed_count = doc_logs.filter(is_ontime=False, delay_hours__lte=24).count()
+                overdue_count = doc_logs.filter(is_ontime=False, delay_hours__gt=24).count()
+                
+                ontime_pct = int((ontime_count / total_logs) * 100)
+                delayed_pct = int((delayed_count / total_logs) * 100)
+                overdue_pct = int((overdue_count / total_logs) * 100)
+                
+                # Jadual Kelewatan Sebenar dari DB
+                delays = doc_logs.filter(is_ontime=False).order_by('-delay_hours')[:5]
+                if delays.exists():
+                    df_delayed = pd.DataFrame([{
+                        "Patient ID": d.patient_id,
+                        "Delay": f"{d.delay_hours} Hours",
+                        "Reason": d.reason_for_delay or "No reason provided",
+                        "Date": d.created_at.strftime("%d/%m/%Y")
+                    } for d in delays])
+                    delayed_html = df_delayed.to_html(index=False, classes="custom-table", escape=False)
+        else:
+            # Sandaran (Fallback) bagi Doktor Simulasi / Mock Doctor
+            total_logs = 20
+            ontime_pct, delayed_pct, overdue_pct = 85, 10, 5
+            df_delayed = pd.DataFrame({
+                "Patient ID": ["RN-88210", "RN-88214"],
+                "Delay": ["5.5 Hours", "4.0 Hours"],
+                "Reason": ["Ward emergency referral", "System offline backlog"],
+                "Date": [date.today().strftime("%d/%m/%Y"), (date.today() - timedelta(days=2)).strftime("%d/%m/%Y")]
+            })
+            delayed_html = df_delayed.to_html(index=False, classes="custom-table", escape=False)
+
+        # Carta Horizontal Bar
         fig_time = go.Figure()
+        if ontime_pct > 0:
+            fig_time.add_trace(go.Bar(y=["Patient Records"], x=[ontime_pct], name="On-time", orientation='h', marker=dict(color="#150a35"), text=f"{ontime_pct}%", textposition="inside", insidetextanchor="middle"))
+        if delayed_pct > 0:
+            fig_time.add_trace(go.Bar(y=["Patient Records"], x=[delayed_pct], name="Delayed (<24h)", orientation='h', marker=dict(color="#a577ff"), text=f"{delayed_pct}%", textposition="inside", insidetextanchor="middle"))
+        if overdue_pct > 0:
+            fig_time.add_trace(go.Bar(y=["Patient Records"], x=[overdue_pct], name="Overdue (>24h)", orientation='h', marker=dict(color="#fecdd3"), text=f"{overdue_pct}%", textposition="inside", insidetextanchor="middle"))
         
-        fig_time.add_trace(go.Bar(
-            y=["Patient Records"], x=[85], name="On-time", orientation='h',
-            marker=dict(color="#150a35"), text="85%", textposition="inside", insidetextanchor="middle"
-        ))
-        fig_time.add_trace(go.Bar(
-            y=["Patient Records"], x=[10], name="Delayed", orientation='h',
-            marker=dict(color="#a577ff"), text="10%", textposition="inside", insidetextanchor="middle"
-        ))
-        fig_time.add_trace(go.Bar(
-            y=["Patient Records"], x=[5], name="Overdue", orientation='h',
-            marker=dict(color="#fecdd3"), text="5%", textposition="inside", insidetextanchor="middle"
-        ))
-        
+        # Papar jika staf sebenar langsung belum mempunyai sebarang entri log
+        if total_logs == 0:
+            fig_time.add_trace(go.Bar(y=["Patient Records"], x=[100], name="No Data", orientation='h', marker=dict(color="#e2e8f0"), text="0 Records in DB", textposition="inside"))
+
         fig_time.update_layout(
-            barmode='stack', 
-            height=150, 
-            margin=dict(l=0, r=0, t=10, b=0),
-            paper_bgcolor='rgba(0,0,0,0)', 
-            plot_bgcolor='rgba(0,0,0,0)',
-            xaxis=dict(range=[0, 100], showgrid=False),
-            yaxis=dict(showgrid=False),
+            barmode='stack', height=150, margin=dict(l=0, r=0, t=10, b=0),
+            paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)',
+            xaxis=dict(range=[0, 100], showgrid=False), yaxis=dict(showgrid=False),
             legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1)
         )
         time_chart_html = fig_time.to_html(full_html=False, include_plotlyjs=False, config={'displayModeBar': False})
-
-        # Jadual kekal sama
-        df_delayed = pd.DataFrame({
-            "Doctor": ["Dr. Ahmad", "Dr. Siti Fazura", "Dr. Chong Wei"],
-            "Count": [3, 2, 1],
-            "Delay (Avg)": ["5.5 Hours", "4.5 Hours", "8.0 Hours"],
-            "Reason": ["Shortage of staff in ward", "Red Zone emergency case", "System login delayed"]
-        })
-        delayed_html = df_delayed.to_html(index=False, classes="custom-table", escape=False)
 
     context = {
         'sub_module': sub_module,
@@ -847,7 +1161,12 @@ def cts_view(request):
 def operational_view(request):
     sub_module = request.GET.get('sub_module', 'Operational')
     active_tab = request.GET.get('tab', 'Productivity')
-    dept = request.GET.get('dept', 'CTS')
+    
+    # Utamakan Jabatan dari Profil Pengguna berbanding parameter URL
+    if hasattr(request.user, 'profile') and request.user.profile.department:
+        dept = request.user.profile.department
+    else:
+        dept = request.GET.get('dept', 'FMS')
     
     # === LOGIK SKOP HOD ===
     hod_scope = getattr(request.user.profile, 'hod_scope', 'NATIONAL')
@@ -969,10 +1288,27 @@ def operational_view(request):
         area_chart_html = fig_area.to_html(full_html=False, include_plotlyjs=False, config={'displayModeBar': False})
     # 2. Tab Innovation (PILIHAN 3: LOLLIPOP CHART)
     elif active_tab == 'Innovation':
+        doc_username_clean = pilihan_doktor.replace("🟢", "").replace("Dr.", "").split(" (")[0].strip()
+        target_user = User.objects.filter(username__icontains=doc_username_clean).first()
+        if not target_user:
+            target_user = User.objects.filter(first_name__icontains=doc_username_clean).first()
+
+        # Tetapan Asal
         kategori = ['System Compliance', 'Proactive Thinking', 'Team Delegation', 'Crisis Response']
-        
-        random.seed(pilihan_doktor + "lollipop")
-        markah = [random.randint(65, 95) for _ in range(4)]
+        markah = [0, 0, 0, 0] # Asal 0
+
+        # Kira purata projek Inovasi DB
+        if target_user:
+            projects = InnovationProject.objects.filter(officer=target_user)
+            if projects.exists():
+                avg_score = int(sum(p.score for p in projects) / projects.count())
+                # Asumsi ujian: sebarkan skor ini kepada 4 dimensi untuk ilustrasi graf
+                markah = [
+                    min(100, avg_score + random.randint(-5, 5)),
+                    min(100, avg_score + random.randint(-10, 10)),
+                    min(100, avg_score + random.randint(-8, 8)),
+                    min(100, avg_score + random.randint(-12, 12))
+                ]
 
         fig_pop = go.Figure()
 
@@ -989,7 +1325,7 @@ def operational_view(request):
             x=markah, y=kategori,
             mode='markers+text',
             marker=dict(color='#6d3ec4', size=16, line=dict(color='white', width=2)),
-            text=markah,
+            text=[f"{m}%" if m > 0 else "N/A" for m in markah],
             textposition='middle right',
             textfont=dict(color='#150a35', size=13, weight='bold'),
             hoverinfo='none'
@@ -998,12 +1334,10 @@ def operational_view(request):
         fig_pop.update_layout(
             height=320, margin=dict(t=30, b=30, l=10, r=40),
             paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)',
-            font=dict(color="#150a35"),
-            showlegend=False,
+            font=dict(color="#150a35"), showlegend=False,
             xaxis=dict(range=[0, 105], showgrid=True, gridcolor='#e7dff2', title=dict(text='Score (%)', font=dict(color='#150a35'))),
             yaxis=dict(showgrid=False, tickfont=dict(size=12, color='#150a35', weight='bold'))
         )
-        
         radar_chart_html = fig_pop.to_html(full_html=False, include_plotlyjs=False, config={'displayModeBar': False})
     context = {
         'sub_module': sub_module,
@@ -1037,7 +1371,12 @@ def operational_view(request):
 def interpersonal_view(request):
     sub_module = request.GET.get('sub_module', 'Interpersonal')
     active_tab = request.GET.get('tab', 'Patient')
-    dept = request.GET.get('dept', 'CTS')
+    
+    # Utamakan Jabatan dari Profil Pengguna berbanding parameter URL
+    if hasattr(request.user, 'profile') and request.user.profile.department:
+        dept = request.user.profile.department
+    else:
+        dept = request.GET.get('dept', 'FMS')
     
     # === LOGIK SKOP HOD ===
     hod_scope = getattr(request.user.profile, 'hod_scope', 'NATIONAL')
@@ -1189,21 +1528,28 @@ def interpersonal_view(request):
     )
     radar_chart_html = fig_rose.to_html(full_html=False, include_plotlyjs=False, config={'displayModeBar': False})
     # 2. LOGIK TAB KANDUNGAN
+    doc_username_clean = pilihan_doktor.replace("🟢", "").replace("Dr.", "").split(" (")[0].strip()
+    target_user = User.objects.filter(username__icontains=doc_username_clean).first()
+    if not target_user:
+        target_user = User.objects.filter(first_name__icontains=doc_username_clean).first()
+
     if active_tab == 'EI':
-        # Gunakan nama doktor sebagai seed supaya graf unik untuk setiap staf
-        random.seed(pilihan_doktor + "EI_Skills") 
-        
         ei_comp = ["Self-Awareness", "Emotional Regulation", "Social Skills", "Empathy"]
-        ei_scores = [random.randint(65, 95) for _ in range(4)]
-        
-        # Berikan 4 warna berbeza (Tona Rose MyPrestasi)
+        ei_scores = [0, 0, 0, 0]
+
+        if target_user:
+            reflections = EmotionalReflection.objects.filter(officer=target_user)
+            if reflections.exists():
+                avg_ei = int(sum(r.self_awareness_score for r in reflections) / reflections.count())
+                ei_scores = [avg_ei, min(100, avg_ei + random.randint(-5, 5)), min(100, avg_ei + random.randint(-8, 8)), min(100, avg_ei + random.randint(-10, 10))]
+
         warna_palang = ['#fecdd3', '#fda4af', '#e11d48', '#150a35']
         
         fig_ei = go.Figure(go.Bar(
             x=ei_scores, y=ei_comp, orientation='h', 
-            marker_color=warna_palang, # Gunakan senarai warna tadi
-            text=ei_scores, textposition='auto',
-            textfont=dict(color='white', weight='bold') # Putihkan teks supaya timbul
+            marker_color=warna_palang,
+            text=[f"{s}%" if s > 0 else "No Data" for s in ei_scores], textposition='auto',
+            textfont=dict(color='white', weight='bold')
         ))
         fig_ei.update_layout(
             height=220, margin=dict(t=10, b=10, l=0, r=0), 
@@ -1211,6 +1557,69 @@ def interpersonal_view(request):
             xaxis=dict(range=[0, 100], showgrid=False)
         )
         ei_chart_html = fig_ei.to_html(full_html=False, include_plotlyjs=False, config={'displayModeBar': False})
+
+    elif active_tab == 'Teamwork':
+        teamwork_view = request.GET.get('t_view', '360')
+        
+        if teamwork_view == '360':
+            roles = ["Peers", "Support Staff", "Supervisors"]
+            fb_scores = [0, 0, 0]
+
+            if target_user:
+                # Kira Kudos Points (1 Kudos = 5 mata tambahan dari base score 70)
+                kudos_received = PeerKudos.objects.filter(receiver=target_user)
+                if kudos_received.exists():
+                    total_kudos = sum(k.points for k in kudos_received)
+                    base_kudos = min(100, 70 + total_kudos)
+                    fb_scores = [base_kudos, min(100, base_kudos + random.randint(-5, 10)), min(100, base_kudos + random.randint(-8, 12))]
+            
+            fig_team = go.Figure(go.Bar(
+                x=roles, y=fb_scores, marker_color='#6d3ec4', 
+                text=[f"{s}%" if s > 0 else "0%" for s in fb_scores], textposition='auto'
+            ))
+            fig_team.update_layout(
+                height=220, margin=dict(t=20, b=20, l=0, r=0), 
+                paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)',
+                yaxis=dict(range=[0, 100])
+            )
+            team_360_html = fig_team.to_html(full_html=False, include_plotlyjs=False, config={'displayModeBar': False})
+            
+        elif teamwork_view == 'Log':
+            categories = ["General Clinical", "Procedural", "Consultation"]
+            color_map = {"General Clinical": "#150a35", "Procedural": "#e11d48", "Consultation": "#fb7185"}
+            fig_scatter = go.Figure()
+
+            if target_user:
+                kudos_list = PeerKudos.objects.filter(receiver=target_user).order_by('sent_at')
+                if kudos_list.exists():
+                    df_contrib = pd.DataFrame([{
+                        "Date": k.sent_at.strftime("%Y-%m-%d"),
+                        "Category": k.category,
+                        "Points": k.points
+                    } for k in kudos_list])
+
+                    pts_gen = df_contrib[df_contrib['Category'] == 'General Clinical']['Points'].sum() * 5
+                    pts_proc = df_contrib[df_contrib['Category'] == 'Procedural']['Points'].sum() * 5
+                    pts_cons = df_contrib[df_contrib['Category'] == 'Consultation']['Points'].sum() * 5
+                    
+                    for cat in categories:
+                        if cat in df_contrib['Category'].values:
+                            cat_df = df_contrib[df_contrib['Category'] == cat]
+                            fig_scatter.add_trace(go.Scatter(
+                                x=cat_df['Date'], y=cat_df['Points'], mode='markers', name=cat,
+                                marker=dict(size=12, color=color_map[cat], line=dict(width=1, color='white'))
+                            ))
+            else:
+                pts_gen, pts_proc, pts_cons = 0, 0, 0
+                
+            fig_scatter.update_layout(
+                height=260, margin=dict(l=0, r=0, t=30, b=0),
+                paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)',
+                yaxis_title="Points per Event", yaxis=dict(range=[0, 10], showgrid=True, gridcolor='#e2e8f0'),
+                xaxis=dict(showgrid=False),
+                legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="center", x=0.5, font=dict(size=11))
+            )
+            team_scatter_html = fig_scatter.to_html(full_html=False, include_plotlyjs=False, config={'displayModeBar': False})
 
     elif active_tab == 'Teamwork':
         teamwork_view = request.GET.get('t_view', '360')
@@ -1322,14 +1731,14 @@ def interpersonal_view(request):
     return render(request, 'dashboard/interpersonal_view.html', context)
 
 # ==========================================
-# MODUL STAFF (MEDICAL OFFICER PORTAL)
+# MODUL STAFF (Staff PORTAL)
 # ==========================================
 from django.contrib import messages
 from datetime import date
 import random # <--- PASTIKAN IMPORT INI ADA
 
 # ==========================================
-# MODUL STAFF (MEDICAL OFFICER PORTAL)
+# MODUL STAFF (Staff PORTAL)
 # ==========================================
 # 1. PADAM ATAU HIDE BARIS INI:
 # @login_required(login_url='/login/')
@@ -1460,13 +1869,26 @@ def staff_dashboard_view(request):
                 )
             messages.success(request, "✅ Mentorship session securely saved in DB.")
 
-        # --- SETTINGS & COACHING ---
-        elif form_type == 'settings':
-            messages.success(request, "✅ Profile & Account Settings successfully updated.")
+        elif form_type == 'system_settings':
+            # Simpan tetapan ke dalam Session Django
+            request.session['dark_mode'] = (request.POST.get('dark_mode') == 'on')
+            request.session['language'] = request.POST.get('language')
+            request.session['timezone'] = request.POST.get('timezone')
+            messages.success(request, "✅ System preferences successfully updated.")
+            return redirect(f'/staff/?section={section}')
+
         elif form_type == 'complete_coaching':
             request.session['coaching_completed'] = True
             messages.success(request, "⚡ AI Self-Coaching plan acknowledged! Your Operational Index has been upgraded to 88% (Target Achieved).")
             
+        elif form_type == 'acknowledge_feedback':
+            feedback_id = request.POST.get('feedback_id')
+            fb_obj = HODFeedback.objects.filter(id=feedback_id, receiver_staff=request.user).first()
+            if fb_obj:
+                fb_obj.is_acknowledged = True
+                fb_obj.save()
+                messages.success(request, "✅ Feedback acknowledged and archived.")
+                
         return redirect(f'/staff/?section={section}')
 
     chart_html = ""
@@ -1527,8 +1949,45 @@ def staff_dashboard_view(request):
 
     # --- PERFORMANCE TAB (Holistic Benchmark 10 Modul - SPIDER WEB) ---
     elif section == 'Performance':
+        # Dapatkan markah komprehensif staf semasa (Real Data)
+        s_scores = calculate_pri_score(request.user)
+        
+        # Ekstrak markah khusus modul untuk graf (menggunakan fallback jika kosong)
+        cpd_score = s_scores.get('score_cpd', 0)
+        clin_score = s_scores.get('score_clinical', 0)
+        ops_score = s_scores.get('score_operational', 0)
+        interp_score = s_scores.get('score_interpersonal', 0)
+        
         categories = ['Procedure Log', 'CPD Points', 'Doc. Audit', 'Policies', 'Productivity', 'Innovation', 'Patient Exp.', 'Emotional Intel.', 'Teamwork', 'Mentorship']
-        scores = [85, 90, 75, 95, 92, 60, 88, 82, 90, 70]
+        # Anggaran taburan berdasarkan tunjang untuk memenuhkan 10 bucu spider web
+        scores = [
+            clin_score, cpd_score, clin_score - 5, clin_score + 2, 
+            ops_score, max(0, ops_score - 15), 
+            interp_score, interp_score - 5, interp_score + 5, max(0, interp_score - 20)
+        ]
+        
+        # Cek status kelengkapan 10 modul langsung dari SQLite
+        has_proc = ProcedureLog.objects.filter(officer=request.user).exists()
+        has_cpd = CPDClaim.objects.filter(officer=request.user).exists()
+        has_docs = DocumentationLog.objects.filter(officer=request.user).exists()
+        has_policy = PolicyDeclaration.objects.filter(officer=request.user).exists()
+        has_prod = ProductivityLog.objects.filter(officer=request.user).exists()
+        has_innov = InnovationProject.objects.filter(officer=request.user).exists()
+        has_mypsq = MyPSQFeedback.objects.filter(doctor=request.user).exists()
+        has_ei = EmotionalReflection.objects.filter(officer=request.user).exists()
+        has_team = PeerKudos.objects.filter(receiver=request.user).exists()
+        has_mentor = MentorshipSession.objects.filter(mentor=request.user).exists()
+
+        # Hitung jumlah modul yang telah memiliki rekod data
+        completed_modules_count = sum([
+            has_proc, has_cpd, has_docs, has_policy, has_prod,
+            has_innov, has_mypsq, has_ei, has_team, has_mentor
+        ])
+        portfolio_compliance_pct = int((completed_modules_count / 10.0) * 100)
+
+        # Nilai ringkasan CUSUM dan Policy
+        cusum_pct = clin_score
+        policy_pct = min(100, clin_score + 5)
         
         kategori_penuh = categories + [categories[0]]
         markah_penuh = scores + [scores[0]]
@@ -1552,9 +2011,18 @@ def staff_dashboard_view(request):
         )
         radar_html = fig_radar.to_html(full_html=False, include_plotlyjs=False, config={'displayModeBar': False})
 
-    # DUA BARIS INI TELAH DIKELUARKAN DARI BLOK ELIF (DITOLAK KE KIRI)
-    staff_name = request.session.get('staff_name', 'Dr. Portal')
-    staff_dept = request.session.get('staff_dept', 'Outpatient')
+    # --- PROFIL DINAMIK SEBENAR DARI PANGKALAN DATA ---
+    user_obj = request.user
+    full_name_str = f"{user_obj.first_name} {user_obj.last_name}".strip()
+    
+    # Jika nama penuh kosong, guna ID Pengguna sebagai nama
+    staff_name = f"Dr. {full_name_str}" if full_name_str else f"Dr. {user_obj.username}"
+    
+    # Dapatkan jabatan dari Profil Pengguna
+    if hasattr(user_obj, 'profile') and user_obj.profile.department:
+        staff_dept = user_obj.profile.get_department_display()
+    else:
+        staff_dept = "Outpatient"
 
     # ==========================================
     # INTEGRASI MyPSQ REAL-TIME (FASA 3)
@@ -1583,70 +2051,45 @@ def staff_dashboard_view(request):
         mypsq_comments = []
 
     # ==========================================
-    # LOGIK DIAGNOSTIK AI EVALUATOR (3 TUNJANG)
+    # PROMOTION READINESS INDEX (PRI) CALCULATION (LIVE DB INTEGRATION)
     # ==========================================
-    random.seed(staff_name)
-    
-    score_clinical = random.randint(75, 95)
-    score_interpersonal = random.randint(80, 98)
-    
-    # Check if MO has completed the self-coaching module
+    # Tarik data dari Enjin Pengira Skor (services.py) berdasarkan data sebenar!
+    scores = calculate_pri_score(request.user)
+    score_clinical = scores.get('score_clinical', 85)
+    score_ops_coding = scores.get('score_operational', 80)
+    score_interpersonal = scores.get('score_interpersonal', 88)
+    score_cpd = scores.get('score_cpd', 90)
+    pri_score = scores.get('pri_score', 85)
+    promotion_tier = scores.get('promotion_tier', 'Tier 1: Fast-Track Candidate')
+    promotion_color = scores.get('promotion_color', '#16a34a')
+    next_grade = scores.get('next_grade', 'UD48 (Fast-Track)')
+
+    # ==========================================
+    # LOGIK DIAGNOSTIK AI EVALUATOR (BERDASARKAN DATA SEBENAR)
+    # ==========================================
     if request.session.get('coaching_completed'):
-        score_ops_coding = 88  
+        score_ops_coding = max(score_ops_coding, 88)  # AI Boost jika selesai coaching
         ai_risk_tier = "GREEN"
         ai_alert_title = "AI Diagnostic Alert: Remediation Completed"
-        ai_alert_msg = f"Congratulations! Clinical Coding tasks ({score_ops_coding}%) have been successfully completed. All 3 Pillars are now in optimal range."
+        ai_alert_msg = f"Congratulations! Operational tasks ({score_ops_coding}%) have been successfully caught up. All 3 Pillars are now in optimal range."
         ai_action_text = "View Verified Status"
     else:
-        score_ops_coding = random.randint(40, 48)  
-        
-        # Determine Risk Tier based on 3-Pillar score ranges
-        if score_ops_coding < 50 or score_clinical < 65:
+        # Penilaian Risiko AI secara Real-Time bergantung pada PRI Pangkalan Data
+        if score_ops_coding < 65 or score_clinical < 65:
             ai_risk_tier = "RED"
             ai_alert_title = "AI Diagnostic Alert: Operational Lag Detected"
-            ai_alert_msg = f"AI Engine detected an efficiency drop in Task Velocity (Clinical Coding: {score_ops_coding}%) and documentation time backlog. Your Clinical ({score_clinical}%) & Interpersonal ({score_interpersonal}%) performance remain outstanding."
+            ai_alert_msg = f"AI Engine detected an efficiency drop (Ops: {score_ops_coding}%). Your Clinical ({score_clinical}%) & Interpersonal ({score_interpersonal}%) performance are currently monitored."
             ai_action_text = "Start AI Self-Coaching"
-        elif score_ops_coding < 75 or score_clinical < 80:
+        elif score_ops_coding < 80 or score_clinical < 80:
             ai_risk_tier = "YELLOW"
             ai_alert_title = "AI Diagnostic Alert: Moderate Attention Needed"
-            ai_alert_msg = f"Your overall performance is stable, but documentation completion rate is at a borderline level ({score_ops_coding}%). Self-review is recommended."
+            ai_alert_msg = f"Your overall performance is stable, but your operational score ({score_ops_coding}%) is at a borderline level. Self-review is recommended."
             ai_action_text = "Review Guidance"
         else:
             ai_risk_tier = "GREEN"
             ai_alert_title = "AI Diagnostic Alert: Outstanding Performance"
-            ai_alert_msg = f"Congratulations! All 3 Pillars are at an outstanding level (>85%). You meet the eligibility criteria for the Excellent Service Award."
+            ai_alert_msg = f"Congratulations! All 3 Pillars are at an outstanding level (>80%). You meet the eligibility criteria for the Excellent Service Award."
             ai_action_text = "View Talent Track"
-
-    # ==========================================
-    # PROMOTION READINESS INDEX (PRI) CALCULATION (LIVE DB INTEGRATION)
-    # ==========================================
-    if request.user.is_authenticated:
-        # Panggil Enjin Pengira Skor Bersepadu untuk Staf ini (Menggunakan .get untuk elak KeyError)
-        scores = calculate_pri_score(request.user)
-        score_clinical = scores.get('score_clinical', 85)
-        score_ops_coding = scores.get('score_operational', 80)
-        score_interpersonal = scores.get('score_interpersonal', 88)
-        score_cpd = scores.get('score_cpd', 90)
-        pri_score = scores.get('pri_score', 85)
-        promotion_tier = scores.get('promotion_tier', 'Tier 1: Fast-Track Candidate')
-        promotion_color = scores.get('promotion_color', '#16a34a')
-        next_grade = scores.get('next_grade', 'UD48 (Fast-Track)')
-    else:
-        # Fallback simulasi jika log masuk tanpa auth
-        score_cpd = 90
-        pri_score = int((0.40 * score_clinical) + (0.30 * score_ops_coding) + (0.20 * score_interpersonal) + (0.10 * score_cpd))
-        if pri_score >= 85:
-            promotion_tier = "Tier 1: Fast-Track Candidate"
-            promotion_color = "#16a34a"
-            next_grade = "UD48 (Fast-Track)"
-        elif pri_score >= 70:
-            promotion_tier = "Tier 2: On-Track (Time-Based)"
-            promotion_color = "#d97706"
-            next_grade = "UD48 (Time-Based)"
-        else:
-            promotion_tier = "Tier 3: Action Required"
-            promotion_color = "#6d3ec4"
-            next_grade = "UD48 (Deferred)"
 
     # Tarik rekod DocumentationLog & ProductivityLog sebenar dari DB bagi staf ini
     doc_logs = DocumentationLog.objects.filter(officer=staff_user).order_by('-created_at') if staff_user else []
@@ -1661,9 +2104,53 @@ def staff_dashboard_view(request):
         prod_cleared_avg = 42
         prod_consult_avg = 12.0
         prod_punctuality_avg = 95.0
+        
+    # --- TARIK NOTIFIKASI RASMI HOD KE STAFF ---
+    active_hod_feedbacks = HODFeedback.objects.filter(receiver_staff=request.user, is_acknowledged=False).order_by('-created_at')
+
+    # --- JANA DATA KALENDAR DINAMIK STAFF DARI DB SEBENAR ---
+    staff_calendar_events = []
+
+    # 1. Sesi Mentorship Dijadualkan
+    for m in MentorshipSession.objects.filter(mentor=request.user):
+        staff_calendar_events.append({
+            'title': f"Mentoring: {m.mentee_name}",
+            'date': m.session_date.strftime('%Y-%m-%d'),
+            'day': m.session_date.day,
+            'type': 'duty',
+            'desc': f"Topic: {m.topic} ({m.duration_hours}h)"
+        })
+
+    # 2. Peringatan Kelewatan Dokumentasi Pesakit
+    for ddoc in DocumentationLog.objects.filter(officer=request.user, is_ontime=False):
+        ev_day = ddoc.created_at.day if hasattr(ddoc, 'created_at') and ddoc.created_at else date.today().day
+        ev_date = ddoc.created_at.strftime('%Y-%m-%d') if hasattr(ddoc, 'created_at') and ddoc.created_at else date.today().strftime('%Y-%m-%d')
+        staff_calendar_events.append({
+            'title': f"Doc Action Due: {ddoc.patient_id}",
+            'date': ev_date,
+            'day': ev_day,
+            'type': 'pending',
+            'desc': f"Delayed entry ({ddoc.delay_hours}h)"
+        })
+
+    # 3. Maklum Balas HOD Rasmi Yang Perlu Diperakui
+    for fb in active_hod_feedbacks:
+        ev_day = fb.created_at.day if hasattr(fb, 'created_at') and fb.created_at else date.today().day
+        ev_date = fb.created_at.strftime('%Y-%m-%d') if hasattr(fb, 'created_at') and fb.created_at else date.today().strftime('%Y-%m-%d')
+        staff_calendar_events.append({
+            'title': f"HOD Notice: {fb.module_reference}",
+            'date': ev_date,
+            'day': ev_day,
+            'type': 'fast-track',
+            'desc': fb.message_text[:40] + "..."
+        })
+
+    calendar_events_json = json.dumps(staff_calendar_events, cls=DjangoJSONEncoder)
 
     context = {
         'section': section,
+        'calendar_events_json': calendar_events_json,
+        'active_hod_feedbacks': active_hod_feedbacks,
         'doc_logs': doc_logs,
         'prod_logs': prod_logs,
         'prod_cleared_avg': prod_cleared_avg,
@@ -1680,6 +2167,20 @@ def staff_dashboard_view(request):
         'interpersonal_rating': "High",
         'staff_name': staff_name,
         'staff_dept': staff_dept,
+        'has_proc': locals().get('has_proc', False),
+        'has_cpd': locals().get('has_cpd', False),
+        'has_docs': locals().get('has_docs', False),
+        'has_policy': locals().get('has_policy', False),
+        'has_prod': locals().get('has_prod', False),
+        'has_innov': locals().get('has_innov', False),
+        'has_mypsq': locals().get('has_mypsq', False),
+        'has_ei': locals().get('has_ei', False),
+        'has_team': locals().get('has_team', False),
+        'has_mentor': locals().get('has_mentor', False),
+        'completed_modules_count': locals().get('completed_modules_count', 0),
+        'portfolio_compliance_pct': locals().get('portfolio_compliance_pct', 0),
+        'cusum_pct': locals().get('cusum_pct', 85),
+        'policy_pct': locals().get('policy_pct', 90),
         'ai_risk_tier': ai_risk_tier,
         'ai_alert_title': ai_alert_title,
         'ai_alert_msg': ai_alert_msg,
@@ -1884,51 +2385,89 @@ def overall_analytics_view(request):
     return render(request, 'dashboard/overall_analytics.html', context)
 
 # ==========================================
-# DEDICATED OFFICER COGNITIVE PROFILE
+# DEDICATED OFFICER COGNITIVE PROFILE (10-MODULE RADAR & DB INTEGRATED)
 # ==========================================
 @login_required(login_url='/login/')
 def officer_profile_view(request):
     officer_name = request.GET.get('officer', 'Pegawai Perubatan')
-    clinic_name = request.GET.get('clinic', 'Klinik Kesihatan')
-    state_name = request.GET.get('state', 'State')
+    clinic_name = request.GET.get('clinic', 'Klinik Kesihatan Medong')
+    state_name = request.GET.get('state', 'Sarawak')
     
-    # Jana data mentah berasaskan nama (Supaya sentiasa konsisten bila di-refresh)
-    import random
-    random.seed(officer_name)
-    
-    score_clinical = random.randint(75, 98)
-    score_ops = random.randint(70, 95)
-    score_interp = random.randint(65, 95)
-    score_cpd = random.randint(80, 100)
-    score_doc = random.randint(85, 100)
-    total_score = int((score_clinical + score_ops + score_interp) / 3)
-    
-    # Status Penilaian
-    status = "Outstanding" if total_score >= 85 else ("Competent" if total_score >= 65 else "Needs Attention")
-    
-    # Radar Chart Kognitif
-    categories = ['Clinical Skill', 'CPD Knowledge', 'Doc Quality', 'Emotional Intel', 'Teamwork']
-    values = [score_clinical, score_cpd, score_doc, score_interp, random.randint(70, 95)]
-    
+    # 1. Bersihkan Nama Pegawai untuk Semakan Pangkalan Data Sebenar
+    clean_name = officer_name.replace("🟢", "").replace("Dr.", "").split(" (")[0].strip()
+    target_user = User.objects.filter(username__icontains=clean_name).first()
+    if not target_user:
+        target_user = User.objects.filter(first_name__icontains=clean_name).first()
+        
+    # 2. Tarik Data Sebenar / Fallback Terkawal Berasaskan Nama
+    if target_user:
+        scores = calculate_pri_score(target_user)
+        score_clinical = scores.get('score_clinical', 85)
+        score_ops = scores.get('score_operational', 80)
+        score_interp = scores.get('score_interpersonal', 88)
+        score_cpd = scores.get('score_cpd', 90)
+        total_score = scores.get('pri_score', 85)
+        promotion_tier = scores.get('promotion_tier', 'Tier 1: Fast-Track Candidate')
+        grade_label = target_user.profile.get_department_display() if hasattr(target_user, 'profile') else 'Medical Officer'
+    else:
+        import random
+        random.seed(officer_name)
+        score_clinical = random.randint(78, 94)
+        score_ops = random.randint(75, 92)
+        score_interp = random.randint(80, 95)
+        score_cpd = random.randint(80, 98)
+        total_score = int((0.40 * score_clinical) + (0.30 * score_ops) + (0.30 * score_interp))
+        promotion_tier = "Tier 1: Fast-Track Candidate" if total_score >= 85 else ("Tier 2: On-Track (Time-Based)" if total_score >= 70 else "Tier 3: Action Required")
+        grade_label = "UD43/47/52"
+
+    status = "Outstanding" if total_score >= 85 else ("Competent" if total_score >= 70 else "Needs Attention")
+
+    # 3. Nilai 10 Modul Lengkap untuk Radar 360°
+    categories = [
+        'Procedure Log', 'CPD Points', 'Policies (SOP)', 'Doc. Audit', 
+        'Productivity', 'Innovation', 
+        'Patient Exp.', 'Emotional Intel.', 'Teamwork', 'Mentorship'
+    ]
+    values = [
+        score_clinical,
+        score_cpd,
+        min(100, score_clinical + 3),
+        max(65, score_clinical - 4),
+        score_ops,
+        max(60, score_ops - 8),
+        score_interp,
+        max(70, score_interp - 4),
+        min(100, score_interp + 4),
+        max(65, score_interp - 6)
+    ]
+
+    # 4. Bina Radar Chart 10 Modul Bertemakan Royal Purple
     fig_radar = go.Figure()
     fig_radar.add_trace(go.Scatterpolar(
         r=values + [values[0]],
         theta=categories + [categories[0]],
         fill='toself',
-        fillcolor='rgba(190, 18, 60, 0.2)',
-        line=dict(color='#6d3ec4', width=2),
-        marker=dict(size=6, color='#150a35')
+        fillcolor='rgba(109, 62, 196, 0.22)',
+        line=dict(color='#6d3ec4', width=3),
+        marker=dict(size=7, color='#150a35', symbol='circle'),
+        hoverinfo='r+theta',
+        name='Competency'
     ))
     fig_radar.update_layout(
         polar=dict(
-            radialaxis=dict(visible=True, range=[0, 100], tickfont=dict(size=9, color='#150a35')),
-            angularaxis=dict(tickfont=dict(size=10, color='#150a35', weight='bold'))
+            bgcolor='rgba(243, 237, 255, 0.45)',
+            radialaxis=dict(visible=True, range=[0, 100], showgrid=True, gridcolor='#e7dff2', tickfont=dict(size=9.5, color='#150a35')),
+            angularaxis=dict(showgrid=True, gridcolor='#e7dff2', linecolor='#e7dff2', tickfont=dict(size=10.5, color='#150a35', weight='bold'))
         ),
-        margin=dict(t=20, b=20, l=30, r=30),
-        paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)',
-        showlegend=False, height=320
+        margin=dict(t=25, b=25, l=45, r=45),
+        paper_bgcolor='rgba(0,0,0,0)',
+        plot_bgcolor='rgba(0,0,0,0)',
+        showlegend=False,
+        height=380
     )
     radar_html = fig_radar.to_html(full_html=False, include_plotlyjs=False, config={'displayModeBar': False})
+
+    promotion_track = promotion_tier.split(":")[0] if ":" in str(promotion_tier) else promotion_tier
 
     context = {
         'officer_name': officer_name,
@@ -1936,9 +2475,13 @@ def officer_profile_view(request):
         'state_name': state_name,
         'total_score': total_score,
         'status': status,
+        'promotion_tier': promotion_tier,
+        'promotion_track': promotion_track,
+        'grade_label': grade_label,
         'score_clinical': score_clinical,
         'score_ops': score_ops,
         'score_interp': score_interp,
+        'score_cpd': score_cpd,
         'radar_html': radar_html,
     }
     return render(request, 'dashboard/officer_profile.html', context)
@@ -1972,7 +2515,7 @@ def action_center_insight_view(request):
 
     red_flags = [
         {'type': 'CUSUM Breach Warning', 'officer': 'Dr. Ramesh Lee', 'facility': 'Klinik Kesihatan Medong', 'severity': 'Urgent', 'time': 'Today, 08:30 AM', 'detail': 'Safety control limit breached in LIMA-LAD Procedure.'},
-        {'type': 'Fast-Track Candidates (PRI ≥ 85%)', 'officer': '24 Medical Officers', 'facility': 'Multiple Facilities', 'severity': 'Success', 'time': 'Today, 07:00 AM', 'detail': 'AI shortlisted 24 Officers eligible for Fast-Track UD48 promotion.'},
+        {'type': 'Fast-Track Candidates (PRI ≥ 85%)', 'officer': '24 Staffs', 'facility': 'Multiple Facilities', 'severity': 'Success', 'time': 'Today, 07:00 AM', 'detail': 'AI shortlisted 24 Officers eligible for Fast-Track UD48 promotion.'},
         {'type': 'Pending Approval Log', 'officer': 'Multiple Officers', 'facility': 'Klinik Kesihatan Medong', 'severity': 'Pending', 'time': 'Yesterday, 18:00 PM', 'detail': '8 Procedure logs & 3 CPD claims require HOD validation.'},
         {'type': 'SOP Documentation Drop', 'officer': 'Outpatient Department', 'facility': 'Klinik Kesihatan Medong', 'severity': 'Warning', 'time': '12 Sep 2026', 'detail': 'Clinic Outpatient records timeliness dropped below 80% target.'},
     ]
@@ -2119,7 +2662,7 @@ def competency_matrix_insight_view(request):
 @login_required(login_url='/login/')
 def officers_directory_insight_view(request):
     """
-    Dedicated Insight Page: Medical Officers Directory & Roster Allocation
+    Dedicated Insight Page: Staffs Directory & Roster Allocation
     """
     hod_scope = getattr(request.user.profile, 'hod_scope', 'NATIONAL')
     hod_state = getattr(request.user.profile, 'assigned_state', None)

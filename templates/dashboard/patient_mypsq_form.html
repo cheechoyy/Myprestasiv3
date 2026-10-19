@@ -15,9 +15,18 @@
                 extend: {
                     fontFamily: { sans: ['Inter', 'sans-serif'] },
                     colors: {
+                        // Timpa sepenuhnya palet 'rose' kepada Royal Purple
                         rose: {
-                            50: '#f3edff', 100: '#e7dff2', 200: '#fecdd3',
-                            500: '#a577ff', 700: '#6d3ec4', 900: '#150a35',
+                            50: '#f3edff',
+                            100: '#e7dff2',
+                            200: '#d8c7f4',
+                            300: '#c8b6e8',
+                            400: '#a577ff',
+                            500: '#8554d4',
+                            600: '#6d3ec4',
+                            700: '#6d3ec4',
+                            800: '#5528a6',
+                            900: '#150a35',
                         }
                     }
                 }
@@ -27,21 +36,21 @@
     <style>
         body { font-family: 'Inter', sans-serif; background-color: #f3edff; }
         .rating-input:checked + .rating-label {
-            background-color: #6d3ec4;
-            color: white;
-            border-color: #6d3ec4;
-            box-shadow: 0 4px 14px rgba(190, 18, 60, 0.35);
+            background: linear-gradient(135deg, #6d3ec4 0%, #150a35 100%) !important;
+            color: white !important;
+            border-color: #6d3ec4 !important;
+            box-shadow: 0 6px 18px rgba(109, 62, 196, 0.4) !important;
             transform: translateY(-2px);
         }
         .rating-input:checked + .rating-label svg {
-            color: white;
-            stroke: white;
+            color: white !important;
+            stroke: white !important;
         }
         .rating-label { transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1); }
         .infra-checkbox:checked + .infra-label {
-            background-color: #f3edff;
-            border-color: #6d3ec4;
-            color: #150a35;
+            background-color: #f3edff !important;
+            border-color: #6d3ec4 !important;
+            color: #150a35 !important;
             font-weight: 800;
         }
     </style>
@@ -96,7 +105,7 @@
                     <div class="absolute top-0 right-0 w-28 h-24 bg-rose-100/60 rounded-bl-full pointer-events-none"></div>
                     
                     <span class="inline-block px-3 py-1 rounded-full bg-rose-100 text-rose-800 text-[11px] font-extrabold tracking-wider uppercase mb-4">
-                        Assessed Medical Officer
+                        Assessed Staff
                     </span>
 
                     <div class="flex items-center gap-4 mb-4">
@@ -391,7 +400,7 @@
 
                     <!-- SUBMIT BUTTON CARD -->
                     <div class="bg-white p-6 md:p-8 rounded-3xl shadow-xl shadow-rose-900/5 border border-rose-100 text-center space-y-4">
-                        <button type="submit" class="w-full bg-rose-700 hover:bg-rose-900 text-white font-black py-4 px-8 rounded-2xl shadow-xl shadow-rose-700/30 hover:shadow-rose-900/50 hover:-translate-y-0.5 active:translate-y-0 transition-all text-lg flex items-center justify-center gap-3">
+                        <button type="submit" class="w-full bg-gradient-to-r from-[#6d3ec4] to-[#150a35] hover:from-[#150a35] hover:to-[#6d3ec4] text-white font-black py-4 px-8 rounded-2xl shadow-xl shadow-purple-900/25 hover:shadow-purple-900/40 hover:-translate-y-0.5 active:translate-y-0 transition-all text-lg flex items-center justify-center gap-3 cursor-pointer">
                             <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/></svg>
                             Submit Official MyPSQ Evaluation
                         </button>

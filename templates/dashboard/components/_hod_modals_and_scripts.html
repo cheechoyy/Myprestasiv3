@@ -130,8 +130,7 @@
      HOD MONTHLY CALENDAR & SCHEDULE MODAL
      ========================================== -->
 <div class="modal-overlay" id="scheduleModal" style="z-index: 9999;">
-    <div class="modal-content" style="width: 1180px; max-width: 95vw; height: 88vh; border-radius: 20px; padding: 25px; box-shadow: 0 20px 50px rgba(136, 19, 55, 0.25); display: flex; flex-direction: column; overflow: hidden; border: 1px solid #e7dff2;">
-        <button class="modal-close" onclick="closeScheduleModal()" style="top: 20px; right: 20px; font-size: 20px;">✕</button>
+    <div class="modal-content" style="width: 1180px; max-width: 95vw; height: 88vh; border-radius: 20px; padding: 25px; box-shadow: 0 20px 50px rgba(21, 10, 53, 0.25); display: flex; flex-direction: column; overflow: hidden; border: 1px solid #e7dff2;">
 
         <!-- HEADER -->
         <div style="display: flex; align-items: center; justify-content: space-between; border-bottom: 2px solid #e7dff2; padding-bottom: 15px; margin-bottom: 15px; flex-shrink: 0;">
@@ -323,7 +322,7 @@
     const myPrestasiHODModules = [
         { title: "HOD Action Center (Red Flags & Triage)", category: "Clinical Excellence", keywords: "action center red flags triage cusum breach fast track approval sop documentation", url: "{% url 'action_center_insight' %}?state={{ pilihan_negeri }}&clinic={{ pilihan_klinik }}" },
         { title: "Department Monthly KPI Analytics", category: "Clinical Excellence", keywords: "kpi monthly target actual score performance overall", url: "{% url 'kpi_analytics_insight' %}?state={{ pilihan_negeri }}&clinic={{ pilihan_klinik }}" },
-        { title: "Medical Officers Directory & Roster", category: "Management", keywords: "medical officers directory roster mo staff list grade score status", url: "{% url 'officers_directory_insight' %}?state={{ pilihan_negeri }}&clinic={{ pilihan_klinik }}" },
+        { title: "Staffs Directory & Roster", category: "Management", keywords: "Staffs directory roster mo staff list grade score status", url: "{% url 'officers_directory_insight' %}?state={{ pilihan_negeri }}&clinic={{ pilihan_klinik }}" },
         { title: "MO Competency Matrix & PRI Distribution", category: "Analytics", keywords: "competency matrix heatmap clinical operational interpersonal pri score", url: "{% url 'competency_matrix_insight' %}?state={{ pilihan_negeri }}&clinic={{ pilihan_klinik }}" },
         { title: "Clinical Excellence Evaluation Module", category: "Evaluation", keywords: "clinical skills cusum knowledge cpd cme policies sop documentation", url: "{% url 'cts_module' %}?dept={{ user.profile.department|default:'FMS' }}" },
         { title: "Operational Output Evaluation Module", category: "Evaluation", keywords: "operational productivity workload efficiency innovation research trials", url: "{% url 'operational_module' %}?dept={{ user.profile.department|default:'FMS' }}" },
@@ -444,5 +443,64 @@
         btnA.style.background = view === 'add' ? '#6d3ec4' : 'transparent';
         btnA.style.color = view === 'add' ? 'white' : '#150a35';
         btnA.style.borderColor = view === 'add' ? '#6d3ec4' : 'transparent';
+    }
+
+    // --- ENJIN KALENDAR DINAMIK DARI PANGKALAN DATA (HOD) ---
+    document.addEventListener("DOMContentLoaded", function() {
+        const eventsData = {{ calendar_events_json|default:"[]"|safe }};
+        renderDynamicCalendar(eventsData);
+    });
+
+    function renderDynamicCalendar(events) {
+        if (!events || events.length === 0) return;
+
+        // 1. Kemas kini Lencana Jumlah Tindakan
+        const actionBadge = document.querySelector('#calAreaMonth span[style*="border-radius: 12px"]');
+        if (actionBadge) {
+            actionBadge.innerText = events.length + " Department Action Items";
+        }
+
+        // 2. Suntik Acara ke dalam Kotak Tarikh Bulan (Month View)
+        events.forEach(function(ev) {
+            const dayNum = parseInt(ev.day);
+            if (!dayNum) return;
+
+            // Cari kotak hari berkenaan dalam grid kalendar
+            const dayCells = document.querySelectorAll('#calAreaMonth div[style*="grid-template-columns: repeat(7, 1fr)"] > div');
+            dayCells.forEach(function(cell) {
+                const daySpan = cell.querySelector('span');
+                if (daySpan && parseInt(daySpan.innerText.trim()) === dayNum && !cell.style.opacity) {
+                    const badge = document.createElement('div');
+                    const colorBg = ev.type === 'pending' ? '#d97706' : (ev.type === 'fast-track' ? '#16a34a' : '#6d3ec4');
+                    badge.style.cssText = `background: ${colorBg}; color: white; font-size: 9px; padding: 3px 5px; border-radius: 4px; font-weight: 800; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 3px;`;
+                    badge.title = ev.title + (ev.desc ? " (" + ev.desc + ")" : "");
+                    badge.innerText = ev.title;
+                    cell.appendChild(badge);
+                }
+            });
+        });
+
+        // 3. Suntik Acara ke dalam Senarai (List View)
+        const listContainer = document.querySelector('#calAreaList > div');
+        if (listContainer) {
+            listContainer.innerHTML = ''; // Bersihkan data olok-olok statik
+            events.forEach(function(ev) {
+                const borderCol = ev.type === 'pending' ? '#d97706' : (ev.type === 'fast-track' ? '#16a34a' : '#6d3ec4');
+                const textCol = ev.type === 'pending' ? '#92400e' : (ev.type === 'fast-track' ? '#14532d' : '#150a35');
+                const bgBox = ev.type === 'pending' ? '#fffbeb' : (ev.type === 'fast-track' ? '#f0fdf4' : '#f3edff');
+
+                const row = document.createElement('div');
+                row.style.cssText = `background: ${bgBox}; border-left: 5px solid ${borderCol}; padding: 12px 16px; border-radius: 12px; display: flex; justify-content: space-between; align-items: center; border: 1px solid #e7dff2; border-left-width: 5px;`;
+                row.innerHTML = `
+                    <div>
+                        <span style="font-size: 10px; font-weight: 800; color: ${borderCol}; text-transform: uppercase;">${ev.date} • LIVE DATABASE RECORD</span>
+                        <div style="font-size: 14px; font-weight: 800; color: ${textCol}; margin-top: 2px;">${ev.title}</div>
+                        <span style="font-size: 11px; color: #6f628b; font-weight: 600;">${ev.desc || 'Requires administrative review.'}</span>
+                    </div>
+                    <span style="background: ${borderCol}; color: white; padding: 5px 12px; border-radius: 6px; font-size: 11px; font-weight: 800;">Action Required</span>
+                `;
+                listContainer.appendChild(row);
+            });
+        }
     }
 </script>
