@@ -2640,6 +2640,19 @@ def _save_innovation_project(request):
 
 CLINICAL_CPD_TARGET_POINTS = 50
 CLINICAL_DOC_ONTIME_TARGET_PCT = 80
+OPERATIONAL_RECENT_LOG_LIMIT = 14
+OPERATIONAL_INNOVATION_GROUPS = (
+    'Research',
+    'Clinical Trial',
+    'Technology Adoption',
+    'Publication',
+)
+OPERATIONAL_LEGACY_INNOVATION_LABEL = 'General/Uncategorised'
+OPERATIONAL_TECH_PROFICIENCY = {
+    'Amateur (Learning)': {'progress': 33, 'color': '#a577ff'},
+    'Intermediate (Independent)': {'progress': 66, 'color': '#6f628b'},
+    'Expert (Trainer)': {'progress': 100, 'color': '#6d3ec4'},
+}
 
 
 def _format_hours_minutes(hours):
@@ -2711,6 +2724,291 @@ def _build_clinical_context(user, doc_logs):
         ),
         'doc_avg_delay_display': _format_hours_minutes(average_delay) or 'No data',
         'doc_ontime_target_pct': CLINICAL_DOC_ONTIME_TARGET_PCT,
+    }
+
+
+def _operational_metric_display(value, decimal_places=1, suffix=''):
+    """Format an optional dashboard metric without turning missing data into 0."""
+    if value is None:
+        return 'No data'
+    if decimal_places == 0:
+        text = str(int(round(value)))
+    else:
+        text = f'{round(value, decimal_places):.{decimal_places}f}'.rstrip('0').rstrip('.')
+    return f'{text}{suffix}'
+
+
+def _operational_average(values):
+    """Average only recorded values so blank fields are not counted as zero."""
+    recorded = [value for value in values if value is not None]
+    return sum(recorded) / len(recorded) if recorded else None
+
+
+def _operational_staff_name(user):
+    """Return the name used for the department leaderboard."""
+    full_name = user.get_full_name().strip()
+    return full_name or user.username
+
+
+def _classify_innovation_project(project):
+    """Map a project to one of the four operational innovation groups."""
+    innovation_type = (project.innovation_type or '').strip()
+    if innovation_type in OPERATIONAL_INNOVATION_GROUPS:
+        return innovation_type
+
+    category = (project.category or '').strip()
+    # Older records used "Technology Adaptation" while the current form label
+    # and stored innovation_type are "Technology Adoption".
+    if category == 'Technology Adaptation':
+        return 'Technology Adoption'
+    if category in OPERATIONAL_INNOVATION_GROUPS:
+        return category
+    return OPERATIONAL_LEGACY_INNOVATION_LABEL
+
+
+def _operational_project_payload(project, innovation_type):
+    """Build the template-facing representation of one innovation project."""
+    is_verified = bool(project.is_verified)
+    payload = {
+        'id': project.id,
+        'title': project.project_title,
+        'submitted_date_display': (
+            project.submitted_at.strftime('%d %b %Y')
+            if project.submitted_at else 'Not recorded'
+        ),
+        'score': project.score,
+        'is_verified': is_verified,
+        'status_label': 'Verified' if is_verified else 'Pending Verification',
+        'status_css': 'bg-success' if is_verified else 'bg-warning',
+    }
+
+    if innovation_type == 'Research':
+        payload.update({
+            'nmrr_id': project.nmrr_id or 'Not recorded',
+            'research_role': project.research_role or 'Not recorded',
+        })
+    elif innovation_type == 'Clinical Trial':
+        payload.update({
+            'trial_phase': project.trial_phase or 'Not recorded',
+            'recruitment_display': (
+                f'{project.recruitment_count} Patients'
+                if project.recruitment_count is not None else 'Not recorded'
+            ),
+            'trial_status': project.trial_status or 'Not recorded',
+        })
+    elif innovation_type == 'Technology Adoption':
+        proficiency = (project.proficiency_level or '').strip()
+        proficiency_style = OPERATIONAL_TECH_PROFICIENCY.get(
+            proficiency, {'progress': 0, 'color': '#94a3b8'}
+        )
+        payload.update({
+            'adoption_date_display': (
+                project.adoption_date.strftime('%d %b %Y')
+                if project.adoption_date else 'Not recorded'
+            ),
+            'proficiency_display': proficiency or 'Not recorded',
+            'proficiency_progress': proficiency_style['progress'],
+            'proficiency_color': proficiency_style['color'],
+        })
+    elif innovation_type == 'Publication':
+        payload.update({
+            'journal': project.journal_name or 'Not recorded',
+            'doi': project.doi or 'Not recorded',
+            'publication_year_display': (
+                project.publication_year
+                if project.publication_year is not None else 'Not recorded'
+            ),
+        })
+    return payload
+
+
+def _build_department_leaderboard(user):
+    """Rank same-department staff by current-year innovation output."""
+    current_year = timezone.localdate().year
+    empty_result = {
+        'ops_department': None,
+        'ops_dept_rank': None,
+        'ops_dept_rank_display': 'No Rank',
+        'ops_dept_rank_total': 0,
+        'ops_leaderboard': [],
+    }
+
+    profile = getattr(user, 'profile', None)
+    department = getattr(profile, 'department', None)
+    if not department:
+        return empty_result
+
+    profiles = list(
+        UserProfile.objects.filter(role='STAFF', department=department)
+        .select_related('user')
+    )
+    if not profiles:
+        return empty_result
+
+    officer_ids = [staff_profile.user_id for staff_profile in profiles]
+    projects = InnovationProject.objects.filter(
+        officer_id__in=officer_ids,
+        submitted_at__year=current_year,
+    ).only(
+        'id', 'officer_id', 'innovation_type', 'category', 'is_verified'
+    )
+    projects_by_officer = {officer_id: [] for officer_id in officer_ids}
+    for project in projects:
+        projects_by_officer.setdefault(project.officer_id, []).append(project)
+
+    rows = []
+    for staff_profile in profiles:
+        staff_projects = projects_by_officer.get(staff_profile.user_id, [])
+        display_name = _operational_staff_name(staff_profile.user)
+        rows.append({
+            'user_id': staff_profile.user_id,
+            'name': display_name,
+            'project_count': len(staff_projects),
+            'verified_count': sum(
+                1 for project in staff_projects if project.is_verified
+            ),
+            'publication_count': sum(
+                1 for project in staff_projects
+                if _classify_innovation_project(project) == 'Publication'
+            ),
+            'is_current_user': staff_profile.user_id == user.id,
+        })
+
+    rows.sort(key=lambda row: (
+        -row['project_count'],
+        -row['verified_count'],
+        -row['publication_count'],
+        row['name'].casefold(),
+        row['user_id'],
+    ))
+
+    current_row = None
+    for rank, row in enumerate(rows, start=1):
+        row['rank'] = rank
+        if row['is_current_user']:
+            current_row = row
+
+    leaderboard_rows = rows[:3]
+    if current_row and current_row['rank'] > len(leaderboard_rows):
+        leaderboard_rows.append(current_row)
+
+    return {
+        'ops_department': department,
+        'ops_dept_rank': current_row['rank'] if current_row else None,
+        'ops_dept_rank_display': (
+            f"#{current_row['rank']} of {len(rows)}"
+            if current_row else 'No Rank'
+        ),
+        'ops_dept_rank_total': len(rows),
+        'ops_leaderboard': leaderboard_rows,
+    }
+
+
+def _build_operational_context(user, prod_logs):
+    """Build productivity and innovation values for the staff Operational tab."""
+    current_year = timezone.localdate().year
+    logs = list(prod_logs)
+
+    cleared_avg = _operational_average(
+        [log.patients_cleared for log in logs]
+    )
+    ward_avg = _operational_average([log.ward_cases for log in logs])
+    procedure_avg = _operational_average(
+        [log.procedures_completed for log in logs]
+    )
+    consult_avg = _operational_average(
+        [log.avg_consult_minutes for log in logs]
+    )
+    punctuality_avg = _operational_average(
+        [log.punctuality_rate for log in logs]
+    )
+
+    recent_logs = []
+    for log in logs[:OPERATIONAL_RECENT_LOG_LIMIT]:
+        recent_logs.append({
+            'record_date_display': log.record_date.strftime('%d %b %Y'),
+            'patients_cleared_display': (
+                f'{log.patients_cleared} Cases'
+                if log.patients_cleared is not None else 'Not recorded'
+            ),
+            'ward_cases_display': (
+                f'{log.ward_cases} Cases'
+                if log.ward_cases is not None else 'Not recorded'
+            ),
+            'procedures_display': (
+                f'{log.procedures_completed} Cases'
+                if log.procedures_completed is not None else 'Not recorded'
+            ),
+            'avg_consult_display': (
+                f'{_operational_metric_display(log.avg_consult_minutes)} Mins'
+                if log.avg_consult_minutes is not None else 'Not recorded'
+            ),
+            'punctuality_display': log.punctuality_status or 'Not recorded',
+            'status_label': 'Recorded',
+        })
+
+    projects = list(
+        InnovationProject.objects.filter(officer=user)
+        .order_by('-submitted_at', '-id')
+    )
+    grouped_projects = {
+        group: [] for group in OPERATIONAL_INNOVATION_GROUPS
+    }
+    grouped_projects[OPERATIONAL_LEGACY_INNOVATION_LABEL] = []
+    for project in projects:
+        innovation_type = _classify_innovation_project(project)
+        grouped_projects[innovation_type].append(
+            _operational_project_payload(project, innovation_type)
+        )
+
+    verified_count = sum(1 for project in projects if project.is_verified)
+    average_score = _operational_average(
+        [project.score for project in projects]
+    )
+
+    return {
+        'ops_current_year': current_year,
+        'ops_productivity_log_count': len(logs),
+        'prod_cleared_avg': cleared_avg,
+        'prod_cleared_avg_display': _operational_metric_display(cleared_avg),
+        'prod_ward_avg': ward_avg,
+        'prod_ward_avg_display': _operational_metric_display(ward_avg),
+        'prod_procedure_avg': procedure_avg,
+        'prod_procedure_avg_display': _operational_metric_display(
+            procedure_avg
+        ),
+        'prod_consult_avg': consult_avg,
+        'prod_consult_avg_display': _operational_metric_display(consult_avg),
+        'prod_punctuality_avg': punctuality_avg,
+        'prod_punctuality_avg_display': _operational_metric_display(
+            punctuality_avg, decimal_places=0, suffix='%'
+        ),
+        'prod_has_logs': bool(logs),
+        'prod_has_consult_avg': consult_avg is not None,
+        'prod_has_punctuality_avg': punctuality_avg is not None,
+        'prod_recent_logs': recent_logs,
+        'ops_total_projects': len(projects),
+        'ops_verified_projects': verified_count,
+        'ops_pending_projects': len(projects) - verified_count,
+        'ops_publication_count': len(grouped_projects['Publication']),
+        'ops_uncategorised_count': len(
+            grouped_projects[OPERATIONAL_LEGACY_INNOVATION_LABEL]
+        ),
+        'ops_average_score': average_score,
+        'ops_average_score_display': _operational_metric_display(
+            average_score
+        ),
+        'ops_average_score_is_provisional': (
+            bool(projects) and verified_count == 0
+        ),
+        'ops_research_projects': grouped_projects['Research'],
+        'ops_trial_projects': grouped_projects['Clinical Trial'],
+        'ops_technology_projects': grouped_projects['Technology Adoption'],
+        'ops_publication_projects': grouped_projects['Publication'],
+        'ops_uncategorised_projects': grouped_projects[
+            OPERATIONAL_LEGACY_INNOVATION_LABEL
+        ],
+        **_build_department_leaderboard(user),
     }
 
 
@@ -3239,23 +3537,21 @@ def staff_dashboard_view(request):
 
     # Tarik rekod DocumentationLog & ProductivityLog sebenar dari DB bagi staf ini
     doc_logs = DocumentationLog.objects.filter(officer=staff_user).order_by('-created_at') if staff_user else []
-    prod_logs = ProductivityLog.objects.filter(officer=staff_user).order_by('-id') if staff_user else []
+    prod_logs = (
+        ProductivityLog.objects.filter(officer=staff_user)
+        .order_by('-record_date', '-id')
+        if staff_user else []
+    )
 
     clinical_context = (
         _build_clinical_context(staff_user, doc_logs)
         if staff_user and section == 'Clinical' else {}
     )
+    operational_context = (
+        _build_operational_context(staff_user, prod_logs)
+        if staff_user and section == 'Operational' else {}
+    )
 
-    # Kira metrik ringkasan harian secara automatik dari data DB
-    if prod_logs.exists():
-        prod_cleared_avg = int(sum([p.patients_cleared for p in prod_logs]) / prod_logs.count())
-        prod_consult_avg = round(sum([p.avg_consult_minutes for p in prod_logs]) / prod_logs.count(), 1)
-        prod_punctuality_avg = round(sum([p.punctuality_rate for p in prod_logs]) / prod_logs.count(), 0)
-    else:
-        prod_cleared_avg = 42
-        prod_consult_avg = 12.0
-        prod_punctuality_avg = 95.0
-        
     # --- TARIK NOTIFIKASI RASMI HOD KE STAFF ---
     active_hod_feedbacks = HODFeedback.objects.filter(receiver_staff=request.user, is_acknowledged=False).order_by('-created_at')
 
@@ -3305,14 +3601,12 @@ def staff_dashboard_view(request):
 
     context = {
         **clinical_context,
+        **operational_context,
         'section': section,
         'calendar_events_json': calendar_events_json,
         'active_hod_feedbacks': active_hod_feedbacks,
         'doc_logs': doc_logs,
         'prod_logs': prod_logs,
-        'prod_cleared_avg': prod_cleared_avg,
-        'prod_consult_avg': prod_consult_avg,
-        'prod_punctuality_avg': prod_punctuality_avg,
         'chart_html': chart_html,
         'radar_html': radar_html,
         'donut_html': donut_html,

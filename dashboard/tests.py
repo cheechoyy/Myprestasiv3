@@ -1,6 +1,7 @@
 import shutil
 import tempfile
 from datetime import date, datetime, timedelta
+from unittest.mock import patch
 
 from django.contrib.auth.models import User
 from django.core.files.uploadedfile import SimpleUploadedFile
@@ -906,6 +907,326 @@ class OperationalPersistencePhase2Tests(TestCase):
         publication = InnovationProject.objects.get(innovation_type='Publication')
         self.assertEqual(publication.project_title, 'Journal Without Year')
         self.assertIsNone(publication.publication_year)
+
+
+class OperationalDashboardPhase3BTests(TestCase):
+    def setUp(self):
+        # Django 5.0.3 copies the template context in the test client, which
+        # fails under Python 3.14. Keep the rendered context object as-is so
+        # response.context remains available for these assertions.
+        copy_patcher = patch('django.test.client.copy', new=lambda value: value)
+        copy_patcher.start()
+        self.addCleanup(copy_patcher.stop)
+
+        self.year = timezone.localdate().year
+        self.user = self._staff(
+            'ops_dashboard_user',
+            first_name='Amir',
+            last_name='Hakim',
+        )
+        self.client.force_login(self.user)
+        self.url = reverse('staff_dashboard') + '?section=Operational'
+
+    def _staff(self, username, department='CTS', first_name='', last_name=''):
+        user = User.objects.create_user(
+            username=username,
+            first_name=first_name,
+            last_name=last_name,
+        )
+        UserProfile.objects.create(
+            user=user,
+            role='STAFF',
+            department=department,
+        )
+        return user
+
+    def _project(
+        self,
+        user,
+        title,
+        innovation_type='Research',
+        category=None,
+        score=80.0,
+        is_verified=False,
+        submitted_year=None,
+        nmrr_id=None,
+    ):
+        project = InnovationProject.objects.create(
+            officer=user,
+            project_title=title,
+            innovation_type=innovation_type,
+            category=(
+                category if category is not None
+                else (innovation_type or 'System Compliance')
+            ),
+            nmrr_id=nmrr_id,
+            description='Phase 3B test record',
+            score=score,
+            is_verified=is_verified,
+        )
+        if submitted_year is not None and submitted_year != self.year:
+            InnovationProject.objects.filter(pk=project.pk).update(
+                submitted_at=timezone.make_aware(
+                    datetime(submitted_year, 6, 1, 12, 0)
+                )
+            )
+            project.refresh_from_db()
+        return project
+
+    def test_empty_operational_dashboard_uses_no_data_and_has_no_fake_content(self):
+        response = self.client.get(self.url)
+
+        self.assertEqual(response.status_code, 200)
+        context = response.context
+        self.assertIsNone(context['prod_cleared_avg'])
+        self.assertIsNone(context['prod_consult_avg'])
+        self.assertIsNone(context['prod_punctuality_avg'])
+        self.assertEqual(context['prod_cleared_avg_display'], 'No data')
+        self.assertEqual(context['prod_consult_avg_display'], 'No data')
+        self.assertEqual(context['prod_punctuality_avg_display'], 'No data')
+        self.assertEqual(context['ops_total_projects'], 0)
+        self.assertEqual(context['ops_average_score_display'], 'No data')
+        self.assertEqual(context['ops_dept_rank_display'], '#1 of 1')
+
+        self.assertContains(response, 'No data')
+        self.assertContains(response, 'No productivity records found.')
+        self.assertContains(response, 'No research projects recorded')
+        self.assertContains(response, 'No clinical trials recorded')
+        self.assertContains(response, 'No technology adoption records')
+        self.assertContains(response, 'No publications recorded')
+        self.assertNotContains(response, 'WISN Workload')
+        self.assertNotContains(response, 'Top 15%')
+        self.assertNotContains(response, 'Hospital HIS/EMR')
+        self.assertNotContains(response, 'MedJ Malaysia')
+        self.assertNotContains(response, 'Dr. Chong Wei')
+        self.assertNotContains(response, 'Dr. Siti Fazura')
+        self.assertNotContains(response, 'Annual Target')
+        self.assertNotContains(response, 'Total Innov. Points')
+
+
+    def test_productivity_averages_skip_null_ward_and_procedure_values(self):
+        today = timezone.localdate()
+        ProductivityLog.objects.create(
+            officer=self.user,
+            record_date=today - timedelta(days=1),
+            patients_cleared=40,
+            ward_cases=None,
+            procedures_completed=None,
+            avg_consult_minutes=15.0,
+            punctuality_rate=100.0,
+            punctuality_status='On-Time',
+        )
+        ProductivityLog.objects.create(
+            officer=self.user,
+            record_date=today,
+            patients_cleared=20,
+            ward_cases=10,
+            procedures_completed=4,
+            avg_consult_minutes=10.0,
+            punctuality_rate=70.0,
+            punctuality_status='Ward Round Extension',
+        )
+
+        response = self.client.get(self.url)
+
+        context = response.context
+        self.assertEqual(context['prod_cleared_avg'], 30.0)
+        self.assertEqual(context['prod_ward_avg'], 10.0)
+        self.assertEqual(context['prod_procedure_avg'], 4.0)
+        self.assertEqual(context['prod_consult_avg'], 12.5)
+        self.assertEqual(context['prod_punctuality_avg'], 85.0)
+        self.assertEqual(context['prod_punctuality_avg_display'], '85%')
+        self.assertTrue(context['prod_has_logs'])
+        self.assertEqual(len(context['prod_recent_logs']), 2)
+        self.assertEqual(
+            context['prod_recent_logs'][1]['ward_cases_display'],
+            'Not recorded',
+        )
+        self.assertEqual(
+            context['prod_recent_logs'][1]['procedures_display'],
+            'Not recorded',
+        )
+        self.assertContains(response, 'Not recorded')
+
+    def test_recent_productivity_table_is_limited_to_fourteen_logs(self):
+        today = timezone.localdate()
+        ProductivityLog.objects.bulk_create([
+            ProductivityLog(
+                officer=self.user,
+                record_date=today - timedelta(days=index),
+                patients_cleared=index + 1,
+                ward_cases=index,
+                procedures_completed=index,
+                avg_consult_minutes=10.0 + index,
+                punctuality_rate=90.0,
+                punctuality_status='On-Time',
+            )
+            for index in range(16)
+        ])
+
+        response = self.client.get(self.url)
+
+        recent_logs = response.context['prod_recent_logs']
+        self.assertEqual(len(recent_logs), 14)
+        self.assertEqual(
+            recent_logs[0]['record_date_display'],
+            today.strftime('%d %b %Y'),
+        )
+        self.assertEqual(
+            recent_logs[-1]['record_date_display'],
+            (today - timedelta(days=13)).strftime('%d %b %Y'),
+        )
+
+
+    def test_innovation_projects_are_classified_and_summarised(self):
+        self._project(
+            self.user, 'Local Sepsis Registry',
+            innovation_type='Research', score=90.0, is_verified=True,
+            nmrr_id='NMRR-26-001',
+        )
+        self._project(
+            self.user, 'CRC-26-001A',
+            innovation_type='Clinical Trial', score=70.0,
+        )
+        self._project(
+            self.user, 'Legacy Technology Record',
+            innovation_type=None, category='Technology Adaptation', score=80.0,
+        )
+        self._project(
+            self.user, 'Community Screening Paper',
+            innovation_type='Publication', score=60.0,
+        )
+        self._project(
+            self.user, 'Legacy Operational Record',
+            innovation_type=None, category='System Compliance', score=50.0,
+        )
+        self._project(
+            self.user, 'Prior Year Record',
+            innovation_type='Research', score=0.0,
+            submitted_year=self.year - 1,
+        )
+
+        response = self.client.get(self.url)
+
+        context = response.context
+        self.assertEqual(context['ops_total_projects'], 6)
+        self.assertEqual(context['ops_verified_projects'], 1)
+        self.assertEqual(context['ops_pending_projects'], 5)
+        self.assertEqual(context['ops_publication_count'], 1)
+        self.assertEqual(context['ops_uncategorised_count'], 1)
+        self.assertAlmostEqual(context['ops_average_score'], 58.3333, places=3)
+        self.assertFalse(context['ops_average_score_is_provisional'])
+        self.assertEqual(len(context['ops_research_projects']), 2)
+        self.assertEqual(len(context['ops_trial_projects']), 1)
+        self.assertEqual(len(context['ops_technology_projects']), 1)
+        self.assertEqual(len(context['ops_publication_projects']), 1)
+        self.assertEqual(len(context['ops_uncategorised_projects']), 1)
+        self.assertEqual(
+            context['ops_research_projects'][0]['status_label'],
+            'Verified',
+        )
+        self.assertEqual(
+            context['ops_technology_projects'][0]['proficiency_display'],
+            'Not recorded',
+        )
+        self.assertContains(response, 'Local Sepsis Registry')
+        self.assertContains(response, 'NMRR-26-001')
+        self.assertContains(response, 'Prior Year Record')
+        self.assertContains(response, 'General/Uncategorised')
+
+    def test_average_score_is_provisional_without_verified_projects(self):
+        self._project(
+            self.user, 'Unverified Research',
+            innovation_type='Research', score=82.0,
+        )
+
+        response = self.client.get(self.url)
+
+        context = response.context
+        self.assertEqual(context['ops_average_score'], 82.0)
+        self.assertTrue(context['ops_average_score_is_provisional'])
+        self.assertContains(response, 'Provisional')
+        self.assertContains(response, 'No verified project yet')
+
+    def test_department_leaderboard_uses_counts_and_tie_breaks(self):
+        peer_high = self._staff('rank_high', first_name='Bella')
+        peer_verified = self._staff('rank_verified', first_name='Cheng')
+        other_department = self._staff(
+            'rank_other', department='FMS', first_name='Zara',
+        )
+
+        for index in range(2):
+            self._project(
+                self.user, f'Current User Project {index}',
+                innovation_type='Research',
+            )
+        self._project(
+            self.user, 'Prior Year Project',
+            innovation_type='Research', submitted_year=self.year - 1,
+        )
+        for index in range(3):
+            self._project(
+                peer_high, f'High Performer Project {index}',
+                innovation_type='Research',
+            )
+        self._project(
+            peer_verified, 'Verified Peer Project',
+            innovation_type='Research', is_verified=True,
+        )
+        self._project(
+            peer_verified, 'Unverified Peer Project',
+            innovation_type='Research',
+        )
+        for index in range(5):
+            self._project(
+                other_department, f'Other Department Project {index}',
+                innovation_type='Research',
+            )
+
+        response = self.client.get(self.url)
+
+        context = response.context
+        self.assertEqual(context['ops_dept_rank_total'], 3)
+        self.assertEqual(context['ops_dept_rank'], 3)
+        self.assertEqual(context['ops_dept_rank_display'], '#3 of 3')
+        self.assertEqual(context['ops_total_projects'], 3)
+        self.assertEqual(
+            [row['user_id'] for row in context['ops_leaderboard']],
+            [peer_high.id, peer_verified.id, self.user.id],
+        )
+        self.assertNotIn(
+            other_department.id,
+            [row['user_id'] for row in context['ops_leaderboard']],
+        )
+        self.assertContains(response, 'Dept Leaderboard (%s)' % self.year)
+
+    def test_department_leaderboard_breaks_ties_by_publication_then_name(self):
+        publication_peer = self._staff(
+            'rank_publication', first_name='Zara',
+        )
+        name_peer = self._staff('rank_name', first_name='Ahmad')
+
+        self._project(
+            self.user, 'Current User Research',
+            innovation_type='Research',
+        )
+        self._project(
+            publication_peer, 'Peer Publication',
+            innovation_type='Publication',
+        )
+        self._project(
+            name_peer, 'Peer Research',
+            innovation_type='Research',
+        )
+
+        response = self.client.get(self.url)
+
+        context = response.context
+        self.assertEqual(context['ops_dept_rank_display'], '#3 of 3')
+        self.assertEqual(
+            [row['name'] for row in context['ops_leaderboard']],
+            ['Zara', 'Ahmad', 'Amir Hakim'],
+        )
 
 
 class InterpersonalPersistencePhase2Tests(TestCase):

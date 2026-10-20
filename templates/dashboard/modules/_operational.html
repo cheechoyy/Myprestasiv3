@@ -36,11 +36,11 @@
                     <div style="display: flex; align-items: center; gap: 10px;">
                         <div>
                             <h3 style="color:#150a35; margin:0; font-size:16px; font-weight: 800;">Daily Productivity & Workload Efficiency Log</h3>
-                            <p style="margin: 0; color: #6f628b; font-size: 11px; font-weight: 600;">Track daily patient clearance, clinical consult time, and WISN workload index.</p>
+                            <p style="margin: 0; color: #6f628b; font-size: 11px; font-weight: 600;">Track daily patient clearance and clinical consult time from your submitted logs.</p>
                         </div>
                     </div>
                     <span style="background: #f3edff; border: 1px solid #d8c7f4; color: #6d3ec4; font-size: 11px; font-weight: 800; padding: 4px 12px; border-radius: 20px;">
-                        WISN Workload: Optimal Range
+                        {{ ops_productivity_log_count }} Record{{ ops_productivity_log_count|pluralize }} Logged
                     </span>
                 </div>
 
@@ -48,19 +48,19 @@
                 <div class="grid-3" style="margin-bottom: 25px;">
                     <div style="background: #f3edff; border: 1px solid #e7dff2; padding: 16px; border-radius: 12px; border-left: 5px solid #6d3ec4;">
                         <div style="font-size: 10px; color: #6d3ec4; font-weight: 800; text-transform: uppercase;">Daily Clearance Average</div>
-                        <div style="font-size: 26px; font-weight: 900; color: #150a35; margin-top: 4px;">{{ prod_cleared_avg }} <span style="font-size: 13px; font-weight: 700; color: #16a34a;">Cases</span></div>
+                        <div style="font-size: 26px; font-weight: 900; color: #150a35; margin-top: 4px;">{{ prod_cleared_avg_display }}{% if prod_has_logs %} <span style="font-size: 13px; font-weight: 700; color: #16a34a;">Cases</span>{% endif %}</div>
                         <div style="font-size: 11px; color: #64748b; margin-top: 4px;">Patients / Cases handled per day</div>
                     </div>
 
                     <div style="background: white; border: 1px solid #e7dff2; padding: 16px; border-radius: 12px; border-left: 5px solid #16a34a; box-shadow: 0 2px 8px rgba(21, 10, 53, 0.03);">
                         <div style="font-size: 10px; color: #15803d; font-weight: 800; text-transform: uppercase;">Average Consultation Time</div>
-                        <div style="font-size: 26px; font-weight: 900; color: #15803d; margin-top: 4px;">{{ prod_consult_avg }} <span style="font-size: 12px; font-weight: 700; color: #16a34a;">Mins / Patient</span></div>
+                        <div style="font-size: 26px; font-weight: 900; color: #15803d; margin-top: 4px;">{{ prod_consult_avg_display }}{% if prod_has_consult_avg %} <span style="font-size: 12px; font-weight: 700; color: #16a34a;">Mins / Patient</span>{% endif %}</div>
                         <div style="font-size: 11px; color: #64748b; margin-top: 4px;">Target: 10–15 Mins (MoH Standard)</div>
                     </div>
 
                     <div style="background: white; border: 1px solid #e7dff2; padding: 16px; border-radius: 12px; border-left: 5px solid #150a35; box-shadow: 0 2px 8px rgba(21, 10, 53, 0.03);">
                         <div style="font-size: 10px; color: #150a35; font-weight: 800; text-transform: uppercase;">Clinic Punctuality Rate</div>
-                        <div style="font-size: 26px; font-weight: 900; color: #150a35; margin-top: 4px;">{{ prod_punctuality_avg|floatformat:0 }}% <span style="font-size: 12px; font-weight: 700; color: #16a34a;">(Tracked)</span></div>
+                        <div style="font-size: 26px; font-weight: 900; color: #150a35; margin-top: 4px;">{{ prod_punctuality_avg_display }}{% if prod_has_punctuality_avg %} <span style="font-size: 12px; font-weight: 700; color: #16a34a;">(Tracked)</span>{% endif %}</div>
                         <div style="font-size: 11px; color: #64748b; margin-top: 4px;">Target: >90% On-time start</div>
                     </div>
                 </div>
@@ -140,22 +140,22 @@
                                 </tr>
                             </thead>
                             <tbody>
-                                {% if prod_logs %}
-                                    {% for log in prod_logs %}
+                                {% if prod_recent_logs %}
+                                    {% for log in prod_recent_logs %}
                                         <tr>
-                                            <td style="font-weight: 800; color: #150a35;">{{ log.record_date|date:"d M Y" }}</td>
-                                            <td>{{ log.patients_cleared }} Cases</td>
-                                            <td>Ward Active</td>
-                                            <td>Recorded</td>
-                                            <td>{{ log.avg_consult_minutes }} Mins</td>
-                                            <td>{% if log.punctuality_rate >= 90 %}On-Time{% else %}Delayed{% endif %}</td>
-                                            <td><span class="status-badge bg-success">✓ In Database</span></td>
+                                            <td style="font-weight: 800; color: #150a35;">{{ log.record_date_display }}</td>
+                                            <td>{{ log.patients_cleared_display }}</td>
+                                            <td>{{ log.ward_cases_display }}</td>
+                                            <td>{{ log.procedures_display }}</td>
+                                            <td>{{ log.avg_consult_display }}</td>
+                                            <td>{{ log.punctuality_display }}</td>
+                                            <td><span class="status-badge bg-success">✓ {{ log.status_label }}</span></td>
                                         </tr>
                                     {% endfor %}
                                 {% else %}
                                     <tr>
                                         <td colspan="7" style="text-align: center; color: #6f628b; padding: 20px;">
-                                            No productivity records found in Database. Fill in the form above to record your first entry.
+                                            No productivity records found. Fill in the form above to record your first entry.
                                         </td>
                                     </tr>
                                 {% endif %}
@@ -174,36 +174,52 @@
                         <p style="color:#6d3ec4; font-size:13px; margin:0; font-weight: 500;">Log your research activities, drug trials, and publications here.</p>
                     </div>
                     
-                    <div style="background: #f3edff; border: 1px solid #e7dff2; padding: 10px 15px; border-radius: 8px; display: flex; gap: 20px; align-items: center;">
-                        <div style="display: flex; align-items: center; gap: 8px;">
-                            <div style="width: 12px; height: 12px; background: #16a34a; border-radius: 50%;"></div>
-                            <span style="font-size: 13px; font-weight: 700; color: #150a35;">Active</span>
+                    <div style="background: #f3edff; border: 1px solid #e7dff2; padding: 10px 15px; border-radius: 8px; display: flex; gap: 18px; align-items: center; flex-wrap: wrap;">
+                        <div style="display: flex; align-items: center; gap: 6px;">
+                            <div style="width: 10px; height: 10px; background: #16a34a; border-radius: 50%;"></div>
+                            <span style="font-size: 12px; font-weight: 700; color: #150a35;">Verified:</span>
+                            <span style="font-size: 14px; font-weight: 900; color: #150a35;">{{ ops_verified_projects }}</span>
                         </div>
-                        <div style="display: flex; align-items: center; gap: 8px;">
-                            <div style="width: 12px; height: 12px; background: #94a3b8; border-radius: 50%;"></div>
-                            <span style="font-size: 13px; font-weight: 700; color: #64748b;">Inactive</span>
+                        <div style="display: flex; align-items: center; gap: 6px;">
+                            <div style="width: 10px; height: 10px; background: #f59e0b; border-radius: 50%;"></div>
+                            <span style="font-size: 12px; font-weight: 700; color: #150a35;">Pending Verification:</span>
+                            <span style="font-size: 14px; font-weight: 900; color: #150a35;">{{ ops_pending_projects }}</span>
                         </div>
-                        <div style="border-left: 2px solid #e7dff2; padding-left: 20px;">
-                            <span style="font-size: 12px; color: #6d3ec4; font-weight: bold; text-transform: uppercase;">Active Projects:</span>
-                            <span style="font-size: 16px; font-weight: 900; color: #150a35; margin-left: 5px;">2</span>
+                        <div style="border-left: 2px solid #e7dff2; padding-left: 18px;">
+                            <span style="font-size: 12px; color: #6d3ec4; font-weight: bold; text-transform: uppercase;">Dept Rank:</span>
+                            <span style="font-size: 16px; font-weight: 900; color: #150a35; margin-left: 5px;">{{ ops_dept_rank_display }}</span>
                         </div>
                     </div>
                 </div>
 
-                <div class="grid-3" style="margin-bottom: 25px;">
+                <div class="grid-4" style="margin-bottom: 15px;">
                     <div style="background: white; border: 1px solid #e7dff2; padding: 15px; border-radius: 8px; border-left: 4px solid #150a35; box-shadow: 0 2px 5px rgba(21, 10, 53, 0.02);">
-                        <div style="font-size: 11px; color: #6d3ec4; font-weight: bold; text-transform: uppercase;">Total Innov. Points</div>
-                        <div style="font-size: 24px; font-weight: 900; color: #150a35;">120 <span style="font-size:12px; font-weight:normal; color:#6d3ec4;">Pts</span></div>
+                        <div style="font-size: 11px; color: #6d3ec4; font-weight: bold; text-transform: uppercase;">Projects Logged</div>
+                        <div style="font-size: 24px; font-weight: 900; color: #150a35;">{{ ops_total_projects }}</div>
+                        <div style="font-size: 10px; color: #64748b; margin-top: 2px;">All logged records</div>
                     </div>
                     <div style="background: white; border: 1px solid #e7dff2; padding: 15px; border-radius: 8px; border-left: 4px solid #6d3ec4; box-shadow: 0 2px 5px rgba(21, 10, 53, 0.02);">
-                        <div style="font-size: 11px; color: #6d3ec4; font-weight: bold; text-transform: uppercase;">Dept Rank</div>
-                        <div style="font-size: 24px; font-weight: 900; color: #6d3ec4;">Top 15% <span style="font-size:12px; font-weight:normal; color:#6f628b;">(4th/28)</span></div>
+                        <div style="font-size: 11px; color: #6d3ec4; font-weight: bold; text-transform: uppercase;">Average Score</div>
+                        <div style="font-size: 24px; font-weight: 900; color: #6d3ec4;">{{ ops_average_score_display }}{% if ops_average_score_is_provisional %} <span style="font-size:10px; font-weight:800; background:#fffbeb; border:1px solid #fef08a; color:#d97706; padding:2px 6px; border-radius:10px; vertical-align:middle;">Provisional</span>{% endif %}</div>
+                        <div style="font-size: 10px; color: #64748b; margin-top: 2px;">{% if ops_average_score_is_provisional %}No verified project yet{% else %}Based on logged projects{% endif %}</div>
                     </div>
                     <div style="background: white; border: 1px solid #e7dff2; padding: 15px; border-radius: 8px; border-left: 4px solid #16a34a; box-shadow: 0 2px 5px rgba(21, 10, 53, 0.02);">
-                        <div style="font-size: 11px; color: #15803d; font-weight: bold; text-transform: uppercase;">Annual Target</div>
-                        <div style="font-size: 24px; font-weight: 900; color: #16a34a;">Achieved!</div>
+                        <div style="font-size: 11px; color: #15803d; font-weight: bold; text-transform: uppercase;">Verified Projects</div>
+                        <div style="font-size: 24px; font-weight: 900; color: #16a34a;">{{ ops_verified_projects }}</div>
+                        <div style="font-size: 10px; color: #64748b; margin-top: 2px;">HOD-verified records</div>
+                    </div>
+                    <div style="background: white; border: 1px solid #e7dff2; padding: 15px; border-radius: 8px; border-left: 4px solid #a577ff; box-shadow: 0 2px 5px rgba(21, 10, 53, 0.02);">
+                        <div style="font-size: 11px; color: #6d3ec4; font-weight: bold; text-transform: uppercase;">Publications</div>
+                        <div style="font-size: 24px; font-weight: 900; color: #150a35;">{{ ops_publication_count }}</div>
+                        <div style="font-size: 10px; color: #64748b; margin-top: 2px;">Publication records this year</div>
                     </div>
                 </div>
+
+                {% if ops_uncategorised_count %}
+                    <div style="background:#fffbeb; border:1px solid #fef08a; color:#92400e; border-radius:8px; padding:10px 14px; margin-bottom:20px; font-size:12px; font-weight:600;">
+                        {{ ops_uncategorised_count }} legacy project{{ ops_uncategorised_count|pluralize }} recorded as General/Uncategorised. These are included in Projects Logged.
+                    </div>
+                {% endif %}
 
                 <div class="sub-menu" id="innov-selector" style="display: flex; gap: 10px; margin-bottom: 15px;">
                     <div class="sm-radio active" onclick="switchInnov('research', this)" style="padding: 8px 16px; border-radius: 8px; font-weight: 700; font-size: 13px; cursor: pointer; border: 1px solid #6d3ec4; background: #f3edff; color: #6d3ec4;">Research</div>
@@ -241,8 +257,21 @@
                         <table class="staff-table" style="margin:0;">
                             <thead><tr><th>Date</th><th>Title</th><th>NMRR ID</th><th>Role</th><th>Status</th></tr></thead>
                             <tbody>
-                                <tr><td>12 Feb 2026</td><td>Prevalence of T2DM in...</td><td>NMRR-25-123</td><td>Principle Inv.</td><td><span class="status-badge bg-warning">Pending HOD</span></td></tr>
-                                <tr><td>05 Jan 2025</td><td>Retrospective study on...</td><td>NMRR-24-998</td><td>Co-Inv.</td><td><span class="status-badge bg-success">Verified</span></td></tr>
+                                {% if ops_research_projects %}
+                                    {% for project in ops_research_projects %}
+                                        <tr>
+                                            <td>{{ project.submitted_date_display }}</td>
+                                            <td>{{ project.title }}</td>
+                                            <td>{{ project.nmrr_id }}</td>
+                                            <td>{{ project.research_role }}</td>
+                                            <td><span class="status-badge {{ project.status_css }}">{{ project.status_label }}</span></td>
+                                        </tr>
+                                    {% endfor %}
+                                {% else %}
+                                    <tr>
+                                        <td colspan="5" style="text-align:center; color:#6f628b; padding:20px;">No research projects recorded.</td>
+                                    </tr>
+                                {% endif %}
                             </tbody>
                         </table>
                     </div>
@@ -281,7 +310,21 @@
                         <table class="staff-table" style="margin:0;">
                             <thead><tr><th>Date Logged</th><th>CRC Log No.</th><th>Phase</th><th>Recruits</th><th>Status</th></tr></thead>
                             <tbody>
-                                <tr><td>28 Jan 2026</td><td>CRC-26-001A</td><td>Phase III</td><td>12 Patients</td><td><span class="status-badge bg-success">Active</span></td></tr>
+                                {% if ops_trial_projects %}
+                                    {% for project in ops_trial_projects %}
+                                        <tr>
+                                            <td>{{ project.submitted_date_display }}</td>
+                                            <td>{{ project.title }}</td>
+                                            <td>{{ project.trial_phase }}</td>
+                                            <td>{{ project.recruitment_display }}</td>
+                                            <td><span class="status-badge {{ project.status_css }}">{{ project.trial_status }}</span></td>
+                                        </tr>
+                                    {% endfor %}
+                                {% else %}
+                                    <tr>
+                                        <td colspan="5" style="text-align:center; color:#6f628b; padding:20px;">No clinical trials recorded.</td>
+                                    </tr>
+                                {% endif %}
                             </tbody>
                         </table>
                     </div>
@@ -316,32 +359,25 @@
                     <h4 style="color:#150a35; margin-top:35px; margin-bottom:15px; border-top: 1px dashed #d8c7f4; padding-top: 20px; display: flex; align-items: center; gap: 8px;">
                         My Tech Adoption Journey
                     </h4>
-                    <div class="grid-3">
-                        <div style="background: white; border: 1px solid #e7dff2; padding: 15px; border-radius: 8px; text-align:center; box-shadow: 0 2px 5px rgba(21,10,53,0.02);">
-                            <div style="width:40px; height:40px; background:#f3edff; border-radius:50%; display:flex; align-items:center; justify-content:center; margin:0 auto 10px auto;">
-                                <svg style="width:20px; height:20px; color:#6d3ec4;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-1 1h6l-.75-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
-                            </div>
-                            <div style="font-weight:bold; color:#150a35; font-size:14px;">Hospital HIS/EMR</div>
-                            <div style="margin-top:10px; background:#f3edff; border-radius:10px; height:8px; overflow:hidden;"><div class="pct-fill" style="background:#6d3ec4; width:100%; height:100%;"></div></div>
-                            <div style="font-size:11px; color:#6d3ec4; font-weight:bold; margin-top:8px;">Expert (Trainer)</div>
+                    {% if ops_technology_projects %}
+                        <div class="grid-3">
+                            {% for project in ops_technology_projects %}
+                                <div style="background: white; border: 1px solid #e7dff2; padding: 15px; border-radius: 8px; text-align:center; box-shadow: 0 2px 5px rgba(21,10,53,0.02);">
+                                    <div style="width:40px; height:40px; background:#f3edff; border-radius:50%; display:flex; align-items:center; justify-content:center; margin:0 auto 10px auto;">
+                                        <svg style="width:20px; height:20px; color:#6d3ec4;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-1 1h6l-.75-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
+                                    </div>
+                                    <div style="font-weight:bold; color:#150a35; font-size:14px;">{{ project.title }}</div>
+                                    <div style="font-size:10px; color:#64748b; margin-top:4px;">Adopted: {{ project.adoption_date_display }}</div>
+                                    <div style="margin-top:10px; background:#f3edff; border-radius:10px; height:8px; overflow:hidden;"><div class="pct-fill" style="background:{{ project.proficiency_color }}; width:{{ project.proficiency_progress }}%; height:100%;"></div></div>
+                                    <div style="font-size:11px; color:{{ project.proficiency_color }}; font-weight:bold; margin-top:8px;">{{ project.proficiency_display }}</div>
+                                </div>
+                            {% endfor %}
                         </div>
-                        <div style="background: white; border: 1px solid #e7dff2; padding: 15px; border-radius: 8px; text-align:center; box-shadow: 0 2px 5px rgba(21,10,53,0.02);">
-                            <div style="width:40px; height:40px; background:#f3edff; border-radius:50%; display:flex; align-items:center; justify-content:center; margin:0 auto 10px auto;">
-                                <svg style="width:20px; height:20px; color:#6d3ec4;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/></svg>
-                            </div>
-                            <div style="font-weight:bold; color:#150a35; font-size:14px;">New PACS System</div>
-                            <div style="margin-top:10px; background:#f3edff; border-radius:10px; height:8px; overflow:hidden;"><div class="pct-fill" style="background:#6f628b; width:66%; height:100%;"></div></div>
-                            <div style="font-size:11px; color:#6f628b; font-weight:bold; margin-top:8px;">Intermediate</div>
+                    {% else %}
+                        <div style="background:white; border:1px dashed #d8c7f4; border-radius:8px; padding:20px; text-align:center; color:#6f628b; font-size:12px;">
+                            No technology adoption records.
                         </div>
-                        <div style="background: white; border: 1px solid #e7dff2; padding: 15px; border-radius: 8px; text-align:center; box-shadow: 0 2px 5px rgba(21,10,53,0.02);">
-                            <div style="width:40px; height:40px; background:#f3edff; border-radius:50%; display:flex; align-items:center; justify-content:center; margin:0 auto 10px auto;">
-                                <svg style="width:20px; height:20px; color:#6d3ec4;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
-                            </div>
-                            <div style="font-weight:bold; color:#150a35; font-size:14px;">AI Triage Assist</div>
-                            <div style="margin-top:10px; background:#f3edff; border-radius:10px; height:8px; overflow:hidden;"><div class="pct-fill" style="background:#a577ff; width:33%; height:100%;"></div></div>
-                            <div style="font-size:11px; color:#a577ff; font-weight:bold; margin-top:8px;">Amateur (Learning)</div>
-                        </div>
-                    </div>
+                    {% endif %}
                 </div>
 
                 <div id="innov-pub" style="display:none;">
@@ -350,12 +386,12 @@
                         <input type="hidden" name="innovation_type" value="Publication">
                         <input type="hidden" name="category" value="Publication">
                         <div class="grid-2" style="margin-bottom: 15px;">
-                            <div><label style="margin-top:0;">Name of Journal <span style="color:red;">*</span></label><input type="text" name="journal" placeholder="e.g. MedJ Malaysia" required style="background:white;"></div>
+                            <div><label style="margin-top:0;">Name of Journal <span style="color:red;">*</span></label><input type="text" name="journal" placeholder="e.g. Journal Name" required style="background:white;"></div>
                             <div><label style="margin-top:0;">DOI (Digital Object Identifier) <span style="color:red;">*</span></label><input type="text" name="doi" placeholder="10.xxxx/xxxxx" required style="background:white;"></div>
                         </div>
                         <div class="grid-2" style="margin-bottom: 20px;">
                             <div><label style="margin-top:0;">Publication Title</label><input type="text" name="title" style="background:white;"></div>
-                            <div><label style="margin-top:0;">Year Published</label><input type="number" name="year" min="2000" max="2026" value="2026" style="background:white;"></div>
+                            <div><label style="margin-top:0;">Year Published</label><input type="number" name="year" min="2000" max="{{ ops_current_year }}" value="{{ ops_current_year }}" style="background:white;"></div>
                         </div>
                         <button type="submit" class="submit-btn" style="background-color: #6d3ec4; margin-top:0; display: flex; align-items: center; justify-content: center; gap: 8px;">
                             Save Publication Record
@@ -367,29 +403,39 @@
                             <h4 style="color:#150a35; margin-top:0; margin-bottom:15px; display: flex; align-items: center; gap: 8px;">
                                 My Publications
                             </h4>
-                            <div style="background: white; border: 1px solid #e7dff2; border-radius: 8px; padding: 15px; margin-bottom:10px; box-shadow: 0 2px 5px rgba(21,10,53,0.02);">
-                                <div style="font-weight:bold; color:#150a35; font-size:13px;">MedJ Malaysia (2025)</div>
-                                <div style="font-size:12px; color:#6d3ec4; margin-top:3px; margin-bottom: 8px;">DOI: 10.1136/mmj.2025.01</div>
-                                <div><span class="status-badge bg-success">Verified</span></div>
-                            </div>
+                            {% if ops_publication_projects %}
+                                {% for project in ops_publication_projects %}
+                                    <div style="background: white; border: 1px solid #e7dff2; border-radius: 8px; padding: 15px; margin-bottom:10px; box-shadow: 0 2px 5px rgba(21,10,53,0.02);">
+                                        <div style="font-weight:bold; color:#150a35; font-size:13px;">{{ project.title }}</div>
+                                        <div style="font-size:12px; color:#6d3ec4; margin-top:3px;">{{ project.journal }} ({{ project.publication_year_display }})</div>
+                                        <div style="font-size:12px; color:#6d3ec4; margin-top:3px; margin-bottom: 8px;">DOI: {{ project.doi }}</div>
+                                        <div><span class="status-badge {{ project.status_css }}">{{ project.status_label }}</span></div>
+                                    </div>
+                                {% endfor %}
+                            {% else %}
+                                <div style="background:white; border:1px dashed #d8c7f4; border-radius:8px; padding:20px; text-align:center; color:#6f628b; font-size:12px;">
+                                    No publications recorded.
+                                </div>
+                            {% endif %}
                         </div>
                         <div>
                             <h4 style="color:#150a35; margin-top:0; margin-bottom:15px; display: flex; align-items: center; gap: 8px;">
-                                Dept Leaderboard (2026)
+                                Dept Leaderboard ({{ ops_current_year }})
                             </h4>
                             <div style="background: #f3edff; border: 1px solid #e7dff2; border-radius: 8px; padding: 15px;">
-                                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; border-bottom:1px dashed #d8c7f4; padding-bottom:8px;">
-                                    <div style="font-weight:bold; color:#150a35; font-size:14px;">1. Dr. Chong Wei</div>
-                                    <div style="font-size:12px; font-weight:bold; background:#6d3ec4; color:white; padding:4px 10px; border-radius:12px;">4 Pubs</div>
-                                </div>
-                                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; border-bottom:1px dashed #d8c7f4; padding-bottom:8px;">
-                                    <div style="font-weight:bold; color:#150a35; font-size:14px;">2. Dr. Siti Fazura</div>
-                                    <div style="font-size:12px; font-weight:bold; background:#6f628b; color:white; padding:4px 10px; border-radius:12px;">3 Pubs</div>
-                                </div>
-                                <div style="display:flex; justify-content:space-between; align-items:center;">
-                                    <div style="font-weight:bold; color:#150a35; font-size:14px;">3. {{ staff_name }} (You)</div>
-                                    <div style="font-size:12px; font-weight:bold; background:#6d3ec4; color:white; padding:4px 10px; border-radius:12px;">1 Pubs</div>
-                                </div>
+                                {% if ops_leaderboard %}
+                                    {% for peer in ops_leaderboard %}
+                                        <div style="display:flex; justify-content:space-between; align-items:center; {% if not forloop.last %}margin-bottom:12px; border-bottom:1px dashed #d8c7f4; padding-bottom:8px;{% endif %}">
+                                            <div style="font-weight:bold; color:#150a35; font-size:14px;">{{ peer.rank }}. {{ peer.name }}{% if peer.is_current_user %} (You){% endif %}</div>
+                                            <div style="font-size:12px; font-weight:bold; background:{% if peer.is_current_user %}#6d3ec4{% else %}#6f628b{% endif %}; color:white; padding:4px 10px; border-radius:12px;">{{ peer.project_count }} Project{{ peer.project_count|pluralize }}</div>
+                                        </div>
+                                    {% endfor %}
+                                {% else %}
+                                    <div style="text-align:center; color:#6f628b; font-size:12px;">No department leaderboard available.</div>
+                                {% endif %}
+                            </div>
+                            <div style="font-size:10px; color:#6f628b; margin-top:8px;">
+                                Ranked by current-year projects, then verified projects, publications, and name.
                             </div>
                         </div>
                     </div>
