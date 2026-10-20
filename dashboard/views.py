@@ -14,7 +14,9 @@ import math
 import hashlib
 import urllib.parse
 import json
+from django.core.exceptions import ValidationError
 from django.core.serializers.json import DjangoJSONEncoder
+from django.core.validators import FileExtensionValidator
 from django.db import transaction
 from django.utils import timezone
 
@@ -1815,6 +1817,50 @@ def _hash_patient_ref(value):
     return f"REF-{digest}"
 
 
+MAX_CPD_CERTIFICATE_SIZE = 5 * 1024 * 1024
+ALLOWED_CPD_CERTIFICATE_EXTENSIONS = ['pdf', 'jpg', 'jpeg', 'png']
+CPD_CERTIFICATE_SIGNATURES = {
+    'pdf': (b'%PDF-',),
+    'jpg': (b'\xff\xd8\xff',),
+    'jpeg': (b'\xff\xd8\xff',),
+    'png': (b'\x89PNG\r\n\x1a\n',),
+}
+
+
+def _validate_cpd_certificate(uploaded_file):
+    """
+    Sahkan sijil CPD di server sebelum disimpan.
+
+    Semakan merangkumi saiz, sambungan fail, dan magic bytes asas supaya
+    fail yang hanya ditukar nama tidak diterima.
+    """
+    if not uploaded_file:
+        return
+
+    if uploaded_file.size == 0:
+        raise ValidationError('Fail sijil kosong.')
+
+    if uploaded_file.size > MAX_CPD_CERTIFICATE_SIZE:
+        raise ValidationError('Saiz fail sijil melebihi 5MB.')
+
+    try:
+        FileExtensionValidator(ALLOWED_CPD_CERTIFICATE_EXTENSIONS)(uploaded_file)
+    except ValidationError:
+        raise ValidationError(
+            'Sijil mesti dalam format PDF, JPG, atau PNG.'
+        ) from None
+
+    extension = uploaded_file.name.rsplit('.', 1)[-1].lower()
+    header = uploaded_file.read(8)
+    uploaded_file.seek(0)
+
+    signatures = CPD_CERTIFICATE_SIGNATURES.get(extension, ())
+    if not any(header.startswith(signature) for signature in signatures):
+        raise ValidationError(
+            'Kandungan fail tidak sepadan dengan format sijil yang dibenarkan.'
+        )
+
+
 def _kudos_category_points(value):
     """Pulangkan (kategori, mata) berdasarkan pilihan dropdown Teamwork."""
     mapping = {
@@ -1877,6 +1923,27 @@ def staff_dashboard_view(request):
             tajuk = ((request.POST.get('tajuk') or '').strip() or 'Program CME')[:200]
             category = (request.POST.get('category') or '').strip() or 'CME Workshop'
             event_date = _parse_date_value(request.POST.get('start_date'), date.today())
+            end_date_raw = (request.POST.get('end_date') or '').strip()
+            end_date = _parse_date_value(end_date_raw, None)
+            certificate = request.FILES.get('proof')
+
+            if end_date_raw and end_date is None:
+                messages.error(request, "❌ Format End Date tidak sah.")
+                return redirect(f'/staff/?section={section}')
+
+            if end_date and end_date < event_date:
+                messages.error(
+                    request,
+                    "❌ End Date tidak boleh sebelum Start Date.",
+                )
+                return redirect(f'/staff/?section={section}')
+
+            if certificate:
+                try:
+                    _validate_cpd_certificate(certificate)
+                except ValidationError as exc:
+                    messages.error(request, f"❌ {exc.messages[0]}")
+                    return redirect(f'/staff/?section={section}')
 
             CPDClaim.objects.create(
                 officer=request.user,
@@ -1884,6 +1951,8 @@ def staff_dashboard_view(request):
                 points=mata,
                 category=category,
                 event_date=event_date,
+                end_date=end_date,
+                certificate=certificate or None,
                 status='PENDING',
             )
             messages.success(
