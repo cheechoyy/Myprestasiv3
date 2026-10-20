@@ -16,6 +16,8 @@ from .models import (
     HODFeedback,
     InnovationProject,
     MentorshipSession,
+    MyPSQFeedback,
+    PeerKudos,
     PolicyDeclaration,
     PolicyItemResponse,
     ProcedureLog,
@@ -1226,6 +1228,363 @@ class OperationalDashboardPhase3BTests(TestCase):
         self.assertEqual(
             [row['name'] for row in context['ops_leaderboard']],
             ['Zara', 'Ahmad', 'Amir Hakim'],
+        )
+
+
+class InterpersonalDashboardPhase3CTests(TestCase):
+    def setUp(self):
+        # Keep response.context usable under Django 5.0.3 + Python 3.14.
+        copy_patcher = patch('django.test.client.copy', new=lambda value: value)
+        copy_patcher.start()
+        self.addCleanup(copy_patcher.stop)
+
+        self.year = timezone.localdate().year
+        self.user = self._staff(
+            'interpersonal_dashboard_user',
+            first_name='Aina',
+            last_name='Rahman',
+        )
+        self.client.force_login(self.user)
+        self.url = reverse('staff_dashboard') + '?section=Interpersonal'
+
+    def _staff(self, username, department='CTS', first_name='', last_name=''):
+        user = User.objects.create_user(
+            username=username,
+            first_name=first_name,
+            last_name=last_name,
+        )
+        UserProfile.objects.create(
+            user=user,
+            role='STAFF',
+            department=department,
+        )
+        return user
+
+    def test_empty_interpersonal_dashboard_uses_no_data_and_no_fake_content(self):
+        response = self.client.get(self.url)
+
+        self.assertEqual(response.status_code, 200)
+        context = response.context
+        self.assertFalse(context['mypsq_has_data'])
+        self.assertIsNone(context['mypsq_avg_score'])
+        self.assertIsNone(context['mypsq_pct'])
+        self.assertEqual(context['mypsq_count'], 0)
+        self.assertEqual(context['mypsq_latest_date_display'], 'No data')
+        self.assertEqual(context['ei_total_reflections'], 0)
+        self.assertEqual(context['ei_domain_count'], 0)
+        self.assertIsNone(context['ei_composite'])
+        self.assertEqual(context['ei_composite_display'], 'No data')
+        self.assertEqual(context['ei_streak_weeks'], 0)
+        self.assertEqual(context['kudos_feed_total'], 0)
+        self.assertEqual(context['kudos_given_points'], 0)
+        self.assertEqual(context['kudos_received_points'], 0)
+        self.assertEqual(context['mentorship_mentor_count'], 0)
+        self.assertEqual(context['mentorship_mentee_count'], 0)
+        self.assertEqual(context['mentorship_mentor_hours'], 0)
+        self.assertEqual(context['mentorship_signoff_display'], 'No data')
+
+        self.assertContains(response, 'No data')
+        self.assertContains(response, 'No active streak')
+        self.assertContains(
+            response,
+            'No patient feedback recorded yet.',
+        )
+        self.assertContains(
+            response,
+            'No emotional reflections recorded yet.',
+        )
+        self.assertContains(
+            response,
+            'No personal Kudos activity recorded yet.',
+        )
+        self.assertContains(
+            response,
+            'No mentorship sessions recorded yet.',
+        )
+        self.assertContains(response, 'value="50"')
+        self.assertNotContains(response, 'MoH Guidelines')
+        self.assertNotContains(response, 'Karma')
+        self.assertNotContains(response, 'Dr. Siti Fazura')
+        self.assertNotContains(response, 'Dr. Chong Wei')
+        self.assertNotContains(response, 'HO Dr. Farhan')
+        self.assertNotContains(response, 'Verified by HOD')
+        self.assertNotContains(response, 'AI Insight')
+        self.assertNotContains(response, 'Burnout Risk Index')
+        self.assertNotContains(response, '100% Real-Time')
+        self.assertNotContains(response, '4.8')
+
+    def test_ei_uses_all_time_domain_averages_without_zeroing_missing_values(self):
+        today = timezone.localdate()
+        EmotionalReflection.objects.create(
+            officer=self.user,
+            record_date=today,
+            self_awareness_score=80,
+            self_regulation_score=70,
+            empathy_score=None,
+            deescalation_score=60,
+        )
+        EmotionalReflection.objects.create(
+            officer=self.user,
+            record_date=today - timedelta(days=7),
+            self_awareness_score=90,
+            self_regulation_score=None,
+            empathy_score=80,
+            deescalation_score=None,
+        )
+
+        response = self.client.get(self.url)
+
+        context = response.context
+        cards = {
+            card['key']: card for card in context['ei_domain_cards']
+        }
+        self.assertEqual(cards['self_awareness_score']['average'], 85)
+        self.assertEqual(cards['self_regulation_score']['average'], 70)
+        self.assertEqual(cards['empathy_score']['average'], 80)
+        self.assertEqual(cards['deescalation_score']['average'], 60)
+        self.assertEqual(cards['self_awareness_score']['recorded_count'], 2)
+        self.assertEqual(cards['self_regulation_score']['recorded_count'], 1)
+        self.assertEqual(context['ei_domain_count'], 4)
+        self.assertEqual(context['ei_composite'], 74)
+        self.assertFalse(context['ei_composite_is_provisional'])
+        self.assertEqual(
+            context['ei_composite_status_display'],
+            'Complete (4/4 domains)',
+        )
+        self.assertEqual(
+            [
+                score['display']
+                for score in context['ei_reflections'][0]['scores']
+            ],
+            ['80%', '70%', 'Not recorded', '60%'],
+        )
+        self.assertContains(response, 'Complete (4/4 domains)')
+        self.assertContains(response, '85%')
+
+    def test_ei_composite_is_provisional_when_legacy_domains_are_missing(self):
+        EmotionalReflection.objects.create(
+            officer=self.user,
+            self_awareness_score=85,
+        )
+
+        response = self.client.get(self.url)
+
+        context = response.context
+        self.assertEqual(context['ei_domain_count'], 1)
+        self.assertEqual(context['ei_composite'], 85)
+        self.assertTrue(context['ei_composite_is_provisional'])
+        self.assertEqual(
+            context['ei_composite_status_display'],
+            'Provisional (1/4 domains)',
+        )
+        self.assertContains(response, 'Provisional (1/4 domains)')
+
+    def test_ei_weekly_streak_counts_unique_weeks_and_allows_one_week_grace(self):
+        today = timezone.localdate()
+        current_week_start = today - timedelta(days=today.weekday())
+        previous_week_start = current_week_start - timedelta(days=7)
+        EmotionalReflection.objects.create(
+            officer=self.user,
+            record_date=previous_week_start,
+        )
+        EmotionalReflection.objects.create(
+            officer=self.user,
+            record_date=previous_week_start + timedelta(days=1),
+        )
+        EmotionalReflection.objects.create(
+            officer=self.user,
+            record_date=previous_week_start - timedelta(days=7),
+        )
+
+        response = self.client.get(self.url)
+
+        self.assertEqual(response.context['ei_streak_weeks'], 2)
+        self.assertContains(response, 'Consecutive Weeks')
+
+        EmotionalReflection.objects.create(
+            officer=self.user,
+            record_date=today,
+        )
+        response = self.client.get(self.url)
+
+        self.assertEqual(response.context['ei_streak_weeks'], 3)
+
+    def test_kudos_feed_is_personal_two_way_and_reports_real_points(self):
+        peer_one = self._staff(
+            'kudos_peer_one',
+            first_name='Bella',
+            last_name='Lim',
+        )
+        peer_two = self._staff(
+            'kudos_peer_two',
+            first_name='Chen',
+            last_name='Wei',
+        )
+        PeerKudos.objects.create(
+            sender=peer_one,
+            receiver=self.user,
+            category='Clinical Knowledge Sharing & CME',
+            points=7,
+            message='Terima kasih atas perkongsian CME.',
+        )
+        PeerKudos.objects.create(
+            sender=self.user,
+            receiver=peer_two,
+            category='Shift Cover & Ward Relief',
+            points=10,
+            message='Bantuan liputan wad yang pantas.',
+        )
+        PeerKudos.objects.create(
+            sender=peer_one,
+            receiver=peer_two,
+            category='Private',
+            points=50,
+            message='Private peer message',
+        )
+
+        response = self.client.get(self.url)
+
+        context = response.context
+        self.assertEqual(context['kudos_feed_total'], 2)
+        self.assertEqual(context['kudos_given_count'], 1)
+        self.assertEqual(context['kudos_received_count'], 1)
+        self.assertEqual(context['kudos_given_points'], 10)
+        self.assertEqual(context['kudos_received_points'], 7)
+        self.assertEqual(
+            {item['direction_label'] for item in context['kudos_feed']},
+            {'Sent', 'Received'},
+        )
+        self.assertContains(response, 'Your Personal Two-Way Kudos Activity')
+        self.assertContains(response, 'Dr. Bella Lim awarded you')
+        self.assertContains(response, 'You awarded Dr. Chen Wei')
+        self.assertContains(response, 'Terima kasih atas perkongsian CME.')
+        self.assertContains(response, 'Bantuan liputan wad yang pantas.')
+        self.assertNotContains(response, 'Private peer message')
+        self.assertNotContains(response, 'Karma')
+
+    def test_mentorship_uses_mentor_hours_active_mentees_and_verified_flags(self):
+        verifier = self._staff(
+            'mentorship_verifier',
+            first_name='Head',
+            last_name='Verifier',
+        )
+        today = timezone.localdate()
+        MentorshipSession.objects.create(
+            mentor=self.user,
+            participant_role='mentor',
+            mentee_name=' HO Alice ',
+            topic='Bedside Clinical Supervision',
+            notes='Sesi pertama.',
+            session_date=today,
+            duration_hours=2.0,
+            is_verified=False,
+        )
+        MentorshipSession.objects.create(
+            mentor=self.user,
+            participant_role='mentor',
+            mentee_name='ho alice',
+            topic='Audit & Research Guidance',
+            notes='Sesi kedua tanpa verifier.',
+            session_date=today - timedelta(days=1),
+            duration_hours=1.5,
+            is_verified=True,
+            verified_by=None,
+        )
+        MentorshipSession.objects.create(
+            mentor=self.user,
+            participant_role='mentor',
+            mentee_name='Bob',
+            topic='Postgraduate & Parallel Pathway',
+            notes='Sesi tahun lepas.',
+            session_date=date(self.year - 1, 6, 1),
+            duration_hours=4.0,
+            is_verified=True,
+            verified_by=verifier,
+        )
+        MentorshipSession.objects.create(
+            mentor=self.user,
+            participant_role='mentee',
+            mentee_name='Dr. Mentor',
+            topic='On-Call Coping & Stress Adaptation',
+            notes='Sesi sebagai mentee.',
+            session_date=today,
+            duration_hours=3.0,
+            is_verified=True,
+        )
+
+        response = self.client.get(self.url)
+
+        context = response.context
+        self.assertEqual(context['mentorship_mentor_count'], 3)
+        self.assertEqual(context['mentorship_mentee_count'], 1)
+        self.assertEqual(context['mentorship_mentor_hours'], 7.5)
+        self.assertEqual(context['mentorship_mentor_hours_display'], '7.5')
+        self.assertEqual(context['mentorship_mentee_hours'], 3.0)
+        self.assertEqual(context['mentorship_mentee_hours_display'], '3')
+        self.assertEqual(context['mentorship_active_mentees'], 1)
+        self.assertEqual(context['mentorship_mentor_verified_count'], 2)
+        self.assertEqual(context['mentorship_signoff_rate'], 67)
+        self.assertEqual(context['mentorship_signoff_display'], '67%')
+
+        statuses = [
+            (session['participant_name'], session['status_display'])
+            for session in context['mentorship_sessions']
+        ]
+        self.assertIn((' HO Alice ', 'Pending Verification'), statuses)
+        self.assertIn(('ho alice', 'Verified'), statuses)
+        self.assertIn(
+            ('Bob', 'Verified by Dr. Head Verifier'),
+            statuses,
+        )
+        self.assertIn(('Dr. Mentor', 'Verified'), statuses)
+        self.assertContains(response, 'Active Mentees (%s)' % self.year)
+        self.assertContains(response, 'As Mentee')
+        self.assertContains(response, 'Verified by Dr. Head Verifier')
+        self.assertNotContains(response, 'Verified by HOD')
+
+    def test_mypsq_uses_recorded_feedback_average_and_comments(self):
+        MyPSQFeedback.objects.create(
+            doctor=self.user,
+            patient_category='Outpatient',
+            q1_general=4,
+            q2_technical=4,
+            q3_interpersonal=4,
+            q4_communication=4,
+            q5_financial=4,
+            q6_time=4,
+            q7_accessibility=4,
+            patient_comments='Penjelasan doktor sangat jelas.',
+        )
+        MyPSQFeedback.objects.create(
+            doctor=self.user,
+            patient_category='Inpatient',
+            q1_general=5,
+            q2_technical=5,
+            q3_interpersonal=5,
+            q4_communication=5,
+            q5_financial=5,
+            q6_time=5,
+            q7_accessibility=5,
+            patient_comments='',
+        )
+
+        response = self.client.get(self.url)
+
+        context = response.context
+        self.assertTrue(context['mypsq_has_data'])
+        self.assertEqual(context['mypsq_count'], 2)
+        self.assertEqual(context['mypsq_avg_score'], 4.5)
+        self.assertEqual(context['mypsq_pct'], 90)
+        self.assertEqual(
+            context['mypsq_latest_date_display'],
+            timezone.localdate().strftime('%d %b %Y'),
+        )
+        self.assertEqual(len(context['mypsq_comments']), 1)
+        self.assertContains(response, '4.5')
+        self.assertContains(response, 'Penjelasan doktor sangat jelas.')
+        self.assertNotContains(
+            response,
+            'The doctor explained the treatment plan very clearly',
         )
 
 

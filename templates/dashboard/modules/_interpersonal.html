@@ -43,7 +43,7 @@
                         <h3 style="color:#150a35; margin:0; font-size:16px; font-weight: 800;">MyPSQ Automated Patient Satisfaction Analytics</h3>
                     </div>
                     <span style="background: #f3edff; border: 1px solid #e7dff2; color: #6d3ec4; font-size: 11px; font-weight: 800; padding: 4px 12px; border-radius: 20px;">
-                        MoH Guidelines Edisi 1/2026
+                        Official 7-Dimension MyPSQ
                     </span>
                 </div>
 
@@ -52,24 +52,26 @@
                     <div style="background: #f3edff; border: 1px solid #e7dff2; padding: 18px; border-radius: 12px; border-left: 5px solid #6d3ec4;">
                         <div style="font-size: 11px; color: #6d3ec4; font-weight: 800; text-transform: uppercase;">Overall Satisfaction Rating</div>
                         <div style="font-size: 28px; font-weight: 900; color: #150a35; margin-top: 4px;">
-                            {{ mypsq_avg_score }} <span style="font-size: 16px; font-weight: 700; color: #6d3ec4;">/ 5.0</span>
-                            <span style="font-size: 13px; font-weight: 800; color: #16a34a; margin-left: 6px;">({{ mypsq_pct }}%)</span>
+                            {% if mypsq_has_data %}
+                                {{ mypsq_avg_score|floatformat:1 }} <span style="font-size: 16px; font-weight: 700; color: #6d3ec4;">/ 5.0</span>
+                                <span style="font-size: 13px; font-weight: 800; color: #16a34a; margin-left: 6px;">({{ mypsq_pct }}%)</span>
+                            {% else %}
+                                <span style="font-size: 22px; color: #6f628b;">No data</span>
+                            {% endif %}
                         </div>
-                        <div style="font-size: 11px; color: #64748b; margin-top: 4px;">Automated Score (7 Dimensions)</div>
+                        <div style="font-size: 11px; color: #64748b; margin-top: 4px;">All-time average across {{ mypsq_count }} response{{ mypsq_count|pluralize }}</div>
                     </div>
 
                     <div style="background: white; border: 1px solid #e7dff2; padding: 18px; border-radius: 12px; border-left: 5px solid #150a35; box-shadow: 0 2px 8px rgba(21, 10, 53, 0.03);">
                         <div style="font-size: 11px; color: #6d3ec4; font-weight: 800; text-transform: uppercase;">Total Patient Responses</div>
                         <div style="font-size: 28px; font-weight: 900; color: #150a35; margin-top: 4px;">{{ mypsq_count }}</div>
-                        <div style="font-size: 11px; color: #16a34a; font-weight: 700; margin-top: 4px;">✓ Verified via Mobile QR Scan</div>
+                        <div style="font-size: 11px; color: #64748b; font-weight: 700; margin-top: 4px;">Recorded MyPSQ submission{{ mypsq_count|pluralize }}</div>
                     </div>
 
                     <div style="background: white; border: 1px solid #e7dff2; padding: 18px; border-radius: 12px; border-left: 5px solid #16a34a; box-shadow: 0 2px 8px rgba(21, 10, 53, 0.03);">
-                        <div style="font-size: 11px; color: #15803d; font-weight: 800; text-transform: uppercase;">Data Integrity Mode</div>
-                        <div style="font-size: 18px; font-weight: 900; color: #15803d; margin-top: 6px; display: flex; align-items: center; gap: 6px;">
-                            <span>100% Real-Time</span>
-                        </div>
-                        <div style="font-size: 11px; color: #64748b; margin-top: 4px;">Manual input disabled to prevent bias</div>
+                        <div style="font-size: 11px; color: #15803d; font-weight: 800; text-transform: uppercase;">Latest Patient Response</div>
+                        <div style="font-size: 22px; font-weight: 900; color: #15803d; margin-top: 6px;">{{ mypsq_latest_date_display }}</div>
+                        <div style="font-size: 11px; color: #64748b; margin-top: 4px;">Most recent feedback date</div>
                     </div>
                 </div>
 
@@ -125,8 +127,8 @@
                             {% endfor %}
                         </div>
                     {% else %}
-                        <div style="background: white; border: 1px solid #e7dff2; padding: 16px; border-radius: 12px; text-align: center; color: #6d3ec4; font-size: 12px; font-weight: 600;">
-                            "The doctor explained the treatment plan very clearly and listened attentively to my concerns."
+                        <div style="background: white; border: 1px solid #e7dff2; padding: 16px; border-radius: 12px; text-align: center; color: #6f628b; font-size: 12px; font-weight: 600;">
+                            No patient feedback recorded yet. Share your QR link with patients to start collecting real MyPSQ responses.
                         </div>
                     {% endif %}
                 </div>
@@ -142,31 +144,59 @@
                         </div>
                     </div>
                     <span style="background: #f3edff; border: 1px solid #d8c7f4; color: #6d3ec4; font-size: 11px; font-weight: 800; padding: 4px 12px; border-radius: 20px;">
-                        Wellness Index: Optimal Zone
+                        {% if ei_has_data %}
+                            {{ ei_total_reflections }} Reflection{{ ei_total_reflections|pluralize }} Logged
+                        {% else %}
+                            No Reflections Logged
+                        {% endif %}
                     </span>
                 </div>
 
-                <!-- METRIK KETAHANAN EMOSI & ANTI-BURNOUT -->
-                <div class="grid-3" style="margin-bottom: 25px;">
+                <!-- METRIK KETAHANAN EMOSI BERDASARKAN REKOD SEBENAR -->
+                <div class="grid-3" style="margin-bottom: 20px;">
                     <div style="background: #f3edff; border: 1px solid #e7dff2; padding: 16px; border-radius: 12px; border-left: 5px solid #6d3ec4;">
                         <div style="font-size: 10px; color: #6d3ec4; font-weight: 800; text-transform: uppercase;">EQ Resilience Composite</div>
-                        <div style="font-size: 26px; font-weight: 900; color: #150a35; margin-top: 4px;">88% <span style="font-size: 13px; font-weight: 800; color: #16a34a; margin-left: 4px;">(High)</span></div>
-                        <div style="font-size: 11px; color: #64748b; margin-top: 4px;">Self-Regulation & Empathy Score</div>
+                        <div style="font-size: 26px; font-weight: 900; color: #150a35; margin-top: 4px;">
+                            {{ ei_composite_display }}
+                            {% if ei_composite_is_provisional %}
+                                <span style="font-size: 12px; font-weight: 800; color: #d97706; margin-left: 4px;">Provisional</span>
+                            {% elif ei_has_data %}
+                                <span style="font-size: 12px; font-weight: 800; color: #16a34a; margin-left: 4px;">Complete</span>
+                            {% endif %}
+                        </div>
+                        <div style="font-size: 11px; color: #64748b; margin-top: 4px;">{{ ei_composite_status_display }}</div>
                     </div>
 
                     <div style="background: white; border: 1px solid #e7dff2; padding: 16px; border-radius: 12px; border-left: 5px solid #16a34a; box-shadow: 0 2px 8px rgba(21, 10, 53, 0.03);">
-                        <div style="font-size: 10px; color: #15803d; font-weight: 800; text-transform: uppercase;">Burnout Risk Index</div>
-                        <div style="font-size: 20px; font-weight: 900; color: #15803d; margin-top: 8px; display: flex; align-items: center; gap: 6px;">
-                            <span>🟢 Low Risk (Green)</span>
-                        </div>
-                        <div style="font-size: 11px; color: #64748b; margin-top: 4px;">Stable workload & coping mechanism</div>
+                        <div style="font-size: 10px; color: #15803d; font-weight: 800; text-transform: uppercase;">Reflection Domains Recorded</div>
+                        <div style="font-size: 26px; font-weight: 900; color: #15803d; margin-top: 4px;">{{ ei_domain_count }} <span style="font-size: 14px; font-weight: 700; color: #6d3ec4;">/ 4 Domains</span></div>
+                        <div style="font-size: 11px; color: #64748b; margin-top: 4px;">Domains with at least one recorded score</div>
                     </div>
 
                     <div style="background: white; border: 1px solid #e7dff2; padding: 16px; border-radius: 12px; border-left: 5px solid #150a35; box-shadow: 0 2px 8px rgba(21, 10, 53, 0.03);">
                         <div style="font-size: 10px; color: #150a35; font-weight: 800; text-transform: uppercase;">Reflection Consistency</div>
-                        <div style="font-size: 26px; font-weight: 900; color: #150a35; margin-top: 4px;">4 <span style="font-size: 12px; font-weight: 700; color: #6d3ec4;">Consecutive Weeks</span></div>
-                        <div style="font-size: 11px; color: #64748b; margin-top: 4px;">Active Self-Debrief Streak</div>
+                        <div style="font-size: 26px; font-weight: 900; color: #150a35; margin-top: 4px;">
+                            {% if ei_streak_weeks %}
+                                {{ ei_streak_weeks }} <span style="font-size: 12px; font-weight: 700; color: #6d3ec4;">Consecutive Week{{ ei_streak_weeks|pluralize }}</span>
+                            {% else %}
+                                <span style="font-size: 18px; color: #6f628b;">No active streak</span>
+                            {% endif %}
+                        </div>
+                        <div style="font-size: 11px; color: #64748b; margin-top: 4px;">Weekly self-debrief logs (one-week grace)</div>
                     </div>
+                </div>
+
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; margin-bottom: 25px;">
+                    {% for domain in ei_domain_cards %}
+                        <div style="background: white; border: 1px solid #e7dff2; padding: 14px; border-radius: 12px;">
+                            <div style="font-size: 10px; color: #6f628b; font-weight: 800; text-transform: uppercase;">{{ domain.label }}</div>
+                            <div style="font-size: 22px; font-weight: 900; color: #150a35; margin-top: 4px;">{{ domain.display }}</div>
+                            <div style="height: 6px; background: #f3edff; border-radius: 999px; overflow: hidden; margin-top: 8px;">
+                                <div style="width: {{ domain.bar_width }}%; height: 100%; background: #6d3ec4; border-radius: 999px;"></div>
+                            </div>
+                            <div style="font-size: 10px; color: #64748b; margin-top: 6px;">All-time average · {{ domain.recorded_count }} record{{ domain.recorded_count|pluralize }}</div>
+                        </div>
+                    {% endfor %}
                 </div>
 
                 <!-- BORANG REFLEKSI EMOSI & PENILAIAN 4 TUNJANG -->
@@ -182,19 +212,19 @@
                         <div class="grid-2" style="margin-bottom: 20px;">
                             <div>
                                 <label style="margin-top:0; color:#150a35; font-size:12px; font-weight:700;">Self-Awareness (Mengenal Pasti Emosi Sendiri):</label>
-                                <input type="range" class="eq-slider" name="ei_self_awareness" min="0" max="100" value="85" style="width:100%; accent-color:#6d3ec4;">
+                                <input type="range" class="eq-slider" name="ei_self_awareness" min="0" max="100" value="50" style="width:100%; accent-color:#6d3ec4;">
                             </div>
                             <div>
                                 <label style="margin-top:0; color:#150a35; font-size:12px; font-weight:700;">Self-Regulation under Stress (Mengawal Amarah/Tension):</label>
-                                <input type="range" class="eq-slider" name="ei_regulation" min="0" max="100" value="80" style="width:100%; accent-color:#6d3ec4;">
+                                <input type="range" class="eq-slider" name="ei_regulation" min="0" max="100" value="50" style="width:100%; accent-color:#6d3ec4;">
                             </div>
                             <div>
                                 <label style="margin-top:0; color:#150a35; font-size:12px; font-weight:700;">Empathy & Active Listening (Memahami Pesakit/Rakan):</label>
-                                <input type="range" class="eq-slider" name="ei_empathy" min="0" max="100" value="90" style="width:100%; accent-color:#6d3ec4;">
+                                <input type="range" class="eq-slider" name="ei_empathy" min="0" max="100" value="50" style="width:100%; accent-color:#6d3ec4;">
                             </div>
                             <div>
                                 <label style="margin-top:0; color:#150a35; font-size:12px; font-weight:700;">De-escalation Skill (Pengurusan Konflik Krisis):</label>
-                                <input type="range" class="eq-slider" name="ei_deescalation" min="0" max="100" value="82" style="width:100%; accent-color:#6d3ec4;">
+                                <input type="range" class="eq-slider" name="ei_deescalation" min="0" max="100" value="50" style="width:100%; accent-color:#6d3ec4;">
                             </div>
                         </div>
 
@@ -239,23 +269,32 @@
                 <!-- SENARAI LOG SEJARAH REFLEKSI & AI RESILIENCE TIPS -->
                 <div style="border-top: 1px dashed #d8c7f4; padding-top: 20px;">
                     <h4 style="color: #150a35; margin: 0 0 15px 0; font-size: 14px; font-weight: 800; display: flex; align-items: center; gap: 8px;">
-                        Recent Emotional Debrief Logs & AI Resilience Insights
+                        Recent Emotional Debrief Logs
                     </h4>
 
-                    <div style="display: flex; flex-direction: column; gap: 12px; max-height: 220px; overflow-y: auto; padding-right: 6px;">
-                        <div style="background: white; border: 1px solid #e7dff2; padding: 14px; border-radius: 12px; border-left: 4px solid #6d3ec4;">
-                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
-                                <span style="font-size: 12px; font-weight: 800; color: #150a35;">Trigger: Aggressive Patient Relative Encounter</span>
-                                <span style="font-size: 10px; color: #6f628b; font-weight: 700;">22 Sep 2026</span>
-                            </div>
-                            <p style="font-size: 12px; color: #64748b; margin: 0; font-weight: 500;">
-                                "Maintained active listening and calm tone during an anxious family query in ED Red Zone. Successfully de-escalated the situation without conflict."
-                            </p>
-                            <div style="margin-top: 8px; background: #f3edff; padding: 6px 10px; border-radius: 6px; font-size: 11px; color: #6d3ec4; font-weight: 700;">
-                                💡 AI Insight: Excellent self-regulation. Empathy-first approach reduced patient distress time by 50%.
-                            </div>
+                    {% if ei_reflections %}
+                        <div style="display: flex; flex-direction: column; gap: 12px; max-height: 220px; overflow-y: auto; padding-right: 6px;">
+                            {% for reflection in ei_reflections %}
+                                <div style="background: white; border: 1px solid #e7dff2; padding: 14px; border-radius: 12px; border-left: 4px solid #6d3ec4;">
+                                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; gap: 12px;">
+                                        <span style="font-size: 12px; font-weight: 800; color: #150a35;">Trigger: {{ reflection.trigger_display }}</span>
+                                        <span style="font-size: 10px; color: #6f628b; font-weight: 700; white-space: nowrap;">{{ reflection.record_date_display }}</span>
+                                    </div>
+                                    <p style="font-size: 12px; color: #64748b; margin: 0; font-weight: 500;">{{ reflection.notes_display }}</p>
+                                    <div style="margin-top: 8px; display: flex; flex-wrap: wrap; gap: 6px;">
+                                        {% for score in reflection.scores %}
+                                            <span style="background: #f3edff; color: #6d3ec4; padding: 4px 8px; border-radius: 6px; font-size: 10px; font-weight: 800;">{{ score.label }}: {{ score.display }}</span>
+                                        {% endfor %}
+                                    </div>
+                                    <div style="margin-top: 8px; font-size: 10.5px; color: #6f628b; font-weight: 700;">Coping strategy: {{ reflection.coping_display }}</div>
+                                </div>
+                            {% endfor %}
                         </div>
-                    </div>
+                    {% else %}
+                        <div style="background: white; border: 1px solid #e7dff2; padding: 16px; border-radius: 12px; text-align: center; color: #6f628b; font-size: 12px; font-weight: 600;">
+                            No emotional reflections recorded yet. Complete the reflection form above to start your debrief history.
+                        </div>
+                    {% endif %}
                 </div>
             </div>
 
@@ -269,30 +308,34 @@
                         </div>
                     </div>
                     <span style="background: #f3edff; border: 1px solid #d8c7f4; color: #6d3ec4; font-size: 11px; font-weight: 800; padding: 4px 12px; border-radius: 20px;">
-                        Monthly Reset: 30 Days
+                        {% if kudos_has_activity %}
+                            Personal Feed: {{ kudos_feed_total }} Record{{ kudos_feed_total|pluralize }}
+                        {% else %}
+                            Personal Feed: No Activity
+                        {% endif %}
                     </span>
                 </div>
 
-                <!-- METRIK DOMPET KUDOS & PEER POINTS -->
+                <!-- METRIK KUDOS BERDASARKAN REKOD SEBENAR -->
                 <div class="grid-3" style="margin-bottom: 25px;">
                     <div style="background: #f3edff; border: 1px solid #e7dff2; padding: 16px; border-radius: 12px; border-left: 5px solid #6d3ec4;">
-                        <div style="font-size: 10px; color: #6d3ec4; font-weight: 800; text-transform: uppercase;">Giveable Monthly Allowance</div>
+                        <div style="font-size: 10px; color: #6d3ec4; font-weight: 800; text-transform: uppercase;">Kudos Given Pts</div>
                         <div style="font-size: 26px; font-weight: 900; color: #150a35; margin-top: 4px;">
-                            30 <span style="font-size: 14px; font-weight: 700; color: #6d3ec4;">/ 50 Pts Left</span>
+                            +{{ kudos_given_points }} <span style="font-size: 14px; font-weight: 700; color: #6d3ec4;">Pts</span>
                         </div>
-                        <div style="font-size: 11px; color: #64748b; margin-top: 4px;">Allocated to give to peers</div>
+                        <div style="font-size: 11px; color: #64748b; margin-top: 4px;">{{ kudos_given_count }} recognition{{ kudos_given_count|pluralize }} sent</div>
                     </div>
 
                     <div style="background: white; border: 1px solid #e7dff2; padding: 16px; border-radius: 12px; border-left: 5px solid #16a34a; box-shadow: 0 2px 8px rgba(21, 10, 53, 0.03);">
                         <div style="font-size: 10px; color: #15803d; font-weight: 800; text-transform: uppercase;">Points Received from Peers</div>
-                        <div style="font-size: 26px; font-weight: 900; color: #15803d; margin-top: 4px;">+85 <span style="font-size: 12px; font-weight: 700; color: #16a34a;">Pts</span></div>
-                        <div style="font-size: 11px; color: #64748b; margin-top: 4px;">Credited to Interpersonal Pillar</div>
+                        <div style="font-size: 26px; font-weight: 900; color: #15803d; margin-top: 4px;">+{{ kudos_received_points }} <span style="font-size: 12px; font-weight: 700; color: #16a34a;">Pts</span></div>
+                        <div style="font-size: 11px; color: #64748b; margin-top: 4px;">{{ kudos_received_count }} recognition{{ kudos_received_count|pluralize }} received</div>
                     </div>
 
                     <div style="background: white; border: 1px solid #e7dff2; padding: 16px; border-radius: 12px; border-left: 5px solid #150a35; box-shadow: 0 2px 8px rgba(21, 10, 53, 0.03);">
-                        <div style="font-size: 10px; color: #150a35; font-weight: 800; text-transform: uppercase;">Goodwill Karma Bonus</div>
-                        <div style="font-size: 26px; font-weight: 900; color: #150a35; margin-top: 4px;">+12 <span style="font-size: 12px; font-weight: 700; color: #6d3ec4;">Pts</span></div>
-                        <div style="font-size: 11px; color: #64748b; margin-top: 4px;">Earned by appreciating others</div>
+                        <div style="font-size: 10px; color: #150a35; font-weight: 800; text-transform: uppercase;">Two-Way Exchanges</div>
+                        <div style="font-size: 26px; font-weight: 900; color: #150a35; margin-top: 4px;">{{ kudos_feed_total }} <span style="font-size: 12px; font-weight: 700; color: #6d3ec4;">Record{{ kudos_feed_total|pluralize }}</span></div>
+                        <div style="font-size: 11px; color: #64748b; margin-top: 4px;">{{ kudos_given_count }} given / {{ kudos_received_count }} received</div>
                     </div>
                 </div>
 
@@ -321,10 +364,10 @@
                             <div>
                                 <label style="margin-top:0; color:#150a35; font-weight:700;">Endorsement Category & Points <span style="color:red;">*</span></label>
                                 <select name="kudos_category" required style="background:white; border-color:#d8c7f4; font-weight:600;">
-                                    <option value="Shift Cover & Ward Relief" style="color: #6d3ec4; font-weight: 700;">💜 Shift Cover & Ward Relief (+10 Pts to Peer | +2 Karma to You)</option>
-                                    <option value="Emergency & On-Call Assistance" style="color: #6d3ec4; font-weight: 700;">🟣 Emergency & On-Call Assistance (+10 Pts to Peer | +2 Karma to You)</option>
-                                    <option value="Clinical Knowledge Sharing & CME" style="color: #6d3ec4; font-weight: 700;">🪻 Clinical Knowledge Sharing & CME (+5 Pts to Peer | +1 Karma to You)</option>
-                                    <option value="Empathy & Team Moral Support" style="color: #6d3ec4; font-weight: 700;">💟 Empathy & Team Moral Support (+5 Pts to Peer | +1 Karma to You)</option>
+                                    <option value="Shift Cover & Ward Relief" style="color: #6d3ec4; font-weight: 700;">💜 Shift Cover & Ward Relief (+10 Pts to Peer)</option>
+                                    <option value="Emergency & On-Call Assistance" style="color: #6d3ec4; font-weight: 700;">🟣 Emergency & On-Call Assistance (+10 Pts to Peer)</option>
+                                    <option value="Clinical Knowledge Sharing & CME" style="color: #6d3ec4; font-weight: 700;">🪻 Clinical Knowledge Sharing & CME (+5 Pts to Peer)</option>
+                                    <option value="Empathy & Team Moral Support" style="color: #6d3ec4; font-weight: 700;">💟 Empathy & Team Moral Support (+5 Pts to Peer)</option>
                                 </select>
                             </div>
                         </div>
@@ -343,36 +386,31 @@
                 <!-- LIVE DEPARTMENT PEER KUDOS FEED -->
                 <div style="border-top: 1px dashed #d8c7f4; padding-top: 20px;">
                     <h4 style="color: #150a35; margin: 0 0 15px 0; font-size: 14px; font-weight: 800; display: flex; align-items: center; gap: 8px;">
-                        Department Live Kudos & Synergy Activity Stream
+                        Your Personal Two-Way Kudos Activity
                     </h4>
 
-                    <div style="display: flex; flex-direction: column; gap: 12px; max-height: 250px; overflow-y: auto; padding-right: 6px;">
-                        <div style="background: white; border: 1px solid #e7dff2; padding: 12px 16px; border-radius: 12px; border-left: 4px solid #6d3ec4; display: flex; justify-content: space-between; align-items: center;">
-                            <div>
-                                <div style="font-size: 13px; font-weight: 800; color: #150a35;">
-                                    Dr. Siti Fazura <span style="font-weight:600; color:#6f628b;">awarded</span> {{ staff_name }}
-                                    <span style="background:#f3edff; color:#6d3ec4; padding:2px 8px; border-radius:10px; font-size:11px; margin-left:6px; font-weight:800;">+10 Pts</span>
+                    {% if kudos_feed %}
+                        <div style="display: flex; flex-direction: column; gap: 12px; max-height: 250px; overflow-y: auto; padding-right: 6px;">
+                            {% for item in kudos_feed %}
+                                <div style="background: white; border: 1px solid #e7dff2; padding: 12px 16px; border-radius: 12px; border-left: 4px solid {{ item.border_color }}; display: flex; justify-content: space-between; align-items: center; gap: 12px;">
+                                    <div>
+                                        <div style="font-size: 13px; font-weight: 800; color: #150a35;">
+                                            {{ item.title }}
+                                            <span style="background:{{ item.badge_background }}; color:{{ item.badge_color }}; padding:2px 8px; border-radius:10px; font-size:11px; margin-left:6px; font-weight:800;">{{ item.points_display }}</span>
+                                            <span style="background:#f8fafc; color:#64748b; padding:2px 8px; border-radius:10px; font-size:10px; margin-left:4px; font-weight:800;">{{ item.direction_label }}</span>
+                                        </div>
+                                        <p style="font-size: 12px; color: #64748b; margin: 4px 0 0 0; font-style: italic;">{{ item.message_display }}</p>
+                                        <div style="font-size: 10px; color: #6f628b; font-weight: 700; margin-top: 4px;">{{ item.category }}</div>
+                                    </div>
+                                    <span style="font-size: 10px; color: #94a3b8; font-weight: 700; white-space: nowrap;">{{ item.sent_at_display }}</span>
                                 </div>
-                                <p style="font-size: 12px; color: #64748b; margin: 4px 0 0 0; font-style: italic;">
-                                    "Huge thanks for covering my ward rounds during the emergency RED zone resuscitation!"
-                                </p>
-                            </div>
-                            <span style="font-size: 10px; color: #94a3b8; font-weight: 700; shrink-0;">Today, 11:20 AM</span>
+                            {% endfor %}
                         </div>
-
-                        <div style="background: white; border: 1px solid #e7dff2; padding: 12px 16px; border-radius: 12px; border-left: 4px solid #16a34a; display: flex; justify-content: space-between; align-items: center;">
-                            <div>
-                                <div style="font-size: 13px; font-weight: 800; color: #150a35;">
-                                    {{ staff_name }} <span style="font-weight:600; color:#16a34a;">awarded</span> Dr. Chong Wei
-                                    <span style="background:#f0fdf4; color:#16a34a; padding:2px 8px; border-radius:10px; font-size:11px; margin-left:6px; font-weight:800;">+5 Pts</span>
-                                </div>
-                                <p style="font-size: 12px; color: #64748b; margin: 4px 0 0 0; font-style: italic;">
-                                    "Great CME presentation on Diabetes Management CPG updates today!"
-                                </p>
-                            </div>
-                            <span style="font-size: 10px; color: #94a3b8; font-weight: 700; shrink-0;">Yesterday, 15:45 PM</span>
+                    {% else %}
+                        <div style="background: white; border: 1px solid #e7dff2; padding: 16px; border-radius: 12px; text-align: center; color: #6f628b; font-size: 12px; font-weight: 600;">
+                            No personal Kudos activity recorded yet. Send your first recognition using the form above.
                         </div>
-                    </div>
+                    {% endif %}
                 </div>
             </div>
 
@@ -386,28 +424,38 @@
                         </div>
                     </div>
                     <span style="background: #f3edff; border: 1px solid #d8c7f4; color: #6d3ec4; font-size: 11px; font-weight: 800; padding: 4px 12px; border-radius: 20px;">
-                        Leadership Track: Active
+                        {% if mentorship_has_sessions %}
+                            {{ mentorship_mentor_count }} Mentor Session{{ mentorship_mentor_count|pluralize }} Logged
+                        {% else %}
+                            No Mentorship Sessions Logged
+                        {% endif %}
                     </span>
                 </div>
 
-                <!-- METRIK KEPIMPINAN & BAMBINGAN -->
-                <div class="grid-3" style="margin-bottom: 25px;">
+                <!-- METRIK KEPIMPINAN & BAMBINGAN BERDASARKAN REKOD SEBENAR -->
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 14px; margin-bottom: 25px;">
                     <div style="background: #f3edff; border: 1px solid #e7dff2; padding: 16px; border-radius: 12px; border-left: 5px solid #6d3ec4;">
-                        <div style="font-size: 10px; color: #6d3ec4; font-weight: 800; text-transform: uppercase;">Active Assigned Mentees</div>
-                        <div style="font-size: 26px; font-weight: 900; color: #150a35; margin-top: 4px;">3 <span style="font-size: 13px; font-weight: 700; color: #6d3ec4;">(HOs & Junior MOs)</span></div>
-                        <div style="font-size: 11px; color: #64748b; margin-top: 4px;">Assigned for Clinical Rotation</div>
+                        <div style="font-size: 10px; color: #6d3ec4; font-weight: 800; text-transform: uppercase;">Active Mentees ({{ mentorship_year }})</div>
+                        <div style="font-size: 26px; font-weight: 900; color: #150a35; margin-top: 4px;">{{ mentorship_active_mentees }} <span style="font-size: 13px; font-weight: 700; color: #6d3ec4;">Mentee{{ mentorship_active_mentees|pluralize }}</span></div>
+                        <div style="font-size: 11px; color: #64748b; margin-top: 4px;">Unique mentees in mentor-role sessions this year</div>
                     </div>
 
                     <div style="background: white; border: 1px solid #e7dff2; padding: 16px; border-radius: 12px; border-left: 5px solid #16a34a; box-shadow: 0 2px 8px rgba(21, 10, 53, 0.03);">
                         <div style="font-size: 10px; color: #15803d; font-weight: 800; text-transform: uppercase;">Total Guided Hours</div>
-                        <div style="font-size: 26px; font-weight: 900; color: #15803d; margin-top: 4px;">24 <span style="font-size: 12px; font-weight: 700; color: #16a34a;">Hours</span></div>
-                        <div style="font-size: 11px; color: #64748b; margin-top: 4px;">Bedside & Career Coaching</div>
+                        <div style="font-size: 26px; font-weight: 900; color: #15803d; margin-top: 4px;">{{ mentorship_mentor_hours_display }} <span style="font-size: 12px; font-weight: 700; color: #16a34a;">Hours</span></div>
+                        <div style="font-size: 11px; color: #64748b; margin-top: 4px;">Mentor-role sessions only ({{ mentorship_mentor_count }})</div>
                     </div>
 
                     <div style="background: white; border: 1px solid #e7dff2; padding: 16px; border-radius: 12px; border-left: 5px solid #150a35; box-shadow: 0 2px 8px rgba(21, 10, 53, 0.03);">
                         <div style="font-size: 10px; color: #150a35; font-weight: 800; text-transform: uppercase;">Competency Sign-Off Rate</div>
-                        <div style="font-size: 26px; font-weight: 900; color: #150a35; margin-top: 4px;">92% <span style="font-size: 12px; font-weight: 700; color: #6d3ec4;">Verified</span></div>
-                        <div style="font-size: 11px; color: #64748b; margin-top: 4px;">Mentee logbook progression</div>
+                        <div style="font-size: 26px; font-weight: 900; color: #150a35; margin-top: 4px;">{{ mentorship_signoff_display }}</div>
+                        <div style="font-size: 11px; color: #64748b; margin-top: 4px;">{{ mentorship_mentor_verified_count }} verified of {{ mentorship_mentor_count }} mentor-role session{{ mentorship_mentor_count|pluralize }}</div>
+                    </div>
+
+                    <div style="background: white; border: 1px solid #e7dff2; padding: 16px; border-radius: 12px; border-left: 5px solid #6f628b; box-shadow: 0 2px 8px rgba(21, 10, 53, 0.03);">
+                        <div style="font-size: 10px; color: #6f628b; font-weight: 800; text-transform: uppercase;">As Mentee</div>
+                        <div style="font-size: 26px; font-weight: 900; color: #150a35; margin-top: 4px;">{{ mentorship_mentee_hours_display }} <span style="font-size: 12px; font-weight: 700; color: #6d3ec4;">Hours</span></div>
+                        <div style="font-size: 11px; color: #64748b; margin-top: 4px;">{{ mentorship_mentee_count }} mentee-role session{{ mentorship_mentee_count|pluralize }}</div>
                     </div>
                 </div>
 
@@ -430,7 +478,7 @@
                         <div class="grid-3" style="margin-bottom: 15px;">
                             <div>
                                 <label style="margin-top:0; color:#150a35; font-weight:700;">Mentee / Officer Name <span style="color:red;">*</span></label>
-                                <input type="text" name="mentee_name" placeholder="e.g. HO Dr. Farhan / Junior MO" required style="background:white; border-color:#d8c7f4;">
+                                <input type="text" name="mentee_name" placeholder="e.g. HO Dr. Ahmad / Junior MO" required style="background:white; border-color:#d8c7f4;">
                             </div>
                             <div>
                                 <label style="margin-top:0; color:#150a35; font-weight:700;">Session Date & Duration <span style="color:red;">*</span></label>
@@ -471,39 +519,30 @@
                         Recent Mentorship Sessions & Competency Sign-Offs
                     </h4>
 
-                    <div style="display: flex; flex-direction: column; gap: 12px; max-height: 220px; overflow-y: auto; padding-right: 6px;">
-                        <div style="background: white; border: 1px solid #e7dff2; padding: 14px; border-radius: 12px; border-left: 4px solid #6d3ec4; display: flex; justify-content: space-between; align-items: center;">
-                            <div>
-                                <div style="font-size: 13px; font-weight: 800; color: #150a35;">
-                                    HO Dr. Farhan <span style="font-weight:600; color:#6f628b;">(Mentee)</span>
-                                    <span style="background:#f3edff; color:#6d3ec4; padding:2px 8px; border-radius:10px; font-size:11px; margin-left:6px; font-weight:800;">Bedside Supervision</span>
+                    {% if mentorship_sessions %}
+                        <div style="display: flex; flex-direction: column; gap: 12px; max-height: 220px; overflow-y: auto; padding-right: 6px;">
+                            {% for session in mentorship_sessions %}
+                                <div style="background: white; border: 1px solid #e7dff2; padding: 14px; border-radius: 12px; border-left: 4px solid {{ session.border_color }}; display: flex; justify-content: space-between; align-items: center; gap: 14px;">
+                                    <div>
+                                        <div style="font-size: 13px; font-weight: 800; color: #150a35;">
+                                            {{ session.counterpart_label }}: {{ session.participant_name }}
+                                            <span style="background:#f3edff; color:#6d3ec4; padding:2px 8px; border-radius:10px; font-size:11px; margin-left:6px; font-weight:800;">{{ session.role_label }}</span>
+                                            <span style="background:#f8fafc; color:#64748b; padding:2px 8px; border-radius:10px; font-size:11px; margin-left:4px; font-weight:800;">{{ session.topic }}</span>
+                                        </div>
+                                        <p style="font-size: 12px; color: #64748b; margin: 4px 0 0 0; font-weight: 500;">{{ session.notes_display }}</p>
+                                    </div>
+                                    <div style="text-align: right; flex-shrink: 0;">
+                                        <span class="status-badge {{ session.status_css }}" style="display: block; margin-bottom: 4px;">{{ session.status_display }}</span>
+                                        <span style="font-size: 10px; color: #94a3b8; font-weight: 700;">{{ session.session_date_display }} ({{ session.duration_display }})</span>
+                                    </div>
                                 </div>
-                                <p style="font-size: 12px; color: #64748b; margin: 4px 0 0 0; font-weight: 500;">
-                                    "Guided CVC insertion technique & verified logbook competency. Reviewed post-procedure X-ray interpretation."
-                                </p>
-                            </div>
-                            <div style="text-align: right; shrink-0;">
-                                <span class="status-badge bg-success" style="display: block; margin-bottom: 4px;">✓ Verified by HOD</span>
-                                <span style="font-size: 10px; color: #94a3b8; font-weight: 700;">20 Sep 2026 (1 Hr)</span>
-                            </div>
+                            {% endfor %}
                         </div>
-
-                        <div style="background: white; border: 1px solid #e7dff2; padding: 14px; border-radius: 12px; border-left: 4px solid #16a34a; display: flex; justify-content: space-between; align-items: center;">
-                            <div>
-                                <div style="font-size: 13px; font-weight: 800; color: #150a35;">
-                                    Dr. Azlan Shah (Specialist / HOD) <span style="font-weight:600; color:#16a34a;">(Mentor)</span>
-                                    <span style="background:#f0fdf4; color:#16a34a; padding:2px 8px; border-radius:10px; font-size:11px; margin-left:6px; font-weight:800;">Career Pathway</span>
-                                </div>
-                                <p style="font-size: 12px; color: #64748b; margin: 4px 0 0 0; font-weight: 500;">
-                                    "Consultation on Parallel Pathway MRCP Part 2 examination strategy and research portfolio development."
-                                </p>
-                            </div>
-                            <div style="text-align: right; shrink-0;">
-                                <span class="status-badge bg-success" style="display: block; margin-bottom: 4px;">✓ Logged</span>
-                                <span style="font-size: 10px; color: #94a3b8; font-weight: 700;">10 Sep 2026 (1.5 Hrs)</span>
-                            </div>
+                    {% else %}
+                        <div style="background: white; border: 1px solid #e7dff2; padding: 16px; border-radius: 12px; text-align: center; color: #6f628b; font-size: 12px; font-weight: 600;">
+                            No mentorship sessions recorded yet. Log a session using the form above.
                         </div>
-                    </div>
+                    {% endif %}
                 </div>
             </div>
 </div>

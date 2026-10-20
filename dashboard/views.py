@@ -19,7 +19,7 @@ from django.core.exceptions import ValidationError
 from django.core.serializers.json import DjangoJSONEncoder
 from django.core.validators import FileExtensionValidator
 from django.db import transaction
-from django.db.models import Avg
+from django.db.models import Avg, Q
 from django.utils import timezone
 
 # Import Data Simulasi (Mock Data)
@@ -3012,6 +3012,320 @@ def _build_operational_context(user, prod_logs):
     }
 
 
+INTERPERSONAL_EI_HISTORY_LIMIT = 10
+INTERPERSONAL_KUDOS_FEED_LIMIT = 20
+INTERPERSONAL_MENTORSHIP_HISTORY_LIMIT = 20
+
+
+def _interpersonal_display_name(user):
+    """Return a consistent doctor name for Interpersonal activity rows."""
+    if user is None:
+        return 'Unknown user'
+    full_name = user.get_full_name().strip()
+    return f"Dr. {full_name or user.username}"
+
+
+def _interpersonal_normalise_name(value):
+    """Normalise free-text mentee names before counting unique mentees."""
+    return re.sub(r'\s+', ' ', (value or '').strip()).casefold()
+
+
+def _interpersonal_week_streak(reflections, today):
+    """Count consecutive ISO weeks with a reflection and one-week grace."""
+    week_starts = {
+        reflection.record_date - timedelta(days=reflection.record_date.weekday())
+        for reflection in reflections
+    }
+    current_week_start = today - timedelta(days=today.weekday())
+    if current_week_start in week_starts:
+        cursor = current_week_start
+    elif current_week_start - timedelta(days=7) in week_starts:
+        cursor = current_week_start - timedelta(days=7)
+    else:
+        return 0
+
+    streak = 0
+    while cursor in week_starts:
+        streak += 1
+        cursor -= timedelta(days=7)
+    return streak
+
+
+def _interpersonal_duration_display(hours):
+    """Format a mentorship duration without trailing decimal zeroes."""
+    value = float(hours or 0)
+    text = f'{value:.1f}'.rstrip('0').rstrip('.')
+    unit = 'Hr' if value == 1 else 'Hrs'
+    return f'{text} {unit}'
+
+
+def _build_interpersonal_context(user, qr_eval_url):
+    """Build DB-backed values for the staff Interpersonal tab."""
+    today = timezone.localdate()
+    current_year = today.year
+
+    # --- MyPSQ: real patient feedback only; never invent a fallback rating ---
+    feedbacks = list(
+        MyPSQFeedback.objects.filter(doctor=user)
+        .order_by('-created_at', '-id')
+    )
+    mypsq_count = len(feedbacks)
+    if mypsq_count:
+        average_rating = (
+            sum(feedback.average_score for feedback in feedbacks)
+            / mypsq_count
+        )
+        mypsq_avg_score = round(average_rating, 1)
+        mypsq_pct = int((average_rating / 5.0) * 100)
+        mypsq_latest_date_display = timezone.localtime(
+            feedbacks[0].created_at
+        ).strftime('%d %b %Y')
+    else:
+        mypsq_avg_score = None
+        mypsq_pct = None
+        mypsq_latest_date_display = 'No data'
+
+    # --- Emotional Intelligence: all-time domain averages and weekly streak ---
+    reflections = list(
+        EmotionalReflection.objects.filter(officer=user)
+        .order_by('-record_date', '-id')
+    )
+    domain_averages = _average_reflection_domains(reflections)
+    ei_domain_cards = []
+    for index, (_post_key, field_name, label) in enumerate(EI_DOMAIN_FIELDS):
+        recorded_values = [
+            getattr(reflection, field_name)
+            for reflection in reflections
+            if getattr(reflection, field_name) is not None
+        ]
+        average = domain_averages[index]
+        ei_domain_cards.append({
+            'key': field_name,
+            'label': label,
+            'average': average,
+            'display': f'{average}%' if average is not None else 'No data',
+            'bar_width': average or 0,
+            'recorded_count': len(recorded_values),
+            'has_data': average is not None,
+        })
+
+    recorded_domain_averages = [
+        average for average in domain_averages if average is not None
+    ]
+    ei_domain_count = len(recorded_domain_averages)
+    ei_composite = (
+        round(sum(recorded_domain_averages) / ei_domain_count)
+        if ei_domain_count else None
+    )
+    ei_composite_is_provisional = 0 < ei_domain_count < len(EI_DOMAIN_FIELDS)
+    if ei_composite is None:
+        ei_composite_status_display = 'No data'
+    elif ei_composite_is_provisional:
+        ei_composite_status_display = (
+            f'Provisional ({ei_domain_count}/{len(EI_DOMAIN_FIELDS)} domains)'
+        )
+    else:
+        ei_composite_status_display = (
+            f'Complete ({ei_domain_count}/{len(EI_DOMAIN_FIELDS)} domains)'
+        )
+
+    ei_reflections = []
+    for reflection in reflections[:INTERPERSONAL_EI_HISTORY_LIMIT]:
+        ei_reflections.append({
+            'id': reflection.id,
+            'record_date_display': reflection.record_date.strftime('%d %b %Y'),
+            'trigger_display': (
+                reflection.trigger_event or 'Trigger not recorded'
+            ),
+            'coping_display': (
+                reflection.coping_strategy or 'Coping strategy not recorded'
+            ),
+            'notes_display': (
+                reflection.reflection_notes or 'No reflection notes recorded.'
+            ),
+            'scores': [
+                {
+                    'label': label,
+                    'display': (
+                        f'{getattr(reflection, field_name)}%'
+                        if getattr(reflection, field_name) is not None
+                        else 'Not recorded'
+                    ),
+                }
+                for _post_key, field_name, label in EI_DOMAIN_FIELDS
+            ],
+        })
+
+    ei_streak_weeks = _interpersonal_week_streak(reflections, today)
+
+    # --- Peer Kudos: a personal, privacy-preserving two-way activity feed ---
+    kudos_records = list(
+        PeerKudos.objects.filter(Q(sender=user) | Q(receiver=user))
+        .select_related('sender', 'receiver')
+        .order_by('-sent_at', '-id')
+    )
+    given_kudos = [
+        record for record in kudos_records if record.sender_id == user.id
+    ]
+    received_kudos = [
+        record for record in kudos_records if record.receiver_id == user.id
+    ]
+    kudos_given_points = sum(record.points for record in given_kudos)
+    kudos_received_points = sum(record.points for record in received_kudos)
+
+    kudos_feed = []
+    for record in kudos_records[:INTERPERSONAL_KUDOS_FEED_LIMIT]:
+        is_given = record.sender_id == user.id
+        counterpart = record.receiver if is_given else record.sender
+        counterpart_name = _interpersonal_display_name(counterpart)
+        kudos_feed.append({
+            'id': record.id,
+            'is_given': is_given,
+            'direction_label': 'Sent' if is_given else 'Received',
+            'title': (
+                f'You awarded {counterpart_name}'
+                if is_given
+                else f'{counterpart_name} awarded you'
+            ),
+            'points_display': f'+{record.points} Pts',
+            'category': record.category or 'Uncategorised',
+            'message_display': (
+                record.message.strip()
+                if record.message and record.message.strip()
+                else 'No remarks provided.'
+            ),
+            'sent_at_display': timezone.localtime(
+                record.sent_at
+            ).strftime('%d %b %Y, %I:%M %p'),
+            'border_color': '#16a34a' if is_given else '#6d3ec4',
+            'badge_background': '#f0fdf4' if is_given else '#f3edff',
+            'badge_color': '#16a34a' if is_given else '#6d3ec4',
+        })
+
+    # --- Mentorship: guided hours only count sessions logged as mentor ---
+    sessions = list(
+        MentorshipSession.objects.filter(mentor=user)
+        .select_related('verified_by')
+        .order_by('-session_date', '-id')
+    )
+    mentor_sessions = [
+        session for session in sessions
+        if session.participant_role == 'mentor'
+    ]
+    mentee_sessions = [
+        session for session in sessions
+        if session.participant_role == 'mentee'
+    ]
+    mentor_hours = sum(
+        float(session.duration_hours or 0)
+        for session in mentor_sessions
+    )
+    mentee_hours = sum(
+        float(session.duration_hours or 0)
+        for session in mentee_sessions
+    )
+    active_mentees = {
+        _interpersonal_normalise_name(session.mentee_name)
+        for session in mentor_sessions
+        if session.session_date.year == current_year
+        and _interpersonal_normalise_name(session.mentee_name)
+    }
+    verified_mentor_sessions = sum(
+        1 for session in mentor_sessions if session.is_verified
+    )
+    mentorship_signoff_rate = (
+        round((verified_mentor_sessions / len(mentor_sessions)) * 100)
+        if mentor_sessions else None
+    )
+
+    mentorship_sessions = []
+    for session in sessions[:INTERPERSONAL_MENTORSHIP_HISTORY_LIMIT]:
+        if session.is_verified and session.verified_by_id:
+            status_display = (
+                f'Verified by {_interpersonal_display_name(session.verified_by)}'
+            )
+        elif session.is_verified:
+            status_display = 'Verified'
+        else:
+            status_display = 'Pending Verification'
+
+        mentorship_sessions.append({
+            'id': session.id,
+            'participant_name': session.mentee_name,
+            'role_label': session.get_participant_role_display(),
+            'counterpart_label': (
+                'Mentee' if session.participant_role == 'mentor'
+                else 'Mentor / Officer'
+            ),
+            'topic': session.topic,
+            'notes_display': (
+                session.notes or 'No session notes recorded.'
+            ),
+            'session_date_display': session.session_date.strftime('%d %b %Y'),
+            'duration_display': _interpersonal_duration_display(
+                session.duration_hours
+            ),
+            'status_display': status_display,
+            'status_css': 'bg-success' if session.is_verified else 'bg-warning',
+            'border_color': (
+                '#16a34a' if session.participant_role == 'mentor'
+                else '#6d3ec4'
+            ),
+        })
+
+    return {
+        'qr_eval_url': qr_eval_url,
+        'mypsq_feedbacks': feedbacks,
+        'mypsq_comments': [
+            feedback for feedback in feedbacks if feedback.patient_comments
+        ],
+        'mypsq_count': mypsq_count,
+        'mypsq_has_data': bool(mypsq_count),
+        'mypsq_avg_score': mypsq_avg_score,
+        'mypsq_pct': mypsq_pct,
+        'mypsq_latest_date_display': mypsq_latest_date_display,
+        'ei_reflections': ei_reflections,
+        'ei_total_reflections': len(reflections),
+        'ei_has_data': bool(reflections),
+        'ei_domain_cards': ei_domain_cards,
+        'ei_domain_count': ei_domain_count,
+        'ei_composite': ei_composite,
+        'ei_composite_display': (
+            f'{ei_composite}%' if ei_composite is not None else 'No data'
+        ),
+        'ei_composite_status_display': ei_composite_status_display,
+        'ei_composite_is_provisional': ei_composite_is_provisional,
+        'ei_streak_weeks': ei_streak_weeks,
+        'kudos_feed': kudos_feed,
+        'kudos_feed_total': len(kudos_records),
+        'kudos_has_activity': bool(kudos_records),
+        'kudos_given_count': len(given_kudos),
+        'kudos_received_count': len(received_kudos),
+        'kudos_given_points': kudos_given_points,
+        'kudos_received_points': kudos_received_points,
+        'mentorship_year': current_year,
+        'mentorship_sessions': mentorship_sessions,
+        'mentorship_has_sessions': bool(sessions),
+        'mentorship_mentor_count': len(mentor_sessions),
+        'mentorship_mentee_count': len(mentee_sessions),
+        'mentorship_mentor_hours': mentor_hours,
+        'mentorship_mentor_hours_display': (
+            _operational_metric_display(mentor_hours, decimal_places=1)
+        ),
+        'mentorship_mentee_hours': mentee_hours,
+        'mentorship_mentee_hours_display': (
+            _operational_metric_display(mentee_hours, decimal_places=1)
+        ),
+        'mentorship_active_mentees': len(active_mentees),
+        'mentorship_mentor_verified_count': verified_mentor_sessions,
+        'mentorship_signoff_rate': mentorship_signoff_rate,
+        'mentorship_signoff_display': (
+            f'{mentorship_signoff_rate}%'
+            if mentorship_signoff_rate is not None else 'No data'
+        ),
+    }
+
+
 @login_required(login_url='/login/')
 def staff_dashboard_view(request):
     
@@ -3478,22 +3792,6 @@ def staff_dashboard_view(request):
     doctor_username = staff_user.username if staff_user else 'admin'
     qr_eval_url = request.build_absolute_uri(f'/evaluate/{doctor_username}/')
 
-    # Tarik data maklum balas MyPSQ sebenar dari DB
-    feedbacks = MyPSQFeedback.objects.filter(doctor=staff_user).order_by('-created_at') if staff_user else []
-    mypsq_count = feedbacks.count() if hasattr(feedbacks, 'count') else len(feedbacks)
-
-    if mypsq_count > 0:
-        avg_q = sum([f.average_score for f in feedbacks]) / mypsq_count
-        mypsq_avg_score = round(avg_q, 1)
-        mypsq_pct = int((avg_q / 5.0) * 100)
-        mypsq_comments = [f for f in feedbacks if f.patient_comments]
-    else:
-        # Fallback mesra ujian jika pangkalan data belum mempunyai jawapan
-        mypsq_avg_score = 4.8
-        mypsq_pct = 96
-        mypsq_count = 14
-        mypsq_comments = []
-
     # ==========================================
     # PROMOTION READINESS INDEX (PRI) CALCULATION (LIVE DB INTEGRATION)
     # ==========================================
@@ -3551,6 +3849,10 @@ def staff_dashboard_view(request):
         _build_operational_context(staff_user, prod_logs)
         if staff_user and section == 'Operational' else {}
     )
+    interpersonal_context = (
+        _build_interpersonal_context(staff_user, qr_eval_url)
+        if staff_user and section == 'Interpersonal' else {}
+    )
 
     # --- TARIK NOTIFIKASI RASMI HOD KE STAFF ---
     active_hod_feedbacks = HODFeedback.objects.filter(receiver_staff=request.user, is_acknowledged=False).order_by('-created_at')
@@ -3602,6 +3904,7 @@ def staff_dashboard_view(request):
     context = {
         **clinical_context,
         **operational_context,
+        **interpersonal_context,
         'section': section,
         'calendar_events_json': calendar_events_json,
         'active_hod_feedbacks': active_hod_feedbacks,
@@ -3649,11 +3952,6 @@ def staff_dashboard_view(request):
         # --- DATA MyPSQ UNTUK PORTAL STAF ---
         'qr_eval_url': qr_eval_url,
         'doctor_username': doctor_username,
-        'mypsq_avg_score': mypsq_avg_score,
-        'mypsq_pct': mypsq_pct,
-        'mypsq_count': mypsq_count,
-        'mypsq_feedbacks': feedbacks,
-        'mypsq_comments': mypsq_comments,
     }
     return render(request, 'dashboard/staff_dashboard.html', context)
 
