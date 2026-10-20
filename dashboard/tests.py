@@ -11,9 +11,11 @@ from django.utils import timezone
 from .models import (
     CPDClaim,
     DocumentationLog,
+    InnovationProject,
     PolicyDeclaration,
     PolicyItemResponse,
     ProcedureLog,
+    ProductivityLog,
     UserProfile,
 )
 from .views import (
@@ -601,3 +603,301 @@ class ClinicalProcedurePhase2Tests(TestCase):
             ).count(),
             2,
         )
+
+class OperationalPersistencePhase2Tests(TestCase):
+    def setUp(self):
+        self.user = User.objects.create_user(username='operational_test_user')
+        UserProfile.objects.create(
+            user=self.user,
+            role='STAFF',
+            department='CTS',
+        )
+        self.client.force_login(self.user)
+
+    def _prod_data(self):
+        return {
+            'form_type': 'ops_prod',
+            'prod_date': '2026-10-19',
+            'outpatient_count': '42',
+            'ward_count': '9',
+            'procedure_count': '3',
+            'avg_consult': '14.5',
+            'punctuality': 'Slight Delay',
+            'prod_notes': 'Klinik dilewatkan oleh kes kecemasan.',
+        }
+
+    def _post_prod(self, **overrides):
+        data = self._prod_data()
+        data.update(overrides)
+        return self.client.post(
+            reverse('staff_dashboard') + '?section=Operational',
+            data,
+        )
+
+    def _innovation_data(self, innovation_type, **overrides):
+        data = {
+            'form_type': 'ops_innov',
+            'innovation_type': innovation_type,
+            'category': innovation_type,
+        }
+        data.update(overrides)
+        return data
+
+    def _post_innovation(self, data):
+        return self.client.post(
+            reverse('staff_dashboard') + '?section=Operational',
+            data,
+        )
+
+    def test_productivity_persists_all_fields(self):
+        response = self._post_prod()
+
+        self.assertEqual(response.status_code, 302)
+        log = ProductivityLog.objects.get(officer=self.user)
+        self.assertEqual(log.record_date, date(2026, 10, 19))
+        self.assertEqual(log.patients_cleared, 42)
+        self.assertEqual(log.ward_cases, 9)
+        self.assertEqual(log.procedures_completed, 3)
+        self.assertEqual(log.avg_consult_minutes, 14.5)
+        self.assertEqual(log.punctuality_status, 'Slight Delay')
+        self.assertEqual(log.punctuality_rate, 85.0)
+        self.assertEqual(
+            log.operational_notes,
+            'Klinik dilewatkan oleh kes kecemasan.',
+        )
+
+    def test_productivity_punctuality_mapping(self):
+        expected_rates = {
+            'On-Time': 100.0,
+            'Slight Delay': 85.0,
+            'Ward Round Extension': 70.0,
+        }
+
+        for status, expected_rate in expected_rates.items():
+            with self.subTest(status=status):
+                ProductivityLog.objects.all().delete()
+                response = self._post_prod(punctuality=status)
+
+                self.assertEqual(response.status_code, 302)
+                log = ProductivityLog.objects.get(officer=self.user)
+                self.assertEqual(log.punctuality_status, status)
+                self.assertEqual(log.punctuality_rate, expected_rate)
+
+    def test_productivity_rejects_invalid_or_missing_date(self):
+        for invalid_date in ('', '2026-13-01', '20-10-2026'):
+            with self.subTest(prod_date=invalid_date):
+                response = self._post_prod(prod_date=invalid_date)
+
+                self.assertEqual(response.status_code, 302)
+                self.assertFalse(
+                    ProductivityLog.objects.filter(officer=self.user).exists()
+                )
+
+        data = self._prod_data()
+        data.pop('prod_date')
+        response = self.client.post(
+            reverse('staff_dashboard') + '?section=Operational',
+            data,
+        )
+
+        self.assertEqual(response.status_code, 302)
+        self.assertFalse(
+            ProductivityLog.objects.filter(officer=self.user).exists()
+        )
+
+    def test_productivity_rejects_invalid_punctuality(self):
+        for invalid_status in ('', 'Late'):
+            with self.subTest(punctuality=invalid_status):
+                response = self._post_prod(punctuality=invalid_status)
+
+                self.assertEqual(response.status_code, 302)
+                self.assertFalse(
+                    ProductivityLog.objects.filter(officer=self.user).exists()
+                )
+
+    def test_productivity_blank_optional_fields(self):
+        response = self._post_prod(
+            ward_count='',
+            procedure_count='',
+            avg_consult='',
+            prod_notes='',
+        )
+
+        self.assertEqual(response.status_code, 302)
+        log = ProductivityLog.objects.get(officer=self.user)
+        self.assertIsNone(log.ward_cases)
+        self.assertIsNone(log.procedures_completed)
+        self.assertEqual(log.avg_consult_minutes, 12.0)
+        self.assertIsNone(log.operational_notes)
+
+
+    def test_research_persists_structured_fields(self):
+        response = self._post_innovation(
+            self._innovation_data(
+                'Research',
+                title='Prevalence of T2DM in Sarawak',
+                nmrr_id='NMRR-25-123',
+                res_role='Co-Investigator',
+            )
+        )
+
+        self.assertEqual(response.status_code, 302)
+        project = InnovationProject.objects.get(officer=self.user)
+        self.assertEqual(project.project_title, 'Prevalence of T2DM in Sarawak')
+        self.assertEqual(project.innovation_type, 'Research')
+        self.assertEqual(project.category, 'Research')
+        self.assertEqual(project.nmrr_id, 'NMRR-25-123')
+        self.assertEqual(project.research_role, 'Co-Investigator')
+        self.assertIn('Role: Co-Investigator', project.description)
+        self.assertIn('NMRR: NMRR-25-123', project.description)
+        self.assertNotIn('Technology:', project.description)
+        self.assertNotIn('Details:', project.description)
+
+    def test_clinical_trial_persists_structured_fields(self):
+        response = self._post_innovation(
+            self._innovation_data(
+                'Clinical Trial',
+                title='CRC-26-001A',
+                phase='Phase III',
+                recruitment_count='12',
+                trial_stat='Closed',
+            )
+        )
+
+        self.assertEqual(response.status_code, 302)
+        project = InnovationProject.objects.get(officer=self.user)
+        self.assertEqual(project.project_title, 'CRC-26-001A')
+        self.assertEqual(project.innovation_type, 'Clinical Trial')
+        self.assertEqual(project.category, 'Clinical Trial')
+        self.assertEqual(project.trial_phase, 'Phase III')
+        self.assertEqual(project.recruitment_count, 12)
+        self.assertEqual(project.trial_status, 'Closed')
+        self.assertIn('Trial Phase: Phase III', project.description)
+        self.assertIn('Recruitment: 12', project.description)
+        self.assertIn('Trial Status: Closed', project.description)
+
+    def test_technology_adoption_persists_structured_fields(self):
+        response = self._post_innovation(
+            self._innovation_data(
+                'Technology Adoption',
+                title='PACS Imaging System',
+                adoption_date='2026-10-18',
+                tech_lvl='Expert (Trainer)',
+                technology_name='Ghost Legacy Value',
+            )
+        )
+
+        self.assertEqual(response.status_code, 302)
+        project = InnovationProject.objects.get(officer=self.user)
+        self.assertEqual(project.project_title, 'PACS Imaging System')
+        self.assertEqual(project.innovation_type, 'Technology Adoption')
+        self.assertEqual(project.category, 'Technology Adoption')
+        self.assertEqual(project.adoption_date, date(2026, 10, 18))
+        self.assertEqual(project.proficiency_level, 'Expert (Trainer)')
+        self.assertIn('Adoption Date: 2026-10-18', project.description)
+        self.assertIn('Proficiency: Expert (Trainer)', project.description)
+        self.assertNotIn('Ghost Legacy Value', project.description)
+
+
+    def test_publication_persists_structured_fields_and_title_fallback(self):
+        response = self._post_innovation(
+            self._innovation_data(
+                'Publication',
+                journal='MedJ Malaysia',
+                doi='10.1234/medj.2026.001',
+                title='',
+                year='2025',
+            )
+        )
+
+        self.assertEqual(response.status_code, 302)
+        project = InnovationProject.objects.get(officer=self.user)
+        self.assertEqual(project.project_title, 'MedJ Malaysia')
+        self.assertEqual(project.innovation_type, 'Publication')
+        self.assertEqual(project.category, 'Publication')
+        self.assertEqual(project.journal_name, 'MedJ Malaysia')
+        self.assertEqual(project.doi, '10.1234/medj.2026.001')
+        self.assertEqual(project.publication_year, 2025)
+        self.assertIn('Journal: MedJ Malaysia', project.description)
+        self.assertIn('DOI: 10.1234/medj.2026.001', project.description)
+        self.assertIn('Year: 2025', project.description)
+
+    def test_invalid_adoption_date_or_recruitment_count_is_rejected(self):
+        response = self._post_innovation(
+            self._innovation_data(
+                'Technology Adoption',
+                title='PACS Imaging System',
+                adoption_date='2026-02-30',
+            )
+        )
+        self.assertEqual(response.status_code, 302)
+        self.assertFalse(
+            InnovationProject.objects.filter(officer=self.user).exists()
+        )
+
+        response = self._post_innovation(
+            self._innovation_data(
+                'Clinical Trial',
+                title='CRC-26-001A',
+                recruitment_count='-5',
+            )
+        )
+        self.assertEqual(response.status_code, 302)
+        self.assertFalse(
+            InnovationProject.objects.filter(officer=self.user).exists()
+        )
+
+    def test_optional_innovation_fields_become_null(self):
+        self._post_innovation(
+            self._innovation_data(
+                'Research',
+                title='Research Without Optional Fields',
+                nmrr_id='',
+                res_role='',
+            )
+        )
+        self._post_innovation(
+            self._innovation_data(
+                'Clinical Trial',
+                title='CRC-26-002A',
+                phase='',
+                recruitment_count='',
+                trial_stat='',
+            )
+        )
+        self._post_innovation(
+            self._innovation_data(
+                'Technology Adoption',
+                title='Technology Without Optional Fields',
+                adoption_date='',
+                tech_lvl='',
+            )
+        )
+        self._post_innovation(
+            self._innovation_data(
+                'Publication',
+                journal='Journal Without Year',
+                doi='10.1234/no-year',
+                title='',
+                year='',
+            )
+        )
+
+        research = InnovationProject.objects.get(innovation_type='Research')
+        self.assertIsNone(research.nmrr_id)
+        self.assertIsNone(research.research_role)
+
+        trial = InnovationProject.objects.get(innovation_type='Clinical Trial')
+        self.assertIsNone(trial.trial_phase)
+        self.assertIsNone(trial.recruitment_count)
+        self.assertIsNone(trial.trial_status)
+
+        technology = InnovationProject.objects.get(
+            innovation_type='Technology Adoption'
+        )
+        self.assertIsNone(technology.adoption_date)
+        self.assertIsNone(technology.proficiency_level)
+
+        publication = InnovationProject.objects.get(innovation_type='Publication')
+        self.assertEqual(publication.project_title, 'Journal Without Year')
+        self.assertIsNone(publication.publication_year)

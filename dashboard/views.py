@@ -1976,6 +1976,37 @@ FMS_COMORBIDITIES = (
 CLINICAL_COMORBIDITY_NONE = 'None'
 BP_PATTERN = re.compile(r'^\s*(\d{1,3})\s*/\s*(\d{1,3})\s*$')
 
+PRODUCTIVITY_PUNCTUALITY_RATES = {
+    'On-Time': 100.0,
+    'Slight Delay': 85.0,
+    'Ward Round Extension': 70.0,
+}
+INNOVATION_TYPES = (
+    'Research',
+    'Clinical Trial',
+    'Technology Adoption',
+    'Publication',
+)
+INNOVATION_RESEARCH_ROLES = (
+    'Principle Investigator (PI)',
+    'Co-Investigator',
+)
+INNOVATION_TRIAL_PHASES = (
+    'Phase I',
+    'Phase II',
+    'Phase III',
+    'Phase IV (Post-Market)',
+)
+INNOVATION_TRIAL_STATUSES = (
+    'Active',
+    'Closed',
+)
+INNOVATION_PROFICIENCY_LEVELS = (
+    'Amateur (Learning)',
+    'Intermediate (Independent)',
+    'Expert (Trainer)',
+)
+
 
 def _required_choice(value, allowed, label):
     """Sahkan pilihan daripada whitelist dan pulangkan teks asal."""
@@ -2041,6 +2072,63 @@ def _required_date(value, label):
     parsed = _parse_date_value(value)
     if parsed is None:
         raise ValidationError(f'{label} tidak sah atau kosong.')
+    return parsed
+
+
+def _optional_date(value, label):
+    """Sahkan tarikh optional; kosong menjadi None, format salah ditolak."""
+    raw = (value or '').strip()
+    if not raw:
+        return None
+    parsed = _parse_date_value(raw)
+    if parsed is None:
+        raise ValidationError(f'{label} tidak sah.')
+    return parsed
+
+
+def _optional_text(value, max_length=None):
+    """Bersihkan teks optional; kosong menjadi None."""
+    cleaned = (value or '').strip()
+    if not cleaned:
+        return None
+    return cleaned[:max_length] if max_length else cleaned
+
+
+def _required_text(value, label, max_length=None):
+    """Bersihkan teks wajib dan pastikan ia tidak kosong."""
+    cleaned = _optional_text(value, max_length)
+    if not cleaned:
+        raise ValidationError(f'{label} diperlukan.')
+    return cleaned
+
+
+def _optional_int(value, label, minimum=None, maximum=None):
+    """Tukar input optional kepada int dan sahkan julatnya."""
+    raw = (value or '').strip()
+    if not raw:
+        return None
+    try:
+        parsed = int(raw)
+    except (TypeError, ValueError):
+        raise ValidationError(f'{label} mesti nombor bulat yang sah.') from None
+
+    if minimum is not None and maximum is not None:
+        if parsed < minimum or parsed > maximum:
+            raise ValidationError(
+                f'{label} mesti antara {minimum} hingga {maximum}.'
+            )
+    elif minimum is not None and parsed < minimum:
+        raise ValidationError(f'{label} mesti sekurang-kurangnya {minimum}.')
+    elif maximum is not None and parsed > maximum:
+        raise ValidationError(f'{label} tidak boleh melebihi {maximum}.')
+    return parsed
+
+
+def _required_int(value, label, minimum=None, maximum=None):
+    """Tukar input wajib kepada int dan sahkan julatnya."""
+    parsed = _optional_int(value, label, minimum=minimum, maximum=maximum)
+    if parsed is None:
+        raise ValidationError(f'{label} diperlukan.')
     return parsed
 
 
@@ -2216,6 +2304,200 @@ def _save_clinical_procedure(request, form_type, profile):
         )
 
     return clinical_domain, proc_name, score_val, procedure_date
+
+
+def _save_productivity_log(request):
+    """Validasi dan simpan satu rekod productivity operasi."""
+    record_date = _required_date(request.POST.get('prod_date'), 'Log Date')
+    patients_cleared = _required_int(
+        request.POST.get('outpatient_count'),
+        'Outpatient Consults Cleared',
+        minimum=0,
+    )
+    ward_cases = _optional_int(
+        request.POST.get('ward_count'),
+        'Inpatient Ward Cases',
+        minimum=0,
+    )
+    procedures_completed = _optional_int(
+        request.POST.get('procedure_count'),
+        'Procedures Completed',
+        minimum=0,
+    )
+    avg_consult_minutes = _optional_float(
+        request.POST.get('avg_consult'),
+        'Avg Consult Time',
+    )
+    if avg_consult_minutes is None:
+        avg_consult_minutes = 12.0
+    elif avg_consult_minutes < 0:
+        raise ValidationError('Avg Consult Time tidak boleh negatif.')
+
+    punctuality_status = _required_choice(
+        request.POST.get('punctuality'),
+        PRODUCTIVITY_PUNCTUALITY_RATES,
+        'Clinic Start Punctuality',
+    )
+    punctuality_rate = PRODUCTIVITY_PUNCTUALITY_RATES[punctuality_status]
+    operational_notes = _optional_text(request.POST.get('prod_notes'))
+
+    with transaction.atomic():
+        return ProductivityLog.objects.create(
+            officer=request.user,
+            record_date=record_date,
+            patients_cleared=patients_cleared,
+            ward_cases=ward_cases,
+            procedures_completed=procedures_completed,
+            avg_consult_minutes=avg_consult_minutes,
+            punctuality_rate=punctuality_rate,
+            punctuality_status=punctuality_status,
+            operational_notes=operational_notes,
+        )
+
+
+def _save_innovation_project(request):
+    """Validasi dan simpan satu rekod InnovationProject mengikut jenis borang."""
+    innovation_type = _required_choice(
+        request.POST.get('innovation_type'),
+        INNOVATION_TYPES,
+        'Innovation Type',
+    )
+    category = (
+        _optional_choice(
+            request.POST.get('category'),
+            INNOVATION_TYPES,
+            'Category',
+        )
+        or innovation_type
+    )
+    title_raw = _optional_text(request.POST.get('title'), max_length=200)
+
+    project_title = ''
+    research_role = None
+    nmrr_id = None
+    trial_phase = None
+    recruitment_count = None
+    trial_status = None
+    adoption_date = None
+    proficiency_level = None
+    journal_name = None
+    doi = None
+    publication_year = None
+    description_lines = []
+
+    if innovation_type == 'Research':
+        project_title = _required_text(
+            request.POST.get('title'),
+            'Research Title',
+            max_length=200,
+        )
+        nmrr_id = _optional_text(request.POST.get('nmrr_id'), max_length=50)
+        research_role = _optional_choice(
+            request.POST.get('res_role'),
+            INNOVATION_RESEARCH_ROLES,
+            'Research Role',
+        )
+        if research_role:
+            description_lines.append(f'Role: {research_role}')
+        if nmrr_id:
+            description_lines.append(f'NMRR: {nmrr_id}')
+
+    elif innovation_type == 'Clinical Trial':
+        project_title = _required_text(
+            request.POST.get('title'),
+            'CRC Log Number',
+            max_length=200,
+        )
+        trial_phase = _optional_choice(
+            request.POST.get('phase'),
+            INNOVATION_TRIAL_PHASES,
+            'Trial Phase',
+        )
+        recruitment_count = _optional_int(
+            request.POST.get('recruitment_count'),
+            'Patient Recruitment Number',
+            minimum=0,
+        )
+        trial_status = _optional_choice(
+            request.POST.get('trial_stat'),
+            INNOVATION_TRIAL_STATUSES,
+            'Recruitment Status',
+        )
+        if trial_phase:
+            description_lines.append(f'Trial Phase: {trial_phase}')
+        if recruitment_count is not None:
+            description_lines.append(f'Recruitment: {recruitment_count}')
+        if trial_status:
+            description_lines.append(f'Trial Status: {trial_status}')
+
+    elif innovation_type == 'Technology Adoption':
+        project_title = _required_text(
+            request.POST.get('title'),
+            'Technology / System Name',
+            max_length=200,
+        )
+        adoption_date = _optional_date(
+            request.POST.get('adoption_date'),
+            'Date of Adoption',
+        )
+        proficiency_level = _optional_choice(
+            request.POST.get('tech_lvl'),
+            INNOVATION_PROFICIENCY_LEVELS,
+            'Proficiency Level',
+        )
+        if adoption_date:
+            description_lines.append(
+                f'Adoption Date: {adoption_date.isoformat()}'
+            )
+        if proficiency_level:
+            description_lines.append(f'Proficiency: {proficiency_level}')
+
+    else:  # Publication
+        journal_name = _required_text(
+            request.POST.get('journal'),
+            'Name of Journal',
+            max_length=200,
+        )
+        doi = _required_text(
+            request.POST.get('doi'),
+            'DOI',
+            max_length=100,
+        )
+        publication_year = _optional_int(
+            request.POST.get('year'),
+            'Year Published',
+            minimum=2000,
+            maximum=timezone.localdate().year,
+        )
+        project_title = title_raw or journal_name
+        description_lines.append(f'Journal: {journal_name}')
+        description_lines.append(f'DOI: {doi}')
+        if publication_year is not None:
+            description_lines.append(f'Year: {publication_year}')
+
+    description = (
+        '\n'.join(description_lines)
+        or f'Dihantar melalui Portal MyPrestasi ({innovation_type}).'
+    )
+
+    with transaction.atomic():
+        return InnovationProject.objects.create(
+            officer=request.user,
+            project_title=project_title,
+            innovation_type=innovation_type,
+            category=category,
+            research_role=research_role,
+            nmrr_id=nmrr_id,
+            trial_phase=trial_phase,
+            recruitment_count=recruitment_count,
+            trial_status=trial_status,
+            adoption_date=adoption_date,
+            proficiency_level=proficiency_level,
+            journal_name=journal_name,
+            doi=doi,
+            publication_year=publication_year,
+            description=description,
+        )
 
 
 @login_required(login_url='/login/')
@@ -2396,25 +2678,19 @@ def staff_dashboard_view(request):
 
         # --- 2. MODUL OPERASIONAL ---
         elif form_type == 'ops_prod':
-            outpatient_count = max(0, _parse_int(request.POST.get('outpatient_count'), 0))
-            avg_consult = max(0.0, _parse_float(request.POST.get('avg_consult'), 0.0))
-            punctuality = request.POST.get('punctuality', 'On-Time')
-            punctuality_map = {
-                'On-Time': 100.0,
-                'Slight Delay': 85.0,
-                'Ward Round Extension': 70.0,
-            }
-            p_rate = punctuality_map.get(punctuality, 70.0)
-            prod_date = _parse_date_value(request.POST.get('prod_date'), date.today())
-
-            with transaction.atomic():
-                prod_obj = ProductivityLog.objects.create(
-                    officer=request.user,
-                    patients_cleared=outpatient_count,
-                    avg_consult_minutes=avg_consult,
-                    punctuality_rate=p_rate,
+            try:
+                prod_obj = _save_productivity_log(request)
+            except ValidationError as exc:
+                messages.error(
+                    request,
+                    f"❌ {exc.messages[0] if exc.messages else exc}",
                 )
-                ProductivityLog.objects.filter(pk=prod_obj.pk).update(record_date=prod_date)
+                return redirect(f'/staff/?section={section}')
+
+            prod_date = prod_obj.record_date
+            outpatient_count = prod_obj.patients_cleared
+            avg_consult = prod_obj.avg_consult_minutes
+            p_rate = prod_obj.punctuality_rate
 
             messages.success(
                 request,
@@ -2423,40 +2699,17 @@ def staff_dashboard_view(request):
             )
 
         elif form_type == 'ops_innov':
-            innovation_type = (request.POST.get('innovation_type') or 'Innovation').strip()
-            title_raw = (request.POST.get('title') or '').strip()
-            if not title_raw and innovation_type == 'Publication':
-                title_raw = (request.POST.get('journal') or '').strip()
-            title = (title_raw or 'Innovation Record')[:200]
-            category = ((request.POST.get('category') or innovation_type).strip())[:100]
+            try:
+                project = _save_innovation_project(request)
+            except ValidationError as exc:
+                messages.error(
+                    request,
+                    f"❌ {exc.messages[0] if exc.messages else exc}",
+                )
+                return redirect(f'/staff/?section={section}')
 
-            detail_fields = [
-                ('Role', request.POST.get('res_role')),
-                ('NMRR', request.POST.get('nmrr_id')),
-                ('Trial Phase', request.POST.get('phase')),
-                ('Recruitment', request.POST.get('recruitment_count')),
-                ('Trial Status', request.POST.get('trial_stat')),
-                ('Technology', request.POST.get('technology_name')),
-                ('Adoption Date', request.POST.get('adoption_date')),
-                ('Proficiency', request.POST.get('tech_lvl')),
-                ('Journal', request.POST.get('journal')),
-                ('DOI', request.POST.get('doi')),
-                ('Year', request.POST.get('year')),
-                ('Details', request.POST.get('description')),
-            ]
-            detail_lines = [
-                f"{label}: {value.strip()}"
-                for label, value in detail_fields
-                if value and str(value).strip()
-            ]
-            description = "\n".join(detail_lines) or f"Dihantar melalui Portal MyPrestasi ({innovation_type})."
-
-            InnovationProject.objects.create(
-                officer=request.user,
-                project_title=title,
-                category=category,
-                description=description,
-            )
+            innovation_type = project.innovation_type
+            title = project.project_title
             messages.success(request, f"✅ Rekod {innovation_type} '{title}' disimpan.")
 
         # --- 3. MODUL INTERPERSONAL ---
