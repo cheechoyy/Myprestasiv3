@@ -56,7 +56,10 @@
                             <h4 style="margin: 0 0 15px 0; color: #6d3ec4; font-size: 14px;">General Information (CTS)</h4>
                             <div class="grid-2">
                                 <div><label style="margin-top:0;">Hospital / Center <span style="color:red;">*</span></label>
-                                    <select required style="background:white;"><option>Heart Center IJN</option><option>Hospital Utama</option></select>
+                                    <select name="facility" required style="background:white;">
+                                        <option value="Heart Center IJN">Heart Center IJN</option>
+                                        <option value="Hospital Utama">Hospital Utama</option>
+                                    </select>
                                 </div>
                                 <div><label style="margin-top:0;">Date Encounter / Admission <span style="color:red;">*</span></label>
                                     <input type="date" name="procedure_date" required style="background:white;">
@@ -67,11 +70,11 @@
                                     <label style="margin-top:0;">Procedure Performed <span style="color:red;">*</span></label>
                                     <select name="procedure_name" required style="background:white;">
                                         <option value="">Select Procedure...</option>
-                                        <option>LIMA-LAD Procedure</option>
-                                        <option>CABG (Coronary Artery Bypass Graft)</option>
-                                        <option>Valve Replacement</option>
-                                        <option>Aortic Surgery</option>
-                                        <option>Congenital Heart Surgery</option>
+                                        <option value="LIMA-LAD Procedure">LIMA-LAD Procedure</option>
+                                        <option value="CABG (Coronary Artery Bypass Graft)">CABG (Coronary Artery Bypass Graft)</option>
+                                        <option value="Valve Replacement">Valve Replacement</option>
+                                        <option value="Aortic Surgery">Aortic Surgery</option>
+                                        <option value="Congenital Heart Surgery">Congenital Heart Surgery</option>
                                     </select>
                                 </div>
                                 <div>
@@ -82,42 +85,42 @@
                         </div>
 
                         <div style="background:#f3edff; border:1px solid #e7dff2; border-left:4px solid #6d3ec4; padding:12px 15px; border-radius:8px; margin-bottom:15px; font-size:12px; color:#150a35;">
-                            <b>Privasi Pesakit:</b> Nama, MRN/IC dan tarikh lahir tidak dikumpul. Rekod klinikal disimpan tanpa pautan identiti sehingga kolum <code>patient_ref</code> ditambah pada Fasa 1. Butiran klinikal lanjutan (komorbiditi, LVEF, bacaan lab) akan disimpan pada Fasa 1.
+                            <b>Privasi Pesakit:</b> Nama, MRN/IC dan tarikh lahir tidak dikumpul. Rekod klinikal disimpan tanpa pautan identiti; <code>patient_ref</code> kekal kosong kerana tiada ID pesakit diminta. Butiran klinikal lanjutan (komorbiditi, LVEF, bacaan lab) kini disimpan dalam rekod prosedur.
                         </div>
 
                         <h4 style="background: #e7dff2; color: #150a35; padding: 10px 15px; border-radius: 6px; margin-top: 30px; margin-bottom: 15px; font-size: 13px;">SECTION 2 : CARDIAC & MEDICAL HISTORY</h4>
                         <div class="grid-2">
                             <div>
                                 <label style="margin-top:0;">Primary Diagnosis <span style="color:red;">*</span></label>
-                                <select required style="background:white;">
-                                    <option>Coronary Artery Disease (CAD)</option>
-                                    <option>Valvular Heart Disease</option>
-                                    <option>Aortic Aneurysm / Dissection</option>
-                                    <option>Congenital Heart Defect</option>
+                                <select name="primary_diagnosis" required style="background:white;">
+                                    <option value="Coronary Artery Disease (CAD)">Coronary Artery Disease (CAD)</option>
+                                    <option value="Valvular Heart Disease">Valvular Heart Disease</option>
+                                    <option value="Aortic Aneurysm / Dissection">Aortic Aneurysm / Dissection</option>
+                                    <option value="Congenital Heart Defect">Congenital Heart Defect</option>
                                 </select>
                             </div>
                             <div>
                                 <label style="margin-top:0;">Previous Cardiac Intervention</label>
-                                <select style="background:white;">
-                                    <option>None</option>
-                                    <option>Previous PCI / Stenting</option>
-                                    <option>Previous CABG</option>
-                                    <option>Previous Valve Surgery</option>
+                                <select name="previous_intervention" style="background:white;">
+                                    <option value="None">None</option>
+                                    <option value="Previous PCI / Stenting">Previous PCI / Stenting</option>
+                                    <option value="Previous CABG">Previous CABG</option>
+                                    <option value="Previous Valve Surgery">Previous Valve Surgery</option>
                                 </select>
                             </div>
                         </div>
 
                         <label style="margin-top: 20px;">Systemic Comorbidity (Crucial for EuroSCORE / CUSUM Risk Adjustment) <span style="color:red;">*</span></label>
                         <div class="checkbox-container grid-3" style="border-left: 4px solid #f59e0b; background:#fffbeb; border-color:#fef3c7;">
-                            <label style="margin:0; font-weight:normal;"><input type="checkbox"> None</label>
-                            <label style="margin:0; font-weight:normal;"><input type="checkbox"> Diabetes (on Insulin)</label>
-                            <label style="margin:0; font-weight:normal;"><input type="checkbox"> Hypertension</label>
-                            <label style="margin:0; font-weight:normal;"><input type="checkbox"> Dyslipidaemia</label>
-                            <label style="margin:0; font-weight:normal;"><input type="checkbox"> Renal Impairment (Dialysis)</label>
-                            <label style="margin:0; font-weight:normal;"><input type="checkbox"> COPD / Asthma</label>
-                            <label style="margin:0; font-weight:normal;"><input type="checkbox"> Extracardiac Arteriopathy</label>
-                            <label style="margin:0; font-weight:normal;"><input type="checkbox"> Previous Stroke / TIA</label>
-                            <label style="margin:0; font-weight:normal;"><input type="checkbox"> Active Smoker</label>
+                            <label style="margin:0; font-weight:normal;"><input type="checkbox" name="comorbidities" value="None"> None</label>
+                            <label style="margin:0; font-weight:normal;"><input type="checkbox" name="comorbidities" value="Diabetes (on Insulin)"> Diabetes (on Insulin)</label>
+                            <label style="margin:0; font-weight:normal;"><input type="checkbox" name="comorbidities" value="Hypertension"> Hypertension</label>
+                            <label style="margin:0; font-weight:normal;"><input type="checkbox" name="comorbidities" value="Dyslipidaemia"> Dyslipidaemia</label>
+                            <label style="margin:0; font-weight:normal;"><input type="checkbox" name="comorbidities" value="Renal Impairment (Dialysis)"> Renal Impairment (Dialysis)</label>
+                            <label style="margin:0; font-weight:normal;"><input type="checkbox" name="comorbidities" value="COPD / Asthma"> COPD / Asthma</label>
+                            <label style="margin:0; font-weight:normal;"><input type="checkbox" name="comorbidities" value="Extracardiac Arteriopathy"> Extracardiac Arteriopathy</label>
+                            <label style="margin:0; font-weight:normal;"><input type="checkbox" name="comorbidities" value="Previous Stroke / TIA"> Previous Stroke / TIA</label>
+                            <label style="margin:0; font-weight:normal;"><input type="checkbox" name="comorbidities" value="Active Smoker"> Active Smoker</label>
                         </div>
 
                         <h4 style="background: #e7dff2; color: #150a35; padding: 10px 15px; border-radius: 6px; margin-top: 30px; margin-bottom: 15px; font-size: 13px;">SECTION 3 : PRE-OPERATIVE CLINICAL ASSESSMENT</h4>
@@ -128,22 +131,27 @@
                             </tr>
                             <tr>
                                 <td style="padding: 10px; border: 1px solid #e7dff2; font-weight: 600;">Left Ventricular Ejection Fraction (LVEF) <span style="color:red;">*</span></td>
-                                <td style="padding: 10px; border: 1px solid #e7dff2;"><input type="number" placeholder="e.g. 45" style="width: 50%; background:white;" required> %</td>
+                                <td style="padding: 10px; border: 1px solid #e7dff2;"><input type="number" name="lvef_percent" min="1" max="100" step="1" placeholder="e.g. 45" style="width: 50%; background:white;" required> %</td>
                             </tr>
                             <tr>
                                 <td style="padding: 10px; border: 1px solid #e7dff2; font-weight: 600;">Coronary Anatomy (Angiogram)</td>
                                 <td style="padding: 10px; border: 1px solid #e7dff2;">
-                                    <select style="width: 100%; background:white;"><option>Single Vessel Disease</option><option>Double Vessel Disease</option><option>Triple Vessel Disease (TVD)</option><option>Left Main Disease</option></select>
+                                    <select name="coronary_anatomy" style="width: 100%; background:white;">
+                                        <option value="Single Vessel Disease">Single Vessel Disease</option>
+                                        <option value="Double Vessel Disease">Double Vessel Disease</option>
+                                        <option value="Triple Vessel Disease (TVD)">Triple Vessel Disease (TVD)</option>
+                                        <option value="Left Main Disease">Left Main Disease</option>
+                                    </select>
                                 </td>
                             </tr>
                             <tr>
                                 <td style="padding: 10px; border: 1px solid #e7dff2; font-weight: 600;">NYHA Functional Class</td>
                                 <td style="padding: 10px; border: 1px solid #e7dff2;">
                                     <div class="radio-group">
-                                        <label style="margin:0; font-weight:normal;"><input type="radio" name="nyha"> Class I</label>
-                                        <label style="margin:0; font-weight:normal;"><input type="radio" name="nyha"> Class II</label>
-                                        <label style="margin:0; font-weight:normal;"><input type="radio" name="nyha" checked> Class III</label>
-                                        <label style="margin:0; font-weight:normal;"><input type="radio" name="nyha"> Class IV</label>
+                                        <label style="margin:0; font-weight:normal;"><input type="radio" name="nyha_class" value="I" required> Class I</label>
+                                        <label style="margin:0; font-weight:normal;"><input type="radio" name="nyha_class" value="II"> Class II</label>
+                                        <label style="margin:0; font-weight:normal;"><input type="radio" name="nyha_class" value="III"> Class III</label>
+                                        <label style="margin:0; font-weight:normal;"><input type="radio" name="nyha_class" value="IV"> Class IV</label>
                                     </div>
                                 </td>
                             </tr>
@@ -168,7 +176,10 @@
                             <h4 style="margin: 0 0 15px 0; color: #6d3ec4; font-size: 14px;">General Information (FMS)</h4>
                             <div class="grid-2">
                                 <div><label style="margin-top:0;">Clinic Location <span style="color:red;">*</span></label>
-                                    <select required style="background:white;"><option>Klinik Kesihatan Medong</option><option>Klinik Kesihatan Bandar</option></select>
+                                    <select name="facility" required style="background:white;">
+                                        <option value="Klinik Kesihatan Medong">Klinik Kesihatan Medong</option>
+                                        <option value="Klinik Kesihatan Bandar">Klinik Kesihatan Bandar</option>
+                                    </select>
                                 </div>
                                 <div><label style="margin-top:0;">Date Encounter <span style="color:red;">*</span></label>
                                     <input type="date" name="procedure_date" required style="background:white;">
@@ -177,7 +188,7 @@
                         </div>
 
                         <div style="background:#f3edff; border:1px solid #e7dff2; border-left:4px solid #6d3ec4; padding:12px 15px; border-radius:8px; margin-bottom:15px; font-size:12px; color:#150a35;">
-                            <b>Privasi Pesakit:</b> Nama, MRN/IC dan tarikh lahir tidak dikumpul. Rekod klinikal disimpan tanpa pautan identiti sehingga kolum <code>patient_ref</code> ditambah pada Fasa 1. Butiran klinikal lanjutan (komorbiditi, bacaan lab) akan disimpan pada Fasa 1.
+                            <b>Privasi Pesakit:</b> Nama, MRN/IC dan tarikh lahir tidak dikumpul. Rekod klinikal disimpan tanpa pautan identiti; <code>patient_ref</code> kekal kosong kerana tiada ID pesakit diminta. Butiran klinikal lanjutan (komorbiditi, bacaan lab) kini disimpan dalam rekod prosedur.
                         </div>
 
                         <h4 style="background: #e7dff2; color: #150a35; padding: 10px 15px; border-radius: 6px; margin-top: 30px; margin-bottom: 15px; font-size: 13px;">SECTION 2 : CHRONIC DISEASE & LIFESTYLE RISKS</h4>
@@ -185,30 +196,30 @@
                             <div>
                                 <label style="margin-top:0;">Primary Chronic Disease Monitored <span style="color:red;">*</span></label>
                                 <select name="procedure_name" required style="background:white;">
-                                    <option>Type 2 Diabetes Mellitus (T2DM)</option>
-                                    <option>Hypertension</option>
-                                    <option>Asthma / COPD</option>
-                                    <option>Dyslipidaemia</option>
+                                    <option value="Type 2 Diabetes Mellitus (T2DM)">Type 2 Diabetes Mellitus (T2DM)</option>
+                                    <option value="Hypertension">Hypertension</option>
+                                    <option value="Asthma / COPD">Asthma / COPD</option>
+                                    <option value="Dyslipidaemia">Dyslipidaemia</option>
                                 </select>
                             </div>
                             <div>
                                 <label style="margin-top:0;">Duration of Illness</label>
-                                <select style="background:white;">
-                                    <option>Newly Diagnosed (< 1 Year)</option>
-                                    <option>1 - 5 Years</option>
-                                    <option>> 5 Years</option>
+                                <select name="duration_illness" style="background:white;">
+                                    <option value="Newly Diagnosed (&lt; 1 Year)">Newly Diagnosed (< 1 Year)</option>
+                                    <option value="1 - 5 Years">1 - 5 Years</option>
+                                    <option value="&gt; 5 Years">> 5 Years</option>
                                 </select>
                             </div>
                         </div>
 
                         <label style="margin-top: 20px;">Lifestyle Risk Factors & Comorbidities</label>
                         <div class="checkbox-container grid-3" style="border-left: 4px solid #f59e0b; background:#fffbeb; border-color:#fef3c7;">
-                            <label style="margin:0; font-weight:normal;"><input type="checkbox"> None</label>
-                            <label style="margin:0; font-weight:normal;"><input type="checkbox"> Active Smoker</label>
-                            <label style="margin:0; font-weight:normal;"><input type="checkbox"> Obesity (BMI > 27.5)</label>
-                            <label style="margin:0; font-weight:normal;"><input type="checkbox"> Ischaemic Heart Disease</label>
-                            <label style="margin:0; font-weight:normal;"><input type="checkbox"> Chronic Kidney Disease (CKD)</label>
-                            <label style="margin:0; font-weight:normal;"><input type="checkbox"> Diabetic Retinopathy</label>
+                            <label style="margin:0; font-weight:normal;"><input type="checkbox" name="comorbidities" value="None"> None</label>
+                            <label style="margin:0; font-weight:normal;"><input type="checkbox" name="comorbidities" value="Active Smoker"> Active Smoker</label>
+                            <label style="margin:0; font-weight:normal;"><input type="checkbox" name="comorbidities" value="Obesity (BMI > 27.5)"> Obesity (BMI > 27.5)</label>
+                            <label style="margin:0; font-weight:normal;"><input type="checkbox" name="comorbidities" value="Ischaemic Heart Disease"> Ischaemic Heart Disease</label>
+                            <label style="margin:0; font-weight:normal;"><input type="checkbox" name="comorbidities" value="Chronic Kidney Disease (CKD)"> Chronic Kidney Disease (CKD)</label>
+                            <label style="margin:0; font-weight:normal;"><input type="checkbox" name="comorbidities" value="Diabetic Retinopathy"> Diabetic Retinopathy</label>
                         </div>
 
                         <h4 style="background: #e7dff2; color: #150a35; padding: 10px 15px; border-radius: 6px; margin-top: 30px; margin-bottom: 15px; font-size: 13px;">SECTION 3 : VITAL SIGNS & LAB READINGS</h4>
@@ -219,15 +230,15 @@
                             </tr>
                             <tr>
                                 <td style="padding: 10px; border: 1px solid #e7dff2; font-weight: 600;">Blood Pressure (mmHg) <span style="color:red;">*</span></td>
-                                <td style="padding: 10px; border: 1px solid #e7dff2;"><input type="text" placeholder="e.g. 135/85" style="width: 50%; background:white;" required></td>
+                                <td style="padding: 10px; border: 1px solid #e7dff2;"><input type="text" name="bp" inputmode="numeric" autocomplete="off" placeholder="e.g. 135/85" style="width: 50%; background:white;" required></td>
                             </tr>
                             <tr>
                                 <td style="padding: 10px; border: 1px solid #e7dff2; font-weight: 600;">HbA1c (%)</td>
-                                <td style="padding: 10px; border: 1px solid #e7dff2;"><input type="number" step="0.1" placeholder="e.g. 7.2" style="width: 50%; background:white;"></td>
+                                <td style="padding: 10px; border: 1px solid #e7dff2;"><input type="number" name="hba1c_percent" min="0" step="0.1" placeholder="e.g. 7.2" style="width: 50%; background:white;"></td>
                             </tr>
                             <tr>
                                 <td style="padding: 10px; border: 1px solid #e7dff2; font-weight: 600;">LDL Cholesterol (mmol/L)</td>
-                                <td style="padding: 10px; border: 1px solid #e7dff2;"><input type="number" step="0.1" placeholder="e.g. 2.6" style="width: 50%; background:white;"></td>
+                                <td style="padding: 10px; border: 1px solid #e7dff2;"><input type="number" name="ldl_mmol_l" min="0" step="0.1" placeholder="e.g. 2.6" style="width: 50%; background:white;"></td>
                             </tr>
                         </table>
 

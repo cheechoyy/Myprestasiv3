@@ -13,6 +13,7 @@ from .models import (
     DocumentationLog,
     PolicyDeclaration,
     PolicyItemResponse,
+    ProcedureLog,
     UserProfile,
 )
 from .views import (
@@ -374,3 +375,229 @@ class PolicyDeclarationPhase2Tests(TestCase):
             PolicyDeclaration.objects.filter(officer=self.user).exists()
         )
         self.assertEqual(PolicyItemResponse.objects.count(), 0)
+
+
+class ClinicalProcedurePhase2Tests(TestCase):
+    def setUp(self):
+        self.user = User.objects.create_user(username='clinical_test_user')
+        UserProfile.objects.create(
+            user=self.user,
+            role='STAFF',
+            department='CTS',
+        )
+        self.client.force_login(self.user)
+
+    def _cts_data(self):
+        return {
+            'form_type': 'skills_cts',
+            'facility': 'Heart Center IJN',
+            'procedure_date': '2026-10-20',
+            'procedure_name': 'CABG (Coronary Artery Bypass Graft)',
+            'score': '88',
+            'primary_diagnosis': 'Coronary Artery Disease (CAD)',
+            'previous_intervention': 'Previous PCI / Stenting',
+            'comorbidities': [
+                'Diabetes (on Insulin)',
+                'Hypertension',
+                'Active Smoker',
+            ],
+            'lvef_percent': '45',
+            'coronary_anatomy': 'Triple Vessel Disease (TVD)',
+            'nyha_class': 'III',
+        }
+
+    def _fms_data(self):
+        return {
+            'form_type': 'skills_fms',
+            'facility': 'Klinik Kesihatan Medong',
+            'procedure_date': '2026-10-21',
+            'procedure_name': 'Type 2 Diabetes Mellitus (T2DM)',
+            'duration_illness': '> 5 Years',
+            'comorbidities': [
+                'Active Smoker',
+                'Obesity (BMI > 27.5)',
+            ],
+            'bp': ' 135 / 85 ',
+            'hba1c_percent': '7.2',
+            'ldl_mmol_l': '2.6',
+            'score': '82',
+            'target': 'Yes',
+        }
+
+    def _post_cts(self, **overrides):
+        data = self._cts_data()
+        data.update(overrides)
+        return self.client.post(
+            reverse('staff_dashboard') + '?section=Clinical',
+            data,
+        )
+
+    def _post_fms(self, **overrides):
+        data = self._fms_data()
+        data.update(overrides)
+        return self.client.post(
+            reverse('staff_dashboard') + '?section=Clinical',
+            data,
+        )
+
+    def test_cts_persists_all_phase1_procedure_fields(self):
+        response = self._post_cts()
+
+        self.assertEqual(response.status_code, 302)
+        log = ProcedureLog.objects.get(officer=self.user)
+        self.assertEqual(log.clinical_domain, 'CTS')
+        self.assertEqual(log.facility, 'Heart Center IJN')
+        self.assertEqual(
+            log.procedure_name,
+            'CABG (Coronary Artery Bypass Graft)',
+        )
+        self.assertEqual(log.procedure_date, date(2026, 10, 20))
+        self.assertEqual(
+            log.primary_diagnosis,
+            'Coronary Artery Disease (CAD)',
+        )
+        self.assertEqual(
+            log.previous_intervention,
+            'Previous PCI / Stenting',
+        )
+        self.assertEqual(
+            log.comorbidities,
+            ['Diabetes (on Insulin)', 'Hypertension', 'Active Smoker'],
+        )
+        self.assertEqual(log.lvef_percent, 45.0)
+        self.assertEqual(
+            log.coronary_anatomy,
+            'Triple Vessel Disease (TVD)',
+        )
+        self.assertEqual(log.nyha_class, 'III')
+        self.assertEqual(log.score, 88.0)
+        self.assertTrue(log.is_successful)
+        self.assertFalse(log.complication_occurred)
+        self.assertIsNone(log.target_achieved)
+        self.assertIsNone(log.duration_illness)
+        self.assertIsNone(log.systolic_bp)
+        self.assertIsNone(log.diastolic_bp)
+        self.assertIsNone(log.hba1c_percent)
+        self.assertIsNone(log.ldl_mmol_l)
+        self.assertIsNone(log.patient_ref)
+
+    def test_cts_target_achieved_remains_none_and_success_is_true(self):
+        response = self._post_cts()
+
+        self.assertEqual(response.status_code, 302)
+        log = ProcedureLog.objects.get(officer=self.user)
+        self.assertIsNone(log.target_achieved)
+        self.assertTrue(log.is_successful)
+
+    def test_fms_persists_vitals_labs_and_clinical_outcome(self):
+        response = self._post_fms()
+
+        self.assertEqual(response.status_code, 302)
+        log = ProcedureLog.objects.get(officer=self.user)
+        self.assertEqual(log.clinical_domain, 'FMS')
+        self.assertEqual(log.facility, 'Klinik Kesihatan Medong')
+        self.assertEqual(
+            log.procedure_name,
+            'Type 2 Diabetes Mellitus (T2DM)',
+        )
+        self.assertEqual(log.procedure_date, date(2026, 10, 21))
+        self.assertEqual(log.duration_illness, '> 5 Years')
+        self.assertEqual(
+            log.comorbidities,
+            ['Active Smoker', 'Obesity (BMI > 27.5)'],
+        )
+        self.assertEqual(log.systolic_bp, 135)
+        self.assertEqual(log.diastolic_bp, 85)
+        self.assertEqual(log.hba1c_percent, 7.2)
+        self.assertEqual(log.ldl_mmol_l, 2.6)
+        self.assertEqual(log.score, 82.0)
+        self.assertTrue(log.target_achieved)
+        self.assertTrue(log.is_successful)
+        self.assertFalse(log.complication_occurred)
+        self.assertIsNone(log.patient_ref)
+        self.assertIsNone(log.primary_diagnosis)
+        self.assertIsNone(log.previous_intervention)
+        self.assertIsNone(log.lvef_percent)
+        self.assertIsNone(log.coronary_anatomy)
+        self.assertIsNone(log.nyha_class)
+
+    def test_fms_target_not_achieved_keeps_procedure_successful(self):
+        response = self._post_fms(target='No')
+
+        self.assertEqual(response.status_code, 302)
+        log = ProcedureLog.objects.get(officer=self.user)
+        self.assertFalse(log.target_achieved)
+        self.assertTrue(log.is_successful)
+        self.assertFalse(log.complication_occurred)
+
+    def test_fms_rejects_malformed_or_out_of_range_bp(self):
+        invalid_values = (
+            '135',
+            '135/',
+            'abc/85',
+            '85/135',
+            '400/85',
+            '135/20',
+        )
+
+        for bp in invalid_values:
+            with self.subTest(bp=bp):
+                response = self._post_fms(bp=bp)
+                self.assertEqual(response.status_code, 302)
+                self.assertFalse(
+                    ProcedureLog.objects.filter(officer=self.user).exists()
+                )
+
+    def test_comorbidities_are_whitelisted_with_none_as_empty(self):
+        self._post_cts(
+            comorbidities=[
+                'None',
+                'Hypertension',
+                'Hypertension',
+                'unknown-option',
+                'Active Smoker',
+            ],
+        )
+        cts_log = ProcedureLog.objects.get(
+            officer=self.user,
+            clinical_domain='CTS',
+        )
+        self.assertEqual(
+            cts_log.comorbidities,
+            ['Hypertension', 'Active Smoker'],
+        )
+
+        self._post_fms(comorbidities=['None'])
+        fms_log = ProcedureLog.objects.get(
+            officer=self.user,
+            clinical_domain='FMS',
+        )
+        self.assertEqual(fms_log.comorbidities, [])
+
+    def test_fms_blank_optional_fields_become_null_or_empty(self):
+        response = self._post_fms(
+            duration_illness='',
+            hba1c_percent='',
+            ldl_mmol_l='',
+            comorbidities=[],
+        )
+
+        self.assertEqual(response.status_code, 302)
+        log = ProcedureLog.objects.get(officer=self.user)
+        self.assertIsNone(log.duration_illness)
+        self.assertIsNone(log.hba1c_percent)
+        self.assertIsNone(log.ldl_mmol_l)
+        self.assertEqual(log.comorbidities, [])
+
+    def test_patient_ref_remains_null_for_cts_and_fms(self):
+        self._post_cts()
+        self._post_fms()
+
+        self.assertEqual(ProcedureLog.objects.count(), 2)
+        self.assertEqual(
+            ProcedureLog.objects.filter(
+                officer=self.user,
+                patient_ref__isnull=True,
+            ).count(),
+            2,
+        )

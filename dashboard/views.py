@@ -12,6 +12,7 @@ import folium
 import random
 import math
 import hashlib
+import re
 import urllib.parse
 import json
 from django.core.exceptions import ValidationError
@@ -1915,6 +1916,308 @@ def _mentor_duration_hours(value):
     return mapping.get(value, _parse_float(value, 1.0))
 
 
+# Nilai di bawah mesti sepadan dengan atribut value dalam _clinical.html.
+CTS_FACILITIES = ('Heart Center IJN', 'Hospital Utama')
+FMS_FACILITIES = ('Klinik Kesihatan Medong', 'Klinik Kesihatan Bandar')
+CTS_PROCEDURES = (
+    'LIMA-LAD Procedure',
+    'CABG (Coronary Artery Bypass Graft)',
+    'Valve Replacement',
+    'Aortic Surgery',
+    'Congenital Heart Surgery',
+)
+FMS_CONDITIONS = (
+    'Type 2 Diabetes Mellitus (T2DM)',
+    'Hypertension',
+    'Asthma / COPD',
+    'Dyslipidaemia',
+)
+CTS_PRIMARY_DIAGNOSES = (
+    'Coronary Artery Disease (CAD)',
+    'Valvular Heart Disease',
+    'Aortic Aneurysm / Dissection',
+    'Congenital Heart Defect',
+)
+CTS_PREVIOUS_INTERVENTIONS = (
+    'None',
+    'Previous PCI / Stenting',
+    'Previous CABG',
+    'Previous Valve Surgery',
+)
+CTS_CORONARY_ANATOMY = (
+    'Single Vessel Disease',
+    'Double Vessel Disease',
+    'Triple Vessel Disease (TVD)',
+    'Left Main Disease',
+)
+CTS_NYHA_CLASSES = ('I', 'II', 'III', 'IV')
+FMS_DURATION_ILLNESS = (
+    'Newly Diagnosed (< 1 Year)',
+    '1 - 5 Years',
+    '> 5 Years',
+)
+CTS_COMORBIDITIES = (
+    'Diabetes (on Insulin)',
+    'Hypertension',
+    'Dyslipidaemia',
+    'Renal Impairment (Dialysis)',
+    'COPD / Asthma',
+    'Extracardiac Arteriopathy',
+    'Previous Stroke / TIA',
+    'Active Smoker',
+)
+FMS_COMORBIDITIES = (
+    'Active Smoker',
+    'Obesity (BMI > 27.5)',
+    'Ischaemic Heart Disease',
+    'Chronic Kidney Disease (CKD)',
+    'Diabetic Retinopathy',
+)
+CLINICAL_COMORBIDITY_NONE = 'None'
+BP_PATTERN = re.compile(r'^\s*(\d{1,3})\s*/\s*(\d{1,3})\s*$')
+
+
+def _required_choice(value, allowed, label):
+    """Sahkan pilihan daripada whitelist dan pulangkan teks asal."""
+    selected = (value or '').strip()
+    if not selected:
+        raise ValidationError(f'{label} diperlukan.')
+    if selected not in allowed:
+        raise ValidationError(f'{label} tidak sah.')
+    return selected
+
+
+def _optional_choice(value, allowed, label):
+    """Sahkan pilihan optional; kosong menjadi None."""
+    selected = (value or '').strip()
+    if not selected:
+        return None
+    if selected not in allowed:
+        raise ValidationError(f'{label} tidak sah.')
+    return selected
+
+
+def _required_float(value, label, minimum=None, maximum=None):
+    """Tukar input wajib kepada float dan sahkan julatnya."""
+    raw = (value or '').strip()
+    if not raw:
+        raise ValidationError(f'{label} diperlukan.')
+    try:
+        parsed = float(raw)
+    except (TypeError, ValueError):
+        raise ValidationError(f'{label} mesti nombor yang sah.') from None
+
+    if not math.isfinite(parsed):
+        raise ValidationError(f'{label} mesti nombor yang sah.')
+    if minimum is not None and maximum is not None:
+        if parsed < minimum or parsed > maximum:
+            raise ValidationError(
+                f'{label} mesti antara {minimum:g} hingga {maximum:g}.'
+            )
+    elif minimum is not None and parsed < minimum:
+        raise ValidationError(f'{label} mesti sekurang-kurangnya {minimum:g}.')
+    elif maximum is not None and parsed > maximum:
+        raise ValidationError(f'{label} tidak boleh melebihi {maximum:g}.')
+    return parsed
+
+
+def _optional_float(value, label):
+    """Tukar input optional kepada float; kosong menjadi None."""
+    raw = (value or '').strip()
+    if not raw:
+        return None
+    try:
+        parsed = float(raw)
+    except (TypeError, ValueError):
+        raise ValidationError(f'{label} mesti nombor yang sah.') from None
+
+    if not math.isfinite(parsed):
+        raise ValidationError(f'{label} mesti nombor yang sah.')
+    return parsed
+
+
+def _required_date(value, label):
+    """Sahkan tarikh wajib daripada input type=date."""
+    parsed = _parse_date_value(value)
+    if parsed is None:
+        raise ValidationError(f'{label} tidak sah atau kosong.')
+    return parsed
+
+
+def _parse_bp(value):
+    """Pecahkan '135/85' kepada systolic dan diastolic yang sah."""
+    raw = (value or '').strip()
+    if not raw:
+        raise ValidationError('Tekanan darah diperlukan.')
+
+    match = BP_PATTERN.match(raw)
+    if not match:
+        raise ValidationError(
+            'Tekanan darah mesti dalam format SBP/DBP, contoh 135/85.'
+        )
+
+    systolic, diastolic = (int(part) for part in match.groups())
+    if not (50 <= systolic <= 300 and 30 <= diastolic <= 200):
+        raise ValidationError(
+            'Tekanan darah di luar julat: systolic 50-300, diastolic 30-200.'
+        )
+    if systolic <= diastolic:
+        raise ValidationError(
+            'Systolic BP mesti lebih tinggi daripada diastolic BP.'
+        )
+    return systolic, diastolic
+
+
+def _normalise_comorbidities(values, allowed):
+    """Kekalkan pilihan whitelist, buang duplicate/None/unknown."""
+    selected = {
+        str(value).strip()
+        for value in (values or [])
+        if str(value).strip()
+    }
+    if not selected or selected == {CLINICAL_COMORBIDITY_NONE}:
+        return []
+    return [option for option in allowed if option in selected]
+
+
+def _save_clinical_procedure(request, form_type, profile):
+    """Validasi dan simpan satu rekod klinikal CTS/FMS."""
+    if form_type == 'skills':
+        clinical_domain = (
+            'CTS'
+            if (getattr(profile, 'department', '') or '').upper() == 'CTS'
+            else 'FMS'
+        )
+    else:
+        clinical_domain = 'CTS' if form_type == 'skills_cts' else 'FMS'
+
+    procedure_date = _required_date(
+        request.POST.get('procedure_date'),
+        'Tarikh prosedur',
+    )
+    score_val = _required_float(
+        request.POST.get('score'),
+        'Skor prosedur',
+        minimum=0.0,
+        maximum=100.0,
+    )
+
+    if clinical_domain == 'CTS':
+        facility = _required_choice(
+            request.POST.get('facility'),
+            CTS_FACILITIES,
+            'Hospital / Center',
+        )
+        proc_name = _required_choice(
+            request.POST.get('procedure_name'),
+            CTS_PROCEDURES,
+            'Procedure Performed',
+        )
+        primary_diagnosis = _required_choice(
+            request.POST.get('primary_diagnosis'),
+            CTS_PRIMARY_DIAGNOSES,
+            'Primary Diagnosis',
+        )
+        previous_intervention = _optional_choice(
+            request.POST.get('previous_intervention'),
+            CTS_PREVIOUS_INTERVENTIONS,
+            'Previous Cardiac Intervention',
+        )
+        comorbidities = _normalise_comorbidities(
+            request.POST.getlist('comorbidities'),
+            CTS_COMORBIDITIES,
+        )
+        lvef_percent = _required_float(
+            request.POST.get('lvef_percent'),
+            'LVEF',
+            minimum=1.0,
+            maximum=100.0,
+        )
+        coronary_anatomy = _optional_choice(
+            request.POST.get('coronary_anatomy'),
+            CTS_CORONARY_ANATOMY,
+            'Coronary Anatomy',
+        )
+        nyha_class = _required_choice(
+            request.POST.get('nyha_class'),
+            CTS_NYHA_CLASSES,
+            'NYHA Functional Class',
+        )
+        duration_illness = None
+        systolic_bp = None
+        diastolic_bp = None
+        hba1c_percent = None
+        ldl_mmol_l = None
+        target_achieved = None
+    else:
+        facility = _required_choice(
+            request.POST.get('facility'),
+            FMS_FACILITIES,
+            'Clinic Location',
+        )
+        proc_name = _required_choice(
+            request.POST.get('procedure_name'),
+            FMS_CONDITIONS,
+            'Primary Chronic Disease Monitored',
+        )
+        duration_illness = _optional_choice(
+            request.POST.get('duration_illness'),
+            FMS_DURATION_ILLNESS,
+            'Duration of Illness',
+        )
+        comorbidities = _normalise_comorbidities(
+            request.POST.getlist('comorbidities'),
+            FMS_COMORBIDITIES,
+        )
+        systolic_bp, diastolic_bp = _parse_bp(
+            request.POST.get('bp')
+        )
+        hba1c_percent = _optional_float(
+            request.POST.get('hba1c_percent'),
+            'HbA1c',
+        )
+        ldl_mmol_l = _optional_float(
+            request.POST.get('ldl_mmol_l'),
+            'LDL Cholesterol',
+        )
+        target_raw = (request.POST.get('target') or '').strip()
+        if target_raw not in ('Yes', 'No'):
+            raise ValidationError('Sila pilih status pencapaian target.')
+        target_achieved = (target_raw == 'Yes')
+        primary_diagnosis = None
+        previous_intervention = None
+        lvef_percent = None
+        coronary_anatomy = None
+        nyha_class = None
+
+    with transaction.atomic():
+        ProcedureLog.objects.create(
+            officer=request.user,
+            patient_ref=None,
+            clinical_domain=clinical_domain,
+            facility=facility,
+            procedure_name=proc_name,
+            procedure_date=procedure_date,
+            primary_diagnosis=primary_diagnosis,
+            previous_intervention=previous_intervention,
+            comorbidities=comorbidities,
+            lvef_percent=lvef_percent,
+            coronary_anatomy=coronary_anatomy,
+            nyha_class=nyha_class,
+            duration_illness=duration_illness,
+            systolic_bp=systolic_bp,
+            diastolic_bp=diastolic_bp,
+            hba1c_percent=hba1c_percent,
+            ldl_mmol_l=ldl_mmol_l,
+            is_successful=True,
+            complication_occurred=False,
+            target_achieved=target_achieved,
+            score=score_val,
+        )
+
+    return clinical_domain, proc_name, score_val, procedure_date
+
+
 @login_required(login_url='/login/')
 def staff_dashboard_view(request):
     
@@ -1930,25 +2233,25 @@ def staff_dashboard_view(request):
         
         # --- 1. MODUL KLINIKAL ---
         if form_type in ['skills', 'skills_cts', 'skills_fms']:
-            proc_name = ((request.POST.get('procedure_name') or '').strip() or 'Clinical Case Encounter')[:150]
-            score_val = max(0.0, min(100.0, _parse_float(request.POST.get('score'), 0.0)))
-            procedure_date = _parse_date_value(request.POST.get('procedure_date'), date.today())
-            target = request.POST.get('target', '')
-
-            with transaction.atomic():
-                procedure = ProcedureLog.objects.create(
-                    officer=request.user,
-                    procedure_name=proc_name,
-                    score=score_val,
-                    is_successful=(target == 'Yes'),
+            try:
+                (
+                    clinical_domain,
+                    proc_name,
+                    score_val,
+                    procedure_date,
+                ) = _save_clinical_procedure(request, form_type, profile)
+            except ValidationError as exc:
+                messages.error(
+                    request,
+                    f"❌ {exc.messages[0] if exc.messages else exc}",
                 )
-                # auto_now_add menetapkan tarikh semasa create(); kemas kini dengan tarikh sebenar dari borang.
-                ProcedureLog.objects.filter(pk=procedure.pk).update(procedure_date=procedure_date)
+                return redirect(f'/staff/?section={section}')
 
             messages.success(
                 request,
-                f"✅ Rekod klinikal '{proc_name}' ({score_val:.0f}%) untuk "
-                f"{procedure_date.strftime('%d %b %Y')} disimpan."
+                f"✅ Rekod klinikal {clinical_domain} '{proc_name}' "
+                f"({score_val:.0f}%) untuk "
+                f"{procedure_date.strftime('%d %b %Y')} disimpan.",
             )
 
         elif form_type == 'cpd':
