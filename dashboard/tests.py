@@ -8,8 +8,18 @@ from django.test import TestCase, override_settings
 from django.urls import reverse
 from django.utils import timezone
 
-from .models import CPDClaim, DocumentationLog, UserProfile
-from .views import MAX_CPD_CERTIFICATE_SIZE, _parse_datetime_value
+from .models import (
+    CPDClaim,
+    DocumentationLog,
+    PolicyDeclaration,
+    PolicyItemResponse,
+    UserProfile,
+)
+from .views import (
+    MAX_CPD_CERTIFICATE_SIZE,
+    POLICY_MULTI_OPTIONS,
+    _parse_datetime_value,
+)
 
 
 class ParseDatetimeValueTests(TestCase):
@@ -243,3 +253,124 @@ class CPDClaimPhase2Tests(TestCase):
 
         self.assertEqual(response.status_code, 302)
         self.assertFalse(CPDClaim.objects.filter(officer=self.user).exists())
+
+
+class PolicyDeclarationPhase2Tests(TestCase):
+    def setUp(self):
+        self.user = User.objects.create_user(username='policy_test_user')
+        UserProfile.objects.create(
+            user=self.user,
+            role='STAFF',
+            department='CTS',
+        )
+        self.client.force_login(self.user)
+
+    def _policy_data(self):
+        data = {
+            'form_type': 'policy',
+            'declaration_confirm': 'Yes',
+            'q1': list(POLICY_MULTI_OPTIONS[1]),
+            'q2': list(POLICY_MULTI_OPTIONS[2]),
+            'q3': list(POLICY_MULTI_OPTIONS[3]),
+        }
+        data.update({f'q{q}': 'Yes' for q in range(4, 21)})
+        return data
+
+    def _post_policy(self, **overrides):
+        data = self._policy_data()
+        data.update(overrides)
+        return self.client.post(
+            reverse('staff_dashboard') + '?section=Clinical',
+            data,
+        )
+
+    def test_policy_persists_item_metrics_and_domain_scores(self):
+        response = self._post_policy(
+            q2=list(POLICY_MULTI_OPTIONS[2])[:3],
+            q8='No',
+        )
+
+        self.assertEqual(response.status_code, 302)
+        declaration = PolicyDeclaration.objects.get(officer=self.user)
+        self.assertEqual(declaration.responses.count(), 20)
+
+        response_map = {
+            item.question_number: item
+            for item in declaration.responses.all()
+        }
+
+        self.assertEqual(response_map[1].selected_count, 6)
+        self.assertEqual(response_map[1].max_count, 6)
+        self.assertAlmostEqual(response_map[1].compliance_ratio, 1.0)
+        self.assertTrue(response_map[1].is_compliant)
+
+        self.assertEqual(response_map[2].selected_count, 3)
+        self.assertEqual(response_map[2].max_count, 4)
+        self.assertAlmostEqual(response_map[2].compliance_ratio, 0.75)
+        self.assertFalse(response_map[2].is_compliant)
+
+        self.assertEqual(response_map[8].selected_count, 0)
+        self.assertEqual(response_map[8].max_count, 1)
+        self.assertAlmostEqual(response_map[8].compliance_ratio, 0.0)
+        self.assertFalse(response_map[8].is_compliant)
+
+        self.assertAlmostEqual(declaration.score_domain_a, 87.5)
+        self.assertAlmostEqual(declaration.score_domain_b, 100.0)
+        self.assertAlmostEqual(declaration.score_domain_c, 66.7)
+        self.assertAlmostEqual(declaration.score_domain_d, 100.0)
+        self.assertAlmostEqual(declaration.score_domain_e, 100.0)
+
+    def test_policy_allows_empty_multi_select_with_zero_metrics(self):
+        response = self._post_policy(q1=[], q2=[], q3=[])
+
+        self.assertEqual(response.status_code, 302)
+        declaration = PolicyDeclaration.objects.get(officer=self.user)
+        response_map = {
+            item.question_number: item
+            for item in declaration.responses.all()
+        }
+
+        for question_number, max_count in ((1, 6), (2, 4), (3, 4)):
+            item = response_map[question_number]
+            self.assertEqual(item.selected_count, 0)
+            self.assertEqual(item.max_count, max_count)
+            self.assertAlmostEqual(item.compliance_ratio, 0.0)
+            self.assertFalse(item.is_compliant)
+
+        self.assertAlmostEqual(declaration.score_domain_a, 0.0)
+        self.assertAlmostEqual(declaration.score_domain_b, 80.0)
+        self.assertAlmostEqual(declaration.score_domain_c, 100.0)
+        self.assertAlmostEqual(declaration.score_domain_d, 100.0)
+        self.assertAlmostEqual(declaration.score_domain_e, 100.0)
+
+    def test_policy_ignores_duplicate_and_unknown_multi_select_values(self):
+        response = self._post_policy(
+            q1=['ascvd', 'ascvd', 'visual', 'unknown-option'],
+        )
+
+        self.assertEqual(response.status_code, 302)
+        declaration = PolicyDeclaration.objects.get(officer=self.user)
+        q1 = declaration.responses.get(question_number=1)
+
+        self.assertEqual(q1.selected_count, 2)
+        self.assertEqual(q1.max_count, 6)
+        self.assertAlmostEqual(q1.compliance_ratio, 2 / 6, places=6)
+        self.assertFalse(q1.is_compliant)
+
+    def test_policy_rejects_incomplete_radio_answers(self):
+        response = self._post_policy(q20='')
+
+        self.assertEqual(response.status_code, 302)
+        self.assertFalse(
+            PolicyDeclaration.objects.filter(officer=self.user).exists()
+        )
+        self.assertEqual(PolicyItemResponse.objects.count(), 0)
+
+    def test_policy_rejects_missing_final_declaration(self):
+        response = self._post_policy(declaration_confirm='')
+
+        self.assertEqual(response.status_code, 302)
+        self.assertFalse(
+            PolicyDeclaration.objects.filter(officer=self.user).exists()
+        )
+        self.assertEqual(PolicyItemResponse.objects.count(), 0)

@@ -1817,6 +1817,39 @@ def _hash_patient_ref(value):
     return f"REF-{digest}"
 
 
+# Nilai checkbox q1-q3 mesti sepadan dengan atribut value dalam _clinical.html.
+POLICY_MULTI_OPTIONS = {
+    1: (
+        'ascvd',
+        'visual',
+        'neuro',
+        'renal',
+        'foot',
+        'sexual',
+    ),
+    2: (
+        'bmi_waist',
+        'eye_retinopathy',
+        'foot_exam',
+        'neuropathy',
+    ),
+    3: (
+        'family_history',
+        'lifestyle',
+        'comorbid',
+        'obstetric',
+    ),
+}
+
+POLICY_DOMAIN_QUESTIONS = {
+    'a': (1, 2),
+    'b': (3, 4, 5, 6, 7),
+    'c': (8, 9, 10),
+    'd': (11, 12, 13),
+    'e': (14, 15, 16, 17, 18, 19, 20),
+}
+
+
 MAX_CPD_CERTIFICATE_SIZE = 5 * 1024 * 1024
 ALLOWED_CPD_CERTIFICATE_EXTENSIONS = ['pdf', 'jpg', 'jpeg', 'png']
 CPD_CERTIFICATE_SIGNATURES = {
@@ -1995,15 +2028,6 @@ def staff_dashboard_view(request):
             )
 
         elif form_type == 'policy':
-            multi_question_counts = {1: 6, 2: 4, 3: 4}
-            domain_questions = {
-                'a': [1, 2],
-                'b': [3, 4, 5, 6, 7],
-                'c': [8, 9, 10],
-                'd': [11, 12, 13],
-                'e': [14, 15, 16, 17, 18, 19, 20],
-            }
-
             missing = [q for q in range(4, 21) if request.POST.get(f'q{q}') not in ('Yes', 'No')]
             if missing or request.POST.get('declaration_confirm') != 'Yes':
                 messages.error(
@@ -2013,16 +2037,29 @@ def staff_dashboard_view(request):
                 return redirect(f'/staff/?section={section}')
 
             ratios = {}
+            selected_counts = {}
+            max_counts = {}
             for q in range(1, 21):
-                if q in multi_question_counts:
-                    checked = len(request.POST.getlist(f'q{q}'))
-                    ratios[q] = min(1.0, checked / float(multi_question_counts[q]))
+                if q in POLICY_MULTI_OPTIONS:
+                    allowed_values = POLICY_MULTI_OPTIONS[q]
+                    submitted_values = request.POST.getlist(f'q{q}')
+                    selected_count = len(set(submitted_values) & set(allowed_values))
+                    max_count = len(allowed_values)
+                    selected_counts[q] = selected_count
+                    max_counts[q] = max_count
+                    ratios[q] = min(1.0, selected_count / float(max_count))
                 else:
-                    ratios[q] = 1.0 if request.POST.get(f'q{q}') == 'Yes' else 0.0
+                    is_yes = request.POST.get(f'q{q}') == 'Yes'
+                    selected_counts[q] = 1 if is_yes else 0
+                    max_counts[q] = 1
+                    ratios[q] = 1.0 if is_yes else 0.0
 
             domain_scores = {
-                key: round((sum(ratios[q] for q in questions) / len(questions)) * 100.0, 1)
-                for key, questions in domain_questions.items()
+                key: round(
+                    (sum(ratios[q] for q in questions) / len(questions)) * 100.0,
+                    1,
+                )
+                for key, questions in POLICY_DOMAIN_QUESTIONS.items()
             }
 
             with transaction.atomic():
@@ -2039,6 +2076,9 @@ def staff_dashboard_view(request):
                         declaration=declaration_obj,
                         question_number=q,
                         is_compliant=(ratios[q] >= 1.0),
+                        compliance_ratio=ratios[q],
+                        selected_count=selected_counts[q],
+                        max_count=max_counts[q],
                     )
                     for q in range(1, 21)
                 ])
