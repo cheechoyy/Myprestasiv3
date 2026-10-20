@@ -1564,21 +1564,31 @@ def interpersonal_view(request):
     target_user = selected_staff
 
     if active_tab == 'EI':
-        ei_comp = ["Self-Awareness", "Emotional Regulation", "Social Skills", "Empathy"]
-        ei_scores = [0, 0, 0, 0]
+        ei_comp = [label for _post_key, _field_name, label in EI_DOMAIN_FIELDS]
+        ei_domain_scores = [None] * len(EI_DOMAIN_FIELDS)
 
         if target_user:
-            reflections = EmotionalReflection.objects.filter(officer=target_user)
-            if reflections.exists():
-                avg_ei = int(sum(r.self_awareness_score for r in reflections) / reflections.count())
-                ei_scores = [avg_ei, min(100, avg_ei + random.randint(-5, 5)), min(100, avg_ei + random.randint(-8, 8)), min(100, avg_ei + random.randint(-10, 10))]
+            reflections = list(
+                EmotionalReflection.objects.filter(officer=target_user)
+            )
+            if reflections:
+                ei_domain_scores = _average_reflection_domains(reflections)
+
+        ei_scores = [
+            score if score is not None else 0
+            for score in ei_domain_scores
+        ]
 
         warna_palang = ['#fecdd3', '#fda4af', '#e11d48', '#150a35']
         
         fig_ei = go.Figure(go.Bar(
             x=ei_scores, y=ei_comp, orientation='h', 
             marker_color=warna_palang,
-            text=[f"{s}%" if s > 0 else "No Data" for s in ei_scores], textposition='auto',
+            text=[
+                f"{score}%" if score is not None else "No Data"
+                for score in ei_domain_scores
+            ],
+            textposition='auto',
             textfont=dict(color='white', weight='bold')
         ))
         fig_ei.update_layout(
@@ -1906,14 +1916,21 @@ def _kudos_category_points(value):
     return (value or 'Peer Endorsement')[:50], mapping.get(value, 5)
 
 
+MENTORSHIP_DURATION_HOURS = {
+    '30 mins': 0.5,
+    '1 Hour': 1.0,
+    '2 Hours': 2.0,
+}
+
+
 def _mentor_duration_hours(value):
-    """Tukar pilihan durasi mentorship kepada jam."""
-    mapping = {
-        '30 mins': 0.5,
-        '1 Hour': 1.0,
-        '2 Hours': 2.0,
-    }
-    return mapping.get(value, _parse_float(value, 1.0))
+    """Tukar pilihan durasi mentorship yang sah kepada jam."""
+    selected = _required_choice(
+        value,
+        MENTORSHIP_DURATION_HOURS,
+        'Session Duration',
+    )
+    return MENTORSHIP_DURATION_HOURS[selected]
 
 
 # Nilai di bawah mesti sepadan dengan atribut value dalam _clinical.html.
@@ -2005,6 +2022,33 @@ INNOVATION_PROFICIENCY_LEVELS = (
     'Amateur (Learning)',
     'Intermediate (Independent)',
     'Expert (Trainer)',
+)
+EI_DOMAIN_FIELDS = (
+    ('ei_self_awareness', 'self_awareness_score', 'Self-Awareness'),
+    ('ei_regulation', 'self_regulation_score', 'Self-Regulation'),
+    ('ei_empathy', 'empathy_score', 'Empathy'),
+    ('ei_deescalation', 'deescalation_score', 'De-escalation'),
+)
+EI_TRIGGER_EVENTS = (
+    'Aggressive Patient/Attendant',
+    'Critical Patient Mortality',
+    'On-Call Fatigue & Workload',
+    'Inter-departmental Miscommunication',
+)
+EI_COPING_STRATEGIES = (
+    'De-escalation Protocol Applied',
+    'Peer Debriefing Session',
+    'Short Tactical Pause',
+    'HOD Consultation',
+)
+MENTORSHIP_ROLES = tuple(
+    value for value, _label in MentorshipSession.ROLE_CHOICES
+)
+MENTORSHIP_DOMAINS = (
+    'Bedside Clinical Supervision',
+    'Postgraduate & Parallel Pathway',
+    'On-Call Coping & Stress Adaptation',
+    'Audit & Research Guidance',
 )
 
 
@@ -2304,6 +2348,99 @@ def _save_clinical_procedure(request, form_type, profile):
         )
 
     return clinical_domain, proc_name, score_val, procedure_date
+
+
+def _average_reflection_domains(reflections):
+    """Purata setiap domain EI; None jika tiada nilai sah untuk domain itu."""
+    averages = []
+    for _post_key, field_name, _label in EI_DOMAIN_FIELDS:
+        values = [
+            getattr(reflection, field_name)
+            for reflection in reflections
+            if getattr(reflection, field_name) is not None
+        ]
+        averages.append(round(sum(values) / len(values)) if values else None)
+    return averages
+
+
+def _save_emotional_reflection(request):
+    """Validasi dan simpan satu rekod EmotionalReflection."""
+    domain_scores = {}
+    for post_key, field_name, label in EI_DOMAIN_FIELDS:
+        domain_scores[field_name] = _required_int(
+            request.POST.get(post_key),
+            f'{label} Score',
+            minimum=0,
+            maximum=100,
+        )
+
+    trigger_event = _required_choice(
+        request.POST.get('ei_trigger'),
+        EI_TRIGGER_EVENTS,
+        'Stress Trigger Event',
+    )
+    coping_strategy = _required_choice(
+        request.POST.get('ei_coping'),
+        EI_COPING_STRATEGIES,
+        'Coping Action Strategy',
+    )
+    reflection_notes = _required_text(
+        request.POST.get('ei_reflection'),
+        'Qualitative Reflection',
+    )
+
+    with transaction.atomic():
+        return EmotionalReflection.objects.create(
+            officer=request.user,
+            self_awareness_score=domain_scores['self_awareness_score'],
+            self_regulation_score=domain_scores['self_regulation_score'],
+            empathy_score=domain_scores['empathy_score'],
+            deescalation_score=domain_scores['deescalation_score'],
+            trigger_event=trigger_event,
+            coping_strategy=coping_strategy,
+            reflection_notes=reflection_notes,
+        )
+
+
+def _save_mentorship_session(request):
+    """Validasi dan simpan satu rekod MentorshipSession."""
+    participant_role = _required_choice(
+        request.POST.get('mentor_role'),
+        MENTORSHIP_ROLES,
+        'Participant Role',
+    )
+    mentee_name = _required_text(
+        request.POST.get('mentee_name'),
+        'Mentee / Officer Name',
+        max_length=150,
+    )
+    topic = _required_choice(
+        request.POST.get('mentor_domain'),
+        MENTORSHIP_DOMAINS,
+        'Guidance Domain',
+    )
+    session_date = _required_date(
+        request.POST.get('mentor_date'),
+        'Session Date',
+    )
+    duration_hours = _mentor_duration_hours(
+        request.POST.get('mentor_duration'),
+    )
+    notes = _required_text(
+        request.POST.get('mentor_notes'),
+        'Action Plan & Discussion Summary',
+    )
+
+    with transaction.atomic():
+        return MentorshipSession.objects.create(
+            mentor=request.user,
+            participant_role=participant_role,
+            mentee_name=mentee_name,
+            topic=topic,
+            notes=notes,
+            session_date=session_date,
+            duration_hours=duration_hours,
+        )
 
 
 def _save_productivity_log(request):
@@ -2714,33 +2851,22 @@ def staff_dashboard_view(request):
 
         # --- 3. MODUL INTERPERSONAL ---
         elif form_type == 'int_ei':
-            awareness = max(0, min(100, _parse_int(request.POST.get('ei_self_awareness'), 0)))
-            regulation = max(0, min(100, _parse_int(request.POST.get('ei_regulation'), 0)))
-            empathy = max(0, min(100, _parse_int(request.POST.get('ei_empathy'), 0)))
-            deescalation = max(0, min(100, _parse_int(request.POST.get('ei_deescalation'), 0)))
-            trigger = (request.POST.get('ei_trigger') or '').strip()
-            coping = (request.POST.get('ei_coping') or '').strip()
-            notes = (request.POST.get('ei_reflection') or '').strip()
+            try:
+                reflection = _save_emotional_reflection(request)
+            except ValidationError as exc:
+                messages.error(
+                    request,
+                    f"❌ {exc.messages[0] if exc.messages else exc}",
+                )
+                return redirect(f'/staff/?section={section}')
 
-            # Kolum berasingan untuk 4 domain belum ada (Fasa 1); simpan secara berstruktur sementara.
-            structured_notes = "\n".join([
-                f"[Trigger] {trigger}",
-                f"[Coping] {coping}",
-                f"[Self-Awareness] {awareness}",
-                f"[Self-Regulation] {regulation}",
-                f"[Empathy] {empathy}",
-                f"[De-escalation] {deescalation}",
-                "",
-                "[Reflection]",
-                notes,
-            ]).strip()
-
-            EmotionalReflection.objects.create(
-                officer=request.user,
-                self_awareness_score=awareness,
-                reflection_notes=structured_notes,
+            messages.success(
+                request,
+                f"✅ Refleksi EI disimpan (SA {reflection.self_awareness_score}%, "
+                f"SR {reflection.self_regulation_score}%, "
+                f"Empati {reflection.empathy_score}%, "
+                f"De-escalation {reflection.deescalation_score}%)."
             )
-            messages.success(request, f"✅ Refleksi EI disimpan (self-awareness {awareness}%).")
 
         elif form_type == 'int_team':
             peer_id = _parse_int(request.POST.get('peer_id'), 0)
@@ -2769,27 +2895,20 @@ def staff_dashboard_view(request):
             )
 
         elif form_type == 'int_mentor':
-            mentee = (request.POST.get('mentee_name') or '').strip() or 'Junior MO'
-            topic = (request.POST.get('mentor_domain') or '').strip() or 'Clinical Guidance'
-            session_date = _parse_date_value(request.POST.get('mentor_date'), date.today())
-            duration_hours = _mentor_duration_hours(request.POST.get('mentor_duration'))
-            mentor_role = request.POST.get('mentor_role', 'mentor')
-            notes = (request.POST.get('mentor_notes') or '').strip()
+            try:
+                session = _save_mentorship_session(request)
+            except ValidationError as exc:
+                messages.error(
+                    request,
+                    f"❌ {exc.messages[0] if exc.messages else exc}",
+                )
+                return redirect(f'/staff/?section={section}')
 
-            # Kolum role/notes belum ada (Fasa 1); simpan ringkasan dalam medan sedia ada.
-            mentee_label = f"{mentee} ({'Mentee' if mentor_role == 'mentee' else 'Mentor'})"[:150]
-            topic_with_notes = f"{topic} | {notes}"[:200] if notes else topic[:200]
-
-            MentorshipSession.objects.create(
-                mentor=request.user,
-                mentee_name=mentee_label,
-                topic=topic_with_notes,
-                session_date=session_date,
-                duration_hours=duration_hours,
-            )
+            role_label = session.get_participant_role_display()
             messages.success(
                 request,
-                f"✅ Sesi mentorship {duration_hours:.1f} jam disimpan."
+                f"✅ Sesi mentorship {session.duration_hours:.1f} jam "
+                f"({role_label}) bersama {session.mentee_name} disimpan."
             )
 
         elif form_type == 'system_settings':
@@ -2805,11 +2924,36 @@ def staff_dashboard_view(request):
             messages.success(request, "⚡ AI Self-Coaching plan acknowledged! Your Operational Index has been upgraded to 88% (Target Achieved).")
             
         elif form_type == 'acknowledge_feedback':
-            feedback_id = request.POST.get('feedback_id')
-            fb_obj = HODFeedback.objects.filter(id=feedback_id, receiver_staff=request.user).first()
-            if fb_obj:
+            try:
+                feedback_id = _required_int(
+                    request.POST.get('feedback_id'),
+                    'Feedback ID',
+                    minimum=1,
+                )
+            except ValidationError as exc:
+                messages.error(
+                    request,
+                    f"❌ {exc.messages[0] if exc.messages else exc}",
+                )
+                return redirect(f'/staff/?section={section}')
+
+            fb_obj = HODFeedback.objects.filter(
+                pk=feedback_id,
+                receiver_staff=request.user,
+            ).first()
+            if not fb_obj:
+                messages.error(
+                    request,
+                    "❌ Feedback tidak ditemui atau bukan milik anda.",
+                )
+                return redirect(f'/staff/?section={section}')
+
+            if fb_obj.is_acknowledged:
+                messages.info(request, "ℹ️ Feedback ini telah pun diakui.")
+            else:
                 fb_obj.is_acknowledged = True
-                fb_obj.save()
+                fb_obj.acknowledged_at = timezone.now()
+                fb_obj.save(update_fields=['is_acknowledged', 'acknowledged_at'])
                 messages.success(request, "✅ Feedback acknowledged and archived.")
                 
         return redirect(f'/staff/?section={section}')

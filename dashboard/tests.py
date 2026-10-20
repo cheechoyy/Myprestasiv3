@@ -11,16 +11,21 @@ from django.utils import timezone
 from .models import (
     CPDClaim,
     DocumentationLog,
+    EmotionalReflection,
+    HODFeedback,
     InnovationProject,
+    MentorshipSession,
     PolicyDeclaration,
     PolicyItemResponse,
     ProcedureLog,
     ProductivityLog,
     UserProfile,
 )
+from .services import calculate_pri_score
 from .views import (
     MAX_CPD_CERTIFICATE_SIZE,
     POLICY_MULTI_OPTIONS,
+    _average_reflection_domains,
     _parse_datetime_value,
 )
 
@@ -901,3 +906,359 @@ class OperationalPersistencePhase2Tests(TestCase):
         publication = InnovationProject.objects.get(innovation_type='Publication')
         self.assertEqual(publication.project_title, 'Journal Without Year')
         self.assertIsNone(publication.publication_year)
+
+
+class InterpersonalPersistencePhase2Tests(TestCase):
+    def setUp(self):
+        self.user = User.objects.create_user(username='interpersonal_test_user')
+        UserProfile.objects.create(
+            user=self.user,
+            role='STAFF',
+            department='CTS',
+        )
+        self.client.force_login(self.user)
+        self.url = reverse('staff_dashboard') + '?section=Interpersonal'
+
+    def _ei_data(self):
+        return {
+            'form_type': 'int_ei',
+            'ei_self_awareness': '85',
+            'ei_regulation': '80',
+            'ei_empathy': '90',
+            'ei_deescalation': '82',
+            'ei_trigger': 'Aggressive Patient/Attendant',
+            'ei_coping': 'De-escalation Protocol Applied',
+            'ei_reflection': 'Saya mengawal emosi dan berbincang dengan rakan sekerja.',
+        }
+
+    def _post_ei(self, data=None):
+        return self.client.post(
+            self.url,
+            data if data is not None else self._ei_data(),
+        )
+
+    def _mentor_data(self):
+        return {
+            'form_type': 'int_mentor',
+            'mentor_role': 'mentee',
+            'mentee_name': 'Dr. Azlan Shah',
+            'mentor_date': '2026-10-18',
+            'mentor_duration': '2 Hours',
+            'mentor_domain': 'Postgraduate & Parallel Pathway',
+            'mentor_notes': 'Perbincangan tindakan susulan.',
+        }
+
+    def _post_mentor(self, data=None):
+        return self.client.post(
+            self.url,
+            data if data is not None else self._mentor_data(),
+        )
+
+    def test_ei_persists_four_domain_scores_and_structured_fields(self):
+        response = self._post_ei()
+
+        self.assertEqual(response.status_code, 302)
+        reflection = EmotionalReflection.objects.get(officer=self.user)
+        self.assertEqual(reflection.self_awareness_score, 85)
+        self.assertEqual(reflection.self_regulation_score, 80)
+        self.assertEqual(reflection.empathy_score, 90)
+        self.assertEqual(reflection.deescalation_score, 82)
+        self.assertEqual(
+            reflection.trigger_event,
+            'Aggressive Patient/Attendant',
+        )
+        self.assertEqual(
+            reflection.coping_strategy,
+            'De-escalation Protocol Applied',
+        )
+        self.assertEqual(
+            reflection.reflection_notes,
+            'Saya mengawal emosi dan berbincang dengan rakan sekerja.',
+        )
+        self.assertEqual(reflection.record_date, timezone.localdate())
+
+    def test_ei_rejects_missing_or_out_of_range_scores(self):
+        for invalid_score in ('', '-1', '101', 'not-a-number'):
+            with self.subTest(score=invalid_score):
+                EmotionalReflection.objects.filter(officer=self.user).delete()
+                data = self._ei_data()
+                data['ei_empathy'] = invalid_score
+
+                response = self._post_ei(data)
+
+                self.assertEqual(response.status_code, 302)
+                self.assertFalse(
+                    EmotionalReflection.objects.filter(officer=self.user).exists()
+                )
+
+    def test_ei_rejects_missing_or_invalid_required_choices(self):
+        for field_name in ('ei_trigger', 'ei_coping', 'ei_reflection'):
+            with self.subTest(missing=field_name):
+                EmotionalReflection.objects.filter(officer=self.user).delete()
+                data = self._ei_data()
+                data.pop(field_name)
+
+                response = self._post_ei(data)
+
+                self.assertEqual(response.status_code, 302)
+                self.assertFalse(
+                    EmotionalReflection.objects.filter(officer=self.user).exists()
+                )
+
+        for field_name in ('ei_trigger', 'ei_coping'):
+            with self.subTest(invalid=field_name):
+                EmotionalReflection.objects.filter(officer=self.user).delete()
+                data = self._ei_data()
+                data[field_name] = 'Pilihan Tidak Sah'
+
+                response = self._post_ei(data)
+
+                self.assertEqual(response.status_code, 302)
+                self.assertFalse(
+                    EmotionalReflection.objects.filter(officer=self.user).exists()
+                )
+
+    def test_ei_accepts_boundary_scores(self):
+        data = self._ei_data()
+        data.update({
+            'ei_self_awareness': '0',
+            'ei_regulation': '100',
+            'ei_empathy': '0',
+            'ei_deescalation': '100',
+        })
+
+        response = self._post_ei(data)
+
+        self.assertEqual(response.status_code, 302)
+        reflection = EmotionalReflection.objects.get(officer=self.user)
+        self.assertEqual(reflection.self_awareness_score, 0)
+        self.assertEqual(reflection.self_regulation_score, 100)
+        self.assertEqual(reflection.empathy_score, 0)
+        self.assertEqual(reflection.deescalation_score, 100)
+
+    def test_mentorship_persists_role_and_full_notes_without_truncation(self):
+        long_notes = (
+            'Perbincangan terperinci mengenai pengurusan pesakit kritikal, '
+            'komunikasi dengan keluarga, dan perancangan tindakan susulan. '
+        ) * 4
+        data = self._mentor_data()
+        data['mentor_notes'] = long_notes
+
+        response = self._post_mentor(data)
+
+        self.assertEqual(response.status_code, 302)
+        session = MentorshipSession.objects.get(mentor=self.user)
+        self.assertEqual(session.participant_role, 'mentee')
+        self.assertEqual(session.mentee_name, 'Dr. Azlan Shah')
+        self.assertEqual(
+            session.topic,
+            'Postgraduate & Parallel Pathway',
+        )
+        self.assertEqual(session.notes, long_notes.strip())
+        self.assertGreater(len(session.notes), 200)
+        self.assertNotIn('(Mentee)', session.mentee_name)
+        self.assertNotIn(session.notes, session.topic)
+        self.assertEqual(session.session_date, date(2026, 10, 18))
+        self.assertEqual(session.duration_hours, 2.0)
+
+    def test_mentorship_rejects_invalid_or_missing_required_fields(self):
+        invalid_cases = (
+            ('mentor_role', 'supervisor'),
+            ('mentor_domain', 'Unknown Domain'),
+            ('mentor_date', '2026-02-30'),
+            ('mentor_duration', '3 Hours'),
+            ('mentee_name', ''),
+            ('mentor_notes', ''),
+        )
+
+        for field_name, invalid_value in invalid_cases:
+            with self.subTest(field=field_name):
+                MentorshipSession.objects.filter(mentor=self.user).delete()
+                data = self._mentor_data()
+                data[field_name] = invalid_value
+
+                response = self._post_mentor(data)
+
+                self.assertEqual(response.status_code, 302)
+                self.assertFalse(
+                    MentorshipSession.objects.filter(mentor=self.user).exists()
+                )
+
+        for field_name in (
+            'mentor_role',
+            'mentee_name',
+            'mentor_date',
+            'mentor_duration',
+            'mentor_domain',
+            'mentor_notes',
+        ):
+            with self.subTest(missing=field_name):
+                MentorshipSession.objects.filter(mentor=self.user).delete()
+                data = self._mentor_data()
+                data.pop(field_name)
+
+                response = self._post_mentor(data)
+
+                self.assertEqual(response.status_code, 302)
+                self.assertFalse(
+                    MentorshipSession.objects.filter(mentor=self.user).exists()
+                )
+
+    def test_ei_domain_average_returns_none_for_missing_legacy_domains(self):
+        legacy = EmotionalReflection.objects.create(
+            officer=self.user,
+            self_awareness_score=85,
+        )
+        current = EmotionalReflection.objects.create(
+            officer=self.user,
+            self_awareness_score=80,
+            self_regulation_score=70,
+            empathy_score=90,
+            deescalation_score=60,
+        )
+
+        self.assertEqual(
+            _average_reflection_domains([legacy]),
+            [85, None, None, None],
+        )
+        self.assertEqual(
+            _average_reflection_domains([current]),
+            [80, 70, 90, 60],
+        )
+
+
+class HODFeedbackAcknowledgmentPhase2Tests(TestCase):
+    def setUp(self):
+        self.user = User.objects.create_user(username='feedback_receiver')
+        UserProfile.objects.create(
+            user=self.user,
+            role='STAFF',
+            department='CTS',
+        )
+        self.hod = User.objects.create_user(username='feedback_sender')
+        UserProfile.objects.create(
+            user=self.hod,
+            role='HOD',
+            department='CTS',
+        )
+        self.client.force_login(self.user)
+        self.url = reverse('staff_dashboard') + '?section=Dashboard'
+        self.feedback = HODFeedback.objects.create(
+            sender_hod=self.hod,
+            receiver_staff=self.user,
+            severity='INFO',
+            message_text='Sila lengkapkan dokumentasi klinikal.',
+        )
+
+    def _post_ack(self, feedback_id):
+        return self.client.post(
+            self.url,
+            {
+                'form_type': 'acknowledge_feedback',
+                'feedback_id': str(feedback_id),
+            },
+        )
+
+    def test_acknowledgment_sets_boolean_and_timestamp(self):
+        response = self._post_ack(self.feedback.id)
+
+        self.assertEqual(response.status_code, 302)
+        self.feedback.refresh_from_db()
+        self.assertTrue(self.feedback.is_acknowledged)
+        self.assertIsNotNone(self.feedback.acknowledged_at)
+        self.assertTrue(timezone.is_aware(self.feedback.acknowledged_at))
+
+    def test_acknowledgment_is_idempotent(self):
+        self._post_ack(self.feedback.id)
+        self.feedback.refresh_from_db()
+        first_acknowledged_at = self.feedback.acknowledged_at
+
+        response = self._post_ack(self.feedback.id)
+
+        self.assertEqual(response.status_code, 302)
+        self.feedback.refresh_from_db()
+        self.assertTrue(self.feedback.is_acknowledged)
+        self.assertEqual(self.feedback.acknowledged_at, first_acknowledged_at)
+
+    def test_staff_cannot_acknowledge_another_staff_feedback(self):
+        other_staff = User.objects.create_user(username='other_feedback_receiver')
+        UserProfile.objects.create(
+            user=other_staff,
+            role='STAFF',
+            department='CTS',
+        )
+        other_feedback = HODFeedback.objects.create(
+            sender_hod=self.hod,
+            receiver_staff=other_staff,
+            severity='WARNING',
+            message_text='Maklum balas untuk staf lain.',
+        )
+
+        response = self._post_ack(other_feedback.id)
+
+        self.assertEqual(response.status_code, 302)
+        other_feedback.refresh_from_db()
+        self.assertFalse(other_feedback.is_acknowledged)
+        self.assertIsNone(other_feedback.acknowledged_at)
+
+    def test_invalid_or_missing_feedback_id_is_ignored(self):
+        for invalid_id in ('abc', '', '999999'):
+            with self.subTest(feedback_id=invalid_id):
+                self.feedback.refresh_from_db()
+                self.feedback.is_acknowledged = False
+                self.feedback.acknowledged_at = None
+                self.feedback.save(
+                    update_fields=['is_acknowledged', 'acknowledged_at']
+                )
+
+                response = self._post_ack(invalid_id)
+
+                self.assertEqual(response.status_code, 302)
+                self.feedback.refresh_from_db()
+                self.assertFalse(self.feedback.is_acknowledged)
+                self.assertIsNone(self.feedback.acknowledged_at)
+
+
+class PRIScoreCompatibilityPhase2Tests(TestCase):
+    def setUp(self):
+        self.user = User.objects.create_user(username='pri_compatibility_user')
+
+    def test_new_ei_record_uses_average_of_four_domains(self):
+        EmotionalReflection.objects.create(
+            officer=self.user,
+            self_awareness_score=80,
+            self_regulation_score=70,
+            empathy_score=90,
+            deescalation_score=60,
+        )
+
+        result = calculate_pri_score(self.user)
+
+        self.assertEqual(result['score_interpersonal'], 83)
+
+    def test_legacy_ei_record_keeps_self_awareness_contribution(self):
+        EmotionalReflection.objects.create(
+            officer=self.user,
+            self_awareness_score=85,
+        )
+
+        result = calculate_pri_score(self.user)
+
+        self.assertEqual(result['score_interpersonal'], 86)
+
+    def test_mixed_legacy_and_new_ei_records_average_available_domains(self):
+        EmotionalReflection.objects.create(
+            officer=self.user,
+            self_awareness_score=85,
+        )
+        EmotionalReflection.objects.create(
+            officer=self.user,
+            self_awareness_score=80,
+            self_regulation_score=70,
+            empathy_score=90,
+            deescalation_score=60,
+        )
+
+        result = calculate_pri_score(self.user)
+
+        self.assertEqual(result['score_interpersonal'], 85)

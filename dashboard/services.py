@@ -4,6 +4,19 @@ from .models import (
     MyPSQFeedback, EmotionalReflection, PeerKudos, MentorshipSession
 )
 
+
+def _reflection_composite(reflection):
+    """Purata domain EI yang tersedia; kekalkan keserasian rekod lama."""
+    values = [
+        reflection.self_awareness_score,
+        reflection.self_regulation_score,
+        reflection.empathy_score,
+        reflection.deescalation_score,
+    ]
+    values = [value for value in values if value is not None]
+    return sum(values) / len(values) if values else 0.0
+
+
 def calculate_pri_score(user):
     """
     Enjin Pengira Skor Bersepadu MyPrestasi berasaskan 3 Tunjang Utama:
@@ -63,8 +76,12 @@ def calculate_pri_score(user):
     score_patient = ((sum([f.average_score for f in mypsq]) / mypsq.count()) / 5.0 * 100.0) if mypsq.exists() else 92.0
 
     # Sub 2: Stress Management
-    emotions = EmotionalReflection.objects.filter(officer=user)
-    score_stress = (sum([e.self_awareness_score for e in emotions]) / emotions.count()) if emotions.exists() else 85.0
+    emotions = list(EmotionalReflection.objects.filter(officer=user))
+    score_stress = (
+        sum(_reflection_composite(reflection) for reflection in emotions)
+        / len(emotions)
+        if emotions else 85.0
+    )
 
     # Sub 3: Teamwork & Collaboration
     kudos = PeerKudos.objects.filter(receiver=user)
