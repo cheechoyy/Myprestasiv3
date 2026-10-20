@@ -1,5 +1,6 @@
 from django.db import models
 from django.contrib.auth.models import User
+from django.utils import timezone
 
 # ==========================================
 # 1. PROFIL PENGGUNA & PERANAN (USER PROFILE)
@@ -46,13 +47,29 @@ class UserProfile(models.Model):
 # A. Modul: Clinical Delivery (CUSUM Log)
 class ProcedureLog(models.Model):
     officer = models.ForeignKey(User, on_delete=models.CASCADE, related_name='procedure_logs')
+    patient_ref = models.CharField(max_length=64, blank=True, null=True, db_index=True) # Hash SHA-256 sahaja
+    clinical_domain = models.CharField(max_length=10, blank=True, null=True) # CTS / FMS
+    facility = models.CharField(max_length=150, blank=True, null=True)
     procedure_name = models.CharField(max_length=150, default="LIMA-LAD Procedure")
-    procedure_date = models.DateField(auto_now_add=True)
+    procedure_date = models.DateField(default=timezone.localdate)
+    primary_diagnosis = models.CharField(max_length=200, blank=True, null=True)
+    previous_intervention = models.CharField(max_length=200, blank=True, null=True)
+    comorbidities = models.JSONField(default=list, blank=True) # Senarai komorbiditi
+    lvef_percent = models.FloatField(blank=True, null=True)
+    coronary_anatomy = models.CharField(max_length=100, blank=True, null=True)
+    nyha_class = models.CharField(max_length=10, blank=True, null=True)
+    duration_illness = models.CharField(max_length=50, blank=True, null=True)
+    systolic_bp = models.PositiveSmallIntegerField(blank=True, null=True)
+    diastolic_bp = models.PositiveSmallIntegerField(blank=True, null=True)
+    hba1c_percent = models.FloatField(blank=True, null=True)
+    ldl_mmol_l = models.FloatField(blank=True, null=True)
     is_successful = models.BooleanField(default=True)
     complication_occurred = models.BooleanField(default=False)
+    target_achieved = models.BooleanField(blank=True, null=True)
     score = models.FloatField(default=85.0) # Skor Prosedur (0-100)
     is_verified = models.BooleanField(default=False)
     hod_verifier = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='verified_procedures')
+    verified_at = models.DateTimeField(blank=True, null=True)
 
     def __str__(self):
         return f"{self.officer.username} - {self.procedure_name} ({self.procedure_date})"
@@ -81,6 +98,9 @@ class PolicyItemResponse(models.Model):
     declaration = models.ForeignKey(PolicyDeclaration, related_name='responses', on_delete=models.CASCADE)
     question_number = models.IntegerField() # 1 hingga 20
     is_compliant = models.BooleanField(default=False)
+    compliance_ratio = models.FloatField(default=0.0) # 0.0 hingga 1.0
+    selected_count = models.PositiveSmallIntegerField(blank=True, null=True)
+    max_count = models.PositiveSmallIntegerField(blank=True, null=True)
 
     def __str__(self):
         return f"Q{self.question_number}: {'Compliant' if self.is_compliant else 'Non-Compliant'}"
@@ -90,9 +110,14 @@ class PolicyItemResponse(models.Model):
 class DocumentationLog(models.Model):
     officer = models.ForeignKey(User, on_delete=models.CASCADE, related_name='doc_logs')
     patient_id = models.CharField(max_length=50)
+    encounter_type = models.CharField(max_length=50, blank=True, null=True)
+    encounter_at = models.DateTimeField(blank=True, null=True)
+    completed_at = models.DateTimeField(blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
     delay_hours = models.FloatField(default=0.0) # Kelambatan entri
     reason_for_delay = models.TextField(blank=True, null=True)
+    delay_reason_category = models.CharField(max_length=100, blank=True, null=True)
+    delay_reason_remarks = models.TextField(blank=True, null=True)
     is_ontime = models.BooleanField(default=True)
 
     def __str__(self):
@@ -114,7 +139,12 @@ class CPDClaim(models.Model):
     topic = models.CharField(max_length=200)
     points = models.IntegerField(default=10)
     event_date = models.DateField()
+    end_date = models.DateField(blank=True, null=True)
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='PENDING')
+    certificate = models.FileField(upload_to='cpd_certificates/%Y/%m/', blank=True, null=True)
+    verified_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='verified_cpd_claims')
+    verified_at = models.DateTimeField(blank=True, null=True)
+    rejection_reason = models.TextField(blank=True, null=True)
     submitted_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
@@ -128,10 +158,14 @@ class CPDClaim(models.Model):
 # A. Modul: Productivity & Efficiency
 class ProductivityLog(models.Model):
     officer = models.ForeignKey(User, on_delete=models.CASCADE, related_name='productivity_logs')
-    record_date = models.DateField(auto_now_add=True)
+    record_date = models.DateField(default=timezone.localdate)
     patients_cleared = models.IntegerField(default=35)
+    ward_cases = models.IntegerField(blank=True, null=True)
+    procedures_completed = models.IntegerField(blank=True, null=True)
     avg_consult_minutes = models.FloatField(default=12.0)
     punctuality_rate = models.FloatField(default=95.0) # %
+    punctuality_status = models.CharField(max_length=50, blank=True, null=True)
+    operational_notes = models.TextField(blank=True, null=True)
 
     def __str__(self):
         return f"Productivity {self.record_date} - {self.officer.username}"
@@ -141,9 +175,23 @@ class ProductivityLog(models.Model):
 class InnovationProject(models.Model):
     officer = models.ForeignKey(User, on_delete=models.CASCADE, related_name='innovation_projects')
     project_title = models.CharField(max_length=200)
+    innovation_type = models.CharField(max_length=50, blank=True, null=True) # Research, Clinical Trial, Technology, Publication
     category = models.CharField(max_length=100, default="System Compliance")
+    research_role = models.CharField(max_length=100, blank=True, null=True)
+    nmrr_id = models.CharField(max_length=50, blank=True, null=True)
+    trial_phase = models.CharField(max_length=30, blank=True, null=True)
+    recruitment_count = models.PositiveIntegerField(blank=True, null=True)
+    trial_status = models.CharField(max_length=20, blank=True, null=True)
+    adoption_date = models.DateField(blank=True, null=True)
+    proficiency_level = models.CharField(max_length=50, blank=True, null=True)
+    journal_name = models.CharField(max_length=200, blank=True, null=True)
+    doi = models.CharField(max_length=100, blank=True, null=True)
+    publication_year = models.PositiveIntegerField(blank=True, null=True)
     description = models.TextField()
     score = models.FloatField(default=80.0)
+    is_verified = models.BooleanField(default=False)
+    verified_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='verified_innovation_projects')
+    verified_at = models.DateTimeField(blank=True, null=True)
     submitted_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
@@ -183,8 +231,13 @@ class MyPSQFeedback(models.Model):
 # B. Modul: Stress Management (Emotional Intelligence)
 class EmotionalReflection(models.Model):
     officer = models.ForeignKey(User, on_delete=models.CASCADE, related_name='emotional_reflections')
-    record_date = models.DateField(auto_now_add=True)
+    record_date = models.DateField(default=timezone.localdate)
     self_awareness_score = models.IntegerField(default=85)
+    self_regulation_score = models.IntegerField(blank=True, null=True)
+    empathy_score = models.IntegerField(blank=True, null=True)
+    deescalation_score = models.IntegerField(blank=True, null=True)
+    trigger_event = models.CharField(max_length=200, blank=True, null=True)
+    coping_strategy = models.CharField(max_length=200, blank=True, null=True)
     reflection_notes = models.TextField(blank=True, null=True)
 
     def __str__(self):
@@ -206,12 +259,21 @@ class PeerKudos(models.Model):
 
 # D. Modul: Training & Mentorship
 class MentorshipSession(models.Model):
+    ROLE_CHOICES = (
+        ('mentor', 'As Mentor'),
+        ('mentee', 'As Mentee'),
+    )
+
     mentor = models.ForeignKey(User, on_delete=models.CASCADE, related_name='mentorship_sessions')
+    participant_role = models.CharField(max_length=10, choices=ROLE_CHOICES, default='mentor')
     mentee_name = models.CharField(max_length=150)
     topic = models.CharField(max_length=200)
+    notes = models.TextField(blank=True, null=True)
     session_date = models.DateField()
     duration_hours = models.FloatField(default=1.0)
     is_verified = models.BooleanField(default=True)
+    verified_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='verified_mentorship_sessions')
+    verified_at = models.DateTimeField(blank=True, null=True)
 
     def __str__(self):
         return f"Mentorship by {self.mentor.username} for {self.mentee_name}"
@@ -233,6 +295,7 @@ class HODFeedback(models.Model):
     severity = models.CharField(max_length=20, choices=SEVERITY_CHOICES, default='WARNING')
     message_text = models.TextField()
     is_acknowledged = models.BooleanField(default=False)
+    acknowledged_at = models.DateTimeField(blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):

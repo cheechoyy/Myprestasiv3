@@ -17,7 +17,7 @@
 
                 <div style="display: flex; align-items: center; gap: 8px; background: linear-gradient(135deg, #f3edff 0%, #ffffff 100%); border: 1px solid #d8c7f4; padding: 7px 16px; border-radius: 30px; box-shadow: 0 2px 6px rgba(21, 10, 53, 0.03);">
                     <svg style="width: 14px; height: 14px; color: #6d3ec4; flex-shrink: 0;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5m0 0v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4M12 7v4m-2-2h4"/></svg>
-                    <span style="font-size: 12px; font-weight: 800; color: #150a35;">{{ staff_dept }} Department</span>
+                    <span style="font-size: 12px; font-weight: 800; color: #150a35;">{{ staff_dept_display }} Department</span>
                 </div>
             </div>
 
@@ -182,19 +182,19 @@
                         <div class="grid-2" style="margin-bottom: 20px;">
                             <div>
                                 <label style="margin-top:0; color:#150a35; font-size:12px; font-weight:700;">Self-Awareness (Mengenal Pasti Emosi Sendiri):</label>
-                                <input type="range" class="eq-slider" min="0" max="100" value="85" style="width:100%; accent-color:#6d3ec4;">
+                                <input type="range" class="eq-slider" name="ei_self_awareness" min="0" max="100" value="85" style="width:100%; accent-color:#6d3ec4;">
                             </div>
                             <div>
                                 <label style="margin-top:0; color:#150a35; font-size:12px; font-weight:700;">Self-Regulation under Stress (Mengawal Amarah/Tension):</label>
-                                <input type="range" class="eq-slider" min="0" max="100" value="80" style="width:100%; accent-color:#6d3ec4;">
+                                <input type="range" class="eq-slider" name="ei_regulation" min="0" max="100" value="80" style="width:100%; accent-color:#6d3ec4;">
                             </div>
                             <div>
                                 <label style="margin-top:0; color:#150a35; font-size:12px; font-weight:700;">Empathy & Active Listening (Memahami Pesakit/Rakan):</label>
-                                <input type="range" class="eq-slider" min="0" max="100" value="90" style="width:100%; accent-color:#6d3ec4;">
+                                <input type="range" class="eq-slider" name="ei_empathy" min="0" max="100" value="90" style="width:100%; accent-color:#6d3ec4;">
                             </div>
                             <div>
                                 <label style="margin-top:0; color:#150a35; font-size:12px; font-weight:700;">De-escalation Skill (Pengurusan Konflik Krisis):</label>
-                                <input type="range" class="eq-slider" min="0" max="100" value="82" style="width:100%; accent-color:#6d3ec4;">
+                                <input type="range" class="eq-slider" name="ei_deescalation" min="0" max="100" value="82" style="width:100%; accent-color:#6d3ec4;">
                             </div>
                         </div>
 
@@ -309,21 +309,22 @@
                         <div class="grid-2" style="margin-bottom: 15px;">
                             <div>
                                 <label style="margin-top:0; color:#150a35; font-weight:700;">Select Colleague / Peer <span style="color:red;">*</span></label>
-                                <select name="peer_name" required style="background:white; border-color:#d8c7f4; font-weight:600;">
+                                <select name="peer_id" required style="background:white; border-color:#d8c7f4; font-weight:600;">
                                     <option value="" disabled selected>Choose a Staff...</option>
-                                    <option value="Dr. Siti Fazura">Dr. Siti Fazura (Staff)</option>
-                                    <option value="Dr. Chong Wei">Dr. Chong Wei (Staff)</option>
-                                    <option value="Dr. Ahmad Abu">Dr. Ahmad Abu (Staff)</option>
-                                    <option value="Dr. Ramesh Lee">Dr. Ramesh Lee (Staff)</option>
+                                    {% for peer in peer_staff_list %}
+                                        <option value="{{ peer.id }}">{% if peer.get_full_name %}Dr. {{ peer.get_full_name }}{% else %}Dr. {{ peer.username }}{% endif %} ({{ peer.profile.get_department_display }})</option>
+                                    {% empty %}
+                                        <option value="" disabled>Tiada staf lain tersedia</option>
+                                    {% endfor %}
                                 </select>
                             </div>
                             <div>
                                 <label style="margin-top:0; color:#150a35; font-weight:700;">Endorsement Category & Points <span style="color:red;">*</span></label>
                                 <select name="kudos_category" required style="background:white; border-color:#d8c7f4; font-weight:600;">
-                                    <option value="10">🤝 Shift Cover & Ward Relief (+10 Pts to Peer | +2 Karma to You)</option>
-                                    <option value="10">🚨 Emergency & On-Call Assistance (+10 Pts to Peer | +2 Karma to You)</option>
-                                    <option value="5">📚 Clinical Knowledge Sharing & CME (+5 Pts to Peer | +1 Karma to You)</option>
-                                    <option value="5">❤️ Empathy & Team Moral Support (+5 Pts to Peer | +1 Karma to You)</option>
+                                    <option value="Shift Cover & Ward Relief" style="color: #6d3ec4; font-weight: 700;">💜 Shift Cover & Ward Relief (+10 Pts to Peer | +2 Karma to You)</option>
+                                    <option value="Emergency & On-Call Assistance" style="color: #6d3ec4; font-weight: 700;">🟣 Emergency & On-Call Assistance (+10 Pts to Peer | +2 Karma to You)</option>
+                                    <option value="Clinical Knowledge Sharing & CME" style="color: #6d3ec4; font-weight: 700;">🪻 Clinical Knowledge Sharing & CME (+5 Pts to Peer | +1 Karma to You)</option>
+                                    <option value="Empathy & Team Moral Support" style="color: #6d3ec4; font-weight: 700;">💟 Empathy & Team Moral Support (+5 Pts to Peer | +1 Karma to You)</option>
                                 </select>
                             </div>
                         </div>

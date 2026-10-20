@@ -17,7 +17,7 @@
 
                 <div style="display: flex; align-items: center; gap: 8px; background: linear-gradient(135deg, #f3edff 0%, #ffffff 100%); border: 1px solid #d8c7f4; padding: 7px 16px; border-radius: 30px; box-shadow: 0 2px 6px rgba(21, 10, 53, 0.03);">
                     <svg style="width: 14px; height: 14px; color: #6d3ec4; flex-shrink: 0;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5m0 0v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4M12 7v4m-2-2h4"/></svg>
-                    <span style="font-size: 12px; font-weight: 800; color: #150a35;">{{ staff_dept }} Department</span>
+                    <span style="font-size: 12px; font-weight: 800; color: #150a35;">{{ staff_dept_display }} Department</span>
                 </div>
             </div>
 
@@ -59,29 +59,30 @@
                                     <select required style="background:white;"><option>Heart Center IJN</option><option>Hospital Utama</option></select>
                                 </div>
                                 <div><label style="margin-top:0;">Date Encounter / Admission <span style="color:red;">*</span></label>
-                                    <input type="date" required style="background:white;">
+                                    <input type="date" name="procedure_date" required style="background:white;">
+                                </div>
+                            </div>
+                            <div class="grid-2" style="margin-top: 15px;">
+                                <div>
+                                    <label style="margin-top:0;">Procedure Performed <span style="color:red;">*</span></label>
+                                    <select name="procedure_name" required style="background:white;">
+                                        <option value="">Select Procedure...</option>
+                                        <option>LIMA-LAD Procedure</option>
+                                        <option>CABG (Coronary Artery Bypass Graft)</option>
+                                        <option>Valve Replacement</option>
+                                        <option>Aortic Surgery</option>
+                                        <option>Congenital Heart Surgery</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label style="margin-top:0;">Self-Assessment Score (0-100) <span style="color:red;">*</span></label>
+                                    <input type="number" name="score" min="0" max="100" step="1" required style="background:white;">
                                 </div>
                             </div>
                         </div>
 
-                        <h4 style="background: #e7dff2; color: #150a35; padding: 10px 15px; border-radius: 6px; margin-bottom: 15px; font-size: 13px;">SECTION 1 : PATIENT PARTICULARS</h4>
-                        <div class="grid-2">
-                            <div><label style="margin-top:0;">Patient Name <span style="color:red;">*</span></label><input type="text" required style="background:white;"></div>
-                            <div><label style="margin-top:0;">MRN / IC Number <span style="color:red;">*</span></label><input type="text" required style="background:white;"></div>
-                        </div>
-                        <div class="grid-3" style="margin-top: 15px;">
-                            <div><label style="margin-top:0;">Date of Birth <span style="color:red;">*</span></label><input type="date" required style="background:white;"></div>
-                            <div>
-                                <label style="margin-top:0;">Ethnic Group</label>
-                                <select style="background:white;"><option>Malay</option><option>Chinese</option><option>Indian</option><option>Others</option></select>
-                            </div>
-                            <div>
-                                <label style="margin-top:0;">Gender <span style="color:red;">*</span></label>
-                                <div class="radio-group">
-                                    <label style="margin:0; font-weight:normal;"><input type="radio" name="gender_cts" value="Male" required> Male</label>
-                                    <label style="margin:0; font-weight:normal;"><input type="radio" name="gender_cts" value="Female"> Female</label>
-                                </div>
-                            </div>
+                        <div style="background:#f3edff; border:1px solid #e7dff2; border-left:4px solid #6d3ec4; padding:12px 15px; border-radius:8px; margin-bottom:15px; font-size:12px; color:#150a35;">
+                            <b>Privasi Pesakit:</b> Nama, MRN/IC dan tarikh lahir tidak dikumpul. Rekod klinikal disimpan tanpa pautan identiti sehingga kolum <code>patient_ref</code> ditambah pada Fasa 1. Butiran klinikal lanjutan (komorbiditi, LVEF, bacaan lab) akan disimpan pada Fasa 1.
                         </div>
 
                         <h4 style="background: #e7dff2; color: #150a35; padding: 10px 15px; border-radius: 6px; margin-top: 30px; margin-bottom: 15px; font-size: 13px;">SECTION 2 : CARDIAC & MEDICAL HISTORY</h4>
@@ -170,36 +171,20 @@
                                     <select required style="background:white;"><option>Klinik Kesihatan Medong</option><option>Klinik Kesihatan Bandar</option></select>
                                 </div>
                                 <div><label style="margin-top:0;">Date Encounter <span style="color:red;">*</span></label>
-                                    <input type="date" required style="background:white;">
+                                    <input type="date" name="procedure_date" required style="background:white;">
                                 </div>
                             </div>
                         </div>
 
-                        <h4 style="background: #e7dff2; color: #150a35; padding: 10px 15px; border-radius: 6px; margin-bottom: 15px; font-size: 13px;">SECTION 1 : PATIENT PARTICULARS</h4>
-                        <div class="grid-2">
-                            <div><label style="margin-top:0;">Patient Name <span style="color:red;">*</span></label><input type="text" required style="background:white;"></div>
-                            <div><label style="margin-top:0;">IC Number / MRN <span style="color:red;">*</span></label><input type="text" required style="background:white;"></div>
-                        </div>
-                        <div class="grid-3" style="margin-top: 15px;">
-                            <div><label style="margin-top:0;">Date of Birth <span style="color:red;">*</span></label><input type="date" required style="background:white;"></div>
-                            <div>
-                                <label style="margin-top:0;">Ethnic Group</label>
-                                <select style="background:white;"><option>Malay</option><option>Chinese</option><option>Indian</option><option>Others</option></select>
-                            </div>
-                            <div>
-                                <label style="margin-top:0;">Gender <span style="color:red;">*</span></label>
-                                <div class="radio-group">
-                                    <label style="margin:0; font-weight:normal;"><input type="radio" name="gender_fms" value="Male" required> Male</label>
-                                    <label style="margin:0; font-weight:normal;"><input type="radio" name="gender_fms" value="Female"> Female</label>
-                                </div>
-                            </div>
+                        <div style="background:#f3edff; border:1px solid #e7dff2; border-left:4px solid #6d3ec4; padding:12px 15px; border-radius:8px; margin-bottom:15px; font-size:12px; color:#150a35;">
+                            <b>Privasi Pesakit:</b> Nama, MRN/IC dan tarikh lahir tidak dikumpul. Rekod klinikal disimpan tanpa pautan identiti sehingga kolum <code>patient_ref</code> ditambah pada Fasa 1. Butiran klinikal lanjutan (komorbiditi, bacaan lab) akan disimpan pada Fasa 1.
                         </div>
 
                         <h4 style="background: #e7dff2; color: #150a35; padding: 10px 15px; border-radius: 6px; margin-top: 30px; margin-bottom: 15px; font-size: 13px;">SECTION 2 : CHRONIC DISEASE & LIFESTYLE RISKS</h4>
                         <div class="grid-2">
                             <div>
                                 <label style="margin-top:0;">Primary Chronic Disease Monitored <span style="color:red;">*</span></label>
-                                <select required style="background:white;">
+                                <select name="procedure_name" required style="background:white;">
                                     <option>Type 2 Diabetes Mellitus (T2DM)</option>
                                     <option>Hypertension</option>
                                     <option>Asthma / COPD</option>
@@ -245,6 +230,11 @@
                                 <td style="padding: 10px; border: 1px solid #e7dff2;"><input type="number" step="0.1" placeholder="e.g. 2.6" style="width: 50%; background:white;"></td>
                             </tr>
                         </table>
+
+                        <div style="margin-top: 20px;">
+                            <label style="margin-top:0;">Self-Assessment Score (0-100) <span style="color:red;">*</span></label>
+                            <input type="number" name="score" min="0" max="100" step="1" required style="background:white;">
+                        </div>
 
                         <h4 style="background: #e7dff2; color: #150a35; padding: 10px 15px; border-radius: 6px; margin-top:20px; font-size: 13px;">Outcome (CUSUM Evaluation)</h4>
                         <div style="background: white; border: 1px solid #e7dff2; padding: 15px; border-radius: 8px;">
@@ -312,15 +302,15 @@
                         </div>
 
                         <div class="grid-3" style="margin-bottom: 15px;">
-                            <div><label style="margin-top:0;">Start Date <span style="color:red;">*</span></label><input type="date" required style="background:white;"></div>
-                            <div><label style="margin-top:0;">End Date <span style="color:red;">*</span></label><input type="date" required style="background:white;"></div>
+                            <div><label style="margin-top:0;">Start Date <span style="color:red;">*</span></label><input type="date" name="start_date" required style="background:white;"></div>
+                            <div><label style="margin-top:0;">End Date (Fasa 1)</label><input type="date" name="end_date" style="background:white;"></div>
                             <div><label style="margin-top:0;">Points Claimed <span style="color:red;">*</span></label><input type="number" name="mata" min="1" required style="background:white;"></div>
                         </div>
 
                         <div style="margin-bottom: 15px;">
-                            <label style="margin-top:0;">Upload Certificate (Proof of Attendance) <span style="color:red;">*</span></label>
-                            <input type="file" name="proof" accept=".pdf,.jpg,.png" style="background:white; border: 1px dashed #6f628b; padding: 10px; cursor: pointer; border-radius:8px;" required>
-                            <span style="font-size:11px; color:#6d3ec4; margin-left: 10px;">Only PDF, JPG, PNG (Max 5MB)</span>
+                            <label style="margin-top:0;">Upload Certificate (Proof of Attendance)</label>
+                            <input type="file" name="proof" accept=".pdf,.jpg,.png" style="background:white; border: 1px dashed #6f628b; padding: 10px; cursor: pointer; border-radius:8px;">
+                            <span style="font-size:11px; color:#6d3ec4; margin-left: 10px;">PDF/JPG/PNG (Max 5MB). Penyimpanan fail akan diaktifkan pada Fasa 1.</span>
                         </div>
 
                         <button type="submit" class="submit-btn" style="margin-top: 15px; display: flex; align-items: center; justify-content: center; gap: 8px;">
@@ -418,12 +408,12 @@
 
                         <div class="grid-2" style="margin-bottom: 15px;">
                             <div>
-                                <label style="margin-top:0;">Patient ID / RN <span style="color:red;">*</span></label>
+                                <label style="margin-top:0;">Patient Ref / MRN (akan di-hash) <span style="color:red;">*</span></label>
                                 <input type="text" name="patient_id" placeholder="e.g. RN123456" required style="background:white;">
                             </div>
                             <div>
-                                <label style="margin-top:0;">Encounter Type <span style="color:red;">*</span></label>
-                                <select required style="background:white;">
+                                <label style="margin-top:0;">Encounter Type (Fasa 1)</label>
+                                <select style="background:white;">
                                     <option>Outpatient Consultation</option>
                                     <option>Inpatient Admission (Clerking)</option>
                                     <option>Discharge Summary</option>
@@ -437,27 +427,27 @@
                                 <label style="margin-top:0; display:flex; align-items:center; gap:6px; color:#150a35;">
                                     Encounter Date & Time <span style="color:red;">*</span>
                                 </label>
-                                <input type="datetime-local" required style="background:white;">
+                                <input type="datetime-local" name="encounter_at" required style="background:white;">
                             </div>
                             <div>
                                 <label style="margin-top:0; display:flex; align-items:center; gap:6px; color:#15803d;">
                                     Documentation Completion <span style="color:red;">*</span>
                                 </label>
-                                <input type="datetime-local" required style="background:white;">
+                                <input type="datetime-local" name="completed_at" required style="background:white;">
                             </div>
                         </div>
 
                         <div style="background: white; border: 1px dashed #d8c7f4; padding: 15px; border-radius: 8px;">
                             <label style="margin-top:0; color:#6d3ec4;">Delay Justification (Fill only if gap > 24 Hours)</label>
                             <div class="grid-2">
-                                <select style="background:#f3edff; border:1px solid #e7dff2; color:#150a35;">
+                                <select name="reason" style="background:#f3edff; border:1px solid #e7dff2; color:#150a35;">
                                     <option value="" disabled selected>Select Primary Reason...</option>
                                     <option>High patient volume / Shortage of staff</option>
                                     <option>Red Zone emergency case interference</option>
                                     <option>System/Network down</option>
                                     <option>Awaiting lab/radiology results</option>
                                 </select>
-                                <input type="text" placeholder="Additional remarks (Optional)..." style="background:#f3edff; border:1px solid #e7dff2; color:#150a35;">
+                                <input type="text" name="reason_remarks" placeholder="Additional remarks (Optional)..." style="background:#f3edff; border:1px solid #e7dff2; color:#150a35;">
                             </div>
                         </div>
 
@@ -492,14 +482,14 @@
                                             {% if log.reason_for_delay %}
                                                 {{ log.reason_for_delay }}
                                             {% else %}
-                                                <i style="color:#6f628b;">Auto-synced from Clinical Delivery (No Delay)</i>
+                                                <i style="color:#6f628b;">Manual documentation entry (No Delay)</i>
                                             {% endif %}
                                         </td>
                                         <td>
                                             {% if log.is_ontime %}
                                                 <span class="status-badge bg-success" style="display: inline-flex; align-items: center; gap: 4px;">
                                                     <svg style="width: 12px; height: 12px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
-                                                    On-Time (Auto)
+                                                    On-Time
                                                 </span>
                                             {% else %}
                                                 <span class="status-badge bg-danger" style="display: inline-flex; align-items: center; gap: 4px;">
@@ -513,7 +503,7 @@
                             {% else %}
                                 <tr>
                                     <td colspan="5" style="text-align: center; color: #6f628b; padding: 20px;">
-                                        No auto-synced clinical records found. Submit a case in Clinical Delivery to auto-populate here.
+                                        No documentation records found. Submit a record using the form above.
                                     </td>
                                 </tr>
                             {% endif %}
@@ -542,20 +532,20 @@
 
                         <label class="input-label" style="margin-top: 10px;">1. Do you routinely assess for the following symptoms?</label>
                         <div class="checkbox-container grid-3" style="border-left: 4px solid #6d3ec4; background: #f3edff;">
-                            <label style="margin:0; font-weight:normal;"><input type="checkbox" required> ASCVD symptoms</label>
-                            <label style="margin:0; font-weight:normal;"><input type="checkbox" required> Visual disturbances</label>
-                            <label style="margin:0; font-weight:normal;"><input type="checkbox" required> Neurological symptoms</label>
-                            <label style="margin:0; font-weight:normal;"><input type="checkbox" required> Renal-related symptoms</label>
-                            <label style="margin:0; font-weight:normal;"><input type="checkbox" required> History of foot problems</label>
-                            <label style="margin:0; font-weight:normal;"><input type="checkbox" required> Sexual dysfunction</label>
+                            <label style="margin:0; font-weight:normal;"><input type="checkbox" name="q1"> ASCVD symptoms</label>
+                            <label style="margin:0; font-weight:normal;"><input type="checkbox" name="q1"> Visual disturbances</label>
+                            <label style="margin:0; font-weight:normal;"><input type="checkbox" name="q1"> Neurological symptoms</label>
+                            <label style="margin:0; font-weight:normal;"><input type="checkbox" name="q1"> Renal-related symptoms</label>
+                            <label style="margin:0; font-weight:normal;"><input type="checkbox" name="q1"> History of foot problems</label>
+                            <label style="margin:0; font-weight:normal;"><input type="checkbox" name="q1"> Sexual dysfunction</label>
                         </div>
 
                         <label class="input-label">2. Are physical assessments consistently performed and documented?</label>
                         <div class="checkbox-container grid-2" style="border-left: 4px solid #6d3ec4; background: #f3edff;">
-                            <label style="margin:0; font-weight:normal;"><input type="checkbox" required> BMI & waist circumference</label>
-                            <label style="margin:0; font-weight:normal;"><input type="checkbox" required> Eye assessment (retinopathy)</label>
-                            <label style="margin:0; font-weight:normal;"><input type="checkbox" required> Foot examination (ulcer risk)</label>
-                            <label style="margin:0; font-weight:normal;"><input type="checkbox" required> Peripheral neuropathy screening</label>
+                            <label style="margin:0; font-weight:normal;"><input type="checkbox" name="q2"> BMI & waist circumference</label>
+                            <label style="margin:0; font-weight:normal;"><input type="checkbox" name="q2"> Eye assessment (retinopathy)</label>
+                            <label style="margin:0; font-weight:normal;"><input type="checkbox" name="q2"> Foot examination (ulcer risk)</label>
+                            <label style="margin:0; font-weight:normal;"><input type="checkbox" name="q2"> Peripheral neuropathy screening</label>
                         </div>
                     </div>
 
@@ -564,25 +554,25 @@
 
                         <label class="input-label" style="margin-top: 10px;">3. Are the underlying risk factors thoroughly documented?</label>
                         <div class="checkbox-container grid-2" style="border-left: 4px solid #8554d4; background: #f3edff;">
-                            <label style="margin:0; font-weight:normal;"><input type="checkbox" required> Family history of metabolic disease</label>
-                            <label style="margin:0; font-weight:normal;"><input type="checkbox" required> Lifestyle risk factors (diet, smoking)</label>
-                            <label style="margin:0; font-weight:normal;"><input type="checkbox" required> Comorbid metabolic risks</label>
-                            <label style="margin:0; font-weight:normal;"><input type="checkbox" required> Relevant obstetric history</label>
+                            <label style="margin:0; font-weight:normal;"><input type="checkbox" name="q3"> Family history of metabolic disease</label>
+                            <label style="margin:0; font-weight:normal;"><input type="checkbox" name="q3"> Lifestyle risk factors (diet, smoking)</label>
+                            <label style="margin:0; font-weight:normal;"><input type="checkbox" name="q3"> Comorbid metabolic risks</label>
+                            <label style="margin:0; font-weight:normal;"><input type="checkbox" name="q3"> Relevant obstetric history</label>
                         </div>
 
                         <div class="grid-2" style="margin-top: 20px;">
                             <div>
                                 <label class="input-label" style="margin-top:0;">4. Review of current medications performed?</label>
                                 <div class="radio-group">
-                                    <label style="font-weight:normal;"><input type="radio" name="q4" required> Yes</label>
-                                    <label style="font-weight:normal;"><input type="radio" name="q4"> No</label>
+                                    <label style="font-weight:normal;"><input type="radio" name="q4" value="Yes" required> Yes</label>
+                                    <label style="font-weight:normal;"><input type="radio" name="q4" value="No"> No</label>
                                 </div>
                             </div>
                             <div>
                                 <label class="input-label" style="margin-top:0;">5. Medication adherence explicitly assessed?</label>
                                 <div class="radio-group">
-                                    <label style="font-weight:normal;"><input type="radio" name="q5" required> Yes</label>
-                                    <label style="font-weight:normal;"><input type="radio" name="q5"> No</label>
+                                    <label style="font-weight:normal;"><input type="radio" name="q5" value="Yes" required> Yes</label>
+                                    <label style="font-weight:normal;"><input type="radio" name="q5" value="No"> No</label>
                                 </div>
                             </div>
                         </div>
@@ -591,15 +581,15 @@
                             <div>
                                 <label class="input-label" style="margin-top:0;">6. Use of complementary/alternative meds assessed?</label>
                                 <div class="radio-group">
-                                    <label style="font-weight:normal;"><input type="radio" name="q6" required> Yes</label>
-                                    <label style="font-weight:normal;"><input type="radio" name="q6"> No</label>
+                                    <label style="font-weight:normal;"><input type="radio" name="q6" value="Yes" required> Yes</label>
+                                    <label style="font-weight:normal;"><input type="radio" name="q6" value="No"> No</label>
                                 </div>
                             </div>
                             <div>
                                 <label class="input-label" style="margin-top:0;">7. Social barriers to DM management evaluated?</label>
                                 <div class="radio-group">
-                                    <label style="font-weight:normal;"><input type="radio" name="q7" required> Yes</label>
-                                    <label style="font-weight:normal;"><input type="radio" name="q7"> No</label>
+                                    <label style="font-weight:normal;"><input type="radio" name="q7" value="Yes" required> Yes</label>
+                                    <label style="font-weight:normal;"><input type="radio" name="q7" value="No"> No</label>
                                 </div>
                             </div>
                         </div>
@@ -611,15 +601,15 @@
                             <table class="staff-table" style="margin-bottom: 0; background:transparent;">
                                 <tr>
                                     <td style="font-weight: 600; padding: 10px 0;">8. Patient referred for dilated retinal exam?</td>
-                                    <td style="padding: 10px 0;"><div class="radio-group" style="margin:0;"><label style="margin:0; font-weight:normal;"><input type="radio" name="q8" required> Yes</label><label style="margin:0; font-weight:normal;"><input type="radio" name="q8"> No</label></div></td>
+                                    <td style="padding: 10px 0;"><div class="radio-group" style="margin:0;"><label style="margin:0; font-weight:normal;"><input type="radio" name="q8" value="Yes" required> Yes</label><label style="margin:0; font-weight:normal;"><input type="radio" name="q8" value="No"> No</label></div></td>
                                 </tr>
                                 <tr>
                                     <td style="font-weight: 600; padding: 10px 0;">9. Medical nutrition therapy (dietitian) arranged?</td>
-                                    <td style="padding: 10px 0;"><div class="radio-group" style="margin:0;"><label style="margin:0; font-weight:normal;"><input type="radio" name="q9" required> Yes</label><label style="margin:0; font-weight:normal;"><input type="radio" name="q9"> No</label></div></td>
+                                    <td style="padding: 10px 0;"><div class="radio-group" style="margin:0;"><label style="margin:0; font-weight:normal;"><input type="radio" name="q9" value="Yes" required> Yes</label><label style="margin:0; font-weight:normal;"><input type="radio" name="q9" value="No"> No</label></div></td>
                                 </tr>
                                 <tr>
                                     <td style="font-weight: 600; padding: 10px 0; border-bottom: none;">10. DSMES education support arranged?</td>
-                                    <td style="padding: 10px 0; border-bottom: none;"><div class="radio-group" style="margin:0;"><label style="margin:0; font-weight:normal;"><input type="radio" name="q10" required> Yes</label><label style="margin:0; font-weight:normal;"><input type="radio" name="q10"> No</label></div></td>
+                                    <td style="padding: 10px 0; border-bottom: none;"><div class="radio-group" style="margin:0;"><label style="margin:0; font-weight:normal;"><input type="radio" name="q10" value="Yes" required> Yes</label><label style="margin:0; font-weight:normal;"><input type="radio" name="q10" value="No"> No</label></div></td>
                                 </tr>
                             </table>
                         </div>
@@ -629,15 +619,15 @@
                             <table class="staff-table" style="margin-bottom: 0; background:transparent;">
                                 <tr>
                                     <td style="font-weight: 600; padding: 10px 0;">11. HbA1c testing scheduled every 3-6 months?</td>
-                                    <td style="padding: 10px 0;"><div class="radio-group" style="margin:0;"><label style="margin:0; font-weight:normal;"><input type="radio" name="q11" required> Yes</label><label style="margin:0; font-weight:normal;"><input type="radio" name="q11"> No</label></div></td>
+                                    <td style="padding: 10px 0;"><div class="radio-group" style="margin:0;"><label style="margin:0; font-weight:normal;"><input type="radio" name="q11" value="Yes" required> Yes</label><label style="margin:0; font-weight:normal;"><input type="radio" name="q11" value="No"> No</label></div></td>
                                 </tr>
                                 <tr>
                                     <td style="font-weight: 600; padding: 10px 0;">12. Annual screening for nephropathy (eGFR/ACR)?</td>
-                                    <td style="padding: 10px 0;"><div class="radio-group" style="margin:0;"><label style="margin:0; font-weight:normal;"><input type="radio" name="q12" required> Yes</label><label style="margin:0; font-weight:normal;"><input type="radio" name="q12"> No</label></div></td>
+                                    <td style="padding: 10px 0;"><div class="radio-group" style="margin:0;"><label style="margin:0; font-weight:normal;"><input type="radio" name="q12" value="Yes" required> Yes</label><label style="margin:0; font-weight:normal;"><input type="radio" name="q12" value="No"> No</label></div></td>
                                 </tr>
                                 <tr>
                                     <td style="font-weight: 600; padding: 10px 0;">13. Baseline ECG for high ASCVD risk patients?</td>
-                                    <td style="padding: 10px 0;"><div class="radio-group" style="margin:0;"><label style="margin:0; font-weight:normal;"><input type="radio" name="q13" required> Yes</label><label style="margin:0; font-weight:normal;"><input type="radio" name="q13"> No</label></div></td>
+                                    <td style="padding: 10px 0;"><div class="radio-group" style="margin:0;"><label style="margin:0; font-weight:normal;"><input type="radio" name="q13" value="Yes" required> Yes</label><label style="margin:0; font-weight:normal;"><input type="radio" name="q13" value="No"> No</label></div></td>
                                 </tr>
                             </table>
                         </div>
@@ -648,31 +638,31 @@
                         <table class="staff-table" style="margin-bottom: 0; background:transparent;">
                             <tr>
                                 <td style="font-weight: 600; width: 70%; padding: 12px 10px;">14. Individualized glycemic targets discussed & agreed upon?</td>
-                                <td style="padding: 12px 10px;"><div class="radio-group" style="margin:0;"><label style="margin:0; font-weight:normal;"><input type="radio" name="q14" required> Yes</label><label style="margin:0; font-weight:normal;"><input type="radio" name="q14"> No</label></div></td>
+                                <td style="padding: 12px 10px;"><div class="radio-group" style="margin:0;"><label style="margin:0; font-weight:normal;"><input type="radio" name="q14" value="Yes" required> Yes</label><label style="margin:0; font-weight:normal;"><input type="radio" name="q14" value="No"> No</label></div></td>
                             </tr>
                             <tr>
                                 <td style="font-weight: 600; padding: 12px 10px;">15. Therapy escalated timely if targets are unmet after 3-6 months?</td>
-                                <td style="padding: 12px 10px;"><div class="radio-group" style="margin:0;"><label style="margin:0; font-weight:normal;"><input type="radio" name="q15" required> Yes</label><label style="margin:0; font-weight:normal;"><input type="radio" name="q15"> No</label></div></td>
+                                <td style="padding: 12px 10px;"><div class="radio-group" style="margin:0;"><label style="margin:0; font-weight:normal;"><input type="radio" name="q15" value="Yes" required> Yes</label><label style="margin:0; font-weight:normal;"><input type="radio" name="q15" value="No"> No</label></div></td>
                             </tr>
                             <tr>
                                 <td style="font-weight: 600; padding: 12px 10px;">16. Hypoglycemic episodes routinely screened during visits?</td>
-                                <td style="padding: 12px 10px;"><div class="radio-group" style="margin:0;"><label style="margin:0; font-weight:normal;"><input type="radio" name="q16" required> Yes</label><label style="margin:0; font-weight:normal;"><input type="radio" name="q16"> No</label></div></td>
+                                <td style="padding: 12px 10px;"><div class="radio-group" style="margin:0;"><label style="margin:0; font-weight:normal;"><input type="radio" name="q16" value="Yes" required> Yes</label><label style="margin:0; font-weight:normal;"><input type="radio" name="q16" value="No"> No</label></div></td>
                             </tr>
                             <tr>
                                 <td style="font-weight: 600; padding: 12px 10px;">17. Blood pressure aggressively optimized to guidelines?</td>
-                                <td style="padding: 12px 10px;"><div class="radio-group" style="margin:0;"><label style="margin:0; font-weight:normal;"><input type="radio" name="q17" required> Yes</label><label style="margin:0; font-weight:normal;"><input type="radio" name="q17"> No</label></div></td>
+                                <td style="padding: 12px 10px;"><div class="radio-group" style="margin:0;"><label style="margin:0; font-weight:normal;"><input type="radio" name="q17" value="Yes" required> Yes</label><label style="margin:0; font-weight:normal;"><input type="radio" name="q17" value="No"> No</label></div></td>
                             </tr>
                             <tr>
                                 <td style="font-weight: 600; padding: 12px 10px;">18. Statin therapy initiated based on CV risk assessment?</td>
-                                <td style="padding: 12px 10px;"><div class="radio-group" style="margin:0;"><label style="margin:0; font-weight:normal;"><input type="radio" name="q18" required> Yes</label><label style="margin:0; font-weight:normal;"><input type="radio" name="q18"> No</label></div></td>
+                                <td style="padding: 12px 10px;"><div class="radio-group" style="margin:0;"><label style="margin:0; font-weight:normal;"><input type="radio" name="q18" value="Yes" required> Yes</label><label style="margin:0; font-weight:normal;"><input type="radio" name="q18" value="No"> No</label></div></td>
                             </tr>
                             <tr>
                                 <td style="font-weight: 600; padding: 12px 10px;">19. Preventive vaccinations (e.g. Influenza) recommended?</td>
-                                <td style="padding: 12px 10px;"><div class="radio-group" style="margin:0;"><label style="margin:0; font-weight:normal;"><input type="radio" name="q19" required> Yes</label><label style="margin:0; font-weight:normal;"><input type="radio" name="q19"> No</label></div></td>
+                                <td style="padding: 12px 10px;"><div class="radio-group" style="margin:0;"><label style="margin:0; font-weight:normal;"><input type="radio" name="q19" value="Yes" required> Yes</label><label style="margin:0; font-weight:normal;"><input type="radio" name="q19" value="No"> No</label></div></td>
                             </tr>
                             <tr>
                                 <td style="font-weight: 600; padding: 12px 10px; border-bottom: none;">20. Overall, I feel confident in managing complex DM cases autonomously.</td>
-                                <td style="padding: 12px 10px; border-bottom: none;"><div class="radio-group" style="margin:0;"><label style="margin:0; font-weight:normal;"><input type="radio" name="q20" required> Yes</label><label style="margin:0; font-weight:normal;"><input type="radio" name="q20"> No</label></div></td>
+                                <td style="padding: 12px 10px; border-bottom: none;"><div class="radio-group" style="margin:0;"><label style="margin:0; font-weight:normal;"><input type="radio" name="q20" value="Yes" required> Yes</label><label style="margin:0; font-weight:normal;"><input type="radio" name="q20" value="No"> No</label></div></td>
                             </tr>
                         </table>
                     </div>
@@ -681,7 +671,7 @@
                         <h4 style="color:#6d3ec4; margin-top:0; margin-bottom: 15px;">Final Declaration & Commitment</h4>
                         <div class="checkbox-container" style="background: white; border: 1px solid #e7dff2; margin-bottom: 0;">
                             <label style="margin:0; font-weight:bold; color:#150a35; display: flex; align-items: flex-start; gap: 10px; cursor: pointer;">
-                                <input type="checkbox" required style="margin-top: 3px;">
+                                <input type="checkbox" name="declaration_confirm" value="Yes" required style="margin-top: 3px;">
                                 <span>I hereby declare that the self-assessment above reflects my actual clinical practice. I have read, understood, and am fully committed to adhering to the National Clinical Practice Guidelines (CPG) 2026.</span>
                             </label>
                         </div>

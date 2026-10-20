@@ -147,7 +147,7 @@
                         <div>
                             <label class="block text-[11px] font-extrabold text-slate-500 uppercase tracking-widest mb-2">Peranan (Role)</label>
                             <div class="relative">
-                                <select name="role" class="w-full appearance-none bg-slate-50 border-2 border-slate-200 rounded-xl px-4 py-3.5 text-sm font-bold text-slate-700 focus:border-rose-500 focus:bg-white focus:ring-4 focus:ring-rose-500/10 outline-none transition-all cursor-pointer">
+                                <select name="role" id="create_role" onchange="updateRoleFields('create')" class="w-full appearance-none bg-slate-50 border-2 border-slate-200 rounded-xl px-4 py-3.5 text-sm font-bold text-slate-700 focus:border-rose-500 focus:bg-white focus:ring-4 focus:ring-rose-500/10 outline-none transition-all cursor-pointer">
                                     <option value="HOD">Ketua Jabatan / Pakar (HOD)</option>
                                     <option value="STAFF">Pegawai Perubatan (MO)</option>
                                     <option value="AUDITOR">Pegawai Audit Kualiti</option>
@@ -157,6 +157,22 @@
                                 </div>
                             </div>
                         </div>
+                        <div>
+                            <label class="block text-[11px] font-extrabold text-slate-500 uppercase tracking-widest mb-2">Skop HOD (HOD Scope)</label>
+                            <div class="relative">
+                                <select name="scope" id="create_scope" onchange="updateScopeFields('create', this.value)" class="w-full appearance-none bg-slate-50 border-2 border-slate-200 rounded-xl px-4 py-3.5 text-sm font-bold text-slate-700 focus:border-rose-500 focus:bg-white focus:ring-4 focus:ring-rose-500/10 outline-none transition-all cursor-pointer">
+                                    {% for value, label in hod_scope_choices %}
+                                    <option value="{{ value }}" {% if value == 'FACILITY' %}selected{% endif %}>{{ label }}</option>
+                                    {% endfor %}
+                                </select>
+                                <div class="absolute inset-y-0 right-4 flex items-center pointer-events-none text-slate-400">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+                                </div>
+                            </div>
+                            <p class="text-[11px] font-semibold text-slate-400 mt-1.5">Hanya terpakai untuk akaun HOD.</p>
+                        </div>
+
+
 
                         <div>
                             <label class="block text-[11px] font-extrabold text-slate-500 uppercase tracking-widest mb-2">Jabatan / Modul</label>
@@ -175,12 +191,12 @@
 
                         <div>
                             <label class="block text-[11px] font-extrabold text-slate-500 uppercase tracking-widest mb-2">Assigned Facility / Clinic</label>
-                            <input type="text" name="facility" value="Klinik Kesihatan Medong" required class="w-full bg-slate-50 border-2 border-slate-200 rounded-xl px-4 py-3.5 text-sm font-semibold text-slate-800 focus:border-rose-500 focus:bg-white focus:ring-4 focus:ring-rose-500/10 outline-none transition-all">
+                            <input type="text" name="facility" id="create_facility" value="Klinik Kesihatan Medong" required class="w-full bg-slate-50 border-2 border-slate-200 rounded-xl px-4 py-3.5 text-sm font-semibold text-slate-800 focus:border-rose-500 focus:bg-white focus:ring-4 focus:ring-rose-500/10 outline-none transition-all">
                         </div>
 
                         <div>
                             <label class="block text-[11px] font-extrabold text-slate-500 uppercase tracking-widest mb-2">State</label>
-                            <input type="text" name="state" value="Sarawak" required class="w-full bg-slate-50 border-2 border-slate-200 rounded-xl px-4 py-3.5 text-sm font-semibold text-slate-800 focus:border-rose-500 focus:bg-white focus:ring-4 focus:ring-rose-500/10 outline-none transition-all">
+                            <input type="text" name="state" id="create_state" value="Sarawak" required class="w-full bg-slate-50 border-2 border-slate-200 rounded-xl px-4 py-3.5 text-sm font-semibold text-slate-800 focus:border-rose-500 focus:bg-white focus:ring-4 focus:ring-rose-500/10 outline-none transition-all">
                         </div>
 
                         <button type="submit" class="w-full flex justify-center gap-2 bg-rose-700 hover:bg-rose-900 text-white font-black text-base py-4 rounded-xl mt-2 transition-all duration-300 shadow-xl shadow-rose-700/20 hover:shadow-rose-900/40 hover:-translate-y-1">
@@ -247,7 +263,7 @@
                                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
                                             </button>
                                             <!-- Edit (Menghantar maklumat fasiliti & negeri ke modal) -->
-                                            <button type="button" onclick="openEditModal('{{ u.user.username }}', '{{ u.role }}', '{{ u.department }}', '{{ u.assigned_facility|default:'Klinik Kesihatan Medong' }}', '{{ u.assigned_state|default:'Sarawak' }}')" class="p-2 text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors" title="Edit Profile & Facility">
+                                            <button type="button" onclick="openEditModal('{{ u.user.username }}', '{{ u.role }}', '{{ u.department }}', '{{ u.assigned_facility|default:'Klinik Kesihatan Medong' }}', '{{ u.assigned_state|default:'Sarawak' }}', '{{ u.hod_scope|default:'FACILITY' }}')" class="p-2 text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors" title="Edit Profile & Facility">
                                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
                                             </button>
                                             <!-- Delete -->
@@ -355,11 +371,20 @@
 
                 <div>
                     <label class="block text-[11px] font-extrabold text-slate-500 uppercase tracking-widest mb-1.5">Role</label>
-                    <select name="role" id="edit_role" class="w-full bg-slate-50 border-2 border-slate-200 rounded-xl px-4 py-2.5 text-sm font-bold text-slate-700 focus:border-rose-500 focus:bg-white outline-none cursor-pointer">
+                    <select name="role" id="edit_role" onchange="updateRoleFields('edit')" class="w-full bg-slate-50 border-2 border-slate-200 rounded-xl px-4 py-2.5 text-sm font-bold text-slate-700 focus:border-rose-500 focus:bg-white outline-none cursor-pointer">
                         <option value="STAFF">Staff (MO / Staff)</option>
                         <option value="HOD">Head of Department (HOD)</option>
                         <option value="HPU_ADMIN">Super Admin (HPU HQ)</option>
                         <option value="AUDITOR">Quality Auditor</option>
+                    </select>
+                </div>
+
+                <div>
+                    <label class="block text-[11px] font-extrabold text-slate-500 uppercase tracking-widest mb-1.5">HOD Scope</label>
+                    <select name="scope" id="edit_scope" onchange="updateScopeFields('edit', this.value)" class="w-full bg-slate-50 border-2 border-slate-200 rounded-xl px-4 py-2.5 text-sm font-bold text-slate-700 focus:border-rose-500 focus:bg-white outline-none cursor-pointer">
+                        {% for value, label in hod_scope_choices %}
+                        <option value="{{ value }}">{{ label }}</option>
+                        {% endfor %}
                     </select>
                 </div>
 
@@ -376,12 +401,12 @@
 
                 <div>
                     <label class="block text-[11px] font-extrabold text-slate-500 uppercase tracking-widest mb-1.5">Assigned Facility / Clinic</label>
-                    <input type="text" name="facility" id="edit_facility" required class="w-full bg-slate-50 border-2 border-slate-200 rounded-xl px-4 py-2.5 text-sm font-bold text-slate-700 focus:border-rose-500 focus:bg-white outline-none">
+                    <input type="text" name="facility" id="edit_facility" class="w-full bg-slate-50 border-2 border-slate-200 rounded-xl px-4 py-2.5 text-sm font-bold text-slate-700 focus:border-rose-500 focus:bg-white outline-none">
                 </div>
 
                 <div>
                     <label class="block text-[11px] font-extrabold text-slate-500 uppercase tracking-widest mb-1.5">Assigned State</label>
-                    <input type="text" name="state" id="edit_state" required class="w-full bg-slate-50 border-2 border-slate-200 rounded-xl px-4 py-2.5 text-sm font-bold text-slate-700 focus:border-rose-500 focus:bg-white outline-none">
+                    <input type="text" name="state" id="edit_state" class="w-full bg-slate-50 border-2 border-slate-200 rounded-xl px-4 py-2.5 text-sm font-bold text-slate-700 focus:border-rose-500 focus:bg-white outline-none">
                 </div>
 
                 <div class="pt-3 flex gap-3">
@@ -403,13 +428,44 @@
         const modal = document.getElementById('editProfileModal');
         const modalContent = document.getElementById('modalContent');
 
-        function openEditModal(username, role, dept, facility, state) {
+        function updateScopeFields(prefix, scope) {
+            const facility = document.getElementById(prefix + '_facility');
+            const state = document.getElementById(prefix + '_state');
+            const role = document.getElementById(prefix + '_role');
+            if (!facility || !state) return;
+
+            const isHod = role && role.value === 'HOD';
+            facility.required = isHod && scope === 'FACILITY';
+            state.required = isHod && (scope === 'FACILITY' || scope === 'STATE');
+            facility.placeholder = scope === 'NATIONAL' ? 'Optional untuk skop kebangsaan' : 'Contoh: Klinik Kesihatan Medong';
+            state.placeholder = scope === 'NATIONAL' ? 'Optional untuk skop kebangsaan' : 'Contoh: Sarawak';
+        }
+
+        function updateRoleFields(prefix) {
+            const role = document.getElementById(prefix + '_role');
+            const scope = document.getElementById(prefix + '_scope');
+            if (!role || !scope) return;
+
+            const isHod = role.value === 'HOD';
+            scope.disabled = !isHod;
+            scope.classList.toggle('opacity-50', !isHod);
+            scope.classList.toggle('cursor-pointer', isHod);
+            scope.classList.toggle('cursor-not-allowed', !isHod);
+            updateScopeFields(prefix, scope.value);
+        }
+
+        const createScope = document.getElementById('create_scope');
+        if (createScope) updateRoleFields('create');
+
+        function openEditModal(username, role, dept, facility, state, scope) {
             document.getElementById('edit_original_username').value = username;
             document.getElementById('edit_username').value = username;
             document.getElementById('edit_role').value = role;
             document.getElementById('edit_department').value = dept;
-            document.getElementById('edit_facility').value = facility || 'Klinik Kesihatan Medong';
-            document.getElementById('edit_state').value = state || 'Sarawak';
+            document.getElementById('edit_facility').value = facility || '';
+            document.getElementById('edit_state').value = state || '';
+            document.getElementById('edit_scope').value = scope || 'FACILITY';
+            updateRoleFields('edit');
 
             modal.classList.remove('hidden');
             setTimeout(() => {

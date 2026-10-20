@@ -69,15 +69,15 @@
         </div>
     </div>
 
-    <!-- 2. POD KANAN ATAS: MONTHLY KPI (Semua elemen selamat di zon kanan) -->
+    <!-- 2. POD KANAN ATAS: MONTHLY KPI (TAJUK DI KANAN, FONT 18PX & IKON 24PX) -->
     <div class="orbital-pod pod-top-right">
         <div>
-            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;">
-                <a href="{% url 'kpi_analytics_insight' %}?state={{ pilihan_negeri }}&clinic={{ pilihan_klinik }}" style="font-size: 15px; font-weight: 900; color: #150a35; text-decoration: none; display: flex; align-items: center; gap: 8px;">
-                    <svg style="width: 19px; height: 19px; color: #6d3ec4;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
+            <div style="display: flex; align-items: center; justify-content: flex-end; gap: 12px; margin-bottom: 14px; margin-left: auto; width: fit-content;">
+                <span style="background: #f0fdf4; color: #15803d; border: 1px solid #bbf7d0; padding: 4px 10px; border-radius: 20px; font-size: 11px; font-weight: 800;">TARGET: 85%</span>
+                <a href="{% url 'kpi_analytics_insight' %}?state={{ pilihan_negeri }}&clinic={{ pilihan_klinik }}" style="font-size: 18px; font-weight: 900; color: #150a35; text-decoration: none; display: flex; align-items: center; gap: 9px; transition: transform 0.2s;" onmouseover="this.style.color='#6d3ec4';" onmouseout="this.style.color='#150a35';">
+                    <svg style="width: 24px; height: 24px; color: #6d3ec4; flex-shrink: 0;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
                     <span>Monthly KPI ↗</span>
                 </a>
-                <span style="background: #f0fdf4; color: #15803d; border: 1px solid #bbf7d0; padding: 4px 10px; border-radius: 20px; font-size: 10px; font-weight: 800;">TARGET: 85%</span>
             </div>
 
             <div style="display: flex; align-items: flex-end; justify-content: space-between; margin-bottom: 12px;">

@@ -808,6 +808,50 @@
             }
         }
     });
+
+    // ==========================================
+    // AUTO SWITCH SUB-MODULE TAB DARI URL PARAMETER (?tab=...)
+    // ==========================================
+    document.addEventListener("DOMContentLoaded", function() {
+        var urlParams = new URLSearchParams(window.location.search);
+        var tabParam = urlParams.get('tab');
+        if (!tabParam) return;
+
+        tabParam = tabParam.toLowerCase().trim();
+
+        // Pemetaan kata kunci tab ke teks tombol tab yang ada di antarmuka
+        var tabKeywords = {
+            'delivery': ['delivery', 'clinical delivery', 'procedure', 'skills'],
+            'cpd': ['cpd', 'knowledge', 'competency'],
+            'policy': ['policy', 'policies', 'sop', 'protocol'],
+            'doc': ['doc', 'documentation', 'audit'],
+            'productivity': ['productivity', 'workload'],
+            'innovation': ['innovation', 'research'],
+            'patient': ['patient', 'satisfaction', 'mypsq'],
+            'stress': ['stress', 'emotional', 'resilience', 'ei'],
+            'teamwork': ['teamwork', 'collaboration', 'kudos', 'peer'],
+            'mentorship': ['mentorship', 'coaching', 'training', 'leadership']
+        };
+
+        var keywords = tabKeywords[tabParam] || [tabParam];
+        var tabButtons = document.querySelectorAll('.tab-btn');
+
+        for (var i = 0; i < tabButtons.length; i++) {
+            var btn = tabButtons[i];
+            var btnText = (btn.textContent || btn.innerText || '').toLowerCase();
+            var onclickAttr = (btn.getAttribute('onclick') || '').toLowerCase();
+
+            var matched = keywords.some(function(kw) {
+                return btnText.includes(kw) || onclickAttr.includes(kw);
+            });
+
+            if (matched) {
+                // Picu klik pada tombol tab tersebut secara otomatis
+                btn.click();
+                break;
+            }
+        }
+    });
 </script>
 
 <style>

@@ -94,7 +94,7 @@
                         <div class="filter-group">
                             <label>Select Staff:</label>
                             <select name="officer" class="filter-select" style="background: white; border-color: #6d3ec4; font-weight: 800;" onchange="this.form.submit()">
-                                {% for doc in senarai_doktor %}<option value="{{ doc }}" {% if doc == pilihan_doktor %}selected{% endif %}>{{ doc }}</option>{% endfor %}
+                                {% for doc in senarai_doktor %}<option value="{{ doc }}" {% if doc == pilihan_doktor %}selected{% endif %}>{{ doc }}</option>{% empty %}<option value="Tiada Pegawai" selected>Tiada Pegawai</option>{% endfor %}
                             </select>
                         </div>
                     </div>

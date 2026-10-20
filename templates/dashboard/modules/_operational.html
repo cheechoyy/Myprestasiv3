@@ -17,7 +17,7 @@
 
                 <div style="display: flex; align-items: center; gap: 8px; background: linear-gradient(135deg, #f3edff 0%, #ffffff 100%); border: 1px solid #d8c7f4; padding: 7px 16px; border-radius: 30px; box-shadow: 0 2px 6px rgba(21, 10, 53, 0.03);">
                     <svg style="width: 14px; height: 14px; color: #6d3ec4; flex-shrink: 0;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5m0 0v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4M12 7v4m-2-2h4"/></svg>
-                    <span style="font-size: 12px; font-weight: 800; color: #150a35;">{{ staff_dept }} Department</span>
+                    <span style="font-size: 12px; font-weight: 800; color: #150a35;">{{ staff_dept_display }} Department</span>
                 </div>
             </div>
 
@@ -85,14 +85,14 @@
                                 <input type="number" name="outpatient_count" placeholder="e.g. 35" required style="background:white; border-color:#d8c7f4;">
                             </div>
                             <div>
-                                <label style="margin-top:0; color:#150a35; font-weight:700;">Inpatient Ward Cases Reviewed <span style="color:red;">*</span></label>
-                                <input type="number" name="ward_count" placeholder="e.g. 12" required style="background:white; border-color:#d8c7f4;">
+                                <label style="margin-top:0; color:#150a35; font-weight:700;">Inpatient Ward Cases Reviewed (Fasa 1)</label>
+                                <input type="number" name="ward_count" placeholder="e.g. 12" style="background:white; border-color:#d8c7f4;">
                             </div>
                         </div>
 
                         <div class="grid-3" style="margin-bottom: 15px;">
                             <div>
-                                <label style="margin-top:0; color:#150a35; font-weight:700;">Procedures / OT Cases Completed</label>
+                                <label style="margin-top:0; color:#150a35; font-weight:700;">Procedures / OT Cases Completed (Fasa 1)</label>
                                 <input type="number" name="procedure_count" placeholder="e.g. 3" style="background:white; border-color:#d8c7f4;">
                             </div>
                             <div>
@@ -110,7 +110,7 @@
                         </div>
 
                         <div style="margin-bottom: 15px;">
-                            <label style="margin-top:0; color:#150a35; font-weight:700;">Operational Bottlenecks / Remarks (Optional)</label>
+                            <label style="margin-top:0; color:#150a35; font-weight:700;">Operational Bottlenecks / Remarks (Fasa 1)</label>
                             <input type="text" name="prod_notes" placeholder="e.g. Clinic delayed due to emergency RED zone resuscitation in ED..." style="background:white; border-color:#d8c7f4;">
                         </div>
 
@@ -214,16 +214,19 @@
                 <hr style="border:0; border-top:1px solid #e7dff2; margin-bottom: 25px;">
 
                 <div id="innov-research" style="display:block;">
-                    <form method="POST">{% csrf_token %}<input type="hidden" name="form_type" value="ops_innov">
+                    <form method="POST">{% csrf_token %}
+                        <input type="hidden" name="form_type" value="ops_innov">
+                        <input type="hidden" name="innovation_type" value="Research">
+                        <input type="hidden" name="category" value="Research">
                         <div class="grid-2" style="margin-bottom: 15px;">
-                            <div><label style="margin-top:0;">Research Title <span style="color:red;">*</span></label><input type="text" placeholder="e.g. Prevalence of..." required style="background:white;"></div>
-                            <div><label style="margin-top:0;">NMRR ID (If applicable)</label><input type="text" placeholder="NMRR-XX-XXX-XXXXX" style="background:white;"></div>
+                            <div><label style="margin-top:0;">Research Title <span style="color:red;">*</span></label><input type="text" name="title" placeholder="e.g. Prevalence of..." required style="background:white;"></div>
+                            <div><label style="margin-top:0;">NMRR ID (If applicable)</label><input type="text" name="nmrr_id" placeholder="NMRR-XX-XXX-XXXXX" style="background:white;"></div>
                         </div>
                         <div style="margin-bottom: 20px;">
                             <label style="margin-top:0;">Role / Status</label>
                             <div class="radio-group" style="margin-top: 10px;">
-                                <label style="margin:0; font-weight:normal;"><input type="radio" name="res_role" checked> Principle Investigator (PI)</label>
-                                <label style="margin:0; font-weight:normal;"><input type="radio" name="res_role"> Co-Investigator</label>
+                                <label style="margin:0; font-weight:normal;"><input type="radio" name="res_role" value="Principle Investigator (PI)" checked> Principle Investigator (PI)</label>
+                                <label style="margin:0; font-weight:normal;"><input type="radio" name="res_role" value="Co-Investigator"> Co-Investigator</label>
                             </div>
                         </div>
                         <button type="submit" class="submit-btn" style="background-color: #6d3ec4; margin-top:0; display: flex; align-items: center; justify-content: center; gap: 8px;">
@@ -246,20 +249,23 @@
                 </div>
 
                 <div id="innov-trials" style="display:none;">
-                    <form method="POST">{% csrf_token %}<input type="hidden" name="form_type" value="ops_innov">
+                    <form method="POST">{% csrf_token %}
+                        <input type="hidden" name="form_type" value="ops_innov">
+                        <input type="hidden" name="innovation_type" value="Clinical Trial">
+                        <input type="hidden" name="category" value="Clinical Trial">
                         <div class="grid-2" style="margin-bottom: 15px;">
-                            <div><label style="margin-top:0;">CRC Log Number <span style="color:red;">*</span></label><input type="text" required style="background:white;"></div>
+                            <div><label style="margin-top:0;">CRC Log Number <span style="color:red;">*</span></label><input type="text" name="title" required style="background:white;"></div>
                             <div><label style="margin-top:0;">Trial Phase</label>
-                                <select style="background:white;"><option>Phase I</option><option>Phase II</option><option>Phase III</option><option>Phase IV (Post-Market)</option></select>
+                                <select name="phase" style="background:white;"><option>Phase I</option><option>Phase II</option><option>Phase III</option><option>Phase IV (Post-Market)</option></select>
                             </div>
                         </div>
                         <div class="grid-2" style="margin-bottom: 20px;">
-                            <div><label style="margin-top:0;">Patient Recruitment Number</label><input type="number" placeholder="Total recruited..." style="background:white;"></div>
+                            <div><label style="margin-top:0;">Patient Recruitment Number</label><input type="number" name="recruitment_count" placeholder="Total recruited..." style="background:white;"></div>
                             <div>
                                 <label style="margin-top:0;">Recruitment Status</label>
                                 <div class="radio-group" style="margin-top: 10px;">
-                                    <label style="margin:0; font-weight:bold; color:#16a34a;"><input type="radio" name="trial_stat" checked> Active</label>
-                                    <label style="margin:0; font-weight:bold; color:#6d3ec4;"><input type="radio" name="trial_stat"> Closed</label>
+                                    <label style="margin:0; font-weight:bold; color:#16a34a;"><input type="radio" name="trial_stat" value="Active" checked> Active</label>
+                                    <label style="margin:0; font-weight:bold; color:#6d3ec4;"><input type="radio" name="trial_stat" value="Closed"> Closed</label>
                                 </div>
                             </div>
                         </div>
@@ -282,21 +288,24 @@
                 </div>
 
                 <div id="innov-tech" style="display:none;">
-                    <form method="POST">{% csrf_token %}<input type="hidden" name="form_type" value="ops_innov">
+                    <form method="POST">{% csrf_token %}
+                        <input type="hidden" name="form_type" value="ops_innov">
+                        <input type="hidden" name="innovation_type" value="Technology Adoption">
+                        <input type="hidden" name="category" value="Technology Adoption">
                         <div style="background: #f3edff; border: 1px solid #e7dff2; padding: 15px; border-radius: 8px; margin-bottom: 20px; font-size: 13px; color: #150a35; display: flex; align-items: center; gap: 8px;">
                             <svg style="width: 18px; height: 18px; color: #6d3ec4; flex-shrink: 0;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
                             <span>Record your involvement in new hospital technologies (e.g. EMR systems, AI diagnostics, new surgical equipment).</span>
                         </div>
                         <div class="grid-2" style="margin-bottom: 15px;">
-                            <div><label style="margin-top:0;">Technology / System Name <span style="color:red;">*</span></label><input type="text" required style="background:white;"></div>
-                            <div><label style="margin-top:0;">Date of Adoption</label><input type="date" style="background:white;"></div>
+                            <div><label style="margin-top:0;">Technology / System Name <span style="color:red;">*</span></label><input type="text" name="title" required style="background:white;"></div>
+                            <div><label style="margin-top:0;">Date of Adoption</label><input type="date" name="adoption_date" style="background:white;"></div>
                         </div>
                         <div style="margin-bottom: 20px;">
                             <label style="margin-top:0;">Proficiency Level</label>
                             <div class="radio-group" style="margin-top: 10px;">
-                                <label style="margin:0; font-weight:normal;"><input type="radio" name="tech_lvl" checked> Amateur (Learning)</label>
-                                <label style="margin:0; font-weight:normal;"><input type="radio" name="tech_lvl"> Intermediate (Independent)</label>
-                                <label style="margin:0; font-weight:normal;"><input type="radio" name="tech_lvl"> Expert (Trainer)</label>
+                                <label style="margin:0; font-weight:normal;"><input type="radio" name="tech_lvl" value="Amateur (Learning)" checked> Amateur (Learning)</label>
+                                <label style="margin:0; font-weight:normal;"><input type="radio" name="tech_lvl" value="Intermediate (Independent)"> Intermediate (Independent)</label>
+                                <label style="margin:0; font-weight:normal;"><input type="radio" name="tech_lvl" value="Expert (Trainer)"> Expert (Trainer)</label>
                             </div>
                         </div>
                         <button type="submit" class="submit-btn" style="background-color: #6d3ec4; margin-top:0; display: flex; align-items: center; justify-content: center; gap: 8px;">
@@ -336,14 +345,17 @@
                 </div>
 
                 <div id="innov-pub" style="display:none;">
-                    <form method="POST">{% csrf_token %}<input type="hidden" name="form_type" value="ops_innov">
+                    <form method="POST">{% csrf_token %}
+                        <input type="hidden" name="form_type" value="ops_innov">
+                        <input type="hidden" name="innovation_type" value="Publication">
+                        <input type="hidden" name="category" value="Publication">
                         <div class="grid-2" style="margin-bottom: 15px;">
-                            <div><label style="margin-top:0;">Name of Journal <span style="color:red;">*</span></label><input type="text" placeholder="e.g. MedJ Malaysia" required style="background:white;"></div>
-                            <div><label style="margin-top:0;">DOI (Digital Object Identifier) <span style="color:red;">*</span></label><input type="text" placeholder="10.xxxx/xxxxx" required style="background:white;"></div>
+                            <div><label style="margin-top:0;">Name of Journal <span style="color:red;">*</span></label><input type="text" name="journal" placeholder="e.g. MedJ Malaysia" required style="background:white;"></div>
+                            <div><label style="margin-top:0;">DOI (Digital Object Identifier) <span style="color:red;">*</span></label><input type="text" name="doi" placeholder="10.xxxx/xxxxx" required style="background:white;"></div>
                         </div>
                         <div class="grid-2" style="margin-bottom: 20px;">
-                            <div><label style="margin-top:0;">Publication Title</label><input type="text" style="background:white;"></div>
-                            <div><label style="margin-top:0;">Year Published</label><input type="number" min="2000" max="2026" value="2026" style="background:white;"></div>
+                            <div><label style="margin-top:0;">Publication Title</label><input type="text" name="title" style="background:white;"></div>
+                            <div><label style="margin-top:0;">Year Published</label><input type="number" name="year" min="2000" max="2026" value="2026" style="background:white;"></div>
                         </div>
                         <button type="submit" class="submit-btn" style="background-color: #6d3ec4; margin-top:0; display: flex; align-items: center; justify-content: center; gap: 8px;">
                             Save Publication Record
