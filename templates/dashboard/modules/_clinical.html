@@ -271,18 +271,26 @@
                 <div class="grid-3" style="margin-bottom: 30px;">
                     <div style="background: #f3edff; border: 1px solid #e7dff2; padding: 15px; border-radius: 8px; border-left: 4px solid #6d3ec4;">
                         <div style="font-size: 11px; color: #150a35; font-weight: bold; text-transform: uppercase;">Total Approved Points</div>
-                        <div style="font-size: 26px; font-weight: 900; color: #150a35;">45 <span style="font-size:12px; color:#6d3ec4; font-weight:normal;">/ 50 Target</span></div>
+                        <div style="font-size: 26px; font-weight: 900; color: #150a35;">{{ cpd_approved_points }} <span style="font-size:12px; color:#6d3ec4; font-weight:normal;">/ {{ cpd_target_points }} Target</span></div>
                     </div>
                     <div style="background: #FFFBEB; border: 1px solid #FEF08A; padding: 15px; border-radius: 8px; border-left: 4px solid #D97706;">
                         <div style="font-size: 11px; color: #b45309; font-weight: bold; text-transform: uppercase;">Pending Verification</div>
-                        <div style="font-size: 26px; font-weight: 900; color: #D97706;">10</div>
+                        <div style="font-size: 26px; font-weight: 900; color: #D97706;">{{ cpd_pending_points }}</div>
+                        <div style="font-size: 11px; color: #b45309; margin-top: 4px;">{{ cpd_pending_count }} claim{{ cpd_pending_count|pluralize }} awaiting review</div>
                     </div>
-                    <div style="background: #F0FDF4; border: 1px solid #BBF7D0; padding: 15px; border-radius: 8px; border-left: 4px solid #16A34A;">
-                        <div style="font-size: 11px; color: #15803d; font-weight: bold; text-transform: uppercase;">Annual Status</div>
-                        <div style="font-size: 18px; font-weight: 900; color: #16A34A; margin-top:8px; display:flex; align-items:center; gap:5px;">
-                            On Track 
-                            <svg style="width: 18px; height: 18px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                    <div style="background: {{ cpd_status_background }}; border: 1px solid {{ cpd_status_border }}; padding: 15px; border-radius: 8px; border-left: 4px solid {{ cpd_status_color }};">
+                        <div style="font-size: 11px; color: {{ cpd_status_color }}; font-weight: bold; text-transform: uppercase;">Annual Status</div>
+                        <div style="font-size: 18px; font-weight: 900; color: {{ cpd_status_color }}; margin-top:8px; display:flex; align-items:center; gap:5px;">
+                            {{ cpd_status_label }}
+                            {% if cpd_on_track %}
+                                <svg style="width: 18px; height: 18px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                            {% elif cpd_claim_count %}
+                                <svg style="width: 18px; height: 18px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                            {% else %}
+                                <svg style="width: 18px; height: 18px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                            {% endif %}
                         </div>
+                        <div style="font-size: 11px; color: {{ cpd_status_color }}; margin-top: 4px;">{{ cpd_claim_count }} claim{{ cpd_claim_count|pluralize }} recorded</div>
                     </div>
                 </div>
 
@@ -331,7 +339,7 @@
                 </div>
 
                 <div style="display: flex; align-items: center; gap: 8px; margin-bottom:15px;">
-                    <h4 style="color:#150a35; margin:0; font-size:14px;">CPD Claim History (2026)</h4>
+                    <h4 style="color:#150a35; margin:0; font-size:14px;">CPD Claim History ({{ cpd_year }})</h4>
                 </div>
                 <div style="overflow-x: auto; border: 1px solid #e2e8f0; border-radius: 8px;">
                     <table class="staff-table">
@@ -345,42 +353,36 @@
                             </tr>
                         </thead>
                         <tbody>
+                            {% for claim in cpd_claims %}
                             <tr>
-                                <td>15 Mar 2026</td>
-                                <td>Advanced Life Support (ALS) Update</td>
-                                <td>A2 - Workshop</td>
-                                <td>10</td>
+                                <td>{{ claim.submitted_at|date:"d M Y" }}</td>
+                                <td>{{ claim.topic }}</td>
+                                <td>{{ claim.category }}</td>
+                                <td>{{ claim.points }}</td>
                                 <td>
+                                    {% if claim.status == 'APPROVED' %}
+                                    <span class="status-badge bg-success" style="display: inline-flex; align-items: center; gap: 4px;">
+                                        <svg style="width: 12px; height: 12px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+                                        {{ claim.get_status_display }}
+                                    </span>
+                                    {% elif claim.status == 'PENDING' %}
                                     <span class="status-badge bg-warning" style="display: inline-flex; align-items: center; gap: 4px;">
                                         <svg style="width: 12px; height: 12px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-                                        Pending Review
+                                        {{ claim.get_status_display }}
                                     </span>
+                                    {% else %}
+                                    <span class="status-badge bg-danger" style="display: inline-flex; align-items: center; gap: 4px;">
+                                        <svg style="width: 12px; height: 12px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                                        {{ claim.get_status_display }}
+                                    </span>
+                                    {% endif %}
                                 </td>
                             </tr>
+                            {% empty %}
                             <tr>
-                                <td>20 Feb 2026</td>
-                                <td>National Healthcare Symposium</td>
-                                <td>A1 - Conference</td>
-                                <td>20</td>
-                                <td>
-                                    <span class="status-badge bg-success" style="display: inline-flex; align-items: center; gap: 4px;">
-                                        <svg style="width: 12px; height: 12px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
-                                        Approved
-                                    </span>
-                                </td>
+                                <td colspan="5" style="text-align: center; color: #6d3ec4; font-style: italic;">No CPD claims recorded yet. Submit your first claim above.</td>
                             </tr>
-                            <tr>
-                                <td>10 Jan 2026</td>
-                                <td>Weekly Hospital CME: Diabetes Management</td>
-                                <td>A3 - CME</td>
-                                <td>5</td>
-                                <td>
-                                    <span class="status-badge bg-success" style="display: inline-flex; align-items: center; gap: 4px;">
-                                        <svg style="width: 12px; height: 12px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
-                                        Approved
-                                    </span>
-                                </td>
-                            </tr>
+                            {% endfor %}
                         </tbody>
                     </table>
                 </div>
@@ -395,15 +397,15 @@
                 <div class="grid-3" style="margin-bottom: 25px;">
                     <div style="background: #f3edff; border: 1px solid #e7dff2; padding: 15px; border-radius: 8px; border-left: 4px solid #6d3ec4;">
                         <div style="font-size: 11px; color: #150a35; font-weight: bold; text-transform: uppercase;">My Total Entries</div>
-                        <div style="font-size: 24px; font-weight: 900; color: #150a35;">142 <span style="font-size:12px; font-weight:normal; color:#6d3ec4;">Records</span></div>
+                        <div style="font-size: 24px; font-weight: 900; color: #150a35;">{{ doc_total }} <span style="font-size:12px; font-weight:normal; color:#6d3ec4;">Record{{ doc_total|pluralize }}</span></div>
                     </div>
                     <div style="background: #F0FDF4; border: 1px solid #BBF7D0; padding: 15px; border-radius: 8px; border-left: 4px solid #16A34A;">
                         <div style="font-size: 11px; color: #15803d; font-weight: bold; text-transform: uppercase;">My On-Time Rate</div>
-                        <div style="font-size: 24px; font-weight: 900; color: #16A34A;">85% <span style="font-size:12px; font-weight:normal; color:#15803d;">Target: >80%</span></div>
+                        <div style="font-size: 24px; font-weight: 900; color: #16A34A;">{{ doc_ontime_rate_display }} <span style="font-size:12px; font-weight:normal; color:#15803d;">Target: &ge;{{ doc_ontime_target_pct }}%</span></div>
                     </div>
                     <div style="background: #FFFBEB; border: 1px solid #FEF08A; padding: 15px; border-radius: 8px; border-left: 4px solid #f59e0b;">
                         <div style="font-size: 11px; color: #b45309; font-weight: bold; text-transform: uppercase;">Average Delay Time</div>
-                        <div style="font-size: 24px; font-weight: 900; color: #d97706;">1h 10m</div>
+                        <div style="font-size: 24px; font-weight: 900; color: #d97706;">{{ doc_avg_delay_display }}</div>
                     </div>
                 </div>
 

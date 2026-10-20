@@ -19,6 +19,7 @@ from django.core.exceptions import ValidationError
 from django.core.serializers.json import DjangoJSONEncoder
 from django.core.validators import FileExtensionValidator
 from django.db import transaction
+from django.db.models import Avg
 from django.utils import timezone
 
 # Import Data Simulasi (Mock Data)
@@ -2637,6 +2638,82 @@ def _save_innovation_project(request):
         )
 
 
+CLINICAL_CPD_TARGET_POINTS = 50
+CLINICAL_DOC_ONTIME_TARGET_PCT = 80
+
+
+def _format_hours_minutes(hours):
+    """Format decimal hours for the clinical documentation summary."""
+    if hours is None:
+        return None
+    total_minutes = max(0, round(float(hours) * 60))
+    return f"{total_minutes // 60}h {total_minutes % 60:02d}m"
+
+
+def _build_clinical_context(user, doc_logs):
+    """Build CPD and documentation values for the staff Clinical tab."""
+    current_year = timezone.localdate().year
+    claims = list(
+        CPDClaim.objects.filter(officer=user, event_date__year=current_year)
+        .order_by('-submitted_at', '-event_date', '-id')
+    )
+    approved_points = sum(
+        claim.points for claim in claims if claim.status == 'APPROVED'
+    )
+    pending_claims = [claim for claim in claims if claim.status == 'PENDING']
+    pending_points = sum(claim.points for claim in pending_claims)
+
+    total_docs = doc_logs.count()
+    ontime_docs = doc_logs.filter(is_ontime=True).count() if total_docs else 0
+    average_delay = (
+        doc_logs.aggregate(average_delay=Avg('delay_hours'))['average_delay']
+        if total_docs else None
+    )
+    ontime_rate = (
+        round((ontime_docs / total_docs) * 100) if total_docs else None
+    )
+
+    if not claims:
+        status_label = 'Not Started'
+        status_color = '#6d3ec4'
+        status_background = '#f3edff'
+        status_border = '#e7dff2'
+    elif approved_points >= CLINICAL_CPD_TARGET_POINTS:
+        status_label = 'On Track'
+        status_color = '#16A34A'
+        status_background = '#F0FDF4'
+        status_border = '#BBF7D0'
+    else:
+        status_label = 'Behind Target'
+        status_color = '#D97706'
+        status_background = '#FFFBEB'
+        status_border = '#FEF08A'
+
+    return {
+        'cpd_year': current_year,
+        'cpd_claims': claims[:20],
+        'cpd_claim_count': len(claims),
+        'cpd_approved_points': approved_points,
+        'cpd_pending_points': pending_points,
+        'cpd_pending_count': len(pending_claims),
+        'cpd_target_points': CLINICAL_CPD_TARGET_POINTS,
+        'cpd_on_track': (
+            bool(claims) and approved_points >= CLINICAL_CPD_TARGET_POINTS
+        ),
+        'cpd_status_label': status_label,
+        'cpd_status_color': status_color,
+        'cpd_status_background': status_background,
+        'cpd_status_border': status_border,
+        'doc_total': total_docs,
+        'doc_ontime_rate': ontime_rate,
+        'doc_ontime_rate_display': (
+            f'{ontime_rate}%' if ontime_rate is not None else 'No data'
+        ),
+        'doc_avg_delay_display': _format_hours_minutes(average_delay) or 'No data',
+        'doc_ontime_target_pct': CLINICAL_DOC_ONTIME_TARGET_PCT,
+    }
+
+
 @login_required(login_url='/login/')
 def staff_dashboard_view(request):
     
@@ -3164,6 +3241,11 @@ def staff_dashboard_view(request):
     doc_logs = DocumentationLog.objects.filter(officer=staff_user).order_by('-created_at') if staff_user else []
     prod_logs = ProductivityLog.objects.filter(officer=staff_user).order_by('-id') if staff_user else []
 
+    clinical_context = (
+        _build_clinical_context(staff_user, doc_logs)
+        if staff_user and section == 'Clinical' else {}
+    )
+
     # Kira metrik ringkasan harian secara automatik dari data DB
     if prod_logs.exists():
         prod_cleared_avg = int(sum([p.patients_cleared for p in prod_logs]) / prod_logs.count())
@@ -3222,6 +3304,7 @@ def staff_dashboard_view(request):
     ).order_by('first_name', 'last_name', 'username')
 
     context = {
+        **clinical_context,
         'section': section,
         'calendar_events_json': calendar_events_json,
         'active_hod_feedbacks': active_hod_feedbacks,
