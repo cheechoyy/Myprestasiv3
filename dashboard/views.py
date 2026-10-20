@@ -16,6 +16,7 @@ import urllib.parse
 import json
 from django.core.serializers.json import DjangoJSONEncoder
 from django.db import transaction
+from django.utils import timezone
 
 # Import Data Simulasi (Mock Data)
 from .mock_data import STATE_CENTERS, MOCK_KLINIK, generate_mock_doctors, MOCK_CUSUM_DATA
@@ -1786,13 +1787,20 @@ def _parse_date_value(value, default=None):
 
 
 def _parse_datetime_value(value, default=None):
-    """Terima format datetime-local (YYYY-MM-DDTHH:MM)."""
+    """Terima format datetime-local dan pulangkan datetime timezone-aware."""
     if not value:
         return default
     try:
-        return datetime.fromisoformat(str(value).replace('Z', '+00:00'))
+        parsed = datetime.fromisoformat(str(value).replace('Z', '+00:00'))
     except (TypeError, ValueError):
         return default
+
+    if timezone.is_naive(parsed):
+        parsed = timezone.make_aware(
+            parsed,
+            timezone.get_default_timezone(),
+        )
+    return parsed
 
 
 def _hash_patient_ref(value):
@@ -1889,6 +1897,9 @@ def staff_dashboard_view(request):
             completed_at = _parse_datetime_value(request.POST.get('completed_at'))
             reason = (request.POST.get('reason') or '').strip()
             remarks = (request.POST.get('reason_remarks') or '').strip()
+            encounter_type = (
+                (request.POST.get('encounter_type') or '').strip()[:50] or None
+            )
 
             if encounter_at and completed_at and completed_at >= encounter_at:
                 delay_hrs = round((completed_at - encounter_at).total_seconds() / 3600.0, 2)
@@ -1899,8 +1910,13 @@ def staff_dashboard_view(request):
             DocumentationLog.objects.create(
                 officer=request.user,
                 patient_id=patient_ref,
+                encounter_type=encounter_type,
+                encounter_at=encounter_at,
+                completed_at=completed_at,
                 delay_hours=delay_hrs,
                 reason_for_delay=reason_text or None,
+                delay_reason_category=(reason[:100] or None),
+                delay_reason_remarks=(remarks or None),
                 is_ontime=(delay_hrs <= 24.0),
             )
             status_label = 'On-Time' if delay_hrs <= 24.0 else 'Delayed'
