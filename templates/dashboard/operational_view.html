@@ -7,7 +7,10 @@
     <title>Operational Evaluation - MyPrestasi</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
     <script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
+    <!-- WARNA CARTA: KOD WARNA SAMA DENGAN STAFF (merah -> kuning -> hijau) -->
+    {% include 'dashboard/components/_hod_chart_colors.html' %}
     <link rel="stylesheet" href="{% static 'css/style.css' %}">
+    {% include 'dashboard/components/_hod_theme.html' %}
 </head>
 <body>
 
@@ -15,6 +18,10 @@
     {% include 'dashboard/components/_hod_sidebar.html' %}
 
     <div class="main-content">
+
+        <!-- TOP NAVIGATION HOD (SERAGAM DENGAN DASHBOARD) -->
+        {% include 'dashboard/components/_hod_header.html' with hide_page_title=True %}
+
 
         <div class="page-header">
             <h1 style="font-size: 24px; margin-bottom: 0; display: flex; align-items: center; gap: 10px;">
