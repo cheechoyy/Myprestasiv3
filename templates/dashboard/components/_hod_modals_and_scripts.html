@@ -328,8 +328,8 @@
         { title: "Operational Output Evaluation Module", category: "Evaluation", keywords: "operational productivity workload efficiency innovation research trials", url: "{% url 'operational_module' %}?dept={{ user.profile.department|default:'FMS' }}" },
         { title: "Interpersonal Excellence Module", category: "Evaluation", keywords: "interpersonal mypsq patient satisfaction stress emotional intelligence teamwork kudos mentorship", url: "{% url 'interpersonal_module' %}?dept={{ user.profile.department|default:'FMS' }}" },
         { title: "Overall Statistics & Facility Drill-Down", category: "Analytics", keywords: "overall statistics active facilities total staff avg performance evaluations", url: "{% url 'overall_analytics' %}?type=facilities&state={{ pilihan_negeri }}&clinic={{ pilihan_klinik }}" },
-        { title: "System Preferences & HOD Settings", category: "Account", keywords: "settings language timezone dark mode preferences", url: "?section=Settings" },
-        { title: "HOD Profile & Account Management", category: "Account", keywords: "profile account user details email password admin id", url: "?section=Profile" }
+        { title: "System Preferences & HOD Settings", category: "Account", keywords: "settings language timezone dark mode preferences", url: "{% url 'hod_dashboard' %}?section=Settings" },
+        { title: "HOD Profile & Account Management", category: "Account", keywords: "profile account user details email password admin id", url: "{% url 'hod_dashboard' %}?section=Profile" }
     ];
 
     function showInlineSuggestions() {

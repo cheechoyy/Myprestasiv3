@@ -1,0 +1,171 @@
+    <!-- SKRIP SINKRONISASI DARK MODE SERTA-MERTA (SAMA DENGAN STAFF) -->
+    <script>
+        (function () {
+            var KEY = 'myprestasi.theme';
+            var root = document.documentElement;
+            var saved = null;
+            try { saved = localStorage.getItem(KEY); } catch (e) {}
+            // Satu sumber sahaja: pilihan dalam localStorage menang (dark ATAU light)
+            if (saved === 'dark') root.classList.add('dark');
+            else if (saved === 'light') root.classList.remove('dark');
+            else if (root.classList.contains('dark')) {
+                // Tiada pilihan tersimpan tetapi server (session) kata gelap: simpan supaya semua halaman HOD ikut
+                try { localStorage.setItem(KEY, 'dark'); } catch (e) {}
+            }
+
+            // --- Latar putih/cerah dalam mod gelap: pastikan tulisan gelap (kekalkan rona asal) ---
+            function parse(c) {
+                var m = String(c).match(/rgba?\(([^)]+)\)/);
+                if (!m) return null;
+                var p = m[1].split(/[\s,\/]+/).filter(Boolean).map(parseFloat);
+                return { r: p[0], g: p[1], b: p[2], a: p.length > 3 ? p[3] : 1 };
+            }
+            function lum(c) {
+                var f = [c.r, c.g, c.b].map(function (v) { v /= 255; return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4); });
+                return 0.2126 * f[0] + 0.7152 * f[1] + 0.0722 * f[2];
+            }
+            function contrast(a, b) { var x = lum(a), y = lum(b); return (Math.max(x, y) + 0.05) / (Math.min(x, y) + 0.05); }
+            // Latar sebenar: naik ke induk sehingga jumpa warna latar yang legap
+            function bgOf(el) {
+                for (; el && el.nodeType === 1; el = el.parentElement) {
+                    var cs = getComputedStyle(el);
+                    var c = parse(cs.backgroundColor);
+                    if (c && c.a >= 0.5) return c;
+                    if (cs.backgroundImage.indexOf('gradient') > -1) { var g = parse(cs.backgroundImage); if (g && g.a >= 0.5) return g; }
+                }
+                return null;
+            }
+            // Teks kelabu/putih -> ungu tua; teks berwarna -> versi gelap warna yang sama
+            function darkVersion(c) {
+                if (Math.max(c.r, c.g, c.b) - Math.min(c.r, c.g, c.b) < 60) return '#150a35';
+                for (var k = 1; k > 0.1; k -= 0.05) {
+                    var d = { r: c.r * k, g: c.g * k, b: c.b * k };
+                    if (lum(d) <= 0.12) return 'rgb(' + Math.round(d.r) + ',' + Math.round(d.g) + ',' + Math.round(d.b) + ')';
+                }
+                return '#150a35';
+            }
+            function hasText(el) {
+                for (var n = el.firstChild; n; n = n.nextSibling) if (n.nodeType === 3 && n.nodeValue.trim()) return true;
+                return false;
+            }
+            function restore() {
+                document.querySelectorAll('[data-hod-ink]').forEach(function (el) {
+                    var o = el.getAttribute('data-hod-ink').split('|');
+                    el.style.removeProperty('color');
+                    if (o[0]) el.style.setProperty('color', o[0], o[1] || '');
+                    el.removeAttribute('data-hod-ink');
+                });
+            }
+            function fixInk() {
+                restore();
+                if (!root.classList.contains('dark') || !document.body) return;
+                document.body.querySelectorAll('*').forEach(function (el) {
+                    if (/^(SCRIPT|STYLE|SVG|svg|INPUT|SELECT|TEXTAREA|OPTION)$/.test(el.tagName) || !hasText(el)) return;
+                    var bg = bgOf(el);
+                    if (!bg || lum(bg) < 0.6) return;                  // hanya latar putih/cerah
+                    var fg = parse(getComputedStyle(el).color);
+                    if (!fg || contrast(fg, bg) >= 3) return;           // sudah cukup jelas
+                    el.setAttribute('data-hod-ink', el.style.getPropertyValue('color') + '|' + el.style.getPropertyPriority('color'));
+                    el.style.setProperty('color', darkVersion(fg), 'important');
+                });
+            }
+            var inkTimer = null;
+            function scheduleInk() { clearTimeout(inkTimer); inkTimer = setTimeout(fixInk, 120); }
+
+            // Tukar tema gelap serta-merta bila suis Dark Mode ditekan
+            document.addEventListener('DOMContentLoaded', function () {
+                scheduleInk();
+                new MutationObserver(scheduleInk).observe(document.body, { childList: true, subtree: true });
+                new MutationObserver(scheduleInk).observe(root, { attributes: true, attributeFilter: ['class'] });
+                window.addEventListener('load', scheduleInk);
+
+                var toggle = document.querySelector('input[name="dark_mode"]');
+                if (!toggle) return;
+                toggle.checked = root.classList.contains('dark');
+                toggle.addEventListener('change', function () {
+                    root.classList.toggle('dark', toggle.checked);
+                    try { localStorage.setItem(KEY, toggle.checked ? 'dark' : 'light'); } catch (e) {}
+                });
+            });
+        })();
+    </script>
+
+    <!-- DARK MODE HOD: TONA LEBIH LEMBUT (TIDAK TERLALU GELAP) + LIPUTAN WARNA SEBARIS YANG TERTINGGAL -->
+    <style>
+        /* Palet gelap lembut - menggantikan nilai --dk-* dalam style.css */
+        html.dark {
+            --dk-bg: #1f1a30; --dk-surface: #2a2340; --dk-surface-2: #342b4e; --dk-border: #4a3f6b;
+            --dk-text: #f0edf8; --dk-muted: #c0b7d9; --dk-accent: #b794ff;
+        }
+        html.dark body {
+            background-image:
+                linear-gradient(rgba(183,148,255,0.06) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(183,148,255,0.06) 1px, transparent 1px);
+        }
+
+        /* Nilai tetap dalam style.css yang tidak guna pembolehubah */
+        html.dark .orbital-pod {
+            background: linear-gradient(145deg, var(--dk-surface) 0%, var(--dk-surface-2) 100%) !important;
+            border-color: var(--dk-border) !important;
+        }
+        html.dark .orbital-center-hub { background: var(--dk-surface) !important; border-color: var(--dk-surface-2) !important; }
+        html.dark .js-plotly-plot .polarsublayer.plotbg path { fill: var(--dk-surface-2) !important; }
+        html.dark .staff-table tr:hover, html.dark .roster-table tr:hover { background-color: #3d3359; }
+        html.dark .slider { background-color: #4a3f6b; }
+        html.dark input::placeholder, html.dark textarea::placeholder { color: #9a90b8; }
+
+        /* Latar ungu cair selepas hover JS (pelayar tukar hex kepada rgb dalam atribut style) */
+        html.dark [style*="background: rgb(243, 237, 255)"], html.dark [style*="background-color: rgb(243, 237, 255)"],
+        html.dark [style*="background: rgb(231, 223, 242)"], html.dark [style*="background-color: rgb(231, 223, 242)"],
+        html.dark [style*="background: #e7dff2"], html.dark [style*="background:#e7dff2"], html.dark [style*="background-color: #e7dff2"],
+        html.dark [style*="background-color:#faf8ff"], html.dark [style*="background-color: #faf8ff"],
+        html.dark [style*="background-color: #f8f9fa"], html.dark [style*="background-color:#f8f9fa"] {
+            background: var(--dk-surface-2) !important;
+        }
+
+        /* Bingkai cair (termasuk sisa tema lama #fecdd3) */
+        html.dark [style*="solid #e7dff2"], html.dark [style*="dashed #e7dff2"],
+        html.dark [style*="solid #d8c7f4"], html.dark [style*="solid #fecdd3"], html.dark [style*="dashed #fecdd3"],
+        html.dark [style*="solid #f1f5f9"], html.dark [style*="solid #e2e8f0"], html.dark [style*="solid #cbd5e1"] {
+            border-color: var(--dk-border) !important;
+        }
+
+        /* Status HIJAU: latar pastel -> tona lut sinar */
+        html.dark [style*="background: #f0fdf4"], html.dark [style*="background:#f0fdf4"],
+        html.dark [style*="background: #dcfce7"], html.dark [style*="background:#dcfce7"],
+        html.dark [style*="background: #d1fae5"], html.dark [style*="background:#d1fae5"],
+        html.dark [style*="background-color: #d1fae5"], html.dark [style*="background-color:#d1fae5"] { background: rgba(34,197,94,0.16) !important; }
+        html.dark [style*="solid #bbf7d0"], html.dark [style*="solid #a7f3d0"] { border-color: rgba(34,197,94,0.45) !important; }
+        html.dark [style*="color:#14532d"], html.dark [style*="color: #14532d"],
+        html.dark [style*="color:#15803d"], html.dark [style*="color: #15803d"] { color: #86efac !important; }
+        html.dark [style*="color:#16a34a"], html.dark [style*="color: #16a34a"] { color: #4ade80 !important; }
+
+        /* Status KUNING/AMBAR */
+        html.dark [style*="background: #fffbeb"], html.dark [style*="background:#fffbeb"],
+        html.dark [style*="background: #fef3c7"], html.dark [style*="background:#fef3c7"],
+        html.dark [style*="background-color: #fef3c7"], html.dark [style*="background-color:#fef3c7"] { background: rgba(245,158,11,0.16) !important; }
+        html.dark [style*="solid #fef3c7"], html.dark [style*="solid #fde68a"] { border-color: rgba(245,158,11,0.45) !important; }
+        html.dark [style*="color:#92400e"], html.dark [style*="color: #92400e"],
+        html.dark [style*="color:#b45309"], html.dark [style*="color: #b45309"] { color: #fcd34d !important; }
+        html.dark [style*="color:#d97706"], html.dark [style*="color: #d97706"] { color: #fbbf24 !important; }
+
+        /* Status MERAH */
+        html.dark [style*="background: #fee2e2"], html.dark [style*="background:#fee2e2"],
+        html.dark [style*="background-color: #fee2e2"], html.dark [style*="background-color:#fee2e2"],
+        html.dark [style*="background: #fff1f2"], html.dark [style*="background:#fff1f2"] { background: rgba(239,68,68,0.16) !important; }
+        html.dark [style*="solid #fecaca" i], html.dark [style*="solid #ffe4e6"] { border-color: rgba(239,68,68,0.45) !important; }
+        html.dark [style*="color:#991b1b"], html.dark [style*="color: #991b1b"],
+        html.dark [style*="color:#881337"], html.dark [style*="color: #881337"],
+        html.dark [style*="color:#b91c1c"], html.dark [style*="color: #b91c1c"],
+        html.dark [style*="color:#dc2626"], html.dark [style*="color: #dc2626"] { color: #fca5a5 !important; }
+
+        /* Teks ungu tua / biru tua sukar dibaca atas latar gelap (kecuali latar ungu pekat) */
+        html.dark [style*="color:#6d3ec4"]:not([style*="background-color:#6d3ec4"]):not([style*="background-color: #6d3ec4"]),
+        html.dark [style*="color: #6d3ec4"]:not([style*="background-color:#6d3ec4"]):not([style*="background-color: #6d3ec4"]) { color: var(--dk-accent) !important; }
+        html.dark svg[style*="color: #6d3ec4"], html.dark svg[style*="color:#6d3ec4"] { color: var(--dk-accent) !important; }
+        html.dark [style*="color:#2b3674"], html.dark [style*="color: #2b3674"] { color: var(--dk-text) !important; }
+        html.dark [style*="color:#a3aed1"], html.dark [style*="color: #a3aed1"] { color: var(--dk-muted) !important; }
+
+        /* Label peratus (warna tier digelapkan oleh JS) - terangkan supaya jelas atas latar gelap */
+        html.dark .pct-label { filter: brightness(2); }
+    </style>

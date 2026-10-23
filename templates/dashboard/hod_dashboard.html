@@ -7,29 +7,11 @@
     <title>HOD Dashboard - MyPrestasi</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
     <script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
+    <!-- WARNA CARTA: KOD WARNA SAMA DENGAN STAFF (merah -> kuning -> hijau) -->
+    {% include 'dashboard/components/_hod_chart_colors.html' %}
     <link rel="stylesheet" href="{% static 'css/style.css' %}">
 
-    <!-- SKRIP SINKRONISASI DARK MODE SERTA-MERTA (SAMA DENGAN STAFF) -->
-    <script>
-        (function () {
-            var KEY = 'myprestasi.theme';
-            var root = document.documentElement;
-            var saved = null;
-            try { saved = localStorage.getItem(KEY); } catch (e) {}
-            if (saved === 'dark') root.classList.add('dark');
-
-            // Tukar tema gelap serta-merta bila suis Dark Mode ditekan
-            document.addEventListener('DOMContentLoaded', function () {
-                var toggle = document.querySelector('input[name="dark_mode"]');
-                if (!toggle) return;
-                toggle.checked = root.classList.contains('dark');
-                toggle.addEventListener('change', function () {
-                    root.classList.toggle('dark', toggle.checked);
-                    try { localStorage.setItem(KEY, toggle.checked ? 'dark' : 'light'); } catch (e) {}
-                });
-            });
-        })();
-    </script>
+    {% include 'dashboard/components/_hod_theme.html' %}
 </head>
 <body>
 

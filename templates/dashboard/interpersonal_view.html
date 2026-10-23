@@ -7,13 +7,20 @@
     <title>Interpersonal Excellence - MyPrestasi</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
     <script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
+    <!-- WARNA CARTA: KOD WARNA SAMA DENGAN STAFF (merah -> kuning -> hijau) -->
+    {% include 'dashboard/components/_hod_chart_colors.html' %}
     <link rel="stylesheet" href="{% static 'css/style.css' %}">
+    {% include 'dashboard/components/_hod_theme.html' %}
 </head>
 <body>
     <!-- 1. SIDEBAR HOD MODULAR -->
     {% include 'dashboard/components/_hod_sidebar.html' %}
 
     <div class="main-content">
+
+        <!-- TOP NAVIGATION HOD (SERAGAM DENGAN DASHBOARD) -->
+        {% include 'dashboard/components/_hod_header.html' with hide_page_title=True %}
+
         <div class="page-header">
             <h1 style="font-size: 24px; margin-bottom: 0; display: flex; align-items: center; gap: 10px;">
                 <svg style="width: 26px; height: 26px; color: #6d3ec4;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"/></svg>
@@ -166,43 +173,43 @@
                                     <div style="display:flex; justify-content:space-between; font-size:11px; font-weight:700; color:#150a35; margin-bottom:2px;">
                                         <span>1. General Satisfaction</span><span>{{ dim_scores.q1 }} / 5.0</span>
                                     </div>
-                                    <div style="background:#f3edff; height:6px; border-radius:10px; overflow:hidden;"><div style="background:#6d3ec4; width: {% widthratio dim_scores.q1 5 100 %}%; height:100%;"></div></div>
+                                    <div style="background:#f3edff; height:6px; border-radius:10px; overflow:hidden;"><div class="pct-fill" style="background:#6d3ec4; width: {% widthratio dim_scores.q1 5 100 %}%; height:100%;"></div></div>
                                 </div>
                                 <div>
                                     <div style="display:flex; justify-content:space-between; font-size:11px; font-weight:700; color:#150a35; margin-bottom:2px;">
                                         <span>2. Technical Quality & Competence</span><span>{{ dim_scores.q2 }} / 5.0</span>
                                     </div>
-                                    <div style="background:#f3edff; height:6px; border-radius:10px; overflow:hidden;"><div style="background:#6d3ec4; width: {% widthratio dim_scores.q2 5 100 %}%; height:100%;"></div></div>
+                                    <div style="background:#f3edff; height:6px; border-radius:10px; overflow:hidden;"><div class="pct-fill" style="background:#6d3ec4; width: {% widthratio dim_scores.q2 5 100 %}%; height:100%;"></div></div>
                                 </div>
                                 <div>
                                     <div style="display:flex; justify-content:space-between; font-size:11px; font-weight:700; color:#150a35; margin-bottom:2px;">
                                         <span>3. Interpersonal Manner</span><span>{{ dim_scores.q3 }} / 5.0</span>
                                     </div>
-                                    <div style="background:#f3edff; height:6px; border-radius:10px; overflow:hidden;"><div style="background:#6d3ec4; width: {% widthratio dim_scores.q3 5 100 %}%; height:100%;"></div></div>
+                                    <div style="background:#f3edff; height:6px; border-radius:10px; overflow:hidden;"><div class="pct-fill" style="background:#6d3ec4; width: {% widthratio dim_scores.q3 5 100 %}%; height:100%;"></div></div>
                                 </div>
                                 <div>
                                     <div style="display:flex; justify-content:space-between; font-size:11px; font-weight:700; color:#150a35; margin-bottom:2px;">
                                         <span>4. Communication Clarity</span><span>{{ dim_scores.q4 }} / 5.0</span>
                                     </div>
-                                    <div style="background:#f3edff; height:6px; border-radius:10px; overflow:hidden;"><div style="background:#6d3ec4; width: {% widthratio dim_scores.q4 5 100 %}%; height:100%;"></div></div>
+                                    <div style="background:#f3edff; height:6px; border-radius:10px; overflow:hidden;"><div class="pct-fill" style="background:#6d3ec4; width: {% widthratio dim_scores.q4 5 100 %}%; height:100%;"></div></div>
                                 </div>
                                 <div>
                                     <div style="display:flex; justify-content:space-between; font-size:11px; font-weight:700; color:#150a35; margin-bottom:2px;">
                                         <span>5. Financial Value</span><span>{{ dim_scores.q5 }} / 5.0</span>
                                     </div>
-                                    <div style="background:#f3edff; height:6px; border-radius:10px; overflow:hidden;"><div style="background:#6d3ec4; width: {% widthratio dim_scores.q5 5 100 %}%; height:100%;"></div></div>
+                                    <div style="background:#f3edff; height:6px; border-radius:10px; overflow:hidden;"><div class="pct-fill" style="background:#6d3ec4; width: {% widthratio dim_scores.q5 5 100 %}%; height:100%;"></div></div>
                                 </div>
                                 <div>
                                     <div style="display:flex; justify-content:space-between; font-size:11px; font-weight:700; color:#150a35; margin-bottom:2px;">
                                         <span>6. Time Spent with Patient</span><span>{{ dim_scores.q6 }} / 5.0</span>
                                     </div>
-                                    <div style="background:#f3edff; height:6px; border-radius:10px; overflow:hidden;"><div style="background:#6d3ec4; width: {% widthratio dim_scores.q6 5 100 %}%; height:100%;"></div></div>
+                                    <div style="background:#f3edff; height:6px; border-radius:10px; overflow:hidden;"><div class="pct-fill" style="background:#6d3ec4; width: {% widthratio dim_scores.q6 5 100 %}%; height:100%;"></div></div>
                                 </div>
                                 <div>
                                     <div style="display:flex; justify-content:space-between; font-size:11px; font-weight:700; color:#150a35; margin-bottom:2px;">
                                         <span>7. Accessibility & Wait Time</span><span>{{ dim_scores.q7 }} / 5.0</span>
                                     </div>
-                                    <div style="background:#f3edff; height:6px; border-radius:10px; overflow:hidden;"><div style="background:#6d3ec4; width: {% widthratio dim_scores.q7 5 100 %}%; height:100%;"></div></div>
+                                    <div style="background:#f3edff; height:6px; border-radius:10px; overflow:hidden;"><div class="pct-fill" style="background:#6d3ec4; width: {% widthratio dim_scores.q7 5 100 %}%; height:100%;"></div></div>
                                 </div>
                             </div>
 

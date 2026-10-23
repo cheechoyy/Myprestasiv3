@@ -1,0 +1,319 @@
+<!-- WARNA GRADIENT MERAH -> KUNING -> HIJAU UNTUK CARTA HOD (KOD WARNA SAMA DENGAN STAFF)
+     Hanya warna dipaparkan yang diubah; data & nilai daripada views.py tidak disentuh.
+     Ambang: skor 0-100 ikut tier PRI dalam services.py (70 / 85); gauge ikut jalur sedia ada;
+     titik trend dibanding dengan nilai sebelumnya (naik hijau, turun merah).
+     Carta HbA1c: nilai rendah lebih baik, jadi arah warna diterbalikkan.
+     Sunburst rangka kerja & carta kategori (Kudos Log) kekal dengan warna asal.
+     Mesti di-include SELEPAS skrip plotly.js dan SEBELUM carta dipaparkan. -->
+<script>
+    (function () {
+        // Warna terang (bukan pastel) - sama dengan staff
+        var RED = '#ff0000', YELLOW = '#FFD700', GREEN = '#008000', NEUTRAL = '#6d3ec4';
+        var NS = 'http://www.w3.org/2000/svg';
+
+        // --- Utiliti interpolasi warna (sama dengan staff) ---
+        function hexToRgb(h) { h = h.replace('#', ''); return [parseInt(h.substr(0, 2), 16), parseInt(h.substr(2, 2), 16), parseInt(h.substr(4, 2), 16)]; }
+        function rgbToHex(c) { return '#' + c.map(function (x) { return ('0' + Math.round(x).toString(16)).slice(-2); }).join(''); }
+        function colorAt(stops, v) {
+            if (v <= stops[0][0]) return stops[0][1];
+            for (var i = 1; i < stops.length; i++) {
+                if (v <= stops[i][0]) {
+                    var t = (v - stops[i - 1][0]) / (stops[i][0] - stops[i - 1][0]);
+                    var a = hexToRgb(stops[i - 1][1]), b = hexToRgb(stops[i][1]);
+                    return rgbToHex([0, 1, 2].map(function (k) { return a[k] + (b[k] - a[k]) * t; }));
+                }
+            }
+            return stops[stops.length - 1][1];
+        }
+        function darken(hex, f) { return rgbToHex(hexToRgb(hex).map(function (x) { return x * f; })); }
+
+        // Tier PRI tepat (services.py): <70 merah, 70-84 kuning, >=85 hijau
+        function tierColor(v) { return v >= 85 ? GREEN : (v >= 70 ? YELLOW : RED); }
+        // Gradient seimbang: merah, kuning & hijau mendapat bahagian sama rata
+        var SCORE_STOPS = [[0, RED], [50, YELLOW], [100, GREEN]];
+
+        // Senarai nombor biasa sahaja (data base64 dibiarkan)
+        function nums(a) { return Array.isArray(a) && a.length && a.every(function (v) { return typeof v === 'number'; }) ? a : null; }
+        function isScore(a) { return !!a && a.every(function (v) { return v >= 0 && v <= 100; }); }
+
+        // --- Gradient SVG linear (userSpaceOnUse supaya garis mendatar pun tetap berwarna) ---
+        function linearGrad(svg, gid, x1, y1, x2, y2, opacity, invert) {
+            var defs = svg.querySelector('defs') || svg.insertBefore(document.createElementNS(NS, 'defs'), svg.firstChild);
+            var g = svg.querySelector('[id="' + gid + '"]');
+            if (!g) {
+                g = document.createElementNS(NS, 'linearGradient');
+                g.setAttribute('id', gid);
+                g.setAttribute('gradientUnits', 'userSpaceOnUse');
+                SCORE_STOPS.forEach(function (st) {
+                    var s = document.createElementNS(NS, 'stop');
+                    s.setAttribute('offset', (invert ? 100 - st[0] : st[0]) / 100);
+                    s.setAttribute('stop-color', st[1]); s.setAttribute('stop-opacity', opacity);
+                    g.appendChild(s);
+                });
+                if (invert) Array.prototype.slice.call(g.childNodes).reverse().forEach(function (n) { g.appendChild(n); });
+                defs.appendChild(g);
+            }
+            g.setAttribute('x1', x1); g.setAttribute('y1', y1); g.setAttribute('x2', x2); g.setAttribute('y2', y2);
+            return 'url(#' + gid + ')';
+        }
+
+        // --- Garis & kawasan trend: bawah merah -> atas hijau (terbalik untuk HbA1c) ---
+        function applyTrendGradient(gd, idx, invert) {
+            var svg = gd.querySelector('svg.main-svg');
+            var tr = gd.querySelectorAll('.scatterlayer .trace')[idx];
+            var size = gd._fullLayout && gd._fullLayout._size;
+            if (!svg || !tr || !size) return;
+            var line = tr.querySelector('path.js-line');
+            var fill = tr.querySelector('path.js-fill');
+            var id = (gd.id || 'trend') + '-ryg-' + idx;
+            if (line) line.style.stroke = linearGrad(svg, id + '-line', 0, size.h, 0, 0, 1, invert);
+            if (fill) { fill.style.fill = linearGrad(svg, id + '-fill', 0, size.h, 0, 0, 0.45, invert); fill.style.fillOpacity = '1'; }
+        }
+
+        // --- Bar skor 0-100: gradient penuh 0-100% seperti progress bar staff ---
+        function applyBarGradient(gd, idx, horiz) {
+            var svg = gd.querySelector('svg.main-svg');
+            var tr = gd.querySelectorAll('.barlayer .trace')[idx];
+            var fl = gd._fullLayout;
+            if (!svg || !tr || !fl) return;
+            var ax = horiz ? fl.xaxis : fl.yaxis;
+            if (!ax || !ax.l2p) return;
+            var p0 = ax.l2p(0), p100 = ax.l2p(100);
+            var url = horiz ? linearGrad(svg, (gd.id || 'bar') + '-bar-' + idx, p0, 0, p100, 0, 1, false)
+                            : linearGrad(svg, (gd.id || 'bar') + '-bar-' + idx, 0, p0, 0, p100, 1, false);
+            tr.querySelectorAll('.point path').forEach(function (p) { p.style.fill = url; p.style.fillOpacity = '1'; });
+        }
+
+        // --- Gradient jejari (radar & polar): pusat (skor 0) merah -> luar (skor 100) hijau (sama dengan staff) ---
+        function applyRadarGradient(gd, selector) {
+            var svg = gd.querySelector('svg.main-svg');
+            var bg = gd.querySelector('.polarsublayer.plotbg path');
+            if (!svg || !bg) return;
+            var defs = svg.querySelector('defs') || svg.insertBefore(document.createElementNS(NS, 'defs'), svg.firstChild);
+            var rect = bg.getBoundingClientRect();
+            var cx = rect.left + rect.width / 2, cy = rect.top + rect.height / 2, r = rect.width / 2;
+            var range = (gd.layout && gd.layout.polar && gd.layout.polar.radialaxis && gd.layout.polar.radialaxis.range) || [0, 100];
+            var maxV = range[1] || 100;
+            var stops = SCORE_STOPS.map(function (st) { return [st[0] / maxV, st[1]]; });
+
+            function paint(el, key, prop, opacity) {
+                if (!el || !el.getScreenCTM()) return;
+                var m = el.getScreenCTM().inverse();
+                var pt = svg.createSVGPoint(); pt.x = cx; pt.y = cy;
+                var c = pt.matrixTransform(m);
+                var gid = (gd.id || 'radar') + '-' + key;
+                var g = svg.querySelector('[id="' + gid + '"]');
+                if (!g) {
+                    g = document.createElementNS(NS, 'radialGradient');
+                    g.setAttribute('id', gid);
+                    g.setAttribute('gradientUnits', 'userSpaceOnUse');
+                    stops.forEach(function (st) {
+                        var e = document.createElementNS(NS, 'stop');
+                        e.setAttribute('offset', Math.min(1, Math.max(0, st[0])));
+                        e.setAttribute('stop-color', st[1]);
+                        e.setAttribute('stop-opacity', opacity);
+                        g.appendChild(e);
+                    });
+                    defs.appendChild(g);
+                }
+                g.setAttribute('cx', c.x); g.setAttribute('cy', c.y);
+                g.setAttribute('r', r * Math.hypot(m.a, m.b));
+                el.style[prop] = 'url(#' + gid + ')';
+                el.style[prop + 'Opacity'] = '1';   // Plotly menetapkan kelegapan sendiri; biar gradient yang mengawal
+            }
+            if (selector) {
+                // Polar bar (rose): setiap kelopak guna gradient yang sama
+                gd.querySelectorAll(selector).forEach(function (el) { paint(el, 'petal', 'fill', 0.9); });
+            } else {
+                paint(gd.querySelector('.polarlayer path.js-fill, path.js-fill'), 'rfill', 'fill', 0.8);
+                paint(gd.querySelector('.polarlayer path.js-line, path.js-line'), 'rline', 'stroke', 1);
+            }
+        }
+
+        function yTitle(layout) {
+            var t = layout && layout.yaxis && layout.yaxis.title;
+            return String((t && (t.text || t)) || '');
+        }
+
+        function recolor(data, layout) {
+            var post = [];
+            if (!Array.isArray(data)) return post;
+            var lowerBetter = /hba1c/i.test(yTitle(layout));   // HbA1c: lebih rendah lebih baik
+            var scatterIdx = -1, barIdx = -1;
+
+            data.forEach(function (t) {
+                if (!t) return;
+                var type = t.type || 'scatter';
+                if (type === 'scatter') scatterIdx++;
+                if (type === 'bar') barIdx++;
+                var si = scatterIdx, bi = barIdx;
+
+                // 1. Donut (kategori): label sedia ada menyatakan (Red) / (Yellow) / (Green)
+                if (type === 'pie' && Array.isArray(t.labels)) {
+                    t.marker = t.marker || {};
+                    t.marker.colors = t.labels.map(function (l) {
+                        l = String(l);
+                        return l.indexOf('(Red)') > -1 ? RED : l.indexOf('(Yellow)') > -1 ? YELLOW : l.indexOf('(Green)') > -1 ? GREEN : NEUTRAL;
+                    });
+                    t.marker.line = { color: '#ffffff', width: 2 };
+                }
+
+                // 2. Trend (kawasan / garis utama): gradient garis, titik hijau bila bertambah baik / merah bila merosot
+                else if (type === 'scatter' && String(t.mode || '').indexOf('lines') > -1 && !(t.line && t.line.dash) && !(t.opacity < 0.5)) {
+                    var ys = nums(t.y);
+                    t.marker = t.marker || {};
+                    if (ys) {
+                        t.marker.color = ys.map(function (v, i) {
+                            if (i === 0) return NEUTRAL;
+                            var up = lowerBetter ? v < ys[i - 1] : v > ys[i - 1];
+                            var down = lowerBetter ? v > ys[i - 1] : v < ys[i - 1];
+                            return up ? GREEN : (down ? RED : YELLOW);
+                        });
+                    }
+                    t.marker.size = Math.max(t.marker.size || 0, 10);
+                    t.marker.line = { color: '#ffffff', width: 2 };
+                    t.line = Object.assign({}, t.line, { color: YELLOW });       // warna sandaran jika SVG gradient gagal
+                    if (t.fill === 'tozeroy') t.fillcolor = 'rgba(255, 215, 0, 0.45)';
+                    if (t.error_y) t.error_y = Object.assign({}, t.error_y, { color: '#94a3b8' });
+                    post.push(function (gd) { applyTrendGradient(gd, si, lowerBetter); });
+                }
+
+                // 3. Lollipop / titik skor (0-100) pada paksi X: titik ikut tier
+                else if (type === 'scatter' && String(t.mode || '').indexOf('lines') === -1 && isScore(nums(t.x)) && !nums(t.y)) {
+                    t.marker = t.marker || {};
+                    t.marker.color = t.x.map(tierColor);
+                    t.marker.line = { color: '#ffffff', width: 2 };
+                    if (layout && Array.isArray(layout.shapes)) {
+                        layout.shapes.forEach(function (s) {
+                            if (s && s.type === 'line' && s.y0 === s.y1 && typeof s.x1 === 'number') {
+                                s.line = Object.assign({}, s.line, { color: tierColor(s.x1) });
+                            }
+                        });
+                    }
+                }
+
+                // 4. Radar skor (0-100): titik ikut tier, kawasan gradient jejari (sama dengan staff)
+                else if (type === 'scatterpolar' && Array.isArray(t.r)) {
+                    t.marker = t.marker || {};
+                    t.marker.color = t.r.map(tierColor);
+                    t.marker.size = 12;
+                    t.marker.line = { color: '#ffffff', width: 2 };
+                    t.line = Object.assign({}, t.line, { color: NEUTRAL });
+                    t.fillcolor = 'rgba(109, 62, 196, 0.15)';
+                    post.push(function (gd) { applyRadarGradient(gd); });
+                }
+
+                // 5. Polar bar (rose) skor 0-100: kelopak gradient jejari
+                else if (type === 'barpolar' && nums(t.r)) {
+                    t.marker = t.marker || {};
+                    t.marker.color = t.r.map(tierColor);   // warna sandaran
+                    t.marker.line = { color: '#ffffff', width: 2 };
+                    t.opacity = 1;
+                    post.push(function (gd) { applyRadarGradient(gd, '.barlayer .point path, .polarlayer .point path'); });
+                }
+
+                // 6. Bar
+                else if (type === 'bar') {
+                    var name = String(t.name || '');
+                    t.marker = t.marker || {};
+                    // Status dokumentasi: tepat masa hijau, lewat kuning, tertunggak merah
+                    if (/^On-time/i.test(name)) { t.marker.color = GREEN; t.textfont = Object.assign({}, t.textfont, { color: '#ffffff' }); }
+                    else if (/^Delayed/i.test(name)) { t.marker.color = YELLOW; t.textfont = Object.assign({}, t.textfont, { color: '#150a35' }); }
+                    else if (/^Overdue/i.test(name)) { t.marker.color = RED; t.textfont = Object.assign({}, t.textfont, { color: '#ffffff' }); }
+                    else if (/No Data/i.test(name)) { /* kekal kelabu */ }
+                    else {
+                        var horiz = t.orientation === 'h';
+                        var vals = nums(horiz ? t.x : t.y);
+                        if (isScore(vals)) {
+                            t.marker.color = vals.map(tierColor);   // warna sandaran
+                            t.marker.line = { color: '#ffffff', width: 1 };
+                            t.textfont = Object.assign({}, t.textfont, { color: '#150a35' });
+                            post.push(function (gd) { applyBarGradient(gd, bi, horiz); });
+                        }
+                    }
+                }
+
+                // 7. Heatmap skor 0-100: skala merah -> kuning -> hijau
+                else if (type === 'heatmap') {
+                    t.colorscale = SCORE_STOPS.map(function (st) { return [st[0] / 100, st[1]]; });
+                    t.zmin = 0; t.zmax = 100;
+                    t.textfont = Object.assign({}, t.textfont, { color: '#150a35' });
+                }
+
+                // 8. Gauge: jalur gradient lancar merah -> kuning -> hijau, nombor ikut jalur sedia ada
+                else if (type === 'indicator' && t.gauge && Array.isArray(t.gauge.steps) && t.gauge.steps.length >= 3) {
+                    var st = t.gauge.steps;
+                    var lo = st[0].range[0], hi = st[st.length - 1].range[1];
+                    var bLow = st[1].range[0], bHigh = st[st.length - 1].range[0];   // sempadan jalur sedia ada
+                    var GAUGE_STOPS = [[lo, RED], [(lo + hi) / 2, YELLOW], [hi, GREEN]];
+                    var N = 60, steps = [];
+                    for (var i = 0; i < N; i++) {
+                        var x0 = lo + (hi - lo) * i / N, x1 = lo + (hi - lo) * (i + 1) / N;
+                        var rgb = hexToRgb(colorAt(GAUGE_STOPS, (x0 + x1) / 2));
+                        steps.push({ range: [x0, Math.min(hi, x1 + (hi - lo) / N * 0.6)], color: 'rgb(' + rgb.join(',') + ')', line: { width: 0 } });
+                    }
+                    t.gauge.steps = steps;
+                    var cur = t.value >= bHigh ? GREEN : (t.value >= bLow ? YELLOW : RED);
+                    t.gauge.bar = Object.assign({}, t.gauge.bar, { color: '#150a35' });
+                    t.number = Object.assign({}, t.number, { font: Object.assign({}, (t.number || {}).font, { color: darken(cur, 0.8) }) });
+                    if (t.gauge.threshold && t.gauge.threshold.line) t.gauge.threshold.line.color = '#6d3ec4';
+                    if (t.gauge.axis) {
+                        t.gauge.axis.tickcolor = '#94a3b8';
+                        t.gauge.axis.tickfont = Object.assign({}, t.gauge.axis.tickfont, { color: '#64748b' });
+                    }
+                    t.gauge.bordercolor = '#e2e8f0';
+                }
+            });
+
+            // Latar & grid carta: tona neutral (sama dengan staff)
+            if (layout) {
+                if (layout.polar) {
+                    layout.polar.bgcolor = '#faf8ff';
+                    ['radialaxis', 'angularaxis'].forEach(function (k) {
+                        var ax = layout.polar[k];
+                        if (!ax) return;
+                        ax.gridcolor = '#e7dff2';
+                        if (ax.linecolor) ax.linecolor = '#e7dff2';
+                        ax.tickfont = Object.assign({}, ax.tickfont, { color: '#150a35' });
+                    });
+                }
+                if (layout.yaxis && layout.yaxis.gridcolor) layout.yaxis.gridcolor = '#e2e8f0';
+            }
+            return post;
+        }
+
+        // --- PROGRESS BAR & LABEL PERATUS: gradient yang sama dengan carta (sama dengan staff) ---
+        function styleProgressBars() {
+            var GRADIENT = 'linear-gradient(90deg, ' + SCORE_STOPS.map(function (st) { return st[1] + ' ' + st[0] + '%'; }).join(', ') + ')';
+            document.querySelectorAll('.progress-bar, .pct-fill').forEach(function (bar) {
+                var pct = parseFloat(bar.style.width);
+                if (!(pct > 0)) return;
+                bar.style.background = GRADIENT;
+                bar.style.backgroundSize = (10000 / pct) + '% 100%';
+                bar.style.backgroundRepeat = 'no-repeat';
+            });
+            document.querySelectorAll('.pct-label').forEach(function (el) {
+                var m = el.textContent.match(/(\d+(?:\.\d+)?)\s*%/);
+                if (m) el.style.color = darken(tierColor(parseFloat(m[1])), 0.75);
+            });
+        }
+        if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', styleProgressBars);
+        else styleProgressBars();
+
+        if (typeof Plotly === 'undefined' || !Plotly.newPlot) return;
+        var originalNewPlot = Plotly.newPlot;
+        Plotly.newPlot = function (el, data, layout, config) {
+            var post = [];
+            try { post = recolor(data, layout); } catch (e) { /* jika gagal, carta dipaparkan dengan warna asal */ }
+            var result = originalNewPlot.apply(this, arguments);
+            if (post.length && result && result.then) {
+                result.then(function (gd) {
+                    var run = function () { post.forEach(function (fn) { try { fn(gd); } catch (e) {} }); };
+                    run();
+                    if (gd && gd.on) gd.on('plotly_afterplot', run);   // kekalkan gradient selepas saiz semula
+                });
+            }
+            return result;
+        };
+    })();
+</script>
