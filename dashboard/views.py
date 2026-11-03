@@ -2313,6 +2313,27 @@ def _save_clinical_procedure(request, form_type, profile):
             request.POST.get('ldl_mmol_l'),
             'LDL Cholesterol',
         )
+
+        # Renal Profile & Complication Screening Data
+        serum_creatinine = _optional_float(request.POST.get('serum_creatinine'), 'Serum Creatinine')
+        egfr = _optional_float(request.POST.get('egfr'), 'eGFR')
+        ckd_stage = _optional_text(request.POST.get('ckd_stage'), max_length=30)
+        urine_microalbumin = _optional_text(request.POST.get('urine_microalbumin'), max_length=30)
+
+        visual_acuity = _optional_text(request.POST.get('visual_acuity'), max_length=50)
+        fundus_result = _optional_text(request.POST.get('fundus_result'), max_length=50)
+        fundus_date = _optional_date(request.POST.get('fundus_date'), 'Fundus Date')
+        foot_exam_risk = _optional_text(request.POST.get('foot_exam_risk'), max_length=50)
+        foot_exam_date = _optional_date(request.POST.get('foot_exam_date'), 'Foot Exam Date')
+        ecg_result = _optional_text(request.POST.get('ecg_result'), max_length=50)
+        ecg_date = _optional_date(request.POST.get('ecg_date'), 'ECG Date')
+        cxr_result = _optional_text(request.POST.get('cxr_result'), max_length=50)
+        cxr_date = _optional_date(request.POST.get('cxr_date'), 'CXR Date')
+        fatty_liver = _optional_text(request.POST.get('fatty_liver'), max_length=30)
+        fatty_liver_date = _optional_date(request.POST.get('fatty_liver_date'), 'Fatty Liver Date')
+        ed_screening = _optional_text(request.POST.get('ed_screening'), max_length=30)
+        dietitian_referral_date = _optional_date(request.POST.get('dietitian_referral_date'), 'Dietitian Referral Date')
+
         target_raw = (request.POST.get('target') or '').strip()
         if target_raw not in ('Yes', 'No'):
             raise ValidationError('Sila pilih status pencapaian target.')
@@ -2324,7 +2345,7 @@ def _save_clinical_procedure(request, form_type, profile):
         nyha_class = None
 
     with transaction.atomic():
-        ProcedureLog.objects.create(
+        proc_obj = ProcedureLog.objects.create(
             officer=request.user,
             patient_ref=None,
             clinical_domain=clinical_domain,
@@ -2342,10 +2363,49 @@ def _save_clinical_procedure(request, form_type, profile):
             diastolic_bp=diastolic_bp,
             hba1c_percent=hba1c_percent,
             ldl_mmol_l=ldl_mmol_l,
+            serum_creatinine=serum_creatinine,
+            egfr=egfr,
+            ckd_stage=ckd_stage,
+            urine_microalbumin=urine_microalbumin,
+            visual_acuity=visual_acuity,
+            fundus_result=fundus_result,
+            fundus_date=fundus_date,
+            foot_exam_risk=foot_exam_risk,
+            foot_exam_date=foot_exam_date,
+            ecg_result=ecg_result,
+            ecg_date=ecg_date,
+            cxr_result=cxr_result,
+            cxr_date=cxr_date,
+            fatty_liver=fatty_liver,
+            fatty_liver_date=fatty_liver_date,
+            ed_screening=ed_screening,
+            dietitian_referral_date=dietitian_referral_date,
             is_successful=True,
             complication_occurred=False,
             target_achieved=target_achieved,
             score=score_val,
+        )
+
+        # PENJANAAN TIKET DOKUMENTASI AUTOMATIK (SLA 4 JAM BERMULA)
+        pt_mrn = (request.POST.get('patient_id') or '').strip()
+        pt_name = (request.POST.get('patient_name') or '').strip()
+        if pt_mrn and pt_name:
+            patient_display = f"{pt_mrn} ({pt_name})"
+        elif pt_mrn:
+            patient_display = pt_mrn
+        else:
+            patient_display = f"CASE-{proc_obj.id:04d}"
+
+        DocumentationLog.objects.create(
+            officer=request.user,
+            procedure=proc_obj,
+            patient_id=patient_display[:100],
+            encounter_type=f"{proc_name} [{clinical_domain}]",
+            encounter_at=timezone.now(),
+            completed_at=None,
+            delay_hours=0.0,
+            is_completed=False,
+            is_ontime=True
         )
 
     return clinical_domain, proc_name, score_val, procedure_date
@@ -2676,14 +2736,46 @@ def _build_clinical_context(user, doc_logs):
     pending_claims = [claim for claim in claims if claim.status == 'PENDING']
     pending_points = sum(claim.points for claim in pending_claims)
 
-    total_docs = doc_logs.count()
-    ontime_docs = doc_logs.filter(is_ontime=True).count() if total_docs else 0
+    now_ts = timezone.now()
+    
+    # 1. Asingkan Giliran Menunggu (Pending) dan Rekod Selesai
+    pending_list = []
+    for d in doc_logs.filter(is_completed=False).order_by('-encounter_at'):
+        start_t = d.encounter_at or d.created_at
+        elapsed = round((now_ts - start_t).total_seconds() / 3600.0, 2)
+        remaining = round(4.0 - elapsed, 2)
+        is_overdue = (elapsed > 4.0)
+        
+        # Jam Randuk Status Warna (English Standard)
+        if is_overdue:
+            status_color = '#dc2626' # Red (Overdue)
+            status_label = f"OVERDUE ({elapsed:.1f}h)"
+        elif remaining <= 1.0:
+            status_color = '#d97706' # Amber (Critical < 1 Hour)
+            status_label = f"{int(remaining * 60)} Mins Left"
+        else:
+            status_color = '#16a34a' # Green (On-Time)
+            status_label = f"{remaining:.1f}h Remaining"
+
+        pending_list.append({
+            'doc': d,
+            'elapsed_hours': elapsed,
+            'remaining_hours': remaining,
+            'is_overdue': is_overdue,
+            'status_color': status_color,
+            'status_label': status_label,
+            'started_time_display': timezone.localtime(start_t).strftime('%I:%M %p, %d %b %Y')
+        })
+
+    completed_docs = doc_logs.filter(is_completed=True)
+    total_completed = completed_docs.count()
+    ontime_completed = completed_docs.filter(is_ontime=True).count() if total_completed else 0
     average_delay = (
-        doc_logs.aggregate(average_delay=Avg('delay_hours'))['average_delay']
-        if total_docs else None
+        completed_docs.aggregate(average_delay=Avg('delay_hours'))['average_delay']
+        if total_completed else None
     )
     ontime_rate = (
-        round((ontime_docs / total_docs) * 100) if total_docs else None
+        round((ontime_completed / total_completed) * 100) if total_completed else None
     )
 
     if not claims:
@@ -2717,12 +2809,15 @@ def _build_clinical_context(user, doc_logs):
         'cpd_status_color': status_color,
         'cpd_status_background': status_background,
         'cpd_status_border': status_border,
-        'doc_total': total_docs,
+        'pending_docs': pending_list,
+        'pending_docs_count': len(pending_list),
+        'completed_doc_logs': completed_docs.order_by('-completed_at')[:20],
+        'doc_total': total_completed,
         'doc_ontime_rate': ontime_rate,
         'doc_ontime_rate_display': (
-            f'{ontime_rate}%' if ontime_rate is not None else 'No data'
+            f'{ontime_rate}%' if ontime_rate is not None else 'Tiada rekod'
         ),
-        'doc_avg_delay_display': _format_hours_minutes(average_delay) or 'No data',
+        'doc_avg_delay_display': _format_hours_minutes(average_delay) or '0h 00m',
         'doc_ontime_target_pct': CLINICAL_DOC_ONTIME_TARGET_PCT,
     }
 
@@ -3404,39 +3499,39 @@ def staff_dashboard_view(request):
                 f"✅ {mata} mata CPD untuk '{tajuk}' disimpan (status: Pending Verification)."
             )
 
-        elif form_type == 'doc':
-            patient_ref = _hash_patient_ref(request.POST.get('patient_id'))
-            encounter_at = _parse_datetime_value(request.POST.get('encounter_at'))
-            completed_at = _parse_datetime_value(request.POST.get('completed_at'))
-            reason = (request.POST.get('reason') or '').strip()
-            remarks = (request.POST.get('reason_remarks') or '').strip()
-            encounter_type = (
-                (request.POST.get('encounter_type') or '').strip()[:50] or None
-            )
+        elif form_type == 'sign_ot_note':
+            doc_id = _parse_int(request.POST.get('doc_id'), 0)
+            doc_item = DocumentationLog.objects.filter(id=doc_id, officer=request.user).first()
+            if not doc_item:
+                messages.error(request, "❌ Rekod kes tidak ditemui atau telah disahkan.")
+                return redirect(f'/staff/?section={section}&tab=doc')
 
-            if encounter_at and completed_at and completed_at >= encounter_at:
-                delay_hrs = round((completed_at - encounter_at).total_seconds() / 3600.0, 2)
+            now = timezone.now()
+            start_time = doc_item.encounter_at or doc_item.created_at
+            diff_hours = round((now - start_time).total_seconds() / 3600.0, 2)
+            
+            # KEPATUHAN SLA 4 JAM KKM
+            is_ontime = (diff_hours <= 4.0)
+
+            reason = (request.POST.get('delay_reason') or '').strip()
+            remarks = (request.POST.get('delay_remarks') or '').strip()
+            reason_text = ' — '.join(p for p in [reason, remarks] if p)
+
+            doc_item.completed_at = now
+            doc_item.delay_hours = diff_hours
+            doc_item.is_ontime = is_ontime
+            doc_item.is_completed = True
+            if not is_ontime:
+                doc_item.reason_for_delay = reason_text or "Disahkan melebihi had masa SLA 4 jam."
+                doc_item.delay_reason_category = reason[:100] if reason else "Exceeded 4H"
+                doc_item.delay_reason_remarks = remarks or None
+            doc_item.save()
+
+            if is_ontime:
+                messages.success(request, f"✅ Clinical documentation for {doc_item.patient_id} successfully verified On-Time ({diff_hours:.1f} hrs)!")
             else:
-                delay_hrs = max(0.0, _parse_float(request.POST.get('delay_hours'), 0.0))
-
-            reason_text = ' — '.join(part for part in [reason, remarks] if part)
-            DocumentationLog.objects.create(
-                officer=request.user,
-                patient_id=patient_ref,
-                encounter_type=encounter_type,
-                encounter_at=encounter_at,
-                completed_at=completed_at,
-                delay_hours=delay_hrs,
-                reason_for_delay=reason_text or None,
-                delay_reason_category=(reason[:100] or None),
-                delay_reason_remarks=(remarks or None),
-                is_ontime=(delay_hrs <= 24.0),
-            )
-            status_label = 'On-Time' if delay_hrs <= 24.0 else 'Delayed'
-            messages.success(
-                request,
-                f"✅ Rekod dokumentasi {patient_ref} disimpan ({delay_hrs:.1f} jam, {status_label})."
-            )
+                messages.warning(request, f"⚠️ Clinical documentation for {doc_item.patient_id} verified Late ({diff_hours:.1f} hrs). Justification logged for audit.")
+            return redirect(f'/staff/?section={section}&tab=doc')
 
         elif form_type == 'policy':
             missing = [q for q in range(4, 21) if request.POST.get(f'q{q}') not in ('Yes', 'No')]

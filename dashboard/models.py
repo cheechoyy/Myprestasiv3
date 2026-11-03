@@ -63,6 +63,28 @@ class ProcedureLog(models.Model):
     diastolic_bp = models.PositiveSmallIntegerField(blank=True, null=True)
     hba1c_percent = models.FloatField(blank=True, null=True)
     ldl_mmol_l = models.FloatField(blank=True, null=True)
+
+    # Renal Function & CKD Staging (NDR Aligned)
+    serum_creatinine = models.FloatField(blank=True, null=True)
+    egfr = models.FloatField(blank=True, null=True)
+    ckd_stage = models.CharField(max_length=30, blank=True, null=True)
+    urine_microalbumin = models.CharField(max_length=30, blank=True, null=True)
+
+    # Annual Complication Screening & Organ Damage (NDR Aligned)
+    visual_acuity = models.CharField(max_length=50, blank=True, null=True)
+    fundus_result = models.CharField(max_length=50, blank=True, null=True)
+    fundus_date = models.DateField(blank=True, null=True)
+    foot_exam_risk = models.CharField(max_length=50, blank=True, null=True)
+    foot_exam_date = models.DateField(blank=True, null=True)
+    ecg_result = models.CharField(max_length=50, blank=True, null=True)
+    ecg_date = models.DateField(blank=True, null=True)
+    cxr_result = models.CharField(max_length=50, blank=True, null=True)
+    cxr_date = models.DateField(blank=True, null=True)
+    fatty_liver = models.CharField(max_length=30, blank=True, null=True)
+    fatty_liver_date = models.DateField(blank=True, null=True)
+    ed_screening = models.CharField(max_length=30, blank=True, null=True)
+    dietitian_referral_date = models.DateField(blank=True, null=True)
+
     is_successful = models.BooleanField(default=True)
     complication_occurred = models.BooleanField(default=False)
     target_achieved = models.BooleanField(blank=True, null=True)
@@ -106,19 +128,21 @@ class PolicyItemResponse(models.Model):
         return f"Q{self.question_number}: {'Compliant' if self.is_compliant else 'Non-Compliant'}"
 
 
-# C. Modul: Documentation Monitoring
+# C. Modul: Documentation Monitoring (Pautan Terus Prosedur & Penjejak SLA 4 Jam)
 class DocumentationLog(models.Model):
     officer = models.ForeignKey(User, on_delete=models.CASCADE, related_name='doc_logs')
-    patient_id = models.CharField(max_length=50)
-    encounter_type = models.CharField(max_length=50, blank=True, null=True)
+    procedure = models.ForeignKey('ProcedureLog', on_delete=models.SET_NULL, null=True, blank=True, related_name='doc_logs')
+    patient_id = models.CharField(max_length=100)
+    encounter_type = models.CharField(max_length=150, blank=True, null=True)
     encounter_at = models.DateTimeField(blank=True, null=True)
     completed_at = models.DateTimeField(blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
-    delay_hours = models.FloatField(default=0.0) # Kelambatan entri
+    delay_hours = models.FloatField(default=0.0) # Masa diambil (jam)
     reason_for_delay = models.TextField(blank=True, null=True)
     delay_reason_category = models.CharField(max_length=100, blank=True, null=True)
     delay_reason_remarks = models.TextField(blank=True, null=True)
     is_ontime = models.BooleanField(default=True)
+    is_completed = models.BooleanField(default=False) # True = Selesai Ditandatangani, False = Dalam Giliran (Pending)
 
     def __str__(self):
         return f"Doc Log - {self.officer.username} - Patient {self.patient_id}"

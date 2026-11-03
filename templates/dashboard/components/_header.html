@@ -70,18 +70,17 @@
             </div>
 </nav>
 
-<!-- TAJUK HALAMAN -->
-<div class="top-header">
+<!-- TAJUK HALAMAN (KEMAS: MENGEKALKAN TAJUK MODUL SAHAJA TANPA "UPDATE DATA") -->
+<div class="top-header" style="margin-bottom: 18px;">
             <div class="top-header-left">
                 {% if section == 'Dashboard' or section == 'Performance' %}
-                    <h1>Good Morning, <strong>{{ staff_name }}</strong></h1>
-                    <p>Your {{ section|lower }} summary and analysis for today.</p>
+                    <h1 style="color: #150a35; font-weight: 900; margin: 0 0 4px 0;">Good Morning, <strong>{{ staff_name }}</strong></h1>
+                    <p style="color: #64748b; margin: 0; font-size: 14px; font-weight: 500;">Your {{ section|lower }} summary and analysis for today.</p>
                 {% elif section == 'Profile' or section == 'Settings' %}
-                    <h1>Update <strong>{{ section }}</strong></h1>
-                    <p>Manage your personal data and system preferences.</p>
+                    <h1 style="color: #150a35; font-weight: 900; margin: 0 0 4px 0;">Update <strong>{{ section }}</strong></h1>
+                    <p style="color: #64748b; margin: 0; font-size: 14px; font-weight: 500;">Manage your personal data and system preferences.</p>
                 {% else %}
-                    <h1>Update Data: <strong>{{ section }} Excellence</strong></h1>
-                    <p>Please enter your latest records to be verified by the HOD.</p>
+                    <h1 style="color: #150a35; font-weight: 900; font-size: 26px; margin: 0; letter-spacing: -0.5px;">{{ section }} Excellence</h1>
                 {% endif %}
             </div>
-        </div>
+</div>

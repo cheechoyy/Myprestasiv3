@@ -173,29 +173,125 @@
                     <form method="POST">{% csrf_token %}<input type="hidden" name="form_type" value="skills_fms">
 
                         <div style="background: #f3edff; padding: 15px; border-radius: 8px; margin-bottom: 20px; border-left: 4px solid #6d3ec4;">
-                            <h4 style="margin: 0 0 15px 0; color: #6d3ec4; font-size: 14px;">General Information (FMS)</h4>
-                            <div class="grid-2">
-                                <div><label style="margin-top:0;">Clinic Location <span style="color:red;">*</span></label>
-                                    <select name="facility" required style="background:white;">
-                                        <option value="Klinik Kesihatan Medong">Klinik Kesihatan Medong</option>
-                                        <option value="Klinik Kesihatan Bandar">Klinik Kesihatan Bandar</option>
-                                    </select>
+                            <h4 style="margin: 0 0 12px 0; color: #6d3ec4; font-size: 14px; font-weight: 800;">General Information (FMS)</h4>
+                            <!-- Clinic Location dikekalkan secara tersembunyi (hidden) supaya pemprosesan POST Django tidak ralat -->
+                            <input type="hidden" name="facility" value="Klinik Kesihatan Medong">
+                            <div style="max-width: 320px;">
+                                <label style="margin-top:0; color: #150a35; font-weight: 700;">Date Encounter <span style="color:red;">*</span></label>
+                                <input type="date" name="procedure_date" required style="background:white; border-color: #d8c7f4;">
+                            </div>
+                        </div>
+
+                        <!-- SECTION 1 : PATIENT PARTICULARS & DEMOGRAPHICS -->
+                        <div style="border-left: 3px solid #6d3ec4; padding-left: 8px; margin-top: 25px; margin-bottom: 15px;">
+                            <h4 style="color: #150a35; margin: 0; font-size: 13px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px;">
+                                SECTION 1 : PATIENT PARTICULARS & DEMOGRAPHICS
+                            </h4>
+                        </div>
+
+                        <!-- Row 1: Clinic MRN, Patient Name & National ID / NRIC -->
+                        <div class="grid-3" style="margin-bottom: 15px;">
+                            <div>
+                                <label style="margin-top:0; color:#150a35; font-size:12px; font-weight:700;">Clinic Registration No. (MRN) <span style="color:red;">*</span></label>
+                                <input type="text" name="patient_id" placeholder="e.g. RN-202601" required style="background:white; border-color:#d8c7f4; font-weight:700;">
+                            </div>
+                            <div>
+                                <label style="margin-top:0; color:#150a35; font-size:12px; font-weight:700;">Patient Full Name <span style="color:red;">*</span></label>
+                                <input type="text" name="patient_name" placeholder="Full Patient Name" required style="background:white; border-color:#d8c7f4;">
+                            </div>
+                            <div>
+                                <label style="margin-top:0; color:#150a35; font-size:12px; font-weight:700;">National ID / NRIC <span style="color:red;">*</span></label>
+                                <input type="text" id="fms_nric" name="patient_nric" placeholder="e.g. 680718-01-2337" oninput="parseFmsNRIC()" required style="background:white; border-color:#d8c7f4; font-weight:600;">
+                            </div>
+                        </div>
+
+                        <!-- Row 2: Date of Birth, Age, Age Group, Gender & Ethnic Group -->
+                        <div style="display: grid; grid-template-columns: 1.2fr 0.8fr 1.2fr 1fr 1.2fr; gap: 12px; margin-bottom: 15px;">
+                            <div>
+                                <label style="margin-top:0; color:#150a35; font-size:12px; font-weight:700;">Date of Birth <span style="color:red;">*</span></label>
+                                <input type="date" id="fms_dob" name="patient_dob" onchange="calculateFmsAge()" required style="background:white; border-color:#d8c7f4; width:100%;">
+                            </div>
+                            <div>
+                                <label style="margin-top:0; color:#6d3ec4; font-size:12px; font-weight:800;">Age</label>
+                                <input type="text" id="fms_age" name="patient_age" readonly style="background:#faf8ff; border-color:#d8c7f4; font-weight:800; color:#150a35; width:100%;">
+                            </div>
+                            <div>
+                                <label style="margin-top:0; color:#6d3ec4; font-size:12px; font-weight:800;">Age Group</label>
+                                <input type="text" id="fms_age_group" name="patient_age_group" readonly style="background:#faf8ff; border-color:#d8c7f4; font-weight:700; color:#150a35; font-size:11.5px; width:100%;">
+                            </div>
+                            <div>
+                                <label style="margin-top:0; color:#150a35; font-size:12px; font-weight:700;">Gender (M/F) <span style="color:red;">*</span></label>
+                                <div class="radio-group" style="display: flex; gap: 12px; align-items: center; margin-top: 10px;">
+                                    <label style="margin:0; font-weight:600; color:#150a35; cursor:pointer; display:flex; align-items:center; gap:4px; font-size:12px;">
+                                        <input type="radio" id="gender_male" name="patient_gender" value="Male" checked> M
+                                    </label>
+                                    <label style="margin:0; font-weight:600; color:#150a35; cursor:pointer; display:flex; align-items:center; gap:4px; font-size:12px;">
+                                        <input type="radio" id="gender_female" name="patient_gender" value="Female"> F
+                                    </label>
                                 </div>
-                                <div><label style="margin-top:0;">Date Encounter <span style="color:red;">*</span></label>
-                                    <input type="date" name="procedure_date" required style="background:white;">
+                            </div>
+                            <div>
+                                <label style="margin-top:0; color:#150a35; font-size:12px; font-weight:700;">Ethnic Group</label>
+                                <select name="patient_ethnic" style="background:white; border-color:#d8c7f4; font-weight:600; width:100%;">
+                                    <option value="Malay" selected>Malay</option>
+                                    <option value="Chinese">Chinese</option>
+                                    <option value="Indian">Indian</option>
+                                    <option value="Bumiputera / Others">Bumiputera / Others</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <!-- Row 3: Residential Address, Patient Contact & Next-of-Kin Contact -->
+                        <div class="grid-3" style="margin-bottom: 20px;">
+                            <div>
+                                <label style="margin-top:0; color:#150a35; font-size:12px; font-weight:700;">Residential Address</label>
+                                <input type="text" name="patient_address" placeholder="Residential address..." style="background:white; border-color:#d8c7f4;">
+                            </div>
+                            <div>
+                                <label style="margin-top:0; color:#150a35; font-size:12px; font-weight:700;">Patient Contact No.</label>
+                                <input type="text" name="patient_phone" placeholder="e.g. 012-3456789" style="background:white; border-color:#d8c7f4;">
+                            </div>
+                            <div>
+                                <label style="margin-top:0; color:#150a35; font-size:12px; font-weight:700;">Next-of-Kin Contact No.</label>
+                                <input type="text" name="next_of_kin_phone" placeholder="e.g. 019-8765432" style="background:white; border-color:#d8c7f4;">
+                            </div>
+                        </div>
+
+                        <!-- ANTHROPOMETRY: HEIGHT, WEIGHT & AUTO-CALCULATED BMI -->
+                        <div style="background: #faf8ff; border: 1.5px dashed #d8c7f4; padding: 14px 18px; border-radius: 12px; margin-bottom: 25px;">
+                            <div style="font-size: 11px; font-weight: 800; color: #6d3ec4; text-transform: uppercase; margin-bottom: 10px; display: flex; align-items: center; gap: 6px;">
+                                <span>📐 Anthropometry & Body Mass Index (BMI)</span>
+                            </div>
+                            <div class="grid-3" style="align-items: flex-end;">
+                                <div>
+                                    <label style="margin-top:0; color:#150a35; font-size:12px; font-weight:700;">Height (cm)</label>
+                                    <input type="number" id="fms_height" name="height_cm" min="50" max="250" step="0.5" placeholder="e.g. 165" oninput="calculateFmsBMI()" style="background:white; border-color:#d8c7f4; width:100%; font-weight:600;">
+                                </div>
+                                <div>
+                                    <label style="margin-top:0; color:#150a35; font-size:12px; font-weight:700;">Weight (kg)</label>
+                                    <input type="number" id="fms_weight" name="weight_kg" min="20" max="300" step="0.1" placeholder="e.g. 78.5" oninput="calculateFmsBMI()" style="background:white; border-color:#d8c7f4; width:100%; font-weight:600;">
+                                </div>
+                                <div>
+                                    <label style="margin-top:0; color:#6d3ec4; font-size:12px; font-weight:800;">Calculated BMI (kg/m²)</label>
+                                    <div style="display: flex; align-items: center; gap: 8px;">
+                                        <input type="text" id="fms_bmi_display" name="calculated_bmi" readonly style="background: white; border: 1.5px solid #d8c7f4; color: #150a35; font-weight: 900; cursor: not-allowed; width: 50%; padding: 10px; font-size: 13px;">
+                                        <span id="fms_bmi_badge" style="font-size: 11px; font-weight: 800; padding: 7px 10px; border-radius: 8px; display: none; white-space: nowrap;"></span>
+                                    </div>
                                 </div>
                             </div>
                         </div>
 
-                        <div style="background:#f3edff; border:1px solid #e7dff2; border-left:4px solid #6d3ec4; padding:12px 15px; border-radius:8px; margin-bottom:15px; font-size:12px; color:#150a35;">
-                            <b>Privasi Pesakit:</b> Nama, MRN/IC dan tarikh lahir tidak dikumpul. Rekod klinikal disimpan tanpa pautan identiti; <code>patient_ref</code> kekal kosong kerana tiada ID pesakit diminta. Butiran klinikal lanjutan (komorbiditi, bacaan lab) kini disimpan dalam rekod prosedur.
+                        <!-- SECTION 2 : CHRONIC DISEASE & DIABETES DIAGNOSIS -->
+                        <div style="border-left: 3px solid #6d3ec4; padding-left: 8px; margin-top: 25px; margin-bottom: 15px;">
+                            <h4 style="color: #150a35; margin: 0; font-size: 13px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px;">
+                                SECTION 2 : CHRONIC DISEASE & DIABETES DIAGNOSIS
+                            </h4>
                         </div>
 
-                        <h4 style="background: #e7dff2; color: #150a35; padding: 10px 15px; border-radius: 6px; margin-top: 30px; margin-bottom: 15px; font-size: 13px;">SECTION 2 : CHRONIC DISEASE & LIFESTYLE RISKS</h4>
-                        <div class="grid-2">
+                        <div class="grid-3" style="margin-bottom: 15px;">
                             <div>
-                                <label style="margin-top:0;">Primary Chronic Disease Monitored <span style="color:red;">*</span></label>
-                                <select name="procedure_name" required style="background:white;">
+                                <label style="margin-top:0; color:#150a35; font-size:12px; font-weight:700;">Primary Chronic Disease Monitored <span style="color:red;">*</span></label>
+                                <select name="procedure_name" required style="background:white; border-color:#d8c7f4; font-weight:600;">
                                     <option value="Type 2 Diabetes Mellitus (T2DM)">Type 2 Diabetes Mellitus (T2DM)</option>
                                     <option value="Hypertension">Hypertension</option>
                                     <option value="Asthma / COPD">Asthma / COPD</option>
@@ -203,12 +299,32 @@
                                 </select>
                             </div>
                             <div>
-                                <label style="margin-top:0;">Duration of Illness</label>
-                                <select name="duration_illness" style="background:white;">
+                                <label style="margin-top:0; color:#150a35; font-size:12px; font-weight:700;">Diabetes Type</label>
+                                <select name="dm_type" style="background:white; border-color:#d8c7f4; font-weight:600;">
+                                    <option value="Type 2 Diabetes Mellitus (T2DM)" selected>Type 2 DM (T2DM)</option>
+                                    <option value="Type 1 Diabetes Mellitus (T1DM)">Type 1 DM (T1DM)</option>
+                                    <option value="Gestational Diabetes Mellitus (GDM)">Gestational DM (GDM)</option>
+                                    <option value="Secondary / Other Specific Types">Secondary / Other Specific Types</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label style="margin-top:0; color:#150a35; font-size:12px; font-weight:700;">Duration of Illness</label>
+                                <select name="duration_illness" style="background:white; border-color:#d8c7f4; font-weight:600;">
                                     <option value="Newly Diagnosed (&lt; 1 Year)">Newly Diagnosed (< 1 Year)</option>
                                     <option value="1 - 5 Years">1 - 5 Years</option>
                                     <option value="&gt; 5 Years">> 5 Years</option>
                                 </select>
+                            </div>
+                        </div>
+
+                        <div class="grid-2" style="margin-bottom: 15px;">
+                            <div>
+                                <label style="margin-top:0; color:#150a35; font-size:12px; font-weight:700;">Date of 1st DM Diagnosis</label>
+                                <input type="date" id="fms_dm_diag_date" name="dm_diagnosis_date" onchange="calculateFmsDMAge()" style="background:white; border-color:#d8c7f4;">
+                            </div>
+                            <div>
+                                <label style="margin-top:0; color:#6d3ec4; font-size:12px; font-weight:800;">Age at Diagnosis</label>
+                                <input type="text" id="fms_dm_diag_age" name="dm_diagnosis_age" readonly style="background:#faf8ff; border-color:#d8c7f4; font-weight:800; color:#150a35;">
                             </div>
                         </div>
 
@@ -222,29 +338,185 @@
                             <label style="margin:0; font-weight:normal;"><input type="checkbox" name="comorbidities" value="Diabetic Retinopathy"> Diabetic Retinopathy</label>
                         </div>
 
-                        <h4 style="background: #e7dff2; color: #150a35; padding: 10px 15px; border-radius: 6px; margin-top: 30px; margin-bottom: 15px; font-size: 13px;">SECTION 3 : VITAL SIGNS & LAB READINGS</h4>
-                        <table style="width: 100%; border-collapse: collapse; font-size: 13px; margin-bottom: 20px;">
-                            <tr style="background: #f3edff;">
-                                <th style="padding: 10px; border: 1px solid #e7dff2; text-align: left; width: 30%; color:#150a35;">Clinical Parameter</th>
-                                <th style="padding: 10px; border: 1px solid #e7dff2; text-align: left; color:#150a35;">Latest Reading</th>
-                            </tr>
-                            <tr>
-                                <td style="padding: 10px; border: 1px solid #e7dff2; font-weight: 600;">Blood Pressure (mmHg) <span style="color:red;">*</span></td>
-                                <td style="padding: 10px; border: 1px solid #e7dff2;"><input type="text" name="bp" inputmode="numeric" autocomplete="off" placeholder="e.g. 135/85" style="width: 50%; background:white;" required></td>
-                            </tr>
-                            <tr>
-                                <td style="padding: 10px; border: 1px solid #e7dff2; font-weight: 600;">HbA1c (%)</td>
-                                <td style="padding: 10px; border: 1px solid #e7dff2;"><input type="number" name="hba1c_percent" min="0" step="0.1" placeholder="e.g. 7.2" style="width: 50%; background:white;"></td>
-                            </tr>
-                            <tr>
-                                <td style="padding: 10px; border: 1px solid #e7dff2; font-weight: 600;">LDL Cholesterol (mmol/L)</td>
-                                <td style="padding: 10px; border: 1px solid #e7dff2;"><input type="number" name="ldl_mmol_l" min="0" step="0.1" placeholder="e.g. 2.6" style="width: 50%; background:white;"></td>
-                            </tr>
-                        </table>
+                        <!-- SECTION 3 : VITAL SIGNS & RENAL PROFILE -->
+                        <div style="border-left: 3px solid #6d3ec4; padding-left: 8px; margin-top: 30px; margin-bottom: 15px;">
+                            <h4 style="color: #150a35; margin: 0; font-size: 13px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px;">
+                                SECTION 3 : VITAL SIGNS & CORE LABORATORY PROFILE
+                            </h4>
+                        </div>
+
+                        <div class="grid-3" style="margin-bottom: 15px;">
+                            <div>
+                                <label style="margin-top:0; color:#150a35; font-size:12px; font-weight:700;">Blood Pressure (mmHg) <span style="color:red;">*</span></label>
+                                <input type="text" name="bp" inputmode="numeric" autocomplete="off" placeholder="e.g. 135/85" style="background:white; border-color:#d8c7f4; font-weight:700;" required>
+                            </div>
+                            <div>
+                                <label style="margin-top:0; color:#150a35; font-size:12px; font-weight:700;">HbA1c (%)</label>
+                                <input type="number" name="hba1c_percent" min="0" step="0.1" placeholder="e.g. 7.2" style="background:white; border-color:#d8c7f4; font-weight:700;">
+                            </div>
+                            <div>
+                                <label style="margin-top:0; color:#150a35; font-size:12px; font-weight:700;">LDL Cholesterol (mmol/L)</label>
+                                <input type="number" name="ldl_mmol_l" min="0" step="0.1" placeholder="e.g. 2.6" style="background:white; border-color:#d8c7f4; font-weight:700;">
+                            </div>
+                        </div>
+
+                        <!-- Renal Function Profile & Auto-CKD Staging -->
+                        <div style="background: #faf8ff; border: 1.5px dashed #d8c7f4; padding: 14px 18px; border-radius: 12px; margin-bottom: 25px;">
+                            <div style="font-size: 11px; font-weight: 800; color: #6d3ec4; text-transform: uppercase; margin-bottom: 10px;">
+                                🧪 Renal Profile & CKD Staging (Auto-Calculator)
+                            </div>
+                            <div style="display: grid; grid-template-columns: 1fr 1fr 1.2fr 1fr; gap: 12px; align-items: flex-end;">
+                                <div>
+                                    <label style="margin-top:0; color:#150a35; font-size:12px; font-weight:700;">Serum Creatinine (µmol/L)</label>
+                                    <input type="number" name="serum_creatinine" min="10" max="1500" step="1" placeholder="e.g. 88" style="background:white; border-color:#d8c7f4; width:100%;">
+                                </div>
+                                <div>
+                                    <label style="margin-top:0; color:#150a35; font-size:12px; font-weight:700;">eGFR (mL/min/1.73m²)</label>
+                                    <input type="number" id="fms_egfr" name="egfr" min="1" max="200" step="0.1" placeholder="e.g. 72" oninput="calculateFmsCKD()" style="background:white; border-color:#d8c7f4; width:100%; font-weight:700;">
+                                </div>
+                                <div>
+                                    <label style="margin-top:0; color:#6d3ec4; font-size:12px; font-weight:800;">CKD Stage</label>
+                                    <div style="display: flex; align-items: center; gap: 6px;">
+                                        <input type="text" id="fms_ckd_display" name="ckd_stage" readonly style="background:white; border: 1.5px solid #d8c7f4; color:#150a35; font-weight:900; width:55%; padding: 10px; cursor: not-allowed;">
+                                        <span id="fms_ckd_badge" style="font-size: 10.5px; font-weight: 800; padding: 7px 8px; border-radius: 8px; display: none; white-space: nowrap;"></span>
+                                    </div>
+                                </div>
+                                <div>
+                                    <label style="margin-top:0; color:#150a35; font-size:12px; font-weight:700;">Urine Microalbumin</label>
+                                    <select name="urine_microalbumin" style="background:white; border-color:#d8c7f4; font-weight:600; width:100%;">
+                                        <option value="Negative" selected>Negative (< 30 mg/g)</option>
+                                        <option value="Microalbuminuria">Microalbuminuria (30-300 mg/g)</option>
+                                        <option value="Macroalbuminuria">Macroalbuminuria (> 300 mg/g)</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- SECTION 4 : ANNUAL COMPLICATION SCREENING & ORGAN DAMAGE -->
+                        <div style="border-left: 3px solid #6d3ec4; padding-left: 8px; margin-top: 30px; margin-bottom: 15px;">
+                            <h4 style="color: #150a35; margin: 0; font-size: 13px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px;">
+                                SECTION 4 : ANNUAL COMPLICATION SCREENING & ORGAN DAMAGE (NDR)
+                            </h4>
+                        </div>
+
+                        <!-- Eye & Foot Screening -->
+                        <div class="grid-2" style="margin-bottom: 15px;">
+                            <div style="background: white; border: 1px solid #e7dff2; border-radius: 12px; padding: 15px;">
+                                <div style="font-size: 12px; font-weight: 800; color: #6d3ec4; margin-bottom: 10px;">👁️ Eye Assessment (Fundus & Vision)</div>
+                                <div class="grid-2">
+                                    <div>
+                                        <label style="margin-top:0; font-size:11.5px; font-weight:700;">Funduscopy Result</label>
+                                        <select name="fundus_result" style="background:white; border-color:#d8c7f4; width:100%; font-weight:600;">
+                                            <option value="Normal" selected>Normal</option>
+                                            <option value="Non-Proliferative Retinopathy">Non-Proliferative Retinopathy (NPDR)</option>
+                                            <option value="Proliferative Retinopathy">Proliferative Retinopathy (PDR)</option>
+                                            <option value="Diabetic Maculopathy">Diabetic Maculopathy</option>
+                                            <option value="Cataract / Other">Cataract / Other</option>
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label style="margin-top:0; font-size:11.5px; font-weight:700;">Date of Funduscopy</label>
+                                        <input type="date" name="fundus_date" style="background:white; border-color:#d8c7f4; width:100%;">
+                                    </div>
+                                </div>
+                                <div style="margin-top: 10px;">
+                                    <label style="margin-top:0; font-size:11.5px; font-weight:700;">Visual Acuity</label>
+                                    <input type="text" name="visual_acuity" placeholder="e.g. 6/6 (Right), 6/9 (Left)" style="background:white; border-color:#d8c7f4; width:100%;">
+                                </div>
+                            </div>
+
+                            <div style="background: white; border: 1px solid #e7dff2; border-radius: 12px; padding: 15px;">
+                                <div style="font-size: 12px; font-weight: 800; color: #6d3ec4; margin-bottom: 10px;">🦶 Diabetic Foot Examination</div>
+                                <div class="grid-2">
+                                    <div>
+                                        <label style="margin-top:0; font-size:11.5px; font-weight:700;">Foot Risk Stratification</label>
+                                        <select name="foot_exam_risk" style="background:white; border-color:#d8c7f4; width:100%; font-weight:600;">
+                                            <option value="Normal / Low Risk" selected>Normal / Low Risk</option>
+                                            <option value="Moderate Risk">Moderate Risk (Neuropathy/Deformity)</option>
+                                            <option value="High Risk">High Risk (Active Ulcer / Prior Amputation)</option>
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label style="margin-top:0; font-size:11.5px; font-weight:700;">Date of Foot Exam</label>
+                                        <input type="date" name="foot_exam_date" style="background:white; border-color:#d8c7f4; width:100%;">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Cardiovascular, Imaging & Multidisciplinary Referrals -->
+                        <div class="grid-2" style="margin-bottom: 20px;">
+                            <div style="background: white; border: 1px solid #e7dff2; border-radius: 12px; padding: 15px;">
+                                <div style="font-size: 12px; font-weight: 800; color: #6d3ec4; margin-bottom: 10px;">🫀 Cardiovascular & Chest Imaging</div>
+                                <div class="grid-2" style="margin-bottom: 10px;">
+                                    <div>
+                                        <label style="margin-top:0; font-size:11.5px; font-weight:700;">ECG Findings</label>
+                                        <select name="ecg_result" style="background:white; border-color:#d8c7f4; width:100%; font-weight:600;">
+                                            <option value="Normal" selected>Normal</option>
+                                            <option value="LVH / Ischaemia">LVH / Ischaemia</option>
+                                            <option value="Old Myocardial Infarction">Old Infarction</option>
+                                            <option value="Arrhythmia">Arrhythmia</option>
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label style="margin-top:0; font-size:11.5px; font-weight:700;">Date of ECG</label>
+                                        <input type="date" name="ecg_date" style="background:white; border-color:#d8c7f4; width:100%;">
+                                    </div>
+                                </div>
+                                <div class="grid-2">
+                                    <div>
+                                        <label style="margin-top:0; font-size:11.5px; font-weight:700;">CXR Findings</label>
+                                        <select name="cxr_result" style="background:white; border-color:#d8c7f4; width:100%; font-weight:600;">
+                                            <option value="Normal" selected>Normal</option>
+                                            <option value="Cardiomegaly">Cardiomegaly</option>
+                                            <option value="Pulmonary Congestion">Pulmonary Congestion</option>
+                                            <option value="Infection / Consolidation">Infection / Others</option>
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label style="margin-top:0; font-size:11.5px; font-weight:700;">Date of CXR</label>
+                                        <input type="date" name="cxr_date" style="background:white; border-color:#d8c7f4; width:100%;">
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div style="background: white; border: 1px solid #e7dff2; border-radius: 12px; padding: 15px;">
+                                <div style="font-size: 12px; font-weight: 800; color: #6d3ec4; margin-bottom: 10px;">🩺 Specialty Screenings & Dietitian</div>
+                                <div class="grid-2" style="margin-bottom: 10px;">
+                                    <div>
+                                        <label style="margin-top:0; font-size:11.5px; font-weight:700;">Fatty Liver (Ultrasound)</label>
+                                        <select name="fatty_liver" style="background:white; border-color:#d8c7f4; width:100%; font-weight:600;">
+                                            <option value="No / Not Done" selected>No / Not Done</option>
+                                            <option value="Grade 1 (Mild)">Grade 1 (Mild)</option>
+                                            <option value="Grade 2 (Moderate)">Grade 2 (Moderate)</option>
+                                            <option value="Grade 3 (Severe)">Grade 3 (Severe)</option>
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label style="margin-top:0; font-size:11.5px; font-weight:700;">Date of Ultrasound</label>
+                                        <input type="date" name="fatty_liver_date" style="background:white; border-color:#d8c7f4; width:100%;">
+                                    </div>
+                                </div>
+                                <div class="grid-2">
+                                    <div>
+                                        <label style="margin-top:0; font-size:11.5px; font-weight:700;">Erectile Dysfunction (ED)</label>
+                                        <select name="ed_screening" style="background:white; border-color:#d8c7f4; width:100%; font-weight:600;">
+                                            <option value="N/A / Female" selected>N/A / Female</option>
+                                            <option value="Optimal">Optimal</option>
+                                            <option value="Non-optimal">Non-optimal</option>
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label style="margin-top:0; font-size:11.5px; font-weight:700;">Dietitian Referral Date</label>
+                                        <input type="date" name="dietitian_referral_date" style="background:white; border-color:#d8c7f4; width:100%;">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
 
                         <div style="margin-top: 20px;">
-                            <label style="margin-top:0;">Self-Assessment Score (0-100) <span style="color:red;">*</span></label>
-                            <input type="number" name="score" min="0" max="100" step="1" required style="background:white;">
+                            <label style="margin-top:0; color:#150a35; font-size:12px; font-weight:700;">Self-Assessment Score (0-100) <span style="color:red;">*</span></label>
+                            <input type="number" name="score" min="0" max="100" step="1" required style="background:white; font-weight:700;">
                         </div>
 
                         <h4 style="background: #e7dff2; color: #150a35; padding: 10px 15px; border-radius: 6px; margin-top:20px; font-size: 13px;">Outcome (CUSUM Evaluation)</h4>
@@ -389,142 +661,233 @@
 
             </div>
 
+            <!-- Tab 2: Clinical Documentation (Automated SLA 4-Hour Queue - FMS English Standard) -->
             <div class="card tab-content" id="tab-doc">
-                <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 15px; border-bottom: 2px solid #e7dff2; padding-bottom: 10px;">
-                    <h3 style="color:#150a35; margin:0; font-size:16px;">Clinical Documentation Log</h3>
+                <div style="display: flex; align-items: center; justify-content: space-between; border-bottom: 2px solid #e7dff2; padding-bottom: 12px; margin-bottom: 20px;">
+                    <div>
+                        <h3 style="color:#150a35; margin:0; font-size:16px; font-weight: 800;">Automated Clinical Documentation Tracker</h3>
+                        <p style="margin: 3px 0 0 0; color: #6f628b; font-size: 11.5px; font-weight: 500;">
+                            MoH Clinical Governance standard requires outpatient and chronic care documentation to be verified within <b>4 Hours</b> of patient encounter.
+                        </p>
+                    </div>
+                    <span style="background: #f3edff; border: 1px solid #d8c7f4; color: #6d3ec4; font-size: 11px; font-weight: 800; padding: 5px 14px; border-radius: 20px;">
+                        SLA Standard: 4 Hours
+                    </span>
                 </div>
 
+                <!-- CLINICAL DOCUMENTATION METRICS -->
                 <div class="grid-3" style="margin-bottom: 25px;">
-                    <div style="background: #f3edff; border: 1px solid #e7dff2; padding: 15px; border-radius: 8px; border-left: 4px solid #6d3ec4;">
-                        <div style="font-size: 11px; color: #150a35; font-weight: bold; text-transform: uppercase;">My Total Entries</div>
-                        <div style="font-size: 24px; font-weight: 900; color: #150a35;">{{ doc_total }} <span style="font-size:12px; font-weight:normal; color:#6d3ec4;">Record{{ doc_total|pluralize }}</span></div>
+                    <div style="background: #f3edff; border: 1px solid #e7dff2; padding: 16px; border-radius: 12px; border-left: 5px solid #6d3ec4;">
+                        <div style="font-size: 10px; color: #6d3ec4; font-weight: 800; text-transform: uppercase;">Total Signed Cases</div>
+                        <div style="font-size: 26px; font-weight: 900; color: #150a35; margin-top: 4px;">{{ doc_total }} <span style="font-size:12px; font-weight:700; color:#6d3ec4;">Completed</span></div>
+                        <div style="font-size: 11px; color: #64748b; margin-top: 4px;">Verified in clinical database</div>
                     </div>
-                    <div style="background: #F0FDF4; border: 1px solid #BBF7D0; padding: 15px; border-radius: 8px; border-left: 4px solid #16A34A;">
-                        <div style="font-size: 11px; color: #15803d; font-weight: bold; text-transform: uppercase;">My On-Time Rate</div>
-                        <div style="font-size: 24px; font-weight: 900; color: #16A34A;">{{ doc_ontime_rate_display }} <span style="font-size:12px; font-weight:normal; color:#15803d;">Target: &ge;{{ doc_ontime_target_pct }}%</span></div>
+
+                    <div style="background: white; border: 1px solid #e7dff2; padding: 16px; border-radius: 12px; border-left: 5px solid #16a34a; box-shadow: 0 2px 8px rgba(21, 10, 53, 0.03);">
+                        <div style="font-size: 10px; color: #15803d; font-weight: 800; text-transform: uppercase;">4-Hour SLA Compliance</div>
+                        <div style="font-size: 26px; font-weight: 900; color: #15803d; margin-top: 4px;">
+                            {{ doc_ontime_rate_display }}
+                            <span style="font-size: 11px; font-weight: 700; color: #64748b; margin-left: 6px;">(Target &ge; 80%)</span>
+                        </div>
+                        <div style="font-size: 11px; color: #16a34a; font-weight: 700; margin-top: 4px;">✓ MoH Timeliness Benchmark</div>
                     </div>
-                    <div style="background: #FFFBEB; border: 1px solid #FEF08A; padding: 15px; border-radius: 8px; border-left: 4px solid #f59e0b;">
-                        <div style="font-size: 11px; color: #b45309; font-weight: bold; text-transform: uppercase;">Average Delay Time</div>
-                        <div style="font-size: 24px; font-weight: 900; color: #d97706;">{{ doc_avg_delay_display }}</div>
+
+                    <div style="background: white; border: 1px solid #e7dff2; padding: 16px; border-radius: 12px; border-left: 5px solid #150a35; box-shadow: 0 2px 8px rgba(21, 10, 53, 0.03);">
+                        <div style="font-size: 10px; color: #150a35; font-weight: 800; text-transform: uppercase;">Average Turnaround Time</div>
+                        <div style="font-size: 26px; font-weight: 900; color: #150a35; margin-top: 4px;">{{ doc_avg_delay_display }}</div>
+                        <div style="font-size: 11px; color: #64748b; margin-top: 4px;">Average time from encounter to sign-off</div>
                     </div>
                 </div>
 
-                <div style="background-color: #FFFBEB; color:#b45309; padding: 15px; border-radius: 8px; margin-bottom: 20px; font-size: 13px; border-left: 4px solid #f59e0b; display: flex; align-items: center; gap: 8px;">
-                    <svg style="width: 18px; height: 18px; color: #f59e0b; flex-shrink:0;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
-                    <span><b>Reminder:</b> Documentation must be completed within 24 hours of patient encounter. If delayed, justification is strictly required.</span>
+                <!-- PENDING QUEUE LIST -->
+                <div style="background: linear-gradient(135deg, #ffffff 0%, #fbf9ff 100%); border: 1.5px solid #d8c7f4; border-radius: 16px; padding: 20px; margin-bottom: 30px; box-shadow: 0 4px 15px rgba(21, 10, 53, 0.03);">
+                    <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px;">
+                        <div style="display: flex; align-items: center; gap: 8px;">
+                            <span style="width: 8px; height: 8px; background: #6d3ec4; border-radius: 50%; display: inline-block;"></span>
+                            <h4 style="color: #150a35; margin: 0; font-size: 14px; font-weight: 800;">
+                                Pending Clinical Documentation Queue
+                            </h4>
+                        </div>
+                        <span style="background: #f3edff; color: #6d3ec4; font-size: 11px; font-weight: 800; padding: 3px 10px; border-radius: 12px;">
+                            {{ pending_docs_count }} Cases Awaiting Sign-Off
+                        </span>
+                    </div>
+
+                    {% if pending_docs %}
+                        <div style="display: flex; flex-direction: column; gap: 12px;">
+                            {% for item in pending_docs %}
+                            <div style="background: white; border: 1px solid #e7dff2; border-radius: 12px; padding: 16px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 15px; border-left: 5px solid {{ item.status_color }};">
+                                <div>
+                                    <div style="font-size: 14px; font-weight: 900; color: #150a35;">{{ item.doc.patient_id }}</div>
+                                    <div style="font-size: 11.5px; color: #64748b; margin-top: 4px;">
+                                        Encounter Logged: <b>{{ item.started_time_display }}</b> &bull; Elapsed: <b>{{ item.elapsed_hours|floatformat:1 }} Hours</b>
+                                    </div>
+                                </div>
+
+                                <div style="display: flex; align-items: center; gap: 12px;">
+                                    <span style="font-size: 12px; font-weight: 800; color: {{ item.status_color }}; background: #faf5ff; border: 1px solid #e7dff2; padding: 6px 12px; border-radius: 8px;">
+                                        ⏱️ {{ item.status_label }}
+                                    </span>
+
+                                    {% if item.is_overdue %}
+                                        <button type="button" onclick="openOverdueModal('{{ item.doc.id }}', '{{ item.doc.patient_id }}', '{{ item.elapsed_hours|floatformat:1 }}')" style="background: #dc2626; color: white; border: none; padding: 9px 16px; border-radius: 8px; font-weight: 800; font-size: 12px; cursor: pointer; display: flex; align-items: center; gap: 6px; box-shadow: 0 4px 10px rgba(220, 38, 38, 0.2);">
+                                            Sign with Justification ➔
+                                        </button>
+                                    {% else %}
+                                        <form method="POST" style="margin: 0;">
+                                            {% csrf_token %}
+                                            <input type="hidden" name="form_type" value="sign_ot_note">
+                                            <input type="hidden" name="doc_id" value="{{ item.doc.id }}">
+                                            <button type="submit" style="background: #6d3ec4; color: white; border: none; padding: 9px 18px; border-radius: 8px; font-weight: 800; font-size: 12px; cursor: pointer; display: flex; align-items: center; gap: 6px; box-shadow: 0 4px 10px rgba(109, 62, 196, 0.2);">
+                                                ✓ Sign Clinical Notes
+                                            </button>
+                                        </form>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <div style="background: white; border: 1px dashed #d8c7f4; padding: 24px; border-radius: 12px; text-align: center; color: #6d3ec4;">
+                            <div style="font-weight: 800; font-size: 13.5px;">No Pending Cases in Queue 🎉</div>
+                            <div style="font-size: 11.5px; color: #64748b; margin-top: 4px;">New encounters logged under <b>Clinical Delivery</b> will automatically be queued here for 4-hour documentation tracking.</div>
+                        </div>
+                    {% endif %}
                 </div>
 
-                <div style="background: #f3edff; padding: 20px; border-radius: 12px; border: 1px solid #e7dff2; margin-bottom: 30px;">
-                    <form method="POST">
-                        {% csrf_token %}
-                        <input type="hidden" name="form_type" value="doc">
+                <!-- VERIFIED DOCUMENTATION AUDIT TABLE (MRN | TIME COMPLETED | DURATION | STATUS | REASONS) -->
+                <div style="border-top: 1px dashed #d8c7f4; padding-top: 20px;">
+                    <h4 style="color: #150a35; margin: 0 0 15px 0; font-size: 14px; font-weight: 800;">
+                        Verified Clinical Documentation Audit Log
+                    </h4>
 
-                        <div class="grid-2" style="margin-bottom: 15px;">
-                            <div>
-                                <label style="margin-top:0;">Patient Ref / MRN (akan di-hash) <span style="color:red;">*</span></label>
-                                <input type="text" name="patient_id" placeholder="e.g. RN123456" required style="background:white;">
-                            </div>
-                            <div>
-                                <label style="margin-top:0;">Encounter Type</label>
-                                <select name="encounter_type" style="background:white;">
-                                    <option>Outpatient Consultation</option>
-                                    <option>Inpatient Admission (Clerking)</option>
-                                    <option>Discharge Summary</option>
-                                    <option>Emergency Red Zone</option>
-                                </select>
-                            </div>
-                        </div>
-
-                        <div class="grid-2" style="margin-bottom: 15px;">
-                            <div>
-                                <label style="margin-top:0; display:flex; align-items:center; gap:6px; color:#150a35;">
-                                    Encounter Date & Time <span style="color:red;">*</span>
-                                </label>
-                                <input type="datetime-local" name="encounter_at" required style="background:white;">
-                            </div>
-                            <div>
-                                <label style="margin-top:0; display:flex; align-items:center; gap:6px; color:#15803d;">
-                                    Documentation Completion <span style="color:red;">*</span>
-                                </label>
-                                <input type="datetime-local" name="completed_at" required style="background:white;">
-                            </div>
-                        </div>
-
-                        <div style="background: white; border: 1px dashed #d8c7f4; padding: 15px; border-radius: 8px;">
-                            <label style="margin-top:0; color:#6d3ec4;">Delay Justification (Fill only if gap > 24 Hours)</label>
-                            <div class="grid-2">
-                                <select name="reason" style="background:#f3edff; border:1px solid #e7dff2; color:#150a35;">
-                                    <option value="" disabled selected>Select Primary Reason...</option>
-                                    <option>High patient volume / Shortage of staff</option>
-                                    <option>Red Zone emergency case interference</option>
-                                    <option>System/Network down</option>
-                                    <option>Awaiting lab/radiology results</option>
-                                </select>
-                                <input type="text" name="reason_remarks" placeholder="Additional remarks (Optional)..." style="background:#f3edff; border:1px solid #e7dff2; color:#150a35;">
-                            </div>
-                        </div>
-
-                        <button type="submit" class="submit-btn" style="margin-top: 20px; display:flex; align-items:center; justify-content:center; gap:8px;">
-                            Save Documentation Record
-                        </button>
-                    </form>
-                </div>
-
-                <div style="display: flex; align-items: center; gap: 8px; margin-bottom:15px;">
-                    <h4 style="color:#150a35; margin:0; font-size:14px;">Recent Submissions</h4>
-                </div>
-                <div style="overflow-x: auto; border: 1px solid #e7dff2; border-radius: 8px;">
-                    <table class="staff-table">
-                        <thead>
-                            <tr>
-                                <th>Patient ID / RN</th>
-                                <th>Encounter Date</th>
-                                <th>Delay Hours</th>
-                                <th>Justification / Remarks</th>
-                                <th>Compliance Status</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% if doc_logs %}
-                                {% for log in doc_logs %}
+                    <div style="overflow-x: auto; border: 1px solid #e7dff2; border-radius: 12px; background: white;">
+                        <table class="staff-table" style="margin: 0; width: 100%;">
+                            <thead>
+                                <tr>
+                                    <th style="white-space: nowrap;">Patient Particulars / MRN</th>
+                                    <th style="white-space: nowrap;">Time Completed</th>
+                                    <th style="white-space: nowrap;">Duration (Turnaround Time)</th>
+                                    <th style="white-space: nowrap;">Compliance Status</th>
+                                    <th>Reasons for Delay (If any)</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% if completed_doc_logs %}
+                                    {% for log in completed_doc_logs %}
+                                        <tr>
+                                            <td style="font-weight: 800; color: #150a35; white-space: nowrap;">{{ log.patient_id }}</td>
+                                            <td style="font-size: 11.5px; color: #150a35; font-weight: 600; white-space: nowrap;">{{ log.completed_at|date:"d M Y, h:i A" }}</td>
+                                            <td style="font-weight: 800; color: #150a35; white-space: nowrap;">{{ log.delay_hours|floatformat:1 }} Hours</td>
+                                            <td style="white-space: nowrap;">
+                                                {% if log.is_ontime %}
+                                                    <span class="status-badge bg-success" style="display: inline-flex; align-items: center; gap: 4px;">
+                                                        ✓ On-Time (&le;4H)
+                                                    </span>
+                                                {% else %}
+                                                    <span class="status-badge bg-danger" style="display: inline-flex; align-items: center; gap: 4px;">
+                                                        ⚠️ Overdue (>4H)
+                                                    </span>
+                                                {% endif %}
+                                            </td>
+                                            <td style="font-size: 12px; color: #64748b; line-height: 1.4;">
+                                                {% if log.is_ontime %}
+                                                    <span style="color: #16a34a; font-weight: 600;">— None (On-Time)</span>
+                                                {% else %}
+                                                    {% if log.reason_for_delay %}
+                                                        <span style="color: #991b1b; font-weight: 700; background: #fef2f2; border: 1px solid #fecaca; padding: 3px 8px; border-radius: 6px; display: inline-block;">
+                                                            {{ log.reason_for_delay }}
+                                                        </span>
+                                                    {% else %}
+                                                        <span style="color: #dc2626; font-style: italic;">Exceeded 4H (No specific remarks provided)</span>
+                                                    {% endif %}
+                                                {% endif %}
+                                            </td>
+                                        </tr>
+                                    {% endfor %}
+                                {% else %}
                                     <tr>
-                                        <td style="font-weight: 800; color: #150a35;">{{ log.patient_id }}</td>
-                                        <td>{{ log.created_at|date:"d M Y, h:i A" }}</td>
-                                        <td>{{ log.delay_hours|floatformat:1 }} Hours</td>
-                                        <td>
-                                            {% if log.reason_for_delay %}
-                                                {{ log.reason_for_delay }}
-                                            {% else %}
-                                                <i style="color:#6f628b;">Manual documentation entry (No Delay)</i>
-                                            {% endif %}
-                                        </td>
-                                        <td>
-                                            {% if log.is_ontime %}
-                                                <span class="status-badge bg-success" style="display: inline-flex; align-items: center; gap: 4px;">
-                                                    <svg style="width: 12px; height: 12px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
-                                                    On-Time
-                                                </span>
-                                            {% else %}
-                                                <span class="status-badge bg-danger" style="display: inline-flex; align-items: center; gap: 4px;">
-                                                    <svg style="width: 12px; height: 12px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-                                                    Delayed (>24h)
-                                                </span>
-                                            {% endif %}
+                                        <td colspan="5" style="text-align: center; color: #6f628b; padding: 25px; font-style: italic;">
+                                            No verified clinical documentation records found.
                                         </td>
                                     </tr>
-                                {% endfor %}
-                            {% else %}
-                                <tr>
-                                    <td colspan="5" style="text-align: center; color: #6f628b; padding: 20px;">
-                                        No documentation records found. Submit a record using the form above.
-                                    </td>
-                                </tr>
-                            {% endif %}
-                        </tbody>
-                    </table>
+                                {% endif %}
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
-
             </div>
+
+            <!-- FMS-SPECIFIC MODAL POPUP FOR OVERDUE JUSTIFICATION -->
+            <div id="overdueModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(21, 10, 53, 0.6); z-index: 99999; align-items: center; justify-content: center;">
+                <div style="background: white; border-radius: 16px; width: 90%; max-width: 500px; padding: 24px; box-shadow: 0 20px 40px rgba(0,0,0,0.25); border: 1.5px solid #fecdd3;">
+                    <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 15px;">
+                        <h4 style="margin: 0; color: #991b1b; font-size: 16px; font-weight: 800;">⚠️ Late Documentation Justification</h4>
+                        <span onclick="closeOverdueModal()" style="cursor: pointer; font-size: 18px; font-weight: 800; color: #94a3b8;">✕</span>
+                    </div>
+
+                    <p style="font-size: 12.5px; color: #150a35; margin-bottom: 15px; line-height: 1.5;">
+                        Documentation for case <b id="modalPatientId" style="color: #6d3ec4;">-</b> exceeded the 4-hour SLA standard (<span id="modalElapsedHours" style="color: red; font-weight: 800;">-</span> hours). Please select an FMS-relevant justification for clinical audit:
+                    </p>
+
+                    <form method="POST">
+                        {% csrf_token %}
+                        <input type="hidden" name="form_type" value="sign_ot_note">
+                        <input type="hidden" name="doc_id" id="modalDocId" value="">
+
+                        <div style="margin-bottom: 14px;">
+                            <label style="font-size: 11.5px; font-weight: 700; color: #150a35; display: block; margin-bottom: 5px;">Primary Reason for Delay <span style="color:red;">*</span></label>
+                            <select name="delay_reason" id="delayReasonSelect" onchange="toggleOthersRequirement(this.value)" required style="width: 100%; padding: 10px; border-radius: 8px; border: 1.5px solid #d8c7f4; background: white; font-weight: 600; font-size: 12.5px; color: #150a35; outline: none;">
+                                <option value="" disabled selected>Select Reason for Delay...</option>
+                                <option value="High patient workload">1. High patient workload</option>
+                                <option value="Emergency or urgent cases">2. Emergency or urgent cases</option>
+                                <option value="Clinical Support to others (other specialists, MO's, staff nurses)">3. Clinical Support to others (other specialists, MO’s, staff nurses)</option>
+                                <option value="Staff shortage">4. Staff shortage</option>
+                                <option value="System downtime / technical issues">5. System downtime / technical issues</option>
+                                <option value="Pending information, investigation results or input from other departments">6. Pending information, investigation results or input from other departments</option>
+                                <option value="Others">7. Others. State reason:</option>
+                            </select>
+                        </div>
+
+                        <div style="margin-bottom: 20px;">
+                            <label style="font-size: 11.5px; font-weight: 700; color: #150a35; display: block; margin-bottom: 5px;" id="delayRemarksLabel">State Reason / Additional Remarks</label>
+                            <input type="text" name="delay_remarks" id="delayRemarksInput" placeholder="State reason if 'Others' is selected, or add remarks..." style="width: 100%; padding: 10px; border-radius: 8px; border: 1.5px solid #d8c7f4; font-size: 12.5px; box-sizing: border-box; background: white; color: #150a35; outline: none;">
+                        </div>
+
+                        <div style="display: flex; justify-content: flex-end; gap: 10px;">
+                            <button type="button" onclick="closeOverdueModal()" style="background: white; border: 1px solid #cbd5e1; padding: 9px 16px; border-radius: 8px; font-weight: 700; font-size: 12px; cursor: pointer;">Cancel</button>
+                            <button type="submit" style="background: #dc2626; color: white; border: none; padding: 9px 18px; border-radius: 8px; font-weight: 800; font-size: 12px; cursor: pointer;">Confirm & Save Justification</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <script>
+                function openOverdueModal(docId, patientId, elapsedHours) {
+                    document.getElementById('modalDocId').value = docId;
+                    document.getElementById('modalPatientId').innerText = patientId;
+                    document.getElementById('modalElapsedHours').innerText = elapsedHours;
+                    document.getElementById('overdueModal').style.display = 'flex';
+                }
+                function closeOverdueModal() {
+                    document.getElementById('overdueModal').style.display = 'none';
+                }
+
+                function toggleOthersRequirement(val) {
+                    var remarksInput = document.getElementById('delayRemarksInput');
+                    var remarksLabel = document.getElementById('delayRemarksLabel');
+                    if (val === 'Others') {
+                        remarksLabel.innerHTML = 'State Reason <span style="color:red;">*</span>';
+                        remarksInput.placeholder = "Please state your specific reason here...";
+                        remarksInput.required = true;
+                        remarksInput.focus();
+                    } else {
+                        remarksLabel.innerHTML = 'State Reason / Additional Remarks (Optional)';
+                        remarksInput.placeholder = "State reason if 'Others' is selected, or add remarks...";
+                        remarksInput.required = false;
+                    }
+                }
+            </script>
 
             <div class="card tab-content" id="tab-policy">
                 <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 15px; border-bottom: 2px solid #e7dff2; padding-bottom: 10px;">
@@ -696,3 +1059,184 @@
                 </form>
             </div>
 </div>
+
+<!-- ======================================================== -->
+<!-- SKRIP LOGIKA KLINIKAL FMS (NRIC, AGE, CKD & BMI)         -->
+<!-- ======================================================== -->
+<script>
+    // 1. Ekstrak Tanggal Lahir (DOB) & Jenis Kelamin otomatis dari NRIC
+    function parseFmsNRIC() {
+        var raw = document.getElementById('fms_nric').value.replace(/[^0-9]/g, '');
+        if (raw.length >= 6) {
+            var yy = parseInt(raw.substring(0, 2), 10);
+            var mm = raw.substring(2, 4);
+            var dd = raw.substring(4, 6);
+            var currentYearTwoDigit = 26; // Tahun 2026
+            var year = (yy > currentYearTwoDigit) ? (1900 + yy) : (2000 + yy);
+            if (parseInt(mm, 10) >= 1 && parseInt(mm, 10) <= 12 && parseInt(dd, 10) >= 1 && parseInt(dd, 10) <= 31) {
+                var dob = year + '-' + mm + '-' + dd;
+                document.getElementById('fms_dob').value = dob;
+                calculateFmsAge();
+            }
+        }
+        if (raw.length === 12) {
+            var last = parseInt(raw.slice(-1), 10);
+            var genderMale = document.getElementById('gender_male');
+            var genderFemale = document.getElementById('gender_female');
+            if (last % 2 !== 0) {
+                if (genderMale) genderMale.checked = true;
+            } else {
+                if (genderFemale) genderFemale.checked = true;
+            }
+        }
+    }
+
+    // 2. Hitung Usia & Rentang Usia Otomatis
+    function calculateFmsAge() {
+        var dobVal = document.getElementById('fms_dob').value;
+        if (!dobVal) return;
+        var dob = new Date(dobVal);
+        var today = new Date();
+        var age = today.getFullYear() - dob.getFullYear();
+        var m = today.getMonth() - dob.getMonth();
+        if (m < 0 || (m === 0 && today.getDate() < dob.getDate())) {
+            age--;
+        }
+        if (age >= 0 && age < 130) {
+            document.getElementById('fms_age').value = age + ' Years';
+            var group = '';
+            if (age < 18) group = '< 18 Years';
+            else if (age <= 39) group = '18 - 39 Years';
+            else if (age <= 59) group = '40 - 59 Years';
+            else if (age <= 79) group = '60 - 79 Years';
+            else group = '≥ 80 Years';
+            document.getElementById('fms_age_group').value = group;
+            calculateFmsDMAge();
+        }
+    }
+
+    // 3. Hitung Usia saat Pertama Terdiagnosis DM
+    function calculateFmsDMAge() {
+        var dobVal = document.getElementById('fms_dob').value;
+        var diagVal = document.getElementById('fms_dm_diag_date').value;
+        if (!dobVal || !diagVal) return;
+        var dob = new Date(dobVal);
+        var diag = new Date(diagVal);
+        var ageAtDiag = diag.getFullYear() - dob.getFullYear();
+        var m = diag.getMonth() - dob.getMonth();
+        if (m < 0 || (m === 0 && diag.getDate() < dob.getDate())) {
+            ageAtDiag--;
+        }
+        if (ageAtDiag >= 0) {
+            document.getElementById('fms_dm_diag_age').value = ageAtDiag + ' Years';
+        }
+    }
+
+    // 4. Hitung BMI Otomatis & Cek Komorbiditas Obesitas
+    function calculateFmsBMI() {
+        var h = parseFloat(document.getElementById('fms_height').value);
+        var w = parseFloat(document.getElementById('fms_weight').value);
+        var bmiInput = document.getElementById('fms_bmi_display');
+        var badge = document.getElementById('fms_bmi_badge');
+        
+        var obesityCheckbox = document.querySelector('input[name="comorbidities"][value="Obesity (BMI > 27.5)"]');
+        var noneCheckbox = document.querySelector('input[name="comorbidities"][value="None"]');
+
+        if (h > 0 && w > 0) {
+            var hm = h / 100.0;
+            var bmi = (w / (hm * hm)).toFixed(1);
+            bmiInput.value = bmi;
+            badge.style.display = 'inline-block';
+
+            if (bmi < 18.5) {
+                badge.innerText = 'Underweight';
+                badge.style.background = '#e0f2fe';
+                badge.style.color = '#0284c7';
+                badge.style.border = '1px solid #bae6fd';
+                if (obesityCheckbox) obesityCheckbox.checked = false;
+            } else if (bmi < 23.0) {
+                badge.innerText = 'Normal';
+                badge.style.background = '#f0fdf4';
+                badge.style.color = '#16a34a';
+                badge.style.border = '1px solid #bbf7d0';
+                if (obesityCheckbox) obesityCheckbox.checked = false;
+            } else if (bmi <= 27.5) {
+                badge.innerText = 'Overweight';
+                badge.style.background = '#fffbeb';
+                badge.style.color = '#d97706';
+                badge.style.border = '1px solid #fde68a';
+                if (obesityCheckbox) obesityCheckbox.checked = false;
+            } else {
+                badge.innerText = 'Obese (High Risk)';
+                badge.style.background = '#fef2f2';
+                badge.style.color = '#dc2626';
+                badge.style.border = '1px solid #fecaca';
+                
+                if (obesityCheckbox) {
+                    obesityCheckbox.checked = true;
+                    if (noneCheckbox) noneCheckbox.checked = false;
+                }
+            }
+        } else {
+            bmiInput.value = '';
+            badge.style.display = 'none';
+        }
+    }
+
+    // 5. Hitung Stadium CKD Otomatis Berdasarkan eGFR (KDIGO Guidelines)
+    function calculateFmsCKD() {
+        var egfr = parseFloat(document.getElementById('fms_egfr').value);
+        var ckdDisplay = document.getElementById('fms_ckd_display');
+        var ckdBadge = document.getElementById('fms_ckd_badge');
+        var ckdCheckbox = document.querySelector('input[name="comorbidities"][value="Chronic Kidney Disease (CKD)"]');
+        var noneCheckbox = document.querySelector('input[name="comorbidities"][value="None"]');
+
+        if (egfr > 0) {
+            ckdBadge.style.display = 'inline-block';
+            if (egfr >= 90) {
+                ckdDisplay.value = 'Stage 1';
+                ckdBadge.innerText = 'Stage 1: Normal / High';
+                ckdBadge.style.background = '#f0fdf4';
+                ckdBadge.style.color = '#16a34a';
+                ckdBadge.style.border = '1px solid #bbf7d0';
+            } else if (egfr >= 60) {
+                ckdDisplay.value = 'Stage 2';
+                ckdBadge.innerText = 'Stage 2: Mild';
+                ckdBadge.style.background = '#f0fdf4';
+                ckdBadge.style.color = '#16a34a';
+                ckdBadge.style.border = '1px solid #bbf7d0';
+            } else if (egfr >= 45) {
+                ckdDisplay.value = 'Stage 3A';
+                ckdBadge.innerText = 'Stage 3A: Mild-Mod';
+                ckdBadge.style.background = '#fffbeb';
+                ckdBadge.style.color = '#d97706';
+                ckdBadge.style.border = '1px solid #fde68a';
+                if (ckdCheckbox) { ckdCheckbox.checked = true; if (noneCheckbox) noneCheckbox.checked = false; }
+            } else if (egfr >= 30) {
+                ckdDisplay.value = 'Stage 3B';
+                ckdBadge.innerText = 'Stage 3B: Mod-Severe';
+                ckdBadge.style.background = '#fffbeb';
+                ckdBadge.style.color = '#d97706';
+                ckdBadge.style.border = '1px solid #fde68a';
+                if (ckdCheckbox) { ckdCheckbox.checked = true; if (noneCheckbox) noneCheckbox.checked = false; }
+            } else if (egfr >= 15) {
+                ckdDisplay.value = 'Stage 4';
+                ckdBadge.innerText = 'Stage 4: Severe';
+                ckdBadge.style.background = '#fef2f2';
+                ckdBadge.style.color = '#dc2626';
+                ckdBadge.style.border = '1px solid #fecaca';
+                if (ckdCheckbox) { ckdCheckbox.checked = true; if (noneCheckbox) noneCheckbox.checked = false; }
+            } else {
+                ckdDisplay.value = 'Stage 5';
+                ckdBadge.innerText = 'Stage 5: Failure';
+                ckdBadge.style.background = '#fef2f2';
+                ckdBadge.style.color = '#dc2626';
+                ckdBadge.style.border = '1px solid #fecaca';
+                if (ckdCheckbox) { ckdCheckbox.checked = true; if (noneCheckbox) noneCheckbox.checked = false; }
+            }
+        } else {
+            ckdDisplay.value = '';
+            ckdBadge.style.display = 'none';
+        }
+    }
+</script>
