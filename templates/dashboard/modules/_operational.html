@@ -238,13 +238,51 @@
                             <div><label style="margin-top:0;">Research Title <span style="color:red;">*</span></label><input type="text" name="title" placeholder="e.g. Prevalence of..." required style="background:white;"></div>
                             <div><label style="margin-top:0;">NMRR ID (If applicable)</label><input type="text" name="nmrr_id" placeholder="NMRR-XX-XXX-XXXXX" style="background:white;"></div>
                         </div>
-                        <div style="margin-bottom: 20px;">
+                        <div style="margin-bottom: 15px;">
                             <label style="margin-top:0;">Role / Status</label>
                             <div class="radio-group" style="margin-top: 10px;">
                                 <label style="margin:0; font-weight:normal;"><input type="radio" name="res_role" value="Principle Investigator (PI)" checked> Principle Investigator (PI)</label>
                                 <label style="margin:0; font-weight:normal;"><input type="radio" name="res_role" value="Co-Investigator"> Co-Investigator</label>
                             </div>
                         </div>
+
+                        <!-- WEIGHTED POINTS CALCULATOR (KKM INNOVATION FRAMEWORK) -->
+                        <div style="background: #faf8ff; border: 1.5px dashed #d8c7f4; padding: 15px; border-radius: 12px; margin-bottom: 20px;">
+                            <div style="font-size: 11px; font-weight: 800; color: #6d3ec4; text-transform: uppercase; margin-bottom: 12px;">
+                                ⭐ Innovation Weighted Point System (MoH Framework)
+                            </div>
+                            <div class="grid-2" style="margin-bottom: 12px;">
+                                <div>
+                                    <label style="margin-top:0; color:#150a35; font-size:12px; font-weight:700;">Innovation Activity Category <span style="color:red;">*</span></label>
+                                    <select name="activity_type" class="innov-activity-select" onchange="calculateInnovPoints(this.form)" required style="background:white; border-color:#d8c7f4; font-weight:600; width:100%;">
+                                        <option value="Research leadership: Lead / Principal Investigator" data-base="10" selected>Research leadership (PI / Lead)</option>
+                                        <option value="Scientific presentation: Poster or oral presentation" data-base="5">Scientific presentation (Poster / Oral)</option>
+                                        <option value="Research development: Approved protocol / grant proposal" data-base="5">Research development (Protocol / Grant)</option>
+                                        <option value="Research translation: Adoption of research findings" data-base="10">Research translation into practice</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label style="margin-top:0; color:#150a35; font-size:12px; font-weight:700;">Contribution Level / Role <span style="color:red;">*</span></label>
+                                    <select name="contribution_level" class="innov-level-select" onchange="calculateInnovPoints(this.form)" required style="background:white; border-color:#d8c7f4; font-weight:600; width:100%;">
+                                        <option value="Lead contribution" selected>Lead contribution</option>
+                                        <option value="Supporting contribution">Supporting contribution</option>
+                                        <option value="Substantial contribution">Substantial contribution</option>
+                                        <option value="Minimal or unverified contribution">Minimal or unverified contribution</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="grid-2" style="align-items: flex-end;">
+                                <div>
+                                    <label style="margin-top:0; color:#150a35; font-size:12px; font-weight:700;">Base Activity Points (Editable Range)</label>
+                                    <input type="number" name="base_points" class="innov-base-pts" value="10" min="0" max="10" step="0.5" oninput="calculateInnovPoints(this.form)" style="background:white; border-color:#d8c7f4; font-weight:700; width:100%;">
+                                </div>
+                                <div>
+                                    <label style="margin-top:0; color:#6d3ec4; font-size:12px; font-weight:800;">Calculated Innovation Points (Base × Multiplier)</label>
+                                    <input type="number" name="calculated_points" class="innov-final-pts" value="50" readonly style="background:#f3edff; border:1.5px solid #d8c7f4; color:#150a35; font-weight:900; width:100%; cursor:not-allowed;">
+                                </div>
+                            </div>
+                        </div>
+
                         <button type="submit" class="submit-btn" style="background-color: #6d3ec4; margin-top:0; display: flex; align-items: center; justify-content: center; gap: 8px;">
                             Save Research Log
                         </button>
@@ -255,7 +293,7 @@
                     </h4>
                     <div style="overflow-x: auto; border: 1px solid #e7dff2; border-radius: 8px;">
                         <table class="staff-table" style="margin:0;">
-                            <thead><tr><th>Date</th><th>Title</th><th>NMRR ID</th><th>Role</th><th>Status</th></tr></thead>
+                            <thead><tr><th>Date</th><th>Title</th><th>NMRR ID</th><th>Role</th><th>Points</th><th>Status</th></tr></thead>
                             <tbody>
                                 {% if ops_research_projects %}
                                     {% for project in ops_research_projects %}
@@ -264,6 +302,7 @@
                                             <td>{{ project.title }}</td>
                                             <td>{{ project.nmrr_id }}</td>
                                             <td>{{ project.research_role }}</td>
+                                            <td><b style="color:#150a35;">{{ project.score|floatformat:1 }} Pts</b></td>
                                             <td><span class="status-badge {{ project.status_css }}">{{ project.status_label }}</span></td>
                                         </tr>
                                     {% endfor %}
@@ -288,7 +327,7 @@
                                 <select name="phase" style="background:white;"><option>Phase I</option><option>Phase II</option><option>Phase III</option><option>Phase IV (Post-Market)</option></select>
                             </div>
                         </div>
-                        <div class="grid-2" style="margin-bottom: 20px;">
+                        <div class="grid-2" style="margin-bottom: 15px;">
                             <div><label style="margin-top:0;">Patient Recruitment Number</label><input type="number" name="recruitment_count" placeholder="Total recruited..." style="background:white;"></div>
                             <div>
                                 <label style="margin-top:0;">Recruitment Status</label>
@@ -298,6 +337,42 @@
                                 </div>
                             </div>
                         </div>
+
+                        <!-- WEIGHTED POINTS CALCULATOR (KKM INNOVATION FRAMEWORK) -->
+                        <div style="background: #faf8ff; border: 1.5px dashed #d8c7f4; padding: 15px; border-radius: 12px; margin-bottom: 20px;">
+                            <div style="font-size: 11px; font-weight: 800; color: #6d3ec4; text-transform: uppercase; margin-bottom: 12px;">
+                                ⭐ Innovation Weighted Point System (MoH Framework)
+                            </div>
+                            <div class="grid-2" style="margin-bottom: 12px;">
+                                <div>
+                                    <label style="margin-top:0; color:#150a35; font-size:12px; font-weight:700;">Innovation Activity Category <span style="color:red;">*</span></label>
+                                    <select name="activity_type" class="innov-activity-select" onchange="calculateInnovPoints(this.form)" required style="background:white; border-color:#d8c7f4; font-weight:600; width:100%;">
+                                        <option value="Clinical trial participation: Recruitment / coordination" data-base="8" selected>Clinical trial participation</option>
+                                        <option value="Research leadership: Principal Investigator (Trial)" data-base="10">Research leadership (PI / Lead)</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label style="margin-top:0; color:#150a35; font-size:12px; font-weight:700;">Contribution Level / Role <span style="color:red;">*</span></label>
+                                    <select name="contribution_level" class="innov-level-select" onchange="calculateInnovPoints(this.form)" required style="background:white; border-color:#d8c7f4; font-weight:600; width:100%;">
+                                        <option value="Lead contribution" selected>Lead contribution</option>
+                                        <option value="Supporting contribution">Supporting contribution</option>
+                                        <option value="Substantial contribution">Substantial contribution</option>
+                                        <option value="Minimal or unverified contribution">Minimal or unverified contribution</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="grid-2" style="align-items: flex-end;">
+                                <div>
+                                    <label style="margin-top:0; color:#150a35; font-size:12px; font-weight:700;">Base Activity Points (Editable Range)</label>
+                                    <input type="number" name="base_points" class="innov-base-pts" value="8" min="0" max="10" step="0.5" oninput="calculateInnovPoints(this.form)" style="background:white; border-color:#d8c7f4; font-weight:700; width:100%;">
+                                </div>
+                                <div>
+                                    <label style="margin-top:0; color:#6d3ec4; font-size:12px; font-weight:800;">Calculated Innovation Points (Base × Multiplier)</label>
+                                    <input type="number" name="calculated_points" class="innov-final-pts" value="40" readonly style="background:#f3edff; border:1.5px solid #d8c7f4; color:#150a35; font-weight:900; width:100%; cursor:not-allowed;">
+                                </div>
+                            </div>
+                        </div>
+
                         <button type="submit" class="submit-btn" style="background-color: #6d3ec4; margin-top:0; display: flex; align-items: center; justify-content: center; gap: 8px;">
                             Save Trial Log
                         </button>
@@ -308,7 +383,7 @@
                     </h4>
                     <div style="overflow-x: auto; border: 1px solid #e7dff2; border-radius: 8px;">
                         <table class="staff-table" style="margin:0;">
-                            <thead><tr><th>Date Logged</th><th>CRC Log No.</th><th>Phase</th><th>Recruits</th><th>Status</th></tr></thead>
+                            <thead><tr><th>Date Logged</th><th>CRC Log No.</th><th>Phase</th><th>Recruits</th><th>Points</th><th>Status</th></tr></thead>
                             <tbody>
                                 {% if ops_trial_projects %}
                                     {% for project in ops_trial_projects %}
@@ -317,6 +392,7 @@
                                             <td>{{ project.title }}</td>
                                             <td>{{ project.trial_phase }}</td>
                                             <td>{{ project.recruitment_display }}</td>
+                                            <td><b style="color:#150a35;">{{ project.score|floatformat:1 }} Pts</b></td>
                                             <td><span class="status-badge {{ project.status_css }}">{{ project.trial_status }}</span></td>
                                         </tr>
                                     {% endfor %}
@@ -343,7 +419,7 @@
                             <div><label style="margin-top:0;">Technology / System Name <span style="color:red;">*</span></label><input type="text" name="title" required style="background:white;"></div>
                             <div><label style="margin-top:0;">Date of Adoption</label><input type="date" name="adoption_date" style="background:white;"></div>
                         </div>
-                        <div style="margin-bottom: 20px;">
+                        <div style="margin-bottom: 15px;">
                             <label style="margin-top:0;">Proficiency Level</label>
                             <div class="radio-group" style="margin-top: 10px;">
                                 <label style="margin:0; font-weight:normal;"><input type="radio" name="tech_lvl" value="Amateur (Learning)" checked> Amateur (Learning)</label>
@@ -351,6 +427,43 @@
                                 <label style="margin:0; font-weight:normal;"><input type="radio" name="tech_lvl" value="Expert (Trainer)"> Expert (Trainer)</label>
                             </div>
                         </div>
+
+                        <!-- WEIGHTED POINTS CALCULATOR (KKM INNOVATION FRAMEWORK) -->
+                        <div style="background: #faf8ff; border: 1.5px dashed #d8c7f4; padding: 15px; border-radius: 12px; margin-bottom: 20px;">
+                            <div style="font-size: 11px; font-weight: 800; color: #6d3ec4; text-transform: uppercase; margin-bottom: 12px;">
+                                ⭐ Innovation Weighted Point System (MoH Framework)
+                            </div>
+                            <div class="grid-2" style="margin-bottom: 12px;">
+                                <div>
+                                    <label style="margin-top:0; color:#150a35; font-size:12px; font-weight:700;">Innovation Activity Category <span style="color:red;">*</span></label>
+                                    <select name="activity_type" class="innov-activity-select" onchange="calculateInnovPoints(this.form)" required style="background:white; border-color:#d8c7f4; font-weight:600; width:100%;">
+                                        <option value="Clinical innovation: Workflow / tool / service improvement" data-base="8" selected>Clinical innovation (Workflow / Tool)</option>
+                                        <option value="Intellectual contribution: Registered IP / validated digital tool" data-base="10">Intellectual contribution (IP / Digital Tool)</option>
+                                        <option value="Research translation: Adoption of research findings" data-base="10">Research translation into practice</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label style="margin-top:0; color:#150a35; font-size:12px; font-weight:700;">Contribution Level / Role <span style="color:red;">*</span></label>
+                                    <select name="contribution_level" class="innov-level-select" onchange="calculateInnovPoints(this.form)" required style="background:white; border-color:#d8c7f4; font-weight:600; width:100%;">
+                                        <option value="Lead contribution" selected>Lead contribution</option>
+                                        <option value="Supporting contribution">Supporting contribution</option>
+                                        <option value="Substantial contribution">Substantial contribution</option>
+                                        <option value="Minimal or unverified contribution">Minimal or unverified contribution</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="grid-2" style="align-items: flex-end;">
+                                <div>
+                                    <label style="margin-top:0; color:#150a35; font-size:12px; font-weight:700;">Base Activity Points (Editable Range)</label>
+                                    <input type="number" name="base_points" class="innov-base-pts" value="8" min="0" max="10" step="0.5" oninput="calculateInnovPoints(this.form)" style="background:white; border-color:#d8c7f4; font-weight:700; width:100%;">
+                                </div>
+                                <div>
+                                    <label style="margin-top:0; color:#6d3ec4; font-size:12px; font-weight:800;">Calculated Innovation Points (Base × Multiplier)</label>
+                                    <input type="number" name="calculated_points" class="innov-final-pts" value="40" readonly style="background:#f3edff; border:1.5px solid #d8c7f4; color:#150a35; font-weight:900; width:100%; cursor:not-allowed;">
+                                </div>
+                            </div>
+                        </div>
+
                         <button type="submit" class="submit-btn" style="background-color: #6d3ec4; margin-top:0; display: flex; align-items: center; justify-content: center; gap: 8px;">
                             Save Tech Adaptation Log
                         </button>
@@ -367,7 +480,7 @@
                                         <svg style="width:20px; height:20px; color:#6d3ec4;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-1 1h6l-.75-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
                                     </div>
                                     <div style="font-weight:bold; color:#150a35; font-size:14px;">{{ project.title }}</div>
-                                    <div style="font-size:10px; color:#64748b; margin-top:4px;">Adopted: {{ project.adoption_date_display }}</div>
+                                    <div style="font-size:10px; color:#64748b; margin-top:4px;">Adopted: {{ project.adoption_date_display }} &bull; <b style="color:#6d3ec4;">{{ project.score|floatformat:1 }} Pts</b></div>
                                     <div style="margin-top:10px; background:#f3edff; border-radius:10px; height:8px; overflow:hidden;"><div class="pct-fill" style="background:{{ project.proficiency_color }}; width:{{ project.proficiency_progress }}%; height:100%;"></div></div>
                                     <div style="font-size:11px; color:{{ project.proficiency_color }}; font-weight:bold; margin-top:8px;">{{ project.proficiency_display }}</div>
                                 </div>
@@ -389,10 +502,46 @@
                             <div><label style="margin-top:0;">Name of Journal <span style="color:red;">*</span></label><input type="text" name="journal" placeholder="e.g. Journal Name" required style="background:white;"></div>
                             <div><label style="margin-top:0;">DOI (Digital Object Identifier) <span style="color:red;">*</span></label><input type="text" name="doi" placeholder="10.xxxx/xxxxx" required style="background:white;"></div>
                         </div>
-                        <div class="grid-2" style="margin-bottom: 20px;">
+                        <div class="grid-2" style="margin-bottom: 15px;">
                             <div><label style="margin-top:0;">Publication Title</label><input type="text" name="title" style="background:white;"></div>
                             <div><label style="margin-top:0;">Year Published</label><input type="number" name="year" min="2000" max="{{ ops_current_year }}" value="{{ ops_current_year }}" style="background:white;"></div>
                         </div>
+
+                        <!-- WEIGHTED POINTS CALCULATOR (KKM INNOVATION FRAMEWORK) -->
+                        <div style="background: #faf8ff; border: 1.5px dashed #d8c7f4; padding: 15px; border-radius: 12px; margin-bottom: 20px;">
+                            <div style="font-size: 11px; font-weight: 800; color: #6d3ec4; text-transform: uppercase; margin-bottom: 12px;">
+                                ⭐ Innovation Weighted Point System (MoH Framework)
+                            </div>
+                            <div class="grid-2" style="margin-bottom: 12px;">
+                                <div>
+                                    <label style="margin-top:0; color:#150a35; font-size:12px; font-weight:700;">Innovation Activity Category <span style="color:red;">*</span></label>
+                                    <select name="activity_type" class="innov-activity-select" onchange="calculateInnovPoints(this.form)" required style="background:white; border-color:#d8c7f4; font-weight:600; width:100%;">
+                                        <option value="Research output: Published case report / article / review" data-base="8" selected>Research output (Case report / Article)</option>
+                                        <option value="Scientific presentation: Poster or oral presentation" data-base="5">Scientific presentation (Poster / Oral)</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label style="margin-top:0; color:#150a35; font-size:12px; font-weight:700;">Contribution Level / Role <span style="color:red;">*</span></label>
+                                    <select name="contribution_level" class="innov-level-select" onchange="calculateInnovPoints(this.form)" required style="background:white; border-color:#d8c7f4; font-weight:600; width:100%;">
+                                        <option value="Lead contribution" selected>Lead contribution</option>
+                                        <option value="Supporting contribution">Supporting contribution</option>
+                                        <option value="Substantial contribution">Substantial contribution</option>
+                                        <option value="Minimal or unverified contribution">Minimal or unverified contribution</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="grid-2" style="align-items: flex-end;">
+                                <div>
+                                    <label style="margin-top:0; color:#150a35; font-size:12px; font-weight:700;">Base Activity Points (Editable Range)</label>
+                                    <input type="number" name="base_points" class="innov-base-pts" value="8" min="0" max="10" step="0.5" oninput="calculateInnovPoints(this.form)" style="background:white; border-color:#d8c7f4; font-weight:700; width:100%;">
+                                </div>
+                                <div>
+                                    <label style="margin-top:0; color:#6d3ec4; font-size:12px; font-weight:800;">Calculated Innovation Points (Base × Multiplier)</label>
+                                    <input type="number" name="calculated_points" class="innov-final-pts" value="40" readonly style="background:#f3edff; border:1.5px solid #d8c7f4; color:#150a35; font-weight:900; width:100%; cursor:not-allowed;">
+                                </div>
+                            </div>
+                        </div>
+
                         <button type="submit" class="submit-btn" style="background-color: #6d3ec4; margin-top:0; display: flex; align-items: center; justify-content: center; gap: 8px;">
                             Save Publication Record
                         </button>
@@ -408,7 +557,8 @@
                                     <div style="background: white; border: 1px solid #e7dff2; border-radius: 8px; padding: 15px; margin-bottom:10px; box-shadow: 0 2px 5px rgba(21,10,53,0.02);">
                                         <div style="font-weight:bold; color:#150a35; font-size:13px;">{{ project.title }}</div>
                                         <div style="font-size:12px; color:#6d3ec4; margin-top:3px;">{{ project.journal }} ({{ project.publication_year_display }})</div>
-                                        <div style="font-size:12px; color:#6d3ec4; margin-top:3px; margin-bottom: 8px;">DOI: {{ project.doi }}</div>
+                                        <div style="font-size:12px; color:#6d3ec4; margin-top:3px;">DOI: {{ project.doi }}</div>
+                                        <div style="margin: 6px 0 8px 0; font-size:12px;"><b style="color:#150a35;">Points: {{ project.score|floatformat:1 }} Pts</b></div>
                                         <div><span class="status-badge {{ project.status_css }}">{{ project.status_label }}</span></div>
                                     </div>
                                 {% endfor %}
@@ -442,3 +592,71 @@
                 </div>
             </div>
 </div>
+
+<!-- ======================================================== -->
+<!-- SKRIP PENGIRA PINTAR INOVASI (WEIGHTED MULTIPLIER 5,1,2,0) -->
+<!-- ======================================================== -->
+<script>
+    // 1. Pengiraan Automatik Mata Inovasi Berwajaran (Base Points x Multiplier)
+    function calculateInnovPoints(form) {
+        var actSelect = form.querySelector('.innov-activity-select');
+        var baseInput = form.querySelector('.innov-base-pts');
+        var lvlSelect = form.querySelector('.innov-level-select');
+        var finalInput = form.querySelector('.innov-final-pts');
+
+        if (actSelect && baseInput) {
+            var selectedOpt = actSelect.options[actSelect.selectedIndex];
+            var defaultBase = parseFloat(selectedOpt.getAttribute('data-base') || 0);
+
+            // Jika pengguna menukar kategori aktiviti, kemas kini mata asas cadangan
+            if (form.dataset.lastAct !== actSelect.value) {
+                baseInput.value = defaultBase;
+                form.dataset.lastAct = actSelect.value;
+            }
+        }
+
+        var base = parseFloat(baseInput.value) || 0;
+        var mult = 0;
+
+        // Pemetaan Pengganda KKM: Lead (5), Substantial (1), Supporting (2), Minimal (0)
+        if (lvlSelect.value === 'Lead contribution') {
+            mult = 5;
+        } else if (lvlSelect.value === 'Supporting contribution') {
+            mult = 2;
+        } else if (lvlSelect.value === 'Substantial contribution') {
+            mult = 1;
+        } else {
+            mult = 0;
+        }
+
+        if (base > 0 && mult >= 0) {
+            finalInput.value = (base * mult).toFixed(1);
+        } else {
+            finalInput.value = '';
+        }
+    }
+
+    // 2. Pertukaran Sub-Tab Inovasi (Research, Trials, Tech, Publication)
+    function switchInnov(tabName, el) {
+        var tabs = ['research', 'trials', 'tech', 'pub'];
+        tabs.forEach(function(t) {
+            var box = document.getElementById('innov-' + t);
+            if (box) box.style.display = (t === tabName) ? 'block' : 'none';
+        });
+
+        var radios = document.querySelectorAll('#innov-selector .sm-radio');
+        radios.forEach(function(r) {
+            r.classList.remove('active');
+            r.style.background = 'white';
+            r.style.color = '#150a35';
+            r.style.borderColor = '#e7dff2';
+        });
+
+        if (el) {
+            el.classList.add('active');
+            el.style.background = '#f3edff';
+            el.style.color = '#6d3ec4';
+            el.style.borderColor = '#6d3ec4';
+        }
+    }
+</script>

@@ -160,6 +160,11 @@ class CPDClaim(models.Model):
 
     officer = models.ForeignKey(User, on_delete=models.CASCADE, related_name='cpd_claims')
     category = models.CharField(max_length=50, default="CME Workshop") # CME, Workshop, Quiz
+    
+    # myCPD 2.0 KKM Standard
+    sub_category = models.CharField(max_length=100, blank=True, null=True) 
+    role = models.CharField(max_length=20, default='ATTENDEE') # ATTENDEE / PRESENTER
+    
     topic = models.CharField(max_length=200)
     points = models.IntegerField(default=10)
     event_date = models.DateField()
@@ -195,7 +200,7 @@ class ProductivityLog(models.Model):
         return f"Productivity {self.record_date} - {self.officer.username}"
 
 
-# B. Modul: Innovation & Problem Solving
+# B. Modul: Innovation & Problem Solving (Weighted Points-Based System)
 class InnovationProject(models.Model):
     officer = models.ForeignKey(User, on_delete=models.CASCADE, related_name='innovation_projects')
     project_title = models.CharField(max_length=200)
@@ -212,6 +217,14 @@ class InnovationProject(models.Model):
     doi = models.CharField(max_length=100, blank=True, null=True)
     publication_year = models.PositiveIntegerField(blank=True, null=True)
     description = models.TextField()
+
+    # Model Pemarkahan Wajaran Baharu (8 Aktiviti & Pengganda Peranan 5, 1, 2, 0)
+    activity_type = models.CharField(max_length=100, blank=True, null=True) # 8 Jenis Aktiviti Inovasi
+    base_points = models.FloatField(default=0.0) # Mata Asas Aktiviti
+    contribution_level = models.CharField(max_length=100, blank=True, null=True) # Lead, Substantial, Supporting, Minimal
+    multiplier = models.FloatField(default=0.0) # 5.0, 1.0, 2.0, 0.0
+    final_points = models.FloatField(default=0.0) # Base Points x Multiplier
+
     score = models.FloatField(default=80.0)
     is_verified = models.BooleanField(default=False)
     verified_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='verified_innovation_projects')

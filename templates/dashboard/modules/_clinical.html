@@ -578,11 +578,11 @@
                         <div class="grid-2" style="margin-bottom: 15px;">
                             <div>
                                 <label style="margin-top:0;">Program / Course Title <span style="color:red;">*</span></label>
-                                <input type="text" name="tajuk" placeholder="e.g. National Cardiology Conference" required style="background:white;">
+                                <input type="text" name="tajuk" placeholder="e.g. National Cardiology Conference" required style="background:white; border-color:#d8c7f4;">
                             </div>
                             <div>
                                 <label style="margin-top:0;">Event Category <span style="color:red;">*</span></label>
-                                <select name="category" required style="background:white;">
+                                <select name="category" required style="background:white; border-color:#d8c7f4; font-weight:600;">
                                     <option value="" disabled selected>Select Category...</option>
                                     <option>A1 - Conference / Symposium</option>
                                     <option>A2 - Seminar / Workshop</option>
@@ -592,10 +592,34 @@
                             </div>
                         </div>
 
-                        <div class="grid-3" style="margin-bottom: 15px;">
-                            <div><label style="margin-top:0;">Start Date <span style="color:red;">*</span></label><input type="date" name="start_date" required style="background:white;"></div>
-                            <div><label style="margin-top:0;">End Date</label><input type="date" name="end_date" style="background:white;"></div>
-                            <div><label style="margin-top:0;">Points Claimed <span style="color:red;">*</span></label><input type="number" name="mata" min="1" required style="background:white;"></div>
+                        <!-- MODUL KHAS myCPD 2.0 (SUB-KATEGORI & PERANAN) -->
+                        <div class="grid-3" style="margin-bottom: 15px; background: #faf8ff; border: 1.5px dashed #d8c7f4; padding: 15px; border-radius: 12px; align-items: flex-end;">
+                            <div>
+                                <label style="margin-top:0; color:#150a35; font-weight:700;">Sub Category (Duration) <span style="color:red;">*</span></label>
+                                <select id="cpd_subcat" name="sub_category" onchange="calculateMyCPD()" required style="background:white; border-color:#d8c7f4; font-weight:600; width:100%;">
+                                    <option value="" disabled selected>Select Duration...</option>
+                                    <option value="ONE FULL DAY">One Full Day</option>
+                                    <option value="ONE AND A HALF DAYS">One and a Half Days</option>
+                                    <option value="TWO FULL DAYS">Two Full Days</option>
+                                    <option value="TWO AND A HALF DAYS OR MORE">Two and a Half Days or More</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label style="margin-top:0; color:#150a35; font-weight:700;">Participation Role <span style="color:red;">*</span></label>
+                                <select id="cpd_role" name="role" onchange="calculateMyCPD()" required style="background:white; border-color:#d8c7f4; font-weight:600; width:100%;">
+                                    <option value="ATTENDEE" selected>Attendee</option>
+                                    <option value="PRESENTER">Presenter / Speaker</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label style="margin-top:0; color:#6d3ec4; font-weight:800;">Calculated Points Claimed</label>
+                                <input type="number" id="cpd_mata" name="mata" readonly style="background:#f3edff; border:1px solid #d8c7f4; color:#150a35; font-weight:900; width:100%; cursor:not-allowed;">
+                            </div>
+                        </div>
+
+                        <div class="grid-2" style="margin-bottom: 15px;">
+                            <div><label style="margin-top:0;">Program Start Date <span style="color:red;">*</span></label><input type="date" name="start_date" required style="background:white; border-color:#d8c7f4;"></div>
+                            <div><label style="margin-top:0;">Program End Date</label><input type="date" name="end_date" style="background:white; border-color:#d8c7f4;"></div>
                         </div>
 
                         <div style="margin-bottom: 15px;">
@@ -1237,6 +1261,27 @@
         } else {
             ckdDisplay.value = '';
             ckdBadge.style.display = 'none';
+        }
+    }
+
+    // 6. Pengiraan Pintar myCPD 2.0 (Sub-Kategori + Peranan)
+    function calculateMyCPD() {
+        var subcat = document.getElementById('cpd_subcat').value;
+        var role = document.getElementById('cpd_role').value;
+        var pointsInput = document.getElementById('cpd_mata');
+        
+        var basePts = 0;
+        if (subcat === 'ONE FULL DAY') basePts = 8;
+        else if (subcat === 'ONE AND A HALF DAYS') basePts = 12;
+        else if (subcat === 'TWO FULL DAYS') basePts = 16;
+        else if (subcat === 'TWO AND A HALF DAYS OR MORE') basePts = 20;
+
+        var roleBonus = (role === 'PRESENTER') ? 5 : 0;
+        
+        if (basePts > 0) {
+            pointsInput.value = basePts + roleBonus;
+        } else {
+            pointsInput.value = '';
         }
     }
 </script>

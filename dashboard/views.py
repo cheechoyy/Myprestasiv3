@@ -2673,6 +2673,26 @@ def _save_innovation_project(request):
         if publication_year is not None:
             description_lines.append(f'Year: {publication_year}')
 
+    # Tangkap parameter Model Pemarkahan Inovasi Baharu (8 Aktiviti & Pengganda 5, 1, 2, 0)
+    activity_type = _optional_text(request.POST.get('activity_type'), max_length=100)
+    base_points = _optional_float(request.POST.get('base_points'), 'Base Points') or 0.0
+    contribution_level = _optional_text(request.POST.get('contribution_level'), max_length=100) or 'Lead contribution'
+
+    # Pemetaan Pengganda Mengikut Penetapan KKM Baharu (5, 1, 2, 0)
+    multiplier_map = {
+        'Lead contribution': 5.0,
+        'Substantial contribution': 1.0,
+        'Supporting contribution': 2.0,
+        'Minimal or unverified contribution': 0.0,
+    }
+    multiplier = multiplier_map.get(contribution_level, 0.0)
+    final_points = round(base_points * multiplier, 1)
+
+    if activity_type:
+        description_lines.append(f'Activity: {activity_type}')
+    description_lines.append(f'Contribution: {contribution_level} (Multiplier x{multiplier:g})')
+    description_lines.append(f'Total Score: {final_points} Pts')
+
     description = (
         '\n'.join(description_lines)
         or f'Dihantar melalui Portal MyPrestasi ({innovation_type}).'
@@ -2695,6 +2715,12 @@ def _save_innovation_project(request):
             doi=doi,
             publication_year=publication_year,
             description=description,
+            activity_type=activity_type,
+            base_points=base_points,
+            contribution_level=contribution_level,
+            multiplier=multiplier,
+            final_points=final_points,
+            score=final_points,
         )
 
 
@@ -2872,6 +2898,11 @@ def _operational_project_payload(project, innovation_type):
             if project.submitted_at else 'Not recorded'
         ),
         'score': project.score,
+        'activity_type': getattr(project, 'activity_type', None) or 'General',
+        'base_points': getattr(project, 'base_points', 0.0),
+        'contribution_level': getattr(project, 'contribution_level', None) or 'Lead contribution',
+        'multiplier': getattr(project, 'multiplier', 1.0),
+        'final_points': getattr(project, 'final_points', project.score),
         'is_verified': is_verified,
         'status_label': 'Verified' if is_verified else 'Pending Verification',
         'status_css': 'bg-success' if is_verified else 'bg-warning',
@@ -3458,7 +3489,29 @@ def staff_dashboard_view(request):
             )
 
         elif form_type == 'cpd':
-            mata = max(0, _parse_int(request.POST.get('mata'), 0))
+            # myCPD 2.0 Backend Security Calculation
+            sub_category = (request.POST.get('sub_category') or '').strip()
+            role = request.POST.get('role', 'ATTENDEE').upper()
+            
+            # Pengiraan Asas
+            base_points = 0
+            if sub_category == 'ONE FULL DAY':
+                base_points = 8
+            elif sub_category == 'ONE AND A HALF DAYS':
+                base_points = 12
+            elif sub_category == 'TWO FULL DAYS':
+                base_points = 16
+            elif sub_category == 'TWO AND A HALF DAYS OR MORE':
+                base_points = 20
+                
+            # Bonus Peranan (Role)
+            role_bonus = 5 if role == 'PRESENTER' else 0
+            
+            # Jika user guna manual input (fallback), ambil dari 'mata'
+            mata = base_points + role_bonus
+            if mata == 0: 
+                mata = max(0, _parse_int(request.POST.get('mata'), 0))
+
             tajuk = ((request.POST.get('tajuk') or '').strip() or 'Program CME')[:200]
             category = (request.POST.get('category') or '').strip() or 'CME Workshop'
             event_date = _parse_date_value(request.POST.get('start_date'), date.today())
@@ -3489,6 +3542,8 @@ def staff_dashboard_view(request):
                 topic=tajuk,
                 points=mata,
                 category=category,
+                sub_category=sub_category,
+                role=role,
                 event_date=event_date,
                 end_date=end_date,
                 certificate=certificate or None,
