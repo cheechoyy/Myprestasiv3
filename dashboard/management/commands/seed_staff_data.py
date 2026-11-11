@@ -1,5 +1,6 @@
 from django.core.management.base import BaseCommand
 from django.contrib.auth.models import User
+from django.utils import timezone
 from datetime import date, timedelta
 import random
 
@@ -79,12 +80,29 @@ class Command(BaseCommand):
         DocumentationLog.objects.filter(officer=user).delete()
         for i in range(1, 13):
             is_late = (i in [3, 8])
+            delay_hours = 5.0 if is_late else 1.5
+            completed_at = timezone.now() - timedelta(days=i)
+            encounter_at = completed_at - timedelta(hours=delay_hours)
             DocumentationLog.objects.create(
                 officer=user,
                 patient_id=f"RN-{202600 + i}",
-                delay_hours=float(random.randint(4, 9)) if is_late else 0.0,
-                reason_for_delay="High patient load in Green Zone triage" if is_late else "",
-                is_ontime=not is_late
+                encounter_type="Outpatient Consultation",
+                encounter_at=encounter_at,
+                completed_at=completed_at,
+                delay_hours=delay_hours,
+                reason_for_delay=(
+                    "High patient load in Green Zone triage"
+                    if is_late else None
+                ),
+                delay_reason_category=(
+                    "High patient load" if is_late else None
+                ),
+                delay_reason_remarks=(
+                    "Green Zone triage congestion"
+                    if is_late else None
+                ),
+                is_ontime=not is_late,
+                is_completed=True,
             )
 
         # D. Policies & Protocols Compliance
@@ -108,6 +126,7 @@ class Command(BaseCommand):
         for i in range(14, 0, -1):
             ProductivityLog.objects.create(
                 officer=user,
+                record_date=date.today() - timedelta(days=i),
                 patients_cleared=random.randint(38, 48),
                 avg_consult_minutes=round(random.uniform(10.5, 13.5), 1),
                 punctuality_rate=float(random.randint(92, 98))
@@ -120,14 +139,18 @@ class Command(BaseCommand):
             project_title="Fast-Track Red Zone Diabetic Ketoacidosis Protocol",
             category="Clinical Workflow Improvement",
             description="Mengurangkan purata masa triage pesakit DKA dari 45 minit ke 18 minit di KK Medong.",
-            score=88.0
+            final_points=10.0,
+            score=88.0,
+            is_verified=True
         )
         InnovationProject.objects.create(
             officer=user,
             project_title="Digital Paperless Retinal Screening Registry",
             category="System Compliance",
             description="Integrasi rujukan digital fundus terus ke klinik pakar mata daerah.",
-            score=84.0
+            final_points=10.0,
+            score=84.0,
+            is_verified=True
         )
 
         # ==========================================
