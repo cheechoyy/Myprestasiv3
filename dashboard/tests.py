@@ -1,10 +1,13 @@
 import shutil
 import tempfile
 from datetime import date, datetime, timedelta
+from io import StringIO
 from unittest.mock import patch
 
 from django.contrib.auth.models import User
 from django.core.files.uploadedfile import SimpleUploadedFile
+from django.core.management import call_command
+from django.core.management.base import CommandError
 from django.test import TestCase, override_settings
 from django.urls import reverse
 from django.utils import timezone
@@ -24,7 +27,7 @@ from .models import (
     ProductivityLog,
     UserProfile,
 )
-from .services import calculate_pri_score
+from .services import calculate_pri_score, get_module_scores
 from .views import (
     MAX_CPD_CERTIFICATE_SIZE,
     POLICY_MULTI_OPTIONS,
@@ -1942,3 +1945,497 @@ class PRIScoreCompatibilityPhase2Tests(TestCase):
         result = calculate_pri_score(self.user)
 
         self.assertEqual(result['score_interpersonal'], 85)
+
+
+class ModuleScoreEngineTests(TestCase):
+    def setUp(self):
+        self.user = User.objects.create_user(
+            username='module_score_user',
+            password='test-pass',
+        )
+        self.today = timezone.localdate()
+
+    def _aware(self, day_offset=0, hour=9, minute=0):
+        day = self.today + timedelta(days=day_offset)
+        naive = datetime.combine(day, datetime.min.time())
+        naive += timedelta(hours=hour, minutes=minute)
+        return timezone.make_aware(naive)
+
+    def _assert_module(self, result, key, score, status='OK', n=None):
+        module = result['by_key'][key]
+        self.assertEqual(module['status'], status)
+        if score is None:
+            self.assertIsNone(module['score'])
+        else:
+            self.assertAlmostEqual(module['score'], score, places=1)
+        if n is not None:
+            self.assertEqual(module['n'], n)
+        return module
+
+    def test_all_module_formulas_and_return_contract(self):
+        for offset, verified, successful in (
+            (0, True, True),
+            (1, True, True),
+            (2, True, False),
+            (3, False, True),
+        ):
+            ProcedureLog.objects.create(
+                officer=self.user,
+                procedure_date=self.today - timedelta(days=offset),
+                is_verified=verified,
+                is_successful=successful,
+            )
+
+        for offset, start_hour, end_hour, on_time in (
+            (0, 9, 11, True),
+            (1, 9, 12, True),
+            (2, 9, 14, False),
+        ):
+            DocumentationLog.objects.create(
+                officer=self.user,
+                patient_id=f'DOC-{offset}',
+                encounter_at=self._aware(-offset, start_hour),
+                completed_at=self._aware(-offset, end_hour),
+                delay_hours=end_hour - start_hour,
+                is_ontime=on_time,
+                is_completed=True,
+            )
+        DocumentationLog.objects.create(
+            officer=self.user,
+            patient_id='DOC-PENDING',
+            encounter_at=self._aware(0, 8),
+            completed_at=None,
+            is_completed=False,
+        )
+
+        CPDClaim.objects.create(
+            officer=self.user,
+            topic='Approved CPD',
+            points=30,
+            event_date=self.today,
+            status='APPROVED',
+        )
+        CPDClaim.objects.create(
+            officer=self.user,
+            topic='Pending CPD',
+            points=20,
+            event_date=self.today,
+            status='PENDING',
+        )
+        CPDClaim.objects.create(
+            officer=self.user,
+            topic='Rejected CPD',
+            points=10,
+            event_date=self.today,
+            status='REJECTED',
+        )
+
+        declaration = PolicyDeclaration.objects.create(
+            officer=self.user,
+            year=self.today.year,
+        )
+        for question_number in range(1, 21):
+            PolicyItemResponse.objects.create(
+                declaration=declaration,
+                question_number=question_number,
+                compliance_ratio=0.9,
+            )
+
+        for offset in range(30):
+            ProductivityLog.objects.create(
+                officer=self.user,
+                record_date=self.today - timedelta(days=offset),
+                patients_cleared=40,
+            )
+
+
+        InnovationProject.objects.create(
+            officer=self.user,
+            project_title='Verified innovation',
+            description='Test',
+            final_points=10,
+            score=80,
+            is_verified=True,
+        )
+        InnovationProject.objects.create(
+            officer=self.user,
+            project_title='Pending innovation',
+            description='Test',
+            final_points=5,
+            score=80,
+            is_verified=False,
+        )
+
+        MyPSQFeedback.objects.create(
+            doctor=self.user,
+            q1_general=4,
+            q2_technical=4,
+            q3_interpersonal=4,
+            q4_communication=4,
+            q5_financial=4,
+            q6_time=4,
+            q7_accessibility=4,
+        )
+        EmotionalReflection.objects.create(
+            officer=self.user,
+            record_date=self.today,
+            self_awareness_score=90,
+            self_regulation_score=80,
+            empathy_score=70,
+            deescalation_score=60,
+        )
+
+        sender = User.objects.create_user(username='kudos_sender')
+        for points in (6, 9, 0):
+            PeerKudos.objects.create(
+                sender=sender,
+                receiver=self.user,
+                points=points,
+            )
+
+        MentorshipSession.objects.create(
+            mentor=self.user,
+            participant_role='mentor',
+            mentee_name='Mentee A',
+            topic='Topic A',
+            session_date=self.today,
+            duration_hours=2,
+            is_verified=True,
+        )
+        MentorshipSession.objects.create(
+            mentor=self.user,
+            participant_role='mentor',
+            mentee_name='Mentee B',
+            topic='Topic B',
+            session_date=self.today,
+            duration_hours=3,
+            is_verified=True,
+        )
+        MentorshipSession.objects.create(
+            mentor=self.user,
+            participant_role='mentor',
+            mentee_name='Mentee C',
+            topic='Topic C',
+            session_date=self.today,
+            duration_hours=10,
+            is_verified=False,
+        )
+        MentorshipSession.objects.create(
+            mentor=self.user,
+            participant_role='mentee',
+            mentee_name='Mentee D',
+            topic='Topic D',
+            session_date=self.today,
+            duration_hours=10,
+            is_verified=True,
+        )
+
+        result = get_module_scores(self.user, as_of=self.today)
+
+        self.assertEqual(len(result['modules']), 10)
+        self.assertEqual(result['recorded_count'], 10)
+        self.assertEqual(result['scorable_count'], 10)
+        self.assertEqual(
+            set(result['by_key']),
+            {module['key'] for module in result['modules']},
+        )
+
+        clinical = self._assert_module(
+            result, 'clinical_delivery', 66.7, n=3
+        )
+        self.assertEqual(clinical['raw_value'], 2.0)
+        self.assertEqual(clinical['display'], '66.7%')
+
+        documentation = self._assert_module(
+            result, 'documentation', 66.7, n=3
+        )
+        self.assertEqual(documentation['raw_value'], 2.0)
+
+        self._assert_module(result, 'cpd', 60.0, n=1)
+        self._assert_module(result, 'policies', 90.0, n=20)
+        productivity = self._assert_module(
+            result, 'productivity', 52.3, n=30
+        )
+        self.assertEqual(productivity['raw_value'], 40.0)
+
+        innovation = self._assert_module(
+            result, 'innovation', 75.0,
+            status='PENDING_VERIFICATION', n=2,
+        )
+        self.assertTrue(innovation['is_provisional'])
+        self.assertEqual(innovation['raw_value'], 15.0)
+
+        self._assert_module(result, 'mypsq', 80.0, n=1)
+        self._assert_module(result, 'emotional_intelligence', 75.0, n=1)
+        self._assert_module(result, 'teamwork', 50.0, n=3)
+        self._assert_module(result, 'mentorship', 50.0, n=2)
+
+
+    def test_no_data_is_none_while_real_zero_is_zero(self):
+        empty = get_module_scores(self.user, as_of=self.today)
+        empty_productivity = empty['by_key']['productivity']
+        self.assertIsNone(empty_productivity['score'])
+        self.assertEqual(empty_productivity['status'], 'NO_DATA')
+        self.assertFalse(empty_productivity['has_records'])
+        self.assertEqual(empty['recorded_count'], 0)
+        self.assertEqual(empty['scorable_count'], 0)
+
+        ProductivityLog.objects.create(
+            officer=self.user,
+            record_date=self.today,
+            patients_cleared=0,
+        )
+        zero = get_module_scores(self.user, as_of=self.today)
+        zero_productivity = zero['by_key']['productivity']
+        self.assertEqual(zero_productivity['score'], 0.0)
+        self.assertEqual(zero_productivity['status'], 'ZERO')
+        self.assertTrue(zero_productivity['has_records'])
+        self.assertEqual(zero['recorded_count'], 1)
+        self.assertEqual(zero['scorable_count'], 1)
+
+    def test_invalid_documentation_timestamp_is_not_scored(self):
+        DocumentationLog.objects.create(
+            officer=self.user,
+            patient_id='INVALID-TIMESTAMP',
+            encounter_at=None,
+            completed_at=self._aware(0, 10),
+            is_completed=True,
+        )
+        result = get_module_scores(self.user, as_of=self.today)
+        documentation = result['by_key']['documentation']
+        self.assertIsNone(documentation['score'])
+        self.assertEqual(documentation['status'], 'INVALID_DATA')
+        self.assertTrue(documentation['has_records'])
+
+    def test_pending_documentation_and_unverified_procedure_are_pending(self):
+        DocumentationLog.objects.create(
+            officer=self.user,
+            patient_id='PENDING',
+            encounter_at=self._aware(0, 9),
+            completed_at=None,
+            is_completed=False,
+        )
+        ProcedureLog.objects.create(
+            officer=self.user,
+            procedure_date=self.today,
+            is_verified=False,
+            is_successful=True,
+        )
+        result = get_module_scores(self.user, as_of=self.today)
+        self.assertEqual(
+            result['by_key']['documentation']['status'],
+            'PENDING_VERIFICATION',
+        )
+        self.assertEqual(
+            result['by_key']['clinical_delivery']['status'],
+            'PENDING_VERIFICATION',
+        )
+
+    def test_policy_domain_fallback_is_provisional(self):
+        PolicyDeclaration.objects.create(
+            officer=self.user,
+            year=self.today.year,
+            score_domain_a=80,
+            score_domain_b=80,
+            score_domain_c=80,
+            score_domain_d=80,
+            score_domain_e=80,
+        )
+        result = get_module_scores(self.user, as_of=self.today)
+        policies = result['by_key']['policies']
+        self.assertAlmostEqual(policies['score'], 80.0, places=1)
+        self.assertEqual(policies['status'], 'PROVISIONAL')
+        self.assertTrue(policies['is_provisional'])
+        self.assertEqual(policies['n'], 5)
+
+    def test_productivity_window_and_duplicate_dates(self):
+        ProductivityLog.objects.create(
+            officer=self.user,
+            record_date=self.today - timedelta(days=40),
+            patients_cleared=60,
+        )
+        ProductivityLog.objects.create(
+            officer=self.user,
+            record_date=self.today,
+            patients_cleared=40,
+        )
+        ProductivityLog.objects.create(
+            officer=self.user,
+            record_date=self.today,
+            patients_cleared=50,
+        )
+        result = get_module_scores(self.user, as_of=self.today)
+        productivity = result['by_key']['productivity']
+        self.assertEqual(productivity['n'], 1)
+        self.assertEqual(productivity['raw_value'], 50.0)
+
+
+
+class SimulationSeederTests(TestCase):
+    username = 'sim_test_doctor'
+
+    def _run(self, *args):
+        output = StringIO()
+        call_command(
+            'seed_simulation_data',
+            *args,
+            stdout=output,
+        )
+        return output.getvalue()
+
+    @override_settings(DEBUG=False)
+    def test_dry_run_does_not_write(self):
+        output = self._run(
+            '--dry-run',
+            '--force',
+            '--username', self.username,
+        )
+        self.assertIn('[DRY RUN]', output)
+        self.assertFalse(
+            User.objects.filter(username=self.username).exists()
+        )
+        self.assertEqual(DocumentationLog.objects.count(), 0)
+        self.assertEqual(ProductivityLog.objects.count(), 0)
+        self.assertEqual(CPDClaim.objects.count(), 0)
+
+    @override_settings(DEBUG=False)
+    def test_refuses_to_run_with_debug_false_without_force(self):
+        with self.assertRaises(CommandError):
+            self._run(
+                '--dry-run',
+                '--username', self.username,
+            )
+
+    @override_settings(DEBUG=False)
+    def test_seed_creates_complete_data_and_scores(self):
+        User.objects.create_user(username='dr_mail')
+        real_user = User.objects.create_user(username='real_seed_user')
+        real_log = ProductivityLog.objects.create(
+            officer=real_user,
+            record_date=timezone.localdate(),
+            patients_cleared=99,
+            operational_notes='REAL-RECORD',
+        )
+
+        output = self._run(
+            '--force',
+            '--username', self.username,
+            '--days', '14',
+            '--seed', '7',
+        )
+        user = User.objects.get(username=self.username)
+
+        docs = DocumentationLog.objects.filter(
+            officer=user,
+            patient_id__startswith='SIM-DOC-',
+        )
+        self.assertTrue(docs.exists())
+        for log in docs:
+            self.assertIsNotNone(log.encounter_at)
+            if log.is_completed:
+                self.assertIsNotNone(log.completed_at)
+            else:
+                self.assertIsNone(log.completed_at)
+
+        productivity = ProductivityLog.objects.filter(
+            officer=user,
+            operational_notes__startswith='SIM-PROD-',
+        )
+        self.assertEqual(productivity.count(), 14)
+        self.assertEqual(
+            productivity.values('record_date').distinct().count(),
+            14,
+        )
+
+        cpd = CPDClaim.objects.filter(
+            officer=user,
+            topic__startswith='[SIM]',
+        )
+        self.assertEqual(cpd.count(), 5)
+        self.assertEqual(
+            sum(
+                claim.points for claim in cpd
+                if claim.status == 'APPROVED'
+            ),
+            45,
+        )
+
+        scores = get_module_scores(user, as_of=timezone.localdate())
+        self.assertEqual(scores['recorded_count'], 3)
+        self.assertEqual(scores['scorable_count'], 3)
+        self.assertIsNotNone(
+            scores['by_key']['documentation']['score']
+        )
+        self.assertIsNotNone(
+            scores['by_key']['productivity']['score']
+        )
+        self.assertEqual(scores['by_key']['cpd']['score'], 90.0)
+
+        self.assertIn('SEEDED', output)
+        self.assertIn('Module scores', output)
+        self.assertTrue(
+            ProductivityLog.objects.filter(pk=real_log.pk).exists()
+        )
+        self.assertEqual(
+            ProductivityLog.objects.filter(officer=real_user).count(),
+            1,
+        )
+
+    @override_settings(DEBUG=False)
+    def test_existing_simulation_records_require_reset(self):
+        self._run(
+            '--force',
+            '--username', self.username,
+            '--days', '10',
+            '--seed', '3',
+        )
+        with self.assertRaises(CommandError):
+            self._run(
+                '--force',
+                '--username', self.username,
+                '--days', '10',
+                '--seed', '3',
+            )
+
+    @override_settings(DEBUG=False)
+    def test_reset_replaces_only_simulation_records(self):
+        self._run(
+            '--force',
+            '--username', self.username,
+            '--days', '10',
+            '--seed', '3',
+        )
+        user = User.objects.get(username=self.username)
+        before_docs = DocumentationLog.objects.filter(
+            officer=user,
+            patient_id__startswith='SIM-DOC-',
+        ).count()
+
+        other_user = User.objects.create_user(username='other_real_user')
+        real_log = DocumentationLog.objects.create(
+            officer=other_user,
+            patient_id='REAL-1',
+            encounter_at=timezone.now(),
+            completed_at=timezone.now(),
+            is_completed=True,
+        )
+
+        output = self._run(
+            '--force',
+            '--reset',
+            '--username', self.username,
+            '--days', '10',
+            '--seed', '3',
+        )
+
+        self.assertEqual(
+            DocumentationLog.objects.filter(
+                officer=user,
+                patient_id__startswith='SIM-DOC-',
+            ).count(),
+            before_docs,
+        )
+        self.assertTrue(
+            DocumentationLog.objects.filter(pk=real_log.pk).exists()
+        )
+        self.assertIn('Dipadam', output)
