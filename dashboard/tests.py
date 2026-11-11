@@ -534,6 +534,35 @@ class ClinicalProcedurePhase2Tests(TestCase):
         self.assertIsNone(log.coronary_anatomy)
         self.assertIsNone(log.nyha_class)
 
+    def test_cts_sets_fms_only_fields_to_none(self):
+        response = self._post_cts()
+
+        self.assertEqual(response.status_code, 302)
+        log = ProcedureLog.objects.get(officer=self.user)
+
+        fms_only_fields = (
+            'serum_creatinine',
+            'egfr',
+            'ckd_stage',
+            'urine_microalbumin',
+            'visual_acuity',
+            'fundus_result',
+            'fundus_date',
+            'foot_exam_risk',
+            'foot_exam_date',
+            'ecg_result',
+            'ecg_date',
+            'cxr_result',
+            'cxr_date',
+            'fatty_liver',
+            'fatty_liver_date',
+            'ed_screening',
+            'dietitian_referral_date',
+        )
+        for field_name in fms_only_fields:
+            with self.subTest(field=field_name):
+                self.assertIsNone(getattr(log, field_name))
+
     def test_fms_target_not_achieved_keeps_procedure_successful(self):
         response = self._post_fms(target='No')
 

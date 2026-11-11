@@ -26,7 +26,7 @@ from django.utils import timezone
 from .mock_data import STATE_CENTERS, MOCK_KLINIK, generate_mock_doctors, MOCK_CUSUM_DATA
 
 # Import Enjin Pengira Skor & Model Pangkalan Data MyPrestasi
-from .services import calculate_pri_score
+from .services import calculate_pri_score, get_module_scores
 from .models import (
     UserProfile, MyPSQFeedback, ProcedureLog, PolicyDeclaration,
     PolicyItemResponse, DocumentationLog, CPDClaim, ProductivityLog,
@@ -2282,6 +2282,24 @@ def _save_clinical_procedure(request, form_type, profile):
         hba1c_percent = None
         ldl_mmol_l = None
         target_achieved = None
+        # Medan renal/komplikasi hanya diisi oleh borang FMS.
+        serum_creatinine = None
+        egfr = None
+        ckd_stage = None
+        urine_microalbumin = None
+        visual_acuity = None
+        fundus_result = None
+        fundus_date = None
+        foot_exam_risk = None
+        foot_exam_date = None
+        ecg_result = None
+        ecg_date = None
+        cxr_result = None
+        cxr_date = None
+        fatty_liver = None
+        fatty_liver_date = None
+        ed_screening = None
+        dietitian_referral_date = None
     else:
         facility = _required_choice(
             request.POST.get('facility'),
@@ -3488,6 +3506,74 @@ def staff_dashboard_view(request):
                 f"{procedure_date.strftime('%d %b %Y')} disimpan.",
             )
 
+        elif form_type == 'doc':
+            try:
+                patient_ref = _required_text(
+                    request.POST.get('patient_id'),
+                    'ID pesakit',
+                    max_length=100,
+                )
+                encounter_type = _optional_text(
+                    request.POST.get('encounter_type'),
+                    max_length=150,
+                )
+                encounter_at = _parse_datetime_value(
+                    request.POST.get('encounter_at')
+                )
+                if not encounter_at:
+                    raise ValidationError('Masa encounter diperlukan.')
+
+                completed_at = _parse_datetime_value(
+                    request.POST.get('completed_at')
+                )
+                if completed_at and completed_at < encounter_at:
+                    raise ValidationError(
+                        'Masa selesai tidak boleh lebih awal daripada masa encounter.'
+                    )
+
+                delay_hours = (
+                    round(
+                        (completed_at - encounter_at).total_seconds() / 3600.0,
+                        2,
+                    )
+                    if completed_at else 0.0
+                )
+                reason = _optional_text(
+                    request.POST.get('reason'),
+                    max_length=100,
+                )
+                remarks = _optional_text(
+                    request.POST.get('reason_remarks')
+                )
+                reason_for_delay = ' — '.join(
+                    value for value in (reason, remarks) if value
+                ) or None
+            except ValidationError as exc:
+                messages.error(
+                    request,
+                    f"❌ {exc.messages[0] if exc.messages else exc}",
+                )
+                return redirect(f'/staff/?section={section}')
+
+            DocumentationLog.objects.create(
+                officer=request.user,
+                patient_id=_hash_patient_ref(patient_ref),
+                encounter_type=encounter_type,
+                encounter_at=encounter_at,
+                completed_at=completed_at,
+                delay_hours=delay_hours,
+                reason_for_delay=reason_for_delay,
+                delay_reason_category=reason,
+                delay_reason_remarks=remarks,
+                is_ontime=(delay_hours <= 4.0),
+                is_completed=completed_at is not None,
+            )
+            messages.success(
+                request,
+                f"✅ Rekod dokumentasi {patient_ref} disimpan "
+                f"({delay_hours:.1f} jam)."
+            )
+
         elif form_type == 'cpd':
             # myCPD 2.0 Backend Security Calculation
             sub_category = (request.POST.get('sub_category') or '').strip()
@@ -3802,6 +3888,9 @@ def staff_dashboard_view(request):
     donut_html = ""  # Tambah ini
     gauge_html = ""  # Tambah ini
     area_html = ""   # Tambah ini 
+    module_scores = None
+    module_results = []
+    scorable_modules_count = 0
     
     if section == 'Dashboard':
         # 1. DONUT CHART (Patient Acuity Mix)
@@ -3855,56 +3944,60 @@ def staff_dashboard_view(request):
 
     # --- PERFORMANCE TAB (Holistic Benchmark 10 Modul - SPIDER WEB) ---
     elif section == 'Performance':
-        # Dapatkan markah komprehensif staf semasa (Real Data)
-        s_scores = calculate_pri_score(request.user)
-        
-        # Ekstrak markah khusus modul untuk graf (menggunakan fallback jika kosong)
-        cpd_score = s_scores.get('score_cpd', 0)
-        clin_score = s_scores.get('score_clinical', 0)
-        ops_score = s_scores.get('score_operational', 0)
-        interp_score = s_scores.get('score_interpersonal', 0)
-        
-        categories = ['Procedure Log', 'CPD Points', 'Doc. Audit', 'Policies', 'Productivity', 'Innovation', 'Patient Exp.', 'Emotional Intel.', 'Teamwork', 'Mentorship']
-        # Anggaran taburan berdasarkan tunjang untuk memenuhkan 10 bucu spider web
-        scores = [
-            clin_score, cpd_score, clin_score - 5, clin_score + 2, 
-            ops_score, max(0, ops_score - 15), 
-            interp_score, interp_score - 5, interp_score + 5, max(0, interp_score - 20)
-        ]
-        
-        # Cek status kelengkapan 10 modul langsung dari SQLite
-        has_proc = ProcedureLog.objects.filter(officer=request.user).exists()
-        has_cpd = CPDClaim.objects.filter(officer=request.user).exists()
-        has_docs = DocumentationLog.objects.filter(officer=request.user).exists()
-        has_policy = PolicyDeclaration.objects.filter(officer=request.user).exists()
-        has_prod = ProductivityLog.objects.filter(officer=request.user).exists()
-        has_innov = InnovationProject.objects.filter(officer=request.user).exists()
-        has_mypsq = MyPSQFeedback.objects.filter(doctor=request.user).exists()
-        has_ei = EmotionalReflection.objects.filter(officer=request.user).exists()
-        has_team = PeerKudos.objects.filter(receiver=request.user).exists()
-        has_mentor = MentorshipSession.objects.filter(mentor=request.user).exists()
+        # Satu sumber kebenaran: skor modul yang sama digunakan oleh kad,
+        # radar, CUSUM dan jadual Module Readiness.
+        module_scores = get_module_scores(request.user)
+        module_results = module_scores['modules']
+        by_key = module_scores['by_key']
 
-        # Hitung jumlah modul yang telah memiliki rekod data
-        completed_modules_count = sum([
-            has_proc, has_cpd, has_docs, has_policy, has_prod,
-            has_innov, has_mypsq, has_ei, has_team, has_mentor
-        ])
-        portfolio_compliance_pct = int((completed_modules_count / 10.0) * 100)
+        categories = [module['label'] for module in module_results]
+        scores = [module['score'] for module in module_results]
+        score_displays = [module['display'] for module in module_results]
 
-        # Nilai ringkasan CUSUM dan Policy
-        cusum_pct = clin_score
-        policy_pct = min(100, clin_score + 5)
-        
-        kategori_penuh = categories + [categories[0]]
-        markah_penuh = scores + [scores[0]]
+        # Status tracker menggunakan rekod sebenar daripada enjin skor.
+        has_proc = by_key['clinical_delivery']['has_records']
+        has_cpd = by_key['cpd']['has_records']
+        has_docs = by_key['documentation']['has_records']
+        has_policy = by_key['policies']['has_records']
+        has_prod = by_key['productivity']['has_records']
+        has_innov = by_key['innovation']['has_records']
+        has_mypsq = by_key['mypsq']['has_records']
+        has_ei = by_key['emotional_intelligence']['has_records']
+        has_team = by_key['teamwork']['has_records']
+        has_mentor = by_key['mentorship']['has_records']
+
+        # Active = mempunyai rekod; Ready = mempunyai skor sah (0-100).
+        completed_modules_count = module_scores['recorded_count']
+        scorable_modules_count = module_scores['scorable_count']
+        portfolio_compliance_pct = int(
+            round((scorable_modules_count / 10.0) * 100)
+        )
+
+        # Nilai ringkasan CUSUM dan Policy daripada modul sebenar.
+        cusum_pct = by_key['clinical_delivery']['score'] or 0
+        policy_pct = by_key['policies']['score'] or 0
+
+        # Tutup poligon hanya jika semua 10 modul mempunyai skor. Jika ada
+        # modul tanpa data, garis terputus (connectgaps=False) dan tiada fill
+        # supaya jurang data tidak disalahertikan sebagai skor sifar.
+        radar_complete = all(score is not None for score in scores)
+        if radar_complete:
+            categories = categories + [categories[0]]
+            scores = scores + [scores[0]]
+            score_displays = score_displays + [score_displays[0]]
 
         fig_radar = go.Figure()
         fig_radar.add_trace(go.Scatterpolar(
-            r=markah_penuh, theta=kategori_penuh, fill='toself',
+            r=scores,
+            theta=categories,
+            customdata=score_displays,
+            fill='toself' if radar_complete else 'none',
+            connectgaps=False,
             fillcolor='rgba(190, 18, 60, 0.25)', # Warna Merah Rose Lutsinar
             line=dict(color='#150a35', width=3), # Garisan Burgundy
             marker=dict(size=8, color='#6d3ec4', symbol='circle'),
-            hoverinfo='r+theta', name='My Score'
+            hovertemplate='%{theta}<br>%{customdata}<extra></extra>',
+            name='My Score',
         ))
         
         fig_radar.update_layout(
@@ -4065,6 +4158,9 @@ def staff_dashboard_view(request):
         'donut_html': donut_html,
         'gauge_html': gauge_html,
         'area_html': area_html,
+        'module_scores': module_scores,
+        'module_results': module_results,
+        'scorable_modules_count': scorable_modules_count,
         'today_date': date.today().strftime('%d %B %Y'),
         'clinical_score': score_clinical,
         'operational_score': score_ops_coding,
