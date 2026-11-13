@@ -5,7 +5,7 @@ from datetime import date, timedelta
 import random
 
 from dashboard.models import (
-    UserProfile, ProcedureLog, PolicyDeclaration,
+    UserProfile, ProcedureLog, PolicyDeclaration, PolicyItemResponse,
     DocumentationLog, CPDClaim, ProductivityLog,
     InnovationProject, MyPSQFeedback, EmotionalReflection,
     PeerKudos, MentorshipSession
@@ -57,16 +57,47 @@ class Command(BaseCommand):
         # ==========================================
         # A. Skills / CUSUM Log
         ProcedureLog.objects.filter(officer=user).delete()
-        for i in range(1, 16):
-            has_comp = (i in [4, 11]) # 2 kes komplikasi terkawal
-            score_val = 65.0 if has_comp else float(random.randint(84, 96))
+        today = timezone.localdate()
+        clinical_cases = [
+            # patient_ref, baseline HbA1c, follow-up HbA1c, baseline days ago, follow-up days ago
+            ('SEED-DM-001', 11.8, 8.2, 180, 90),
+            ('SEED-DM-002', 11.2, 9.0, 170, 80),
+            ('SEED-DM-003', 10.9, 10.4, 160, 70),
+            ('SEED-DM-004', 12.1, 7.0, 150, 60),
+            ('SEED-DM-005', 10.5, 7.8, 140, 50),
+            ('SEED-DM-006', 11.4, 8.6, 130, 40),
+        ]
+        for patient_ref, baseline_hba1c, followup_hba1c, baseline_days_ago, followup_days_ago in clinical_cases:
+            baseline_date = today - timedelta(days=baseline_days_ago)
+            followup_date = today - timedelta(days=followup_days_ago)
+            reduction = round(baseline_hba1c - followup_hba1c, 2)
+            achieved = reduction >= 1.0 or followup_hba1c <= 7.0
+            common_fields = {
+                'officer': user,
+                'patient_ref': patient_ref,
+                'clinical_domain': 'FMS',
+                'facility': profile.assigned_facility,
+                'procedure_name': "Diabetes Chronic Review & Complication Screening",
+                'primary_diagnosis': "Type 2 Diabetes Mellitus",
+                'comorbidities': [],
+                'is_successful': True,
+                'complication_occurred': False,
+                'is_verified': True,
+                'verified_at': timezone.now(),
+            }
             ProcedureLog.objects.create(
-                officer=user,
-                procedure_name="Diabetes Chronic Review & Complication Screening",
-                score=score_val,
-                is_successful=not has_comp,
-                complication_occurred=has_comp,
-                is_verified=True
+                **common_fields,
+                procedure_date=baseline_date,
+                hba1c_percent=baseline_hba1c,
+                target_achieved=None,
+                score=90.0,
+            )
+            ProcedureLog.objects.create(
+                **common_fields,
+                procedure_date=followup_date,
+                hba1c_percent=followup_hba1c,
+                target_achieved=achieved,
+                score=92.0 if achieved else 70.0,
             )
 
         # B. Knowledge & Competency (CPD Claims)
@@ -107,7 +138,7 @@ class Command(BaseCommand):
 
         # D. Policies & Protocols Compliance
         PolicyDeclaration.objects.filter(officer=user).delete()
-        PolicyDeclaration.objects.create(
+        declaration = PolicyDeclaration.objects.create(
             officer=user,
             year=2026,
             score_domain_a=90.0, # Assessment
@@ -117,6 +148,23 @@ class Command(BaseCommand):
             score_domain_e=90.0, # Prevention
             is_verified=True
         )
+        policy_ratios = {
+            question_number: (
+                0.0 if question_number in (9, 17) else 1.0
+            )
+            for question_number in range(1, 21)
+        }
+        PolicyItemResponse.objects.bulk_create([
+            PolicyItemResponse(
+                declaration=declaration,
+                question_number=question_number,
+                is_compliant=(ratio >= 1.0),
+                compliance_ratio=ratio,
+                selected_count=1 if ratio >= 1.0 else 0,
+                max_count=1,
+            )
+            for question_number, ratio in policy_ratios.items()
+        ])
 
         # ==========================================
         # TUNJANG 2: OPERATIONAL (2 Modul)
@@ -180,9 +228,33 @@ class Command(BaseCommand):
 
         # B. Stress Management (Emotional Reflection)
         EmotionalReflection.objects.filter(officer=user).delete()
-        EmotionalReflection.objects.create(officer=user, self_awareness_score=85, reflection_notes="Menangani situasi kecemasan dengan kawalan emosi yang stabil.")
-        EmotionalReflection.objects.create(officer=user, self_awareness_score=88, reflection_notes="Berjaya menguruskan beban pesakit tinggi tanpa rasa terbeban melampau.")
-        EmotionalReflection.objects.create(officer=user, self_awareness_score=90, reflection_notes="Sesi debrief bersama staf paramedik berjalan lancar.")
+        EmotionalReflection.objects.create(
+            officer=user,
+            record_date=today - timedelta(days=2),
+            self_awareness_score=85,
+            self_regulation_score=86,
+            empathy_score=88,
+            deescalation_score=87,
+            reflection_notes="Menangani situasi kecemasan dengan kawalan emosi yang stabil."
+        )
+        EmotionalReflection.objects.create(
+            officer=user,
+            record_date=today - timedelta(days=1),
+            self_awareness_score=88,
+            self_regulation_score=87,
+            empathy_score=89,
+            deescalation_score=88,
+            reflection_notes="Berjaya menguruskan beban pesakit tinggi tanpa rasa terbeban melampau."
+        )
+        EmotionalReflection.objects.create(
+            officer=user,
+            record_date=today,
+            self_awareness_score=90,
+            self_regulation_score=89,
+            empathy_score=91,
+            deescalation_score=90,
+            reflection_notes="Sesi debrief bersama staf paramedik berjalan lancar."
+        )
 
         # C. Teamwork & Collaboration (Peer Kudos)
         PeerKudos.objects.filter(receiver=user).delete()
