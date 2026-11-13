@@ -1,0 +1,207 @@
+{% load static %}
+<div class="patients-page">
+    <!-- HEADER BANNER & PDPA PRIVACY NOTICE -->
+    <div style="background: white; border: 1px solid #d8c7f4; padding: 14px 20px; border-radius: 16px; margin-bottom: 20px; box-shadow: 0 10px 25px -5px rgba(21, 10, 53, 0.05); display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 15px;">
+        <div style="display: flex; align-items: center; gap: 14px;">
+            <div style="width: 42px; height: 42px; border-radius: 12px; background: linear-gradient(135deg, #f3edff 0%, #e7dff2 100%); border: 1px solid #d8c7f4; color: #6d3ec4; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                <svg style="width: 21px; height: 21px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+            </div>
+            <div>
+                <div style="display: flex; align-items: center; gap: 6px;">
+                    <span style="width: 6px; height: 6px; background: #16a34a; border-radius: 50%; display: inline-block;"></span>
+                    <span style="font-size: 10.5px; font-weight: 800; color: #6f628b; text-transform: uppercase; letter-spacing: 0.8px;">Chronic Disease Longitudinal Registry</span>
+                </div>
+                <div style="font-size: 15px; font-weight: 900; color: #150a35; margin-top: 1px;">My Patients — HbA1c &amp; Complication Surveillance</div>
+            </div>
+        </div>
+
+        <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+            <span style="font-size: 11px; font-weight: 800; color: #6d3ec4; background: #f3edff; border: 1px solid #d8c7f4; padding: 6px 12px; border-radius: 20px;">
+                🔒 PDPA SHA-256 Lookup Active
+            </span>
+            <a href="?section=Clinical&tab=delivery" style="background: #6d3ec4; color: white; padding: 8px 16px; border-radius: 10px; font-size: 12px; font-weight: 800; text-decoration: none; display: inline-flex; align-items: center; gap: 6px; box-shadow: 0 4px 12px rgba(109, 62, 196, 0.22);">
+                + New Clinical Encounter
+            </a>
+        </div>
+    </div>
+
+    <!-- BAR PENCARIAN PESAKIT (MRN / NAMA / HASH NRIC) -->
+    <div class="card" style="padding: 20px 24px; margin-bottom: 20px; border: 1.5px solid #d8c7f4;">
+        <form method="GET" style="display: flex; gap: 12px; flex-wrap: wrap; align-items: center; margin: 0;">
+            <input type="hidden" name="section" value="Patients">
+            <div style="flex: 1; min-width: 260px; position: relative;">
+                <input type="text" name="patient_q" value="{{ patient_search_query }}" placeholder="Cari No. MRN (cth: RN-202601), Nama Pesakit, atau No. NRIC (cth: 680718-01-2337)..." style="width: 100%; box-sizing: border-box; padding: 12px 16px; border-radius: 10px; border: 1.5px solid #d8c7f4; background: #faf8ff; font-size: 13px; font-weight: 600; color: #150a35; outline: none;">
+            </div>
+            <button type="submit" style="background: #6d3ec4; color: white; border: none; padding: 12px 22px; border-radius: 10px; font-size: 13px; font-weight: 800; cursor: pointer; display: inline-flex; align-items: center; gap: 8px;">
+                <svg style="width: 16px; height: 16px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+                Cari Profil Pesakit
+            </button>
+            {% if patient_search_query %}
+                <a href="?section=Patients" style="background: white; color: #6f628b; border: 1px solid #e7dff2; padding: 11px 16px; border-radius: 10px; font-size: 12.5px; font-weight: 700; text-decoration: none;">
+                    Reset
+                </a>
+            {% endif %}
+        </form>
+
+        {% if patient_directory %}
+        <div style="margin-top: 14px; padding-top: 12px; border-top: 1px dashed #e7dff2; display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+            <span style="font-size: 11px; font-weight: 800; color: #6f628b; text-transform: uppercase;">Pesakit Dipantau ({{ patient_total_count }}):</span>
+            {% for pt in patient_directory %}
+                <a href="?section=Patients&patient_q={{ pt.search_token|urlencode }}" style="text-decoration: none; font-size: 11.5px; font-weight: 800; padding: 5px 12px; border-radius: 20px; transition: all 0.15s;
+                    {% if selected_patient and selected_patient.key == pt.key %}
+                        background: #6d3ec4; color: white; border: 1px solid #6d3ec4;
+                    {% else %}
+                        background: #f3edff; color: #150a35; border: 1px solid #d8c7f4;
+                    {% endif %}">
+                    {{ pt.display_label }} <span style="opacity: 0.8; font-weight: 600;">({{ pt.visit_count }}x)</span>
+                </a>
+            {% endfor %}
+        </div>
+        {% endif %}
+    </div>
+
+    {% if selected_patient %}
+        <!-- PROFIL RINGKAS PESAKIT & METRIK KLINIKAL TERKINI -->
+        <div class="card" style="padding: 22px 24px; margin-bottom: 20px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px; border-bottom: 1.5px solid #e7dff2; padding-bottom: 16px; margin-bottom: 18px;">
+                <div>
+                    <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                        <h3 style="margin: 0; color: #150a35; font-size: 19px; font-weight: 900;">{{ selected_patient.display_label }}</h3>
+                        <span style="background: #f3edff; color: #6d3ec4; border: 1px solid #d8c7f4; font-size: 11px; font-weight: 800; padding: 3px 10px; border-radius: 8px;">
+                            {{ selected_patient.ref_badge }}
+                        </span>
+                    </div>
+                    <p style="margin: 4px 0 0 0; color: #6f628b; font-size: 12.5px; font-weight: 600;">
+                        Diagnosa Utama: <b style="color: #150a35;">{{ selected_patient.primary_condition }}</b> &bull; Jumlah Lawatan Direkodkan: <b style="color: #6d3ec4;">{{ selected_patient.visit_count }} Sesi</b>
+                    </p>
+                </div>
+
+                <a href="?section=Clinical&tab=delivery" style="background: #f3edff; color: #6d3ec4; border: 1.5px solid #6d3ec4; padding: 9px 16px; border-radius: 10px; font-size: 12px; font-weight: 800; text-decoration: none;">
+                    + Log Lawatan Susulan
+                </a>
+            </div>
+
+            <!-- 4 KAD METRIK TERKINI -->
+            <div class="grid-4" style="margin-bottom: 0;">
+                <div style="background: #faf8ff; border: 1px solid #e7dff2; border-left: 4px solid {{ selected_patient.hba1c_color }}; border-radius: 12px; padding: 14px;">
+                    <div style="font-size: 10.5px; font-weight: 800; color: #6f628b; text-transform: uppercase;">Latest HbA1c</div>
+                    <div style="font-size: 24px; font-weight: 900; color: {{ selected_patient.hba1c_color }}; margin-top: 3px;">{{ selected_patient.latest_hba1c_display }}</div>
+                    <div style="font-size: 11px; font-weight: 700; color: {{ selected_patient.hba1c_color }}; margin-top: 2px;">{{ selected_patient.hba1c_status }}</div>
+                </div>
+
+                <div style="background: #faf8ff; border: 1px solid #e7dff2; border-left: 4px solid #6d3ec4; border-radius: 12px; padding: 14px;">
+                    <div style="font-size: 10.5px; font-weight: 800; color: #6f628b; text-transform: uppercase;">Latest Blood Pressure</div>
+                    <div style="font-size: 24px; font-weight: 900; color: #150a35; margin-top: 3px;">{{ selected_patient.latest_bp_display }}</div>
+                    <div style="font-size: 11px; font-weight: 600; color: #64748b; margin-top: 2px;">Sasaran CPG: &lt; 140/90 mmHg</div>
+                </div>
+
+                <div style="background: #faf8ff; border: 1px solid #e7dff2; border-left: 4px solid #150a35; border-radius: 12px; padding: 14px;">
+                    <div style="font-size: 10.5px; font-weight: 800; color: #6f628b; text-transform: uppercase;">Renal / CKD Staging</div>
+                    <div style="font-size: 22px; font-weight: 900; color: #150a35; margin-top: 4px;">{{ selected_patient.latest_ckd_display }}</div>
+                    <div style="font-size: 11px; font-weight: 600; color: #64748b; margin-top: 2px;">{{ selected_patient.latest_egfr_display }}</div>
+                </div>
+
+                <div style="background: #faf8ff; border: 1px solid #e7dff2; border-left: 4px solid #16a34a; border-radius: 12px; padding: 14px;">
+                    <div style="font-size: 10.5px; font-weight: 800; color: #6f628b; text-transform: uppercase;">Latest LDL Cholesterol</div>
+                    <div style="font-size: 24px; font-weight: 900; color: #150a35; margin-top: 3px;">{{ selected_patient.latest_ldl_display }}</div>
+                    <div style="font-size: 11px; font-weight: 600; color: #64748b; margin-top: 2px;">Sasaran CPG: &lt; 2.6 mmol/L</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- GRAF GARIS TREND HbA1c (PLOTLY) -->
+        <div class="card" style="padding: 22px 24px; margin-bottom: 20px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; border-bottom: 1.5px solid #e7dff2; padding-bottom: 12px; margin-bottom: 14px;">
+                <div>
+                    <h3 style="margin: 0; color: #150a35; font-size: 15.5px; font-weight: 900;">📈 Longitudinal HbA1c Trajectory (%)</h3>
+                    <p style="margin: 2px 0 0 0; color: #6f628b; font-size: 12px; font-weight: 500;">
+                        Pemantauan kawalan glisemik merentas lawatan berbanding sasaran piawai KKM (&lt; 7.0%).
+                    </p>
+                </div>
+                <span style="background: #f0fdf4; color: #15803d; border: 1px solid #bbf7d0; font-size: 11px; font-weight: 800; padding: 4px 12px; border-radius: 20px;">
+                    CPG Target: &lt; 7.0%
+                </span>
+            </div>
+
+            {% if selected_patient.has_hba1c_points %}
+                <div style="overflow: hidden;">{{ hba1c_chart_html|safe }}</div>
+            {% else %}
+                <div style="background: #faf8ff; border: 1.5px dashed #d8c7f4; border-radius: 12px; padding: 28px; text-align: center; color: #6f628b; font-size: 13px;">
+                    Pesakit ini mempunyai <b>{{ selected_patient.visit_count }} rekod lawatan</b>, tetapi nilai bacaan <b>HbA1c (%)</b> belum diisi lagi. Masukkan bacaan HbA1c pada lawatan seterusnya untuk melukis graf trend.
+                </div>
+            {% endif %}
+        </div>
+
+        <!-- TIMELINE RAWATAN & SARINGAN KOMPLIKASI -->
+        <div class="card" style="padding: 22px 24px; margin-bottom: 0;">
+            <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1.5px solid #e7dff2; padding-bottom: 12px; margin-bottom: 16px;">
+                <div>
+                    <h3 style="margin: 0; color: #150a35; font-size: 15.5px; font-weight: 900;">🩺 Longitudinal Treatment &amp; Complication Screening Timeline</h3>
+                    <p style="margin: 2px 0 0 0; color: #6f628b; font-size: 12px; font-weight: 500;">Sejarah bacaan tanda vital, komorbiditi, dan saringan organ tahunan (NDR).</p>
+                </div>
+            </div>
+
+            <div style="display: flex; flex-direction: column; gap: 12px;">
+                {% for visit in selected_patient.timeline %}
+                <div style="background: #faf8ff; border: 1px solid #e7dff2; border-left: 5px solid {% if visit.target_achieved %}#16a34a{% else %}#d97706{% endif %}; border-radius: 12px; padding: 16px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; margin-bottom: 8px;">
+                        <div style="display: flex; align-items: center; gap: 10px;">
+                            <span style="background: #150a35; color: white; font-size: 11px; font-weight: 800; padding: 3px 10px; border-radius: 6px;">
+                                {{ visit.date_display }}
+                            </span>
+                            <span style="font-size: 14px; font-weight: 900; color: #150a35;">{{ visit.condition }}</span>
+                        </div>
+
+                        {% if visit.target_achieved is True %}
+                            <span class="status-badge bg-success">✓ Clinical Target Achieved</span>
+                        {% elif visit.target_achieved is False %}
+                            <span class="status-badge bg-warning">⚠️ Target Not Met (Intensify Care)</span>
+                        {% else %}
+                            <span class="status-badge" style="background: #f3edff; color: #6d3ec4;">Recorded</span>
+                        {% endif %}
+                    </div>
+
+                    <div style="display: flex; gap: 16px; flex-wrap: wrap; font-size: 12px; color: #150a35; margin-bottom: 8px;">
+                        <span><b>HbA1c:</b> {{ visit.hba1c_display }}</span>
+                        <span><b>BP:</b> {{ visit.bp_display }}</span>
+                        <span><b>LDL:</b> {{ visit.ldl_display }}</span>
+                        <span><b>Renal:</b> {{ visit.renal_display }}</span>
+                    </div>
+
+                    {% if visit.screenings %}
+                    <div style="font-size: 11.5px; color: #5528a6; background: white; border: 1px solid #e7dff2; border-radius: 8px; padding: 8px 12px; margin-top: 6px;">
+                        <b>Annual Complication Screenings:</b> {{ visit.screenings }}
+                    </div>
+                    {% endif %}
+
+                    {% if visit.comorbidities %}
+                    <div style="font-size: 11px; color: #6f628b; margin-top: 6px;">
+                        <b>Comorbidities:</b> {{ visit.comorbidities }}
+                    </div>
+                    {% endif %}
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+    {% else %}
+        <!-- KEADAAN TIADA REKOD / CARIAN TIDAK DIJUMPAI -->
+        <div class="card" style="padding: 40px 28px; text-align: center; border: 1.5px dashed #d8c7f4;">
+            <div style="font-size: 38px; margin-bottom: 10px;">🔍</div>
+            {% if patient_search_query %}
+                <h3 style="margin: 0 0 6px 0; color: #150a35; font-size: 18px; font-weight: 900;">Tiada Rekod Padan untuk "{{ patient_search_query }}"</h3>
+                <p style="margin: 0 auto 18px auto; max-width: 480px; color: #6f628b; font-size: 13px;">
+                    Pastikan No. MRN atau No. NRIC dimasukkan dengan betul, atau daftarkan kes pesakit baharu melalui modul <b>Clinical Data</b>.
+                </p>
+            {% else %}
+                <h3 style="margin: 0 0 6px 0; color: #150a35; font-size: 18px; font-weight: 900;">Belum Ada Profil Pesakit Dalam Rekod Anda</h3>
+                <p style="margin: 0 auto 18px auto; max-width: 500px; color: #6f628b; font-size: 13px;">
+                    Setiap kes yang didaftarkan di <b>Clinical Data</b> berserta MRN / NRIC akan dikumpulkan secara automatik di sini untuk pemantauan graf trend HbA1c.
+                </p>
+            {% endif %}
+            <a href="?section=Clinical&tab=delivery" style="background: #6d3ec4; color: white; padding: 10px 20px; border-radius: 10px; font-size: 12.5px; font-weight: 800; text-decoration: none; display: inline-block;">
+                + Daftar Rekod Klinikal Pertama ➔
+            </a>
+        </div>
+    {% endif %}
+</div>

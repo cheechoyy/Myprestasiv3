@@ -20,6 +20,84 @@
     </a>
 </div>
 
+<!-- CUSUM SHADOW MONITOR (DOCUMENTATION SLA SURVEILLANCE) -->
+<div class="card" style="margin-bottom: 20px; border: 1px solid #e7dff2; border-radius: 16px; padding: 18px 22px; background: white; box-shadow: 0 4px 15px rgba(21, 10, 53, 0.03);">
+    <div style="display: flex; align-items: center; justify-content: space-between; border-bottom: 1px dashed #e7dff2; padding-bottom: 12px; margin-bottom: 14px; flex-wrap: wrap; gap: 10px;">
+        <div style="display: flex; align-items: center; gap: 10px;">
+            <div style="width: 32px; height: 32px; background: #f3edff; border: 1px solid #d8c7f4; border-radius: 8px; display: flex; align-items: center; justify-content: center; color: #6d3ec4;">
+                <svg style="width: 17px; height: 17px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z"/></svg>
+            </div>
+            <div>
+                <h4 style="margin: 0; color: #150a35; font-size: 14.5px; font-weight: 900;">CUSUM Shadow Monitor — Documentation SLA</h4>
+                <p style="margin: 2px 0 0 0; font-size: 11px; color: #6f628b; font-weight: 500;">
+                    4-Hour SLA failure surveillance &bull; <span style="color: #6d3ec4; font-weight: 700;">Shadow Mode (Not used in radar score)</span>
+                </p>
+            </div>
+        </div>
+        <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+            <span style="font-size: 11px; font-weight: 800; background: #dcfce7; color: #16a34a; border: 1px solid #bbf7d0; padding: 4px 10px; border-radius: 20px;">
+                ● {{ cusum_summary.in_control }} In Control
+            </span>
+            <span style="font-size: 11px; font-weight: 800; background: #fef3c7; color: #d97706; border: 1px solid #fde68a; padding: 4px 10px; border-radius: 20px;">
+                ● {{ cusum_summary.watch }} Watch
+            </span>
+            <span style="font-size: 11px; font-weight: 800; background: #fee2e2; color: #dc2626; border: 1px solid #fecaca; padding: 4px 10px; border-radius: 20px;">
+                ● {{ cusum_summary.alert }} Alert
+            </span>
+            {% if cusum_summary.insufficient_data %}
+            <span style="font-size: 11px; font-weight: 800; background: #f1f5f9; color: #64748b; border: 1px solid #cbd5e1; padding: 4px 10px; border-radius: 20px;">
+                ● {{ cusum_summary.insufficient_data }} No Data
+            </span>
+            {% endif %}
+        </div>
+    </div>
+
+    {% if cusum_snapshots %}
+        <div style="overflow-x: auto;">
+            <table class="staff-table" style="margin: 0; width: 100%;">
+                <thead>
+                    <tr>
+                        <th style="padding: 8px 10px; font-size: 10.5px;">Officer Name</th>
+                        <th style="padding: 8px 10px; font-size: 10.5px;">CUSUM State</th>
+                        <th style="padding: 8px 10px; font-size: 10.5px;">Current Value</th>
+                        <th style="padding: 8px 10px; font-size: 10.5px;">Observations</th>
+                        <th style="padding: 8px 10px; font-size: 10.5px;">Historical Alerts</th>
+                        <th style="padding: 8px 10px; font-size: 10.5px;">Last Event</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for snap in cusum_snapshots %}
+                        <tr>
+                            <td style="font-weight: 800; color: #150a35; padding: 8px 10px; font-size: 12px;">{{ snap.officer_name }}</td>
+                            <td style="padding: 8px 10px;">
+                                <span style="font-size: 10.5px; font-weight: 800; padding: 2px 8px; border-radius: 12px;
+                                    {% if snap.state == 'IN_CONTROL' %}background: #dcfce7; color: #16a34a; border: 1px solid #bbf7d0;
+                                    {% elif snap.state == 'WATCH' %}background: #fef3c7; color: #d97706; border: 1px solid #fde68a;
+                                    {% elif snap.state == 'ALERT' %}background: #fee2e2; color: #dc2626; border: 1px solid #fecaca;
+                                    {% else %}background: #f1f5f9; color: #64748b; border: 1px solid #cbd5e1;{% endif %}">
+                                    {{ snap.state_label }}
+                                </span>
+                            </td>
+                            <td style="font-weight: 800; color: #150a35; padding: 8px 10px; font-size: 12px;">{{ snap.cusum_value|floatformat:4 }}</td>
+                            <td style="color: #6f628b; padding: 8px 10px; font-size: 12px;">{{ snap.observation_count }} logs</td>
+                            <td style="padding: 8px 10px; font-size: 12px; font-weight: 800; color: {% if snap.alert_count > 0 %}#dc2626{% else %}#16a34a{% endif %};">
+                                {{ snap.alert_count }}
+                            </td>
+                            <td style="font-size: 11px; color: #6f628b; padding: 8px 10px;">
+                                {{ snap.last_event_at|date:"d M Y, h:i A"|default:"—" }}
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% else %}
+        <div style="text-align: center; padding: 18px; color: #6f628b; font-size: 12px; font-style: italic;">
+            No CUSUM snapshots computed for officers in this facility scope.
+        </div>
+    {% endif %}
+</div>
+
 <div class="orbital-hub-wrapper">
 
     <!-- 1. POD KIRI ATAS: ACTION CENTER (Semua elemen selamat di zon kiri) -->
@@ -30,17 +108,25 @@
                     <svg style="width: 19px; height: 19px; color: #6d3ec4;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
                     <span>Action Center ↗</span>
                 </a>
-                <span style="background: #6d3ec4; color: white; padding: 4px 10px; border-radius: 20px; font-size: 10px; font-weight: 800; letter-spacing: 0.5px;">3 URGENT</span>
+                <span style="background: #6d3ec4; color: white; padding: 4px 10px; border-radius: 20px; font-size: 10px; font-weight: 800; letter-spacing: 0.5px;">{{ action_urgent_count }} URGENT</span>
             </div>
 
             <!-- Senarai Teaser Mini (Dikecilkan sedikit lebar supaya tidak masuk bucu lengkuk) -->
             <div style="display: flex; flex-direction: column; gap: 8px; max-width: 82%;">
-                <div style="background: #f3edff; border: 1.5px solid #e7dff2; padding: 10px 14px; border-radius: 12px; display: flex; align-items: center; justify-content: space-between;">
+                <div style="background: {% if cusum_top_alerts %}#fee2e2; border: 1.5px solid #fecaca;{% else %}#f0fdf4; border: 1.5px solid #bbf7d0;{% endif %} padding: 10px 14px; border-radius: 12px; display: flex; align-items: center; justify-content: space-between;">
                     <div style="display:flex; align-items:center; gap:8px;">
-                        <span style="width:8px; height:8px; border-radius:50%; background:#6d3ec4;" class="animate-pulse"></span>
-                        <strong style="color:#150a35; font-size:13px;">CUSUM Breach</strong>
+                        <span style="width:8px; height:8px; border-radius:50%; background:{% if cusum_top_alerts %}#dc2626{% else %}#16a34a{% endif %};" {% if cusum_top_alerts %}class="animate-pulse"{% endif %}></span>
+                        <strong style="color:{% if cusum_top_alerts %}#991b1b{% else %}#14532d{% endif %}; font-size:13px;">
+                            {% if cusum_top_alerts %}CUSUM Alert (Documentation){% else %}CUSUM Status{% endif %}
+                        </strong>
                     </div>
-                    <span style="font-size:12px; color:#6d3ec4; font-weight:800;">Dr. Ramesh Lee</span>
+                    <span style="font-size:12px; color:{% if cusum_top_alerts %}#dc2626{% else %}#16a34a{% endif %}; font-weight:800;">
+                        {% if cusum_top_alerts %}
+                            {{ cusum_top_alerts.0.officer_name }} ({{ cusum_top_alerts.0.alert_count }} Alert{{ cusum_top_alerts.0.alert_count|pluralize }})
+                        {% else %}
+                            In Control (0 Alerts)
+                        {% endif %}
+                    </span>
                 </div>
 
                 <div style="background: #f0fdf4; border: 1.5px solid #bbf7d0; padding: 10px 14px; border-radius: 12px; display: flex; align-items: center; justify-content: space-between;">
@@ -48,7 +134,7 @@
                         <span style="width:8px; height:8px; border-radius:50%; background:#16a34a;"></span>
                         <strong style="color:#14532d; font-size:13px;">Fast-Track Promotion</strong>
                     </div>
-                    <span style="font-size:12px; color:#15803d; font-weight:900;">24 MOs Eligible</span>
+                    <span style="font-size:12px; color:#15803d; font-weight:900;">{{ fast_track_count }} MO{{ fast_track_count|pluralize }} Eligible</span>
                 </div>
 
                 <div style="background: #fffbeb; border: 1.5px solid #fef3c7; padding: 10px 14px; border-radius: 12px; display: flex; align-items: center; justify-content: space-between;">
@@ -56,7 +142,7 @@
                         <span style="width:8px; height:8px; border-radius:50%; background:#d97706;"></span>
                         <strong style="color:#92400e; font-size:13px;">Validation Backlog</strong>
                     </div>
-                    <span style="font-size:12px; color:#b45309; font-weight:800;">8 Pending</span>
+                    <span style="font-size:12px; color:#b45309; font-weight:800;">{{ pending_validation_count }} Pending</span>
                 </div>
             </div>
         </div>
@@ -82,11 +168,11 @@
 
             <div style="display: flex; align-items: flex-end; justify-content: space-between; margin-bottom: 12px;">
                 <div>
-                    <div style="font-size: 32px; font-weight: 900; color: #150a35; line-height: 1;">{{ avg_performance|default:"88" }}%</div>
-                    <div style="font-size: 11px; font-weight: 800; color: #16a34a; margin-top: 3px;">▲ Current DB Average</div>
+                    <div style="font-size: 32px; font-weight: 900; color: #150a35; line-height: 1;">{% if avg_performance is not None %}{{ avg_performance }}%{% else %}—{% endif %}</div>
+                    <div style="font-size: 11px; font-weight: 800; color: {% if avg_performance is not None %}#16a34a{% else %}#64748b{% endif %}; margin-top: 3px;">{% if avg_performance is not None %}▲ Current DB Average{% else %}No scorable data yet{% endif %}</div>
                 </div>
                 <div style="text-align: right;">
-                    <div style="font-size: 12.5px; font-weight: 900; color: #150a35;">{{ actual_policy|default:"100" }}% Policy SOP</div>
+                    <div style="font-size: 12.5px; font-weight: 900; color: #150a35;">{% if actual_policy is not None %}{{ actual_policy }}% Policy SOP{% else %}— Policy SOP{% endif %}</div>
                     <div style="font-size: 10.5px; color: #64748b; font-weight: 600;">Compliance Rate</div>
                 </div>
             </div>
@@ -95,15 +181,15 @@
             <div style="display:flex; flex-direction:column; gap:6px; width: 85%; margin-left: auto;">
                 <div>
                     <div style="display:flex; justify-content:space-between; font-size:11px; font-weight:800; color:#150a35; margin-bottom:2px;">
-                        <span>Clinical Delivery</span><span class="pct-label">{{ actual_clinical|default:"88" }}%</span>
+                        <span>Clinical Delivery</span><span class="pct-label">{% if actual_clinical is not None %}{{ actual_clinical }}%{% else %}—{% endif %}</span>
                     </div>
-                    <div style="background:#f3edff; height:6px; border-radius:10px; overflow:hidden;"><div class="pct-fill" style="background:#6d3ec4; width:{{ actual_clinical|default:'88' }}%; height:100%;"></div></div>
+                    <div style="background:#f3edff; height:6px; border-radius:10px; overflow:hidden;"><div class="pct-fill" style="background:#6d3ec4; width:{% if actual_clinical is not None %}{{ actual_clinical }}{% else %}0{% endif %}%; height:100%;"></div></div>
                 </div>
                 <div>
                     <div style="display:flex; justify-content:space-between; font-size:11px; font-weight:800; color:#150a35; margin-bottom:2px;">
-                        <span>Documentation Quality</span><span class="pct-label">{{ actual_doc|default:"82" }}%</span>
+                        <span>Documentation Quality</span><span class="pct-label">{% if actual_doc is not None %}{{ actual_doc }}%{% else %}—{% endif %}</span>
                     </div>
-                    <div style="background:#f3edff; height:6px; border-radius:10px; overflow:hidden;"><div class="pct-fill" style="background:#a577ff; width:{{ actual_doc|default:'82' }}%; height:100%;"></div></div>
+                    <div style="background:#f3edff; height:6px; border-radius:10px; overflow:hidden;"><div class="pct-fill" style="background:#a577ff; width:{% if actual_doc is not None %}{{ actual_doc }}{% else %}0{% endif %}%; height:100%;"></div></div>
                 </div>
             </div>
         </div>
@@ -135,35 +221,27 @@
                     </a>
                 </div>
                 <span style="background: #f3edff; color: #150a35; border: 1px solid #e7dff2; padding: 2px 8px; border-radius: 6px; font-size: 10.5px; font-weight: 800; width: fit-content;">
-                    📍 {{ pilihan_klinik|default:"Klinik Kesihatan Medong" }}
+                    📍 {{ pilihan_klinik|default:"All Clinics" }}
                 </span>
             </div>
 
             <!-- Senarai Doktor (Dikecilkan lebar supaya selamat dari bucu kanan atas) -->
             <div style="display: flex; flex-direction: column; gap: 7px; max-width: 82%;">
+                {% for officer in hod_officer_preview %}
                 <div style="background: white; border: 1.5px solid #e7dff2; padding: 7px 12px; border-radius: 10px; display: flex; align-items: center; justify-content: space-between;">
                     <div style="display:flex; align-items:center; gap:6px;">
-                        <span style="width:7px; height:7px; border-radius:50%; background:#16a34a;"></span>
-                        <strong style="color:#150a35; font-size:12px;">Dr. dr_abu (Live)</strong>
+                        <span style="width:7px; height:7px; border-radius:50%; background:{% if officer.tier == 'Tier 1' %}#16a34a{% elif officer.tier == 'Tier 2' %}#d97706{% else %}#a577ff{% endif %};"></span>
+                        <a href="{% url 'cts_module' %}?officer={{ officer.label|urlencode }}&clinic={{ pilihan_klinik|urlencode }}&state={{ pilihan_negeri|urlencode }}&tab=Skills" style="color:#150a35; font-size:12px; font-weight:800; text-decoration:none;">{{ officer.name }}</a>
                     </div>
-                    <span style="font-size:10px; font-weight:900; color:#16a34a; background:#f0fdf4; padding:2px 6px; border-radius:5px;">83% Tier 1</span>
+                    <span style="font-size:10px; font-weight:900; color:{% if officer.tier == 'Tier 1' %}#16a34a{% elif officer.tier == 'Tier 2' %}#d97706{% else %}#150a35{% endif %}; background:{% if officer.tier == 'Tier 1' %}#f0fdf4{% elif officer.tier == 'Tier 2' %}#fffbeb{% else %}#f3edff{% endif %}; padding:2px 6px; border-radius:5px;">
+                        {% if officer.module_average is not None %}{{ officer.module_average }}%{% else %}No Data{% endif %} {{ officer.tier }}
+                    </span>
                 </div>
-
-                <div style="background: white; border: 1.5px solid #e7dff2; padding: 7px 12px; border-radius: 10px; display: flex; align-items: center; justify-content: space-between;">
-                    <div style="display:flex; align-items:center; gap:6px;">
-                        <span style="width:7px; height:7px; border-radius:50%; background:#16a34a;"></span>
-                        <strong style="color:#150a35; font-size:12px;">Dr. dr_mail (Live)</strong>
-                    </div>
-                    <span style="font-size:10px; font-weight:900; color:#d97706; background:#fffbeb; padding:2px 6px; border-radius:5px;">84% Tier 2</span>
+                {% empty %}
+                <div style="background: #f8f9fa; border: 1.5px dashed #e7dff2; padding: 10px 12px; border-radius: 10px; color:#6f628b; font-size:12px; font-weight:600;">
+                    No live officers found for this scope.
                 </div>
-
-                <div style="background: white; border: 1.5px solid #e7dff2; padding: 7px 12px; border-radius: 10px; display: flex; align-items: center; justify-content: space-between;">
-                    <div style="display:flex; align-items:center; gap:6px;">
-                        <span style="width:7px; height:7px; border-radius:50%; background:#a577ff;"></span>
-                        <strong style="color:#150a35; font-size:12px;">Dr. Farhana Lee</strong>
-                    </div>
-                    <span style="font-size:10px; font-weight:900; color:#150a35; background:#f3edff; padding:2px 6px; border-radius:5px;">78% Good</span>
-                </div>
+                {% endfor %}
             </div>
         </div>
 
@@ -191,17 +269,17 @@
                 <!-- Papar data MO yang berada pada kedudukan pertama (Index 0) dalam Heatmap -->
                 <div style="background:#f3edff; border:1px solid #e7dff2; border-radius:10px; padding:8px 4px; text-align:center;">
                     <div style="font-size:10px; font-weight:800; color:#a577ff; text-transform:uppercase;">Clinical</div>
-                    <div style="font-size:19px; font-weight:900; color:#150a35; margin-top:1px;">{{ z_mo_data.0.0|default:"86" }}%</div>
+                    <div style="font-size:19px; font-weight:900; color:#150a35; margin-top:1px;">{% if z_mo_data.0.0 is not None %}{{ z_mo_data.0.0 }}%{% else %}—{% endif %}</div>
                 </div>
 
                 <div style="background:#f3edff; border:1px solid #e7dff2; border-radius:10px; padding:8px 4px; text-align:center;">
                     <div style="font-size:10px; font-weight:800; color:#a577ff; text-transform:uppercase;">Ops</div>
-                    <div style="font-size:19px; font-weight:900; color:#150a35; margin-top:1px;">{{ z_mo_data.0.1|default:"82" }}%</div>
+                    <div style="font-size:19px; font-weight:900; color:#150a35; margin-top:1px;">{% if z_mo_data.0.1 is not None %}{{ z_mo_data.0.1 }}%{% else %}—{% endif %}</div>
                 </div>
 
                 <div style="background:#f3edff; border:1px solid #e7dff2; border-radius:10px; padding:8px 4px; text-align:center;">
                     <div style="font-size:10px; font-weight:800; color:#a577ff; text-transform:uppercase;">Interp</div>
-                    <div style="font-size:19px; font-weight:900; color:#150a35; margin-top:1px;">{{ z_mo_data.0.2|default:"86" }}%</div>
+                    <div style="font-size:19px; font-weight:900; color:#150a35; margin-top:1px;">{% if z_mo_data.0.2 is not None %}{{ z_mo_data.0.2 }}%{% else %}—{% endif %}</div>
                 </div>
             </div>
 

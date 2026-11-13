@@ -114,12 +114,16 @@
                 data.forEach(function (t) {
                     if (!t) return;
 
-                    // 1. Donut (kategori): label sedia ada sudah menyatakan (Red) / (Yellow) / (Green)
+                    // 1. Donut (kategori): pemetaan warna klinikal (Merah = High Risk, Kuning = Moderate, Hijau = Controlled)
                     if (t.type === 'pie' && Array.isArray(t.labels)) {
                         t.marker = t.marker || {};
                         t.marker.colors = t.labels.map(function (l) {
                             l = String(l);
-                            return l.indexOf('(Red)') > -1 ? RED : l.indexOf('(Yellow)') > -1 ? YELLOW : l.indexOf('(Green)') > -1 ? GREEN : NEUTRAL;
+                            if (l.indexOf('Tiada Rekod') > -1) return '#e7dff2';
+                            if (l.indexOf('(Red)') > -1 || l.indexOf('High Risk') > -1) return RED;
+                            if (l.indexOf('(Yellow)') > -1 || l.indexOf('Moderate') > -1) return YELLOW;
+                            if (l.indexOf('(Green)') > -1 || l.indexOf('Controlled') > -1) return GREEN;
+                            return NEUTRAL;
                         });
                         t.marker.line = { color: '#ffffff', width: 2 };   // garis pemisah putih antara segmen
                         // Legenda diletak sepenuhnya di bawah donut supaya tidak bertindih dalam kad yang sempit
@@ -353,6 +357,9 @@
 
         {% elif section == 'Interpersonal' %}
         {% include 'dashboard/modules/_interpersonal.html' %}
+
+        {% elif section == 'Patients' %}
+            {% include 'dashboard/modules/_patients.html' %}
 
         {% elif section == 'Coaching' %}
             {% include 'dashboard/modules/_coaching.html' %}

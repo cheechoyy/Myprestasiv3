@@ -168,30 +168,92 @@
         </div>
     </div>
 
-    <!-- CUSUM PROGRESS -->
-    <div class="card" style="margin-bottom: 0; display:flex; flex-direction:column;">
-        <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 15px;">
-            <div style="width: 30px; height: 30px; background: #f3edff; border: 1px solid #e7dff2; border-radius: 8px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
-                <svg style="width: 16px; height: 16px; color: #6d3ec4;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z"/></svg>
+    <!-- CUSUM SHADOW MONITOR (DOCUMENTATION SLA) -->
+    <div class="card" style="margin-bottom: 0; display:flex; flex-direction:column; justify-content: space-between;">
+        <div>
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;">
+                <div style="display: flex; align-items: center; gap: 8px;">
+                    <div style="width: 28px; height: 28px; background: #f3edff; border: 1px solid #e7dff2; border-radius: 8px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                        <svg style="width: 15px; height: 15px; color: #6d3ec4;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z"/></svg>
+                    </div>
+                    <h3 style="color:#150a35; margin:0; font-size:13px; font-weight: 800; letter-spacing: 0.5px; text-transform: uppercase;">CUSUM Shadow Monitor</h3>
+                </div>
+                <span style="font-size: 10px; font-weight: 800; padding: 3px 8px; border-radius: 6px;
+                    {% if cusum_state == 'ALERT' %}background: #fee2e2; color: #dc2626; border: 1px solid #fecaca;
+                    {% elif cusum_state == 'WATCH' or cusum_late_count > 0 or cusum_pending_count > 0 %}background: #fef3c7; color: #d97706; border: 1px solid #fde68a;
+                    {% elif cusum_state == 'IN_CONTROL' %}background: #dcfce7; color: #16a34a; border: 1px solid #bbf7d0;
+                    {% else %}background: #f1f5f9; color: #64748b; border: 1px solid #cbd5e1;{% endif %}">
+                    {% if cusum_state == 'IN_CONTROL' and cusum_late_count == 0 and cusum_pending_count == 0 %}
+                        ● {{ cusum_state_label }}
+                    {% elif cusum_state == 'IN_CONTROL' %}
+                        ● Perlu Perhatian
+                    {% else %}
+                        ● {{ cusum_state_label }}
+                    {% endif %}
+                </span>
             </div>
-            <h3 style="color:#150a35; margin:0; font-size:13px; font-weight: 800; letter-spacing: 0.5px; text-transform: uppercase;">CUSUM Progress</h3>
-        </div>
-        
-        <div style="background:#f3edff; color:#6d3ec4; font-size:12px; font-weight:600; padding:10px 12px; border-radius:8px; border:1px solid #e7dff2; margin-bottom:20px;">
-            Skills are consistent and stable based on last 20 procedures.
+
+            {% if cusum_late_count > 0 %}
+            <div style="background:#fffbeb; border:1px solid #fde68a; color:#92400e; padding:10px 12px; border-radius:8px; margin-bottom:12px; font-size:11.5px; font-weight:700;">
+                ⚠ Anda ada <b>{{ cusum_late_count }}</b> nota lewat SLA 4 jam.
+            </div>
+            {% endif %}
+
+            {% if cusum_pending_count > 0 %}
+            <div style="background:#fffbeb; border:1px solid #fde68a; color:#92400e; padding:10px 12px; border-radius:8px; margin-bottom:12px; font-size:11.5px; font-weight:700;">
+                ⏳ <b>{{ cusum_pending_count }}</b> nota masih belum ditandatangani. Status CUSUM hanya mengira nota yang telah selesai.
+            </div>
+            {% endif %}
+
+            {% if cusum_observation_count > 0 %}
+                <div style="background: #faf8ff; border: 1px solid #e7dff2; padding: 12px; border-radius: 10px; margin-bottom: 14px;">
+                    <div style="display: flex; justify-content: space-between; align-items: baseline;">
+                        <span style="font-size: 11px; font-weight: 700; color: #6f628b;">Documentation Log-Likelihood:</span>
+                        <strong style="font-size: 16px; font-weight: 900; color: #150a35;">{{ cusum_value|floatformat:4 }}</strong>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; font-size: 10.5px; color: #6f628b; margin-top: 6px;">
+                        <span>Observations: <b>{{ cusum_observation_count }}</b></span>
+                        <span>Alerts: <b style="color: {% if cusum_alert_count > 0 %}#dc2626{% elif cusum_late_count > 0 %}#d97706{% else %}#16a34a{% endif %};">{{ cusum_alert_count }}</b></span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; font-size: 10.5px; color: #6f628b; margin-top: 4px;">
+                        <span>Lewat SLA: <b style="color: {% if cusum_late_count > 0 %}#d97706{% else %}#16a34a{% endif %};">{{ cusum_late_count }}</b></span>
+                        <span>Pending: <b style="color: {% if cusum_pending_count > 0 %}#d97706{% else %}#16a34a{% endif %};">{{ cusum_pending_count }}</b></span>
+                    </div>
+                </div>
+
+                <!-- THRESHOLD PROGRESS BAR -->
+                <div style="margin-bottom: 14px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                        <span style="font-size: 11px; font-weight: 800; color: #150a35;">Threshold Progress (h = {{ cusum_h }})</span>
+                        <span style="font-size: 10.5px; font-weight: 800; color: #6d3ec4;">{{ cusum_threshold_progress_pct }}%</span>
+                    </div>
+                    <div class="progress-bg" style="margin-top:0; height: 6px; background: #e7dff2; border-radius: 6px; overflow: hidden;">
+                        <div style="background: {% if cusum_state == 'ALERT' %}#dc2626{% elif cusum_state == 'WATCH' or cusum_late_count > 0 %}#d97706{% else %}#16a34a{% endif %}; width: {{ cusum_threshold_progress_pct }}%; height: 100%;"></div>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; font-size: 9.5px; color: #94a3b8; margin-top: 3px;">
+                        <span>0.0</span>
+                        <span>Watch &ge; {{ cusum_watch_threshold }}</span>
+                        <span>Alert &ge; {{ cusum_h }}</span>
+                    </div>
+                </div>
+            {% else %}
+                <div style="background: #f8fafc; border: 1px dashed #cbd5e1; padding: 12px; border-radius: 8px; margin-bottom: 14px; text-align: center; font-size: 11.5px; color: #64748b;">
+                    No CUSUM snapshot yet. Documentation data is insufficient.
+                </div>
+            {% endif %}
         </div>
 
-        <div style="flex-grow: 1; display:flex; flex-direction:column; justify-content:center;">
-            <label style="color:#150a35; font-weight:800; font-size:12px; margin-bottom:5px; text-transform: uppercase;">Procedure Observation Consistency</label>
-            <div style="display:flex; align-items:center; gap:10px; margin-bottom:20px;">
-                <div class="progress-bg" style="margin-top:0; flex-grow:1;"><div class="progress-bar" style="width: {{ cusum_pct }}%;"></div></div>
-                <span class="pct-label" style="font-size:12px; font-weight:bold; color:#16A34A;">{{ cusum_pct }}%</span>
+        <div>
+            <!-- POLICY COMPLIANCE BAR -->
+            <label style="color:#150a35; font-weight:800; font-size:11.5px; margin-bottom:4px; display:block; text-transform: uppercase;">Policy &amp; Protocol Compliance</label>
+            <div style="display:flex; align-items:center; gap:10px; margin-bottom: 10px;">
+                <div class="progress-bg" style="margin-top:0; flex-grow:1; height: 6px; background: #e7dff2; border-radius: 6px; overflow: hidden;">
+                    <div style="background: #6d3ec4; width: {{ policy_pct }}%; height: 100%;"></div>
+                </div>
+                <span class="pct-label" style="font-size:12px; font-weight:800; color:#150a35;">{{ policy_pct }}%</span>
             </div>
-
-            <label style="color:#150a35; font-weight:800; font-size:12px; margin-bottom:5px; text-transform: uppercase;">Policy & Protocol Compliance</label>
-            <div style="display:flex; align-items:center; gap:10px;">
-                <div class="progress-bg" style="margin-top:0; flex-grow:1;"><div class="progress-bar" style="width: {{ policy_pct }}%;"></div></div>
-                <span class="pct-label" style="font-size:12px; font-weight:bold; color:#16A34A;">{{ policy_pct }}%</span>
+            <div style="font-size: 10px; color: #94a3b8; font-style: italic;">
+                Shadow Mode: Clinical SLA monitoring only (not used in radar score).
             </div>
         </div>
     </div>

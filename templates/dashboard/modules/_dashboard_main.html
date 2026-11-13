@@ -8,109 +8,76 @@
     </div>
 </div>
 
-<!-- KAD HERO: AI PERFORMANCE COACH & DIAGNOSTIC ENGINE (MODERN FLOATING NO LEFT BORDER) -->
-{% if ai_risk_tier == 'RED' %}
-<div style="background: linear-gradient(135deg, #150a35 0%, #6d3ec4 100%); border: none; border-radius: 18px; padding: 22px 25px; margin-bottom: 25px; color: white; box-shadow: 0 10px 25px rgba(21, 10, 53, 0.25);">
-    <div class="ai-alert-row" style="display: flex; justify-content: space-between; align-items: flex-start; gap: 20px;">
-        <div style="flex: 1;">
-            <div style="display: inline-flex; align-items: center; gap: 6px; background: rgba(255,255,255,0.2); color: white; padding: 4px 10px; border-radius: 20px; font-size: 11px; font-weight: 800; text-transform: uppercase; margin-bottom: 10px;">
-                <svg style="width: 14px; height: 14px; color: white;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
-                <span>AI Evaluator Diagnostic</span>
-                <span>•</span>
-                <span style="color: #fca5a5;">Action Needed</span>
-            </div>
-            <h3 style="margin: 0 0 8px 0; color: white; font-weight: 900; font-size: 18px; letter-spacing: -0.3px;">{{ ai_alert_title }}</h3>
-            <p style="margin: 0 0 15px 0; color: rgba(255,255,255,0.88); font-size: 13px; font-weight: 600; line-height: 1.5;">{{ ai_alert_msg }}</p>
-            <div style="display: flex; gap: 12px; margin-bottom: 15px; flex-wrap: wrap; align-items: center;">
-                <div style="background: white; border: 1px solid #e7dff2; padding: 6px 12px; border-radius: 8px; font-size: 12px; color: #150a35; font-weight: 700; display: inline-flex; align-items: center; gap: 6px;">
-                    <svg style="width: 14px; height: 14px; color: #16a34a; flex-shrink: 0;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>
-                    <span>Clinical: {{ score_clinical }}%</span>
-                </div>
-                <div style="background: #fee2e2; border: 1px solid #fecaca; padding: 6px 12px; border-radius: 8px; font-size: 12px; color: #dc2626; font-weight: 800; display: inline-flex; align-items: center; gap: 6px;">
-                    <svg style="width: 14px; height: 14px; color: #dc2626; flex-shrink: 0;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
-                    <span>Ops Coding: {{ score_ops_coding }}% (Lag)</span>
-                </div>
-                <div style="background: white; border: 1px solid #e7dff2; padding: 6px 12px; border-radius: 8px; font-size: 12px; color: #150a35; font-weight: 700; display: inline-flex; align-items: center; gap: 6px;">
-                    <svg style="width: 14px; height: 14px; color: #16a34a; flex-shrink: 0;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>
-                    <span>Interpersonal: {{ score_interpersonal }}%</span>
-                </div>
-            </div>
+<!-- KAWALAN PAPARAN BERSYARAT (CONDITIONAL ALERTING) -->
+{% if ai_risk_tier == 'BANNER' %}
+<!-- BANNER SEMENTARA UNTUK PENGESAHAN PEMULIHAN (BOLEH DITUTUP) -->
+<div id="remediationBanner" style="background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 12px; padding: 14px 20px; margin-bottom: 22px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 4px 12px rgba(22, 163, 74, 0.05);">
+    <div style="display: flex; align-items: center; gap: 12px;">
+        <div style="width: 32px; height: 32px; background: #dcfce7; color: #16a34a; border-radius: 8px; display: flex; justify-content: center; align-items: center; flex-shrink: 0;">
+            <svg style="width: 18px; height: 18px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>
         </div>
-        <div class="ai-alert-actions" style="display: flex; flex-direction: column; gap: 10px; min-width: 220px; align-self: center;">
-            <a href="?section=Coaching" style="background: white; color: #5528a6; border: none; padding: 12px 18px; border-radius: 10px; font-weight: 800; font-size: 13px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; box-shadow: 0 4px 14px rgba(0, 0, 0, 0.2); text-decoration: none;">
-                <svg style="width: 18px; height: 18px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
-                {{ ai_action_text }}
-            </a>
+        <div>
+            <h4 style="margin: 0; color: #14532d; font-size: 13.5px; font-weight: 800;">{{ ai_alert_title }}</h4>
+            <p style="margin: 2px 0 0 0; color: #16a34a; font-size: 11.5px; font-weight: 600;">{{ ai_alert_msg }}</p>
         </div>
     </div>
+    <button onclick="document.getElementById('remediationBanner').style.display='none'" style="background: none; border: none; color: #16a34a; cursor: pointer; font-size: 16px; font-weight: bold; padding: 4px; border-radius: 6px; transition: 0.2s;" onmouseover="this.style.background='#dcfce7';">✕</button>
 </div>
-{% elif ai_risk_tier == 'YELLOW' %}
-<div style="background: linear-gradient(135deg, #150a35 0%, #6d3ec4 100%); border: none; border-radius: 18px; padding: 22px 25px; margin-bottom: 25px; color: white; box-shadow: 0 10px 25px rgba(21, 10, 53, 0.25);">
-    <div class="ai-alert-row" style="display: flex; justify-content: space-between; align-items: flex-start; gap: 20px;">
-        <div style="flex: 1;">
-            <div style="display: inline-flex; align-items: center; gap: 6px; background: rgba(255,255,255,0.2); color: white; padding: 4px 10px; border-radius: 20px; font-size: 11px; font-weight: 800; text-transform: uppercase; margin-bottom: 10px;">
-                <svg style="width: 14px; height: 14px; color: white;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
-                <span>AI Evaluator Diagnostic</span>
-                <span>•</span>
-                <span style="color: #fcd34d;">Caution</span>
+
+{% elif ai_risk_tier == 'RED' or ai_risk_tier == 'YELLOW' %}
+<!-- EXECUTIVE CLINICAL GOVERNANCE DIAGNOSTIC CARD (HANYA MUNCUL BILA PRESTASI JATUH) -->
+<div style="background: white; border: 1.5px solid #d8c7f4; border-radius: 16px; padding: 22px 26px; margin-bottom: 22px; box-shadow: 0 6px 20px rgba(21, 10, 53, 0.04);">
+    <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 20px;">
+        <!-- KIRI: STATUS & RUMUSAN EKSEKUTIF -->
+        <div style="flex: 1.4; min-width: 280px;">
+            <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 10px; flex-wrap: wrap;">
+                <span style="display: inline-flex; align-items: center; gap: 6px; padding: 4px 11px; border-radius: 6px; font-size: 10.5px; font-weight: 800; letter-spacing: 0.5px; text-transform: uppercase;
+                    {% if ai_risk_tier == 'RED' %}background: #fee2e2; color: #991b1b; border: 1px solid #fecaca;
+                    {% else %}background: #fef3c7; color: #92400e; border: 1px solid #fde68a;{% endif %}">
+                    <span style="width: 7px; height: 7px; border-radius: 50%; background: {% if ai_risk_tier == 'RED' %}#dc2626{% else %}#d97706{% endif %};"></span>
+                    {% if ai_risk_tier == 'RED' %}Action Required{% else %}Advisory Notice{% endif %}
+                </span>
+                <span style="font-size: 10.5px; font-weight: 800; color: #6d3ec4; background: #f3edff; border: 1px solid #e7dff2; padding: 4px 10px; border-radius: 6px; letter-spacing: 0.4px; text-transform: uppercase;">
+                    AI Clinical Governance Engine
+                </span>
             </div>
-            <h3 style="margin: 0 0 8px 0; color: white; font-weight: 900; font-size: 18px; letter-spacing: -0.3px;">{{ ai_alert_title }}</h3>
-            <p style="margin: 0 0 15px 0; color: rgba(255,255,255,0.88); font-size: 13px; font-weight: 600; line-height: 1.5;">{{ ai_alert_msg }}</p>
-            <div style="display: flex; gap: 12px; margin-bottom: 15px; flex-wrap: wrap; align-items: center;">
-                <div style="background: white; border: 1px solid #fef3c7; padding: 6px 12px; border-radius: 8px; font-size: 12px; color: #92400e; font-weight: 700; display: inline-flex; align-items: center; gap: 6px;">
-                    <svg style="width: 14px; height: 14px; color: #16a34a; flex-shrink: 0;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>
-                    <span>Clinical: {{ score_clinical }}%</span>
-                </div>
-                <div style="background: #fef3c7; border: 1px solid #fde68a; padding: 6px 12px; border-radius: 8px; font-size: 12px; color: #d97706; font-weight: 800; display: inline-flex; align-items: center; gap: 6px;">
-                    <svg style="width: 14px; height: 14px; color: #d97706; flex-shrink: 0;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
-                    <span>Ops Coding: {{ score_ops_coding }}%</span>
-                </div>
-                <div style="background: white; border: 1px solid #fef3c7; padding: 6px 12px; border-radius: 8px; font-size: 12px; color: #92400e; font-weight: 700; display: inline-flex; align-items: center; gap: 6px;">
-                    <svg style="width: 14px; height: 14px; color: #16a34a; flex-shrink: 0;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>
-                    <span>Interpersonal: {{ score_interpersonal }}%</span>
-                </div>
-            </div>
+
+            <h3 style="margin: 0 0 6px 0; color: #150a35; font-weight: 900; font-size: 18.5px; letter-spacing: -0.4px;">
+                {{ ai_alert_title }}
+            </h3>
+            <p style="margin: 0; color: #475569; font-size: 13px; font-weight: 500; line-height: 1.55;">
+                {{ ai_alert_msg }}
+            </p>
         </div>
-        <div class="ai-alert-actions" style="display: flex; flex-direction: column; gap: 10px; min-width: 220px; align-self: center;">
-            <button onclick="openSelfCoachingModal()" style="background: white; color: #5528a6; border: none; padding: 12px 18px; border-radius: 10px; font-weight: 800; font-size: 13px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; box-shadow: 0 4px 14px rgba(0, 0, 0, 0.2);">
-                <svg style="width: 18px; height: 18px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
-                {{ ai_action_text }}
+
+        <!-- KANAN: BLOK TELEMETRI 3 TUNJANG & BUTANG TINDAKAN -->
+        <div style="display: flex; flex-direction: column; justify-content: space-between; gap: 12px; min-width: 310px;">
+            <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px;">
+                <div style="background: #faf8ff; border: 1px solid #e7dff2; border-radius: 10px; padding: 9px 11px;">
+                    <div style="font-size: 9.5px; font-weight: 800; color: #6f628b; text-transform: uppercase; letter-spacing: 0.3px;">Clinical</div>
+                    <div style="font-size: 17px; font-weight: 900; color: {% if score_clinical >= 80 %}#15803d{% elif score_clinical >= 65 %}#b45309{% else %}#dc2626{% endif %}; margin-top: 2px;">{{ score_clinical }}%</div>
+                </div>
+                <div style="background: #faf8ff; border: 1px solid #e7dff2; border-radius: 10px; padding: 9px 11px;">
+                    <div style="font-size: 9.5px; font-weight: 800; color: #6f628b; text-transform: uppercase; letter-spacing: 0.3px;">Operational</div>
+                    <div style="font-size: 17px; font-weight: 900; color: {% if score_ops_coding >= 80 %}#15803d{% elif score_ops_coding >= 65 %}#b45309{% else %}#dc2626{% endif %}; margin-top: 2px;">{{ score_ops_coding }}%</div>
+                </div>
+                <div style="background: #faf8ff; border: 1px solid #e7dff2; border-radius: 10px; padding: 9px 11px;">
+                    <div style="font-size: 9.5px; font-weight: 800; color: #6f628b; text-transform: uppercase; letter-spacing: 0.3px;">Interpersonal</div>
+                    <div style="font-size: 17px; font-weight: 900; color: {% if score_interpersonal >= 80 %}#15803d{% elif score_interpersonal >= 65 %}#b45309{% else %}#dc2626{% endif %}; margin-top: 2px;">{{ score_interpersonal }}%</div>
+                </div>
+            </div>
+
+            {% if ai_risk_tier == 'YELLOW' %}
+            <button type="button" onclick="openSelfCoachingModal()" style="width: 100%; background: #6d3ec4; color: white; border: none; padding: 10px 16px; border-radius: 10px; font-weight: 800; font-size: 12.5px; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 8px; box-shadow: 0 4px 12px rgba(109, 62, 196, 0.25); transition: all 0.2s ease;" onmouseover="this.style.background='#5528a6';" onmouseout="this.style.background='#6d3ec4';">
+                <span>{{ ai_action_text }}</span>
+                <span>→</span>
             </button>
-        </div>
-    </div>
-</div>
-{% else %}
-<div style="background: linear-gradient(135deg, #150a35 0%, #6d3ec4 100%); border: none; border-radius: 18px; padding: 22px 25px; margin-bottom: 25px; color: white; box-shadow: 0 10px 25px rgba(21, 10, 53, 0.25);">
-    <div class="ai-alert-row" style="display: flex; justify-content: space-between; align-items: flex-start; gap: 20px;">
-        <div style="flex: 1;">
-            <div style="display: inline-flex; align-items: center; gap: 6px; background: rgba(255,255,255,0.2); color: white; padding: 4px 10px; border-radius: 20px; font-size: 11px; font-weight: 800; text-transform: uppercase; margin-bottom: 10px;">
-                <svg style="width: 14px; height: 14px; color: white;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
-                <span>AI Evaluator Diagnostic</span>
-                <span>•</span>
-                <span style="color: #86efac;">On Track</span>
-            </div>
-            <h3 style="margin: 0 0 8px 0; color: white; font-weight: 900; font-size: 18px; letter-spacing: -0.3px;">{{ ai_alert_title }}</h3>
-            <p style="margin: 0 0 15px 0; color: rgba(255,255,255,0.88); font-size: 13px; font-weight: 600; line-height: 1.5;">{{ ai_alert_msg }}</p>
-            <div style="display: flex; gap: 12px; margin-bottom: 15px; flex-wrap: wrap; align-items: center;">
-                <div style="background: white; border: 1px solid #bbf7d0; padding: 6px 12px; border-radius: 8px; font-size: 12px; color: #14532d; font-weight: 700; display: inline-flex; align-items: center; gap: 6px;">
-                    <svg style="width: 14px; height: 14px; color: #16a34a; flex-shrink: 0;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>
-                    <span>Clinical: {{ score_clinical }}%</span>
-                </div>
-                <div style="background: white; border: 1px solid #bbf7d0; padding: 6px 12px; border-radius: 8px; font-size: 12px; color: #14532d; font-weight: 700; display: inline-flex; align-items: center; gap: 6px;">
-                    <svg style="width: 14px; height: 14px; color: #16a34a; flex-shrink: 0;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>
-                    <span>Ops Coding: {{ score_ops_coding }}%</span>
-                </div>
-                <div style="background: white; border: 1px solid #bbf7d0; padding: 6px 12px; border-radius: 8px; font-size: 12px; color: #14532d; font-weight: 700; display: inline-flex; align-items: center; gap: 6px;">
-                    <svg style="width: 14px; height: 14px; color: #16a34a; flex-shrink: 0;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>
-                    <span>Interpersonal: {{ score_interpersonal }}%</span>
-                </div>
-            </div>
-        </div>
-        <div class="ai-alert-actions" style="display: flex; flex-direction: column; gap: 10px; min-width: 220px; align-self: center;">
-            <a href="?section=Coaching" style="background: white; color: #5528a6; border: none; padding: 12px 18px; border-radius: 10px; font-weight: 800; font-size: 13px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; box-shadow: 0 4px 14px rgba(0, 0, 0, 0.2); text-decoration: none;">
-                <svg style="width: 18px; height: 18px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"/></svg>
-                {{ ai_action_text }}
+            {% else %}
+            <a href="?section=Coaching" style="width: 100%; box-sizing: border-box; background: #6d3ec4; color: white; border: none; padding: 10px 16px; border-radius: 10px; font-weight: 800; font-size: 12.5px; text-decoration: none; display: inline-flex; align-items: center; justify-content: center; gap: 8px; box-shadow: 0 4px 12px rgba(109, 62, 196, 0.25); transition: all 0.2s ease;" onmouseover="this.style.background='#5528a6';" onmouseout="this.style.background='#6d3ec4';">
+                <span>{{ ai_action_text }}</span>
+                <span>→</span>
             </a>
+            {% endif %}
         </div>
     </div>
 </div>
@@ -170,80 +137,159 @@
     </div>
 </div>
 
+<!-- BARIS 3: TODAY'S SCHEDULE | PATIENT ACUITY MIX (DONUT) | TASK VELOCITY -->
 <div class="grid-3" style="margin-bottom: 20px;">
     <div class="card" style="margin-bottom: 0; display: flex; flex-direction: column; justify-content: space-between;">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
-            <h3 style="color:#150a35; margin:0; font-size:13px; font-weight: 800; letter-spacing: 0.5px; text-transform: uppercase;">Today's Schedule & Due Tracker</h3>
+            <h3 style="color:#150a35; margin:0; font-size:13px; font-weight: 800; letter-spacing: 0.5px; text-transform: uppercase;">Schedule &amp; Due Tracker</h3>
             <button onclick="openScheduleModal()" style="background: #f3edff; border: 1px solid #d8c7f4; color: #6d3ec4; font-size: 11px; font-weight: 800; border-radius: 6px; padding: 4px 10px; cursor: pointer; transition: 0.2s;" onmouseover="this.style.background='#6d3ec4'; this.style.color='white';" onmouseout="this.style.background='#f3edff'; this.style.color='#6d3ec4';">
-                + Add / View Calendar
+                + Calendar
             </button>
         </div>
 
-        <div class="animate-cascade" style="display: flex; flex-direction: column; gap: 10px;">
-            <div style="background:#f3edff; padding:12px 14px; border-radius:12px; font-size:12px; color:#150a35; border:1px solid #d8c7f4; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 6px rgba(21, 10, 53, 0.02);">
-                <div>
-                    <b>10:30 AM</b> | Grand Rounds (Ward 4)
-                    <span style="display: block; font-size: 10px; color: #6f628b; font-weight: 600; margin-top: 2px;">Clinical Shift • Inpatient Ward</span>
+        <div class="animate-cascade" style="display: flex; flex-direction: column; gap: 10px; flex-grow: 1; justify-content: center;">
+            {% if dashboard_schedule_items %}
+                {% for item in dashboard_schedule_items %}
+                <div style="background:{% if item.is_urgent %}#fffbeb; color:#b45309; border:1px solid #fde68a;{% else %}#f3edff; color:#150a35; border:1px solid #d8c7f4;{% endif %} padding:11px 14px; border-radius:12px; font-size:12px; display: flex; justify-content: space-between; align-items: center; gap: 10px;">
+                    <div>
+                        <b>{{ item.time_label }}</b> | {{ item.title }}
+                        <span style="display: block; font-size: 10px; color: {% if item.is_urgent %}#d97706{% else %}#6f628b{% endif %}; font-weight: 600; margin-top: 2px;">{{ item.subtitle }}</span>
+                    </div>
+                    <a href="{{ item.url }}" style="background: {% if item.is_urgent %}#d97706; color: white;{% else %}white; color: #6d3ec4; border: 1px solid #e7dff2;{% endif %} font-size: 9.5px; font-weight: 800; padding: 4px 10px; border-radius: 8px; text-decoration: none; white-space: nowrap;">
+                        {{ item.badge }}
+                    </a>
                 </div>
-                <span style="background: white; border: 1px solid #e7dff2; color: #150a35; font-size: 9px; font-weight: 800; padding: 3px 8px; border-radius: 6px;">Duty</span>
-            </div>
-
-            <div style="background:#f3edff; padding:12px 14px; border-radius:12px; font-size:12px; color:#6d3ec4; border:1px solid #d8c7f4; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 6px rgba(21, 10, 53, 0.02);">
-                <div>
-                    <b>13:30 PM</b> | New Patient Exam
-                    <span style="display: block; font-size: 10px; color: #6f628b; font-weight: 600; margin-top: 2px;">Outpatient Clinic • Room 3</span>
+                {% endfor %}
+            {% else %}
+                <div style="background:#f0fdf4; padding:16px 14px; border-radius:12px; font-size:12px; color:#15803d; border:1px solid #bbf7d0; text-align: center; font-weight: 700;">
+                    ✓ Tiada tugasan tertunggak hari ini. Semua rekod semasa telah dikemas kini.
                 </div>
-                <span style="background: white; border: 1px solid #e7dff2; color: #6d3ec4; font-size: 9px; font-weight: 800; padding: 3px 8px; border-radius: 6px;">Clinic</span>
-            </div>
-
-            <!-- ITEM TUGASAN MYPRESTASI DUE -->
-            <div style="background:#fffbeb; padding:12px 14px; border-radius:12px; font-size:12px; color:#b45309; border:1px solid #fde68a; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 6px rgba(217, 119, 6, 0.03);">
-                <div>
-                    <b>23:59 PM</b> | ⏳ Documentation Audit Due
-                    <span style="display: block; font-size: 10px; color: #d97706; font-weight: 700; margin-top: 2px;">MyPrestasi Pending (2 Patient Entries)</span>
-                </div>
-                <a href="?section=Clinical" style="background: #d97706; color: white; font-size: 9px; font-weight: 800; padding: 4px 10px; border-radius: 8px; text-decoration: none;">Submit Now</a>
-            </div>
+            {% endif %}
         </div>
     </div>
 
     <div class="card card-donut" style="margin-bottom: 0; text-align: center; display:flex; flex-direction:column; justify-content:center;">
         <h3 style="color:#150a35; margin-top:0; font-size:13px; font-weight: 800; letter-spacing: 0.5px; text-transform: uppercase;">Patient Acuity Mix</h3>
         <div style="overflow:hidden; flex-grow:1;">{{ donut_html|safe }}</div>
-        <p style="font-size: 10px; color:#6f628b; margin:0; margin-top:5px;"><i>p-value < 0.05 (Sig. difference in critical ward)</i></p>
+        <p style="font-size: 10px; color:#6f628b; margin:0; margin-top:5px;"><i>{{ acuity_caption }}</i></p>
     </div>
 
     <div class="card" style="margin-bottom: 0; display:flex; flex-direction:column; justify-content:center;">
-        <h3 style="color:#150a35; margin-top:0; font-size:13px; font-weight: 800; letter-spacing: 0.5px; text-transform: uppercase;">Task Velocity</h3>
+        <h3 style="color:#150a35; margin-top:0; font-size:13px; font-weight: 800; letter-spacing: 0.5px; text-transform: uppercase;">Task Velocity (Live DB)</h3>
 
         <div style="display:flex; justify-content:space-between; font-size:12px; font-weight:bold; color:#150a35; margin-bottom:5px; margin-top:15px;">
-            <span>Discharge Summaries</span><span class="pct-label" style="color:#150a35;">8/10 (80%)</span>
+            <span>4-Hour Documentation SLA</span><span class="pct-label" style="color:#150a35;">{{ task_vel_doc_ontime }}/{{ task_vel_doc_total }} ({{ task_vel_doc_pct }}%)</span>
         </div>
         <div class="progress-bg" style="height:10px; margin-top:0; margin-bottom:20px;">
-            <div class="progress-bar" style="width: 80%; background-color:#150a35;"></div>
+            <div class="progress-bar" style="width: {{ task_vel_doc_pct }}%; background-color:#150a35;"></div>
         </div>
 
         <div style="display:flex; justify-content:space-between; font-size:12px; font-weight:bold; color:#150a35; margin-bottom:5px;">
-            <span>Clinical Coding</span><span class="pct-label" style="color:#6d3ec4;">5/12 (41%)</span>
+            <span>Annual CPD Points Target</span><span class="pct-label" style="color:#6d3ec4;">{{ task_vel_cpd_pts }}/50 pts ({{ task_vel_cpd_pct }}%)</span>
         </div>
         <div class="progress-bg" style="height:10px; margin-top:0; margin-bottom:15px;">
-            <div class="progress-bar" style="width: 41%; background-color:#6d3ec4;"></div>
+            <div class="progress-bar" style="width: {{ task_vel_cpd_pct }}%; background-color:#6d3ec4;"></div>
         </div>
 
-        <p style="font-size: 10px; color:#6f628b; margin:0; text-align:center;"><i>95% CI [35%, 85%] for task completion rate</i></p>
+        <p style="font-size: 10px; color:#6f628b; margin:0; text-align:center;"><i>{{ task_vel_caption }}</i></p>
     </div>
 </div>
 
-<div class="grid-2">
+<!-- BARIS 4: PRODUCTIVITY TREND (AREA) | PATIENT SATISFACTION MyPSQ (GAUGE) -->
+<div class="grid-2" style="margin-bottom: 28px;">
     <div class="card card-area" style="margin-bottom: 0;">
-        <h3 style="color:#150a35; margin-top:0; font-size:13px; font-weight: 800; letter-spacing: 0.5px; text-transform: uppercase;">6-Month Productivity Trend</h3>
+        <h3 style="color:#150a35; margin-top:0; font-size:13px; font-weight: 800; letter-spacing: 0.5px; text-transform: uppercase;">Daily Patient Clearance Trend</h3>
         <div style="overflow:hidden;">{{ area_html|safe }}</div>
-        <p style="font-size: 10px; color:#6f628b; margin:0; text-align:center;"><i>Trend displays a steady upward trajectory (R² = 0.89)</i></p>
+        <p style="font-size: 10px; color:#6f628b; margin:0; text-align:center;"><i>{{ prod_trend_caption }}</i></p>
     </div>
 
     <div class="card card-gauge" style="margin-bottom: 0; text-align: center;">
-        <h3 style="color:#150a35; margin-top:0; font-size:13px; font-weight: 800; letter-spacing: 0.5px; text-transform: uppercase;">Performance Index vs Target</h3>
+        <h3 style="color:#150a35; margin-top:0; font-size:13px; font-weight: 800; letter-spacing: 0.5px; text-transform: uppercase;">Patient Satisfaction Index (MyPSQ)</h3>
         <div style="overflow:hidden;">{{ gauge_html|safe }}</div>
-        <p style="font-size: 10px; color:#6f628b; margin:0;"><i>KPI Target: 4.5 | Current: 4.2 (Standard Dev: ±0.3)</i></p>
+        <p style="font-size: 10px; color:#6f628b; margin:0;"><i>{{ mypsq_gauge_caption }}</i></p>
     </div>
+</div>
+
+<!-- ===================================================================== -->
+<!-- BAHAGIAN TAMBAHAN: 10 KOTAK BENTO (COACHING CARDS) & RECENT ACTIVITY  -->
+<!-- ===================================================================== -->
+<div style="border-top: 1.5px dashed #d8c7f4; padding-top: 24px; margin-bottom: 14px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px;">
+    <div>
+        <h3 style="margin: 0; color: #150a35; font-size: 16px; font-weight: 900; letter-spacing: -0.2px;">10-Module Coaching Cards</h3>
+        <p style="margin: 3px 0 0 0; color: #6f628b; font-size: 12px; font-weight: 600;">Klik mana-mana kad untuk terus ke borang atau log semakan modul tersebut.</p>
+    </div>
+    {% if home_alert_count > 0 %}
+    <span style="background: #fef3c7; color: #b45309; border: 1px solid #fde68a; padding: 5px 12px; border-radius: 20px; font-size: 11.5px; font-weight: 800;">
+        ⚠️ {{ home_alert_count }} Modul Perlu Perhatian
+    </span>
+    {% else %}
+    <span style="background: #dcfce7; color: #15803d; border: 1px solid #bbf7d0; padding: 5px 12px; border-radius: 20px; font-size: 11.5px; font-weight: 800;">
+        ✓ Semua 10 Modul Optimal
+    </span>
+    {% endif %}
+</div>
+
+<div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(235px, 1fr)); gap: 16px; margin-bottom: 26px;">
+    {% for card in bento_cards %}
+    <a href="{{ card.url }}" style="text-decoration: none; background: white; border-radius: 16px; padding: 18px; display: flex; flex-direction: column; justify-content: space-between; transition: all 0.2s ease; box-shadow: 0 4px 12px rgba(21, 10, 53, 0.03);
+        border: 1.5px solid {% if card.tier == 'ALERT' %}#fecaca; background: #fffafa;{% elif card.tier == 'WARN' %}#fde68a; background: #fffdf5;{% elif card.tier == 'INFO' %}#d8c7f4;{% else %}#e7dff2;{% endif %}"
+        onmouseover="this.style.transform='translateY(-3px)'; this.style.boxShadow='0 10px 22px rgba(21, 10, 53, 0.09)';"
+        onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 4px 12px rgba(21, 10, 53, 0.03)';">
+        <div>
+            <div style="display: flex; justify-content: space-between; align-items: center; gap: 6px; margin-bottom: 10px;">
+                <span style="font-size: 9.5px; font-weight: 800; color: #6d3ec4; background: #f3edff; padding: 2px 8px; border-radius: 6px; letter-spacing: 0.4px;">{{ card.pillar }}</span>
+                <span style="font-size: 10px; font-weight: 800; padding: 2px 8px; border-radius: 12px;
+                    {% if card.tier == 'ALERT' %}background: #fee2e2; color: #dc2626;
+                    {% elif card.tier == 'WARN' %}background: #fef3c7; color: #b45309;
+                    {% elif card.tier == 'INFO' %}background: #f3edff; color: #6d3ec4;
+                    {% else %}background: #dcfce7; color: #15803d;{% endif %}">
+                    {{ card.badge_label }}
+                </span>
+            </div>
+
+            <div style="font-size: 13.5px; font-weight: 900; color: #150a35; margin-bottom: 6px; line-height: 1.3;">{{ card.label }}</div>
+            <div style="font-size: 24px; font-weight: 900; color: {% if card.tier == 'ALERT' %}#dc2626{% elif card.tier == 'WARN' %}#d97706{% else %}#150a35{% endif %}; margin-bottom: 8px;">
+                {{ card.display }}
+            </div>
+            <p style="margin: 0 0 14px 0; font-size: 11.5px; color: #6f628b; font-weight: 600; line-height: 1.45;">
+                {{ card.hint }}
+            </p>
+        </div>
+
+        <div style="border-top: 1px dashed #e7dff2; padding-top: 10px; display: flex; justify-content: space-between; align-items: center; font-size: 11.5px; font-weight: 800; color: {% if card.tier == 'ALERT' %}#dc2626{% elif card.tier == 'WARN' %}#b45309{% else %}#6d3ec4{% endif %};">
+            <span>{{ card.cta }}</span>
+        </div>
+    </a>
+    {% endfor %}
+</div>
+
+<!-- RECENT ACTIVITY (AKTIVITI TERKINI SEBENAR DARI PANGKALAN DATA) -->
+<div class="card" style="margin-bottom: 0; border-radius: 16px; padding: 20px 24px;">
+    <div style="display: flex; align-items: center; justify-content: space-between; border-bottom: 1.5px solid #e7dff2; padding-bottom: 12px; margin-bottom: 14px;">
+        <div style="display: flex; align-items: center; gap: 10px;">
+            <div style="width: 30px; height: 30px; background: #f3edff; border: 1px solid #e7dff2; border-radius: 8px; display: flex; align-items: center; justify-content: center;">
+                <svg style="width: 16px; height: 16px; color: #6d3ec4;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+            </div>
+            <h3 style="margin: 0; color: #150a35; font-size: 14px; font-weight: 900; text-transform: uppercase; letter-spacing: 0.4px;">Recent Activity</h3>
+        </div>
+        <span style="font-size: 11px; color: #6f628b; font-weight: 700;">Log Terkini Pangkalan Data</span>
+    </div>
+
+    {% if recent_activities %}
+        <div style="display: flex; flex-direction: column; gap: 10px;">
+            {% for act in recent_activities %}
+            <a href="{{ act.url }}" style="text-decoration: none; background: #faf8ff; border: 1px solid #e7dff2; border-radius: 12px; padding: 12px 16px; display: flex; justify-content: space-between; align-items: center; gap: 12px; transition: all 0.15s ease;" onmouseover="this.style.background='#f3edff'; this.style.borderColor='#d8c7f4';" onmouseout="this.style.background='#faf8ff'; this.style.borderColor='#e7dff2';">
+                <div style="display: flex; align-items: center; gap: 12px;">
+                    <span style="background: #f3edff; color: #6d3ec4; border: 1px solid #d8c7f4; font-size: 10.5px; font-weight: 800; padding: 3px 10px; border-radius: 8px; white-space: nowrap;">{{ act.module }}</span>
+                    <span style="font-size: 13px; font-weight: 700; color: #150a35;">{{ act.title }}</span>
+                </div>
+                <span style="font-size: 11px; color: #6f628b; font-weight: 700; white-space: nowrap;">{{ act.date_display }} ➔</span>
+            </a>
+            {% endfor %}
+        </div>
+    {% else %}
+        <div style="text-align: center; padding: 24px; color: #6f628b; font-size: 13px;">
+            Belum ada aktiviti direkodkan. Klik butang <b>+ Quick Add</b> di atas untuk memulakan kemasukan data pertama anda.
+        </div>
+    {% endif %}
 </div>

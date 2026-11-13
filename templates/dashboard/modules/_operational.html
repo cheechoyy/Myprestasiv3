@@ -65,8 +65,20 @@
                     </div>
                 </div>
 
+                <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; margin-bottom: 16px;">
+                    <div style="font-size: 13px; font-weight: 800; color: #150a35;">Productivity Log Mode</div>
+                    <div style="display: inline-flex; background: #f3edff; padding: 4px; border-radius: 10px; border: 1px solid #d8c7f4; gap: 4px;">
+                        <button type="button" id="btn-opsProd-entry" onclick="toggleOpsMode('entry')" style="background: #6d3ec4; color: white; border: none; padding: 7px 15px; border-radius: 8px; font-size: 12px; font-weight: 800; cursor: pointer;">
+                            + New Entry
+                        </button>
+                        <button type="button" id="btn-opsProd-history" onclick="toggleOpsMode('history')" style="background: transparent; color: #150a35; border: none; padding: 7px 15px; border-radius: 8px; font-size: 12px; font-weight: 800; cursor: pointer;">
+                            View History ({{ ops_productivity_log_count }})
+                        </button>
+                    </div>
+                </div>
+
                 <!-- BORANG REKOD MASA & BEBAN KERJA MULTI-CATEGORY -->
-                <div style="background: linear-gradient(135deg, #ffffff 0%, #f3edff 100%); border: 1px solid #e7dff2; border-radius: 16px; padding: 20px; margin-bottom: 25px; box-shadow: 0 4px 15px rgba(21, 10, 53, 0.04);">
+                <div id="opsProdEntryPane" style="background: linear-gradient(135deg, #ffffff 0%, #f3edff 100%); border: 1px solid #e7dff2; border-radius: 16px; padding: 20px; margin-bottom: 25px; box-shadow: 0 4px 15px rgba(21, 10, 53, 0.04);">
                     <form method="POST">
                         {% csrf_token %}
                         <input type="hidden" name="form_type" value="ops_prod">
@@ -121,7 +133,7 @@
                 </div>
 
                 <!-- SENARAI LOG REKOD SEJARAH PRODUKTIVITI -->
-                <div style="border-top: 1px dashed #d8c7f4; padding-top: 20px;">
+                <div id="opsProdHistoryPane" style="display: none; border-top: 1px dashed #d8c7f4; padding-top: 20px;">
                     <h4 style="color: #150a35; margin: 0 0 15px 0; font-size: 14px; font-weight: 800; display: flex; align-items: center; gap: 8px;">
                         Recent Daily Workload Submissions
                     </h4>
@@ -658,5 +670,21 @@
             el.style.color = '#6d3ec4';
             el.style.borderColor = '#6d3ec4';
         }
+    }
+
+    function toggleOpsMode(mode) {
+        var entryPane = document.getElementById('opsProdEntryPane');
+        var historyPane = document.getElementById('opsProdHistoryPane');
+        var btnEntry = document.getElementById('btn-opsProd-entry');
+        var btnHistory = document.getElementById('btn-opsProd-history');
+        if (!entryPane || !historyPane) return;
+
+        var isEntry = (mode === 'entry');
+        entryPane.style.display = isEntry ? 'block' : 'none';
+        historyPane.style.display = isEntry ? 'none' : 'block';
+        btnEntry.style.background = isEntry ? '#6d3ec4' : 'transparent';
+        btnEntry.style.color = isEntry ? 'white' : '#150a35';
+        btnHistory.style.background = isEntry ? 'transparent' : '#6d3ec4';
+        btnHistory.style.color = isEntry ? '#150a35' : 'white';
     }
 </script>

@@ -107,10 +107,16 @@
                             <td style="color:#6d3ec4; font-weight:800;">{{ doc.name }}</td>
                             <td>{{ doc.grade }}</td>
                             <td>{{ doc.clinic }}</td>
-                            <td><b>{{ doc.score }}%</b></td>
+                            <td>
+                                {% if doc.score is not None %}
+                                    <b>{{ doc.score }}%</b>
+                                {% else %}
+                                    <b style="color:#a577ff;">No Data</b>
+                                {% endif %}
+                            </td>
                             <td>{{ doc.status|safe }}</td>
                             <td>
-                                <a href="{% url 'officer_profile' %}?officer={{ doc.name|urlencode }}&clinic={{ doc.clinic|urlencode }}&state={{ doc.state|urlencode }}" style="background: #6d3ec4; color: white; padding: 6px 12px; border-radius: 6px; text-decoration: none; font-size: 11px; font-weight: bold;">View Dossier</a>
+                                <a href="{% url 'officer_profile' %}?officer={{ doc.username|urlencode }}&clinic={{ doc.clinic|urlencode }}&state={{ doc.state|urlencode }}" style="background: #6d3ec4; color: white; padding: 6px 12px; border-radius: 6px; text-decoration: none; font-size: 11px; font-weight: bold;">View Dossier</a>
                             </td>
                         </tr>
                         {% empty %}

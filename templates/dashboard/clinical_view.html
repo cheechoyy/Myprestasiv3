@@ -130,10 +130,6 @@
                     <svg style="width:16px; height:16px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
                     Clinical Delivery
                 </a>
-                <a href="?dept={{ dept }}&state={{ pilihan_negeri }}&clinic={{ pilihan_klinik }}&officer={{ pilihan_doktor }}&tab=Knowledge" class="tab-btn {% if active_tab == 'Knowledge' %}active{% endif %}">
-                    <svg style="width:16px; height:16px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>
-                    Knowledge & Competency
-                </a>
                 <a href="?dept={{ dept }}&state={{ pilihan_negeri }}&clinic={{ pilihan_klinik }}&officer={{ pilihan_doktor }}&tab=Documentation" class="tab-btn {% if active_tab == 'Documentation' %}active{% endif %}">
                     <svg style="width:16px; height:16px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
                     Documentation
@@ -142,342 +138,429 @@
                     <svg style="width:16px; height:16px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
                     Adherence To Policies & Protocols
                 </a>
+                <a href="?dept={{ dept }}&state={{ pilihan_negeri }}&clinic={{ pilihan_klinik }}&officer={{ pilihan_doktor }}&tab=Knowledge" class="tab-btn {% if active_tab == 'Knowledge' %}active{% endif %}">
+                    <svg style="width:16px; height:16px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>
+                    Knowledge & Competency
+                </a>
             </div>
 
            <div class="tab-content-area">
                 {% if active_tab == 'Skills' %}
-                    <h3 style="color:#2b3674; margin-top:0; margin-bottom: 5px; font-size: 16px;">1. Clinical Skills</h3>
-                    <div class="box-border" style="margin-bottom: 15px; padding: 15px;">
+                    <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; border-bottom: 1.5px solid #e7dff2; padding-bottom: 10px; flex-wrap: wrap; gap: 10px;">
+                        <div>
+                            <h3 style="color:#150a35; margin:0; font-size: 16px; font-weight: 900;">1. Clinical Delivery — CUSUM Surveillance &amp; Case Verification</h3>
+                            <p style="margin: 3px 0 0 0; color: #6f628b; font-size: 12px; font-weight: 500;">
+                                Pemantauan kualiti klinikal berterusan berbanding penanda aras KKM (Target: 80%) serta pengesahan rekod kes pegawai.
+                            </p>
+                        </div>
+                        <span style="background: #f3edff; border: 1px solid #d8c7f4; color: #6d3ec4; font-size: 11px; font-weight: 800; padding: 4px 12px; border-radius: 20px;">
+                            CUSUM Engine: Active
+                        </span>
+                    </div>
 
-                        {% if dept == 'FMS' %}
+                    <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; margin-bottom: 20px;">
+                        <div style="background: white; border: 1px solid #e7dff2; padding: 15px; border-radius: 12px; border-left: 4px solid #6d3ec4;">
+                            <div style="font-size: 10.5px; color: #6d3ec4; font-weight: 800; text-transform: uppercase;">Evaluated Diabetic Cohort (6-Mo)</div>
+                            <div style="font-size: 24px; font-weight: 900; color: #150a35; margin-top: 2px;">{{ hba1c_cusum_data.numerator|default:0 }} / {{ hba1c_cusum_data.denominator|default:0 }} <span style="font-size: 12px; font-weight: 700; color: #6f628b;">Patients</span></div>
+                            <div style="font-size: 11px; color: #64748b; margin-top: 2px;">{{ hba1c_cusum_data.pending_cohort|length }} dalam tempoh &lt;6 bln &bull; {{ hba1c_cusum_data.excluded_count|default:0 }} dikecualikan</div>
+                        </div>
 
-                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 25px;">
-                                <div style="background: white; border: 1px solid #e7dff2; border-radius: 12px; padding: 10px; box-shadow: 0 4px 6px rgba(190, 18, 60, 0.02); display: flex; flex-direction: column;">
-                                    {{ chart_km_html|safe }}
-                                    <div style="background: #f3edff; padding: 12px; border-radius: 8px; margin-top: auto; font-size: 11px; color: #150a35; border: 1px solid #e7dff2; line-height: 1.4;">
-                                        <div style="display: flex; align-items: center; gap: 6px; color: #150a35; font-weight: 800; font-size: 11px; margin-bottom: 4px;">
-                                            <svg style="width: 14px; height: 14px; color: #6d3ec4;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-                                            <span>HOD Interpretation Guide:</span>
-                                        </div>
-                                        The <b>Kaplan-Meier</b> curve estimates the time it takes for patients to reach the clinical target (HbA1c < 7.0%). A <b>steeper curve that climbs higher</b> indicates this officer successfully and rapidly brings a larger portion of their patient cohort to the optimal target.
-                                    </div>
-                                </div>
+                        <div style="background: white; border: 1px solid #e7dff2; padding: 15px; border-radius: 12px; border-left: 4px solid #16a34a;">
+                            <div style="font-size: 10.5px; color: #16a34a; font-weight: 800; text-transform: uppercase;">HbA1c &ge;1% Reduction Rate</div>
+                            <div style="font-size: 24px; font-weight: 900; color: #16a34a; margin-top: 2px;">{{ fms_kadar_kawalan }}%</div>
+                            <div style="font-size: 11px; color: #16a34a; font-weight: 700; margin-top: 2px;">KKM Target: &ge; 80% (Until HbA1c &le; 7.0%)</div>
+                        </div>
 
-                                <div style="background: white; border: 1px solid #e7dff2; border-radius: 12px; padding: 10px; box-shadow: 0 4px 6px rgba(190, 18, 60, 0.02); display: flex; flex-direction: column;">
-                                    {{ chart_gee_html|safe }}
-                                    <div style="background: #f3edff; padding: 12px; border-radius: 8px; margin-top: auto; font-size: 11px; color: #150a35; border: 1px solid #e7dff2; line-height: 1.4;">
-                                        <div style="display: flex; align-items: center; gap: 6px; color: #150a35; font-weight: 800; font-size: 11px; margin-bottom: 4px;">
-                                            <svg style="width: 14px; height: 14px; color: #6d3ec4;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-                                            <span>HOD Interpretation Guide:</span>
-                                        </div>
-                                        The <b>GEE Model</b> tracks the population-averaged HbA1c reduction over time, accounting for repeated measures. Comparing the <b>officer's cohort trajectory (solid line)</b> against the <b>clinic average (dashed line)</b> clearly highlights their overall effectiveness relative to peers.
-                                    </div>
-                                </div>
-                            </div>
+                        <div style="background: white; border: 1px solid #e7dff2; padding: 15px; border-radius: 12px; border-left: 4px solid {% if hba1c_cusum_data.cusum_state == 'ALERT' %}#dc2626{% elif hba1c_cusum_data.cusum_state == 'WATCH' %}#d97706{% else %}#150a35{% endif %};">
+                            <div style="font-size: 10.5px; color: #150a35; font-weight: 800; text-transform: uppercase;">Bernoulli CUSUM Status</div>
+                            <div style="font-size: 16px; font-weight: 900; color: {% if hba1c_cusum_data.cusum_state == 'ALERT' %}#dc2626{% elif hba1c_cusum_data.cusum_state == 'WATCH' %}#d97706{% else %}#150a35{% endif %}; margin-top: 6px;">{{ fms_prestasi }}</div>
+                            <div style="font-size: 11px; color: #64748b; margin-top: 4px;">S_n = {{ hba1c_cusum_data.cusum_value|default:"0.000" }} (Watch: 2.25 | Alert: 4.5)</div>
+                        </div>
+                    </div>
 
-                            <div style="background: white; border: 1px solid #e7dff2; border-radius: 12px; padding: 20px; box-shadow: 0 4px 6px rgba(190, 18, 60, 0.02);">
+                    <div style="background: white; border: 1px solid #e7dff2; border-radius: 12px; padding: 16px; margin-bottom: 20px;">
+                        {{ chart_html|safe }}
+                        <div style="background: #faf8ff; border: 1px dashed #d8c7f4; border-radius: 10px; padding: 11px 15px; margin-top: 12px; font-size: 11.5px; color: #150a35; line-height: 1.55;">
+                            <b style="color: #6d3ec4;">📌 Formula Rasmi KKM Indicator-1 ({{ hba1c_cusum_data.cohort_mode_label }}):</b>
+                            <code>(Pesakit dengan penurunan HbA1c &ge; 1% dalam 6 bulan / Jumlah pesakit diabetes layak) &times; 100</code>.
+                            Apabila <b>&ge; 80% pesakit</b> berjaya menurunkan HbA1c &ge; 1% (atau mencapai &le; 7.0%), garis CUSUM kekal mendatar di paras <b>0.0 (In Control)</b>. Jika lengkung memanjat melepasi <b>2.25 (Watch)</b> atau <b>4.5 (Alert)</b>, sistem memberi isyarat awal kegagalan kawalan glisemik kohort.
+                        </div>
 
-                                <div style="margin-bottom: 20px; padding-bottom: 20px; border-bottom: 1px dashed #e7dff2;">
-                                    <b style="color: #150a35; font-size: 12px; display: flex; align-items: center; gap: 6px; margin-bottom: 10px; text-transform: uppercase;">
-                                        <svg style="width: 15px; height: 15px; color: #6d3ec4;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2h14"/></svg>
-                                        Select Evaluation Quarter:
-                                    </b>
-                                    <div style="display: flex; gap: 10px 8px; flex-wrap: wrap; align-items: center;">
-                                        <a href="?dept=FMS&tab=Skills&state={{ pilihan_negeri }}&clinic={{ pilihan_klinik }}&officer={{ pilihan_doktor }}&quarter=Q1" class="quarter-btn {% if pilihan_quarter == 'Q1' %}active{% endif %}">2024 Q1</a>
-                                        <a href="?dept=FMS&tab=Skills&state={{ pilihan_negeri }}&clinic={{ pilihan_klinik }}&officer={{ pilihan_doktor }}&quarter=Q2" class="quarter-btn {% if pilihan_quarter == 'Q2' %}active{% endif %}">2024 Q2</a>
-                                        <a href="?dept=FMS&tab=Skills&state={{ pilihan_negeri }}&clinic={{ pilihan_klinik }}&officer={{ pilihan_doktor }}&quarter=Q3" class="quarter-btn {% if pilihan_quarter == 'Q3' %}active{% endif %}">2024 Q3</a>
-                                        <a href="?dept=FMS&tab=Skills&state={{ pilihan_negeri }}&clinic={{ pilihan_klinik }}&officer={{ pilihan_doktor }}&quarter=Q4" class="quarter-btn {% if pilihan_quarter == 'Q4' %}active{% endif %}">2024 Q4</a>
-
-                                        <div class="quarter-divider"></div>
-
-                                        <a href="?dept=FMS&tab=Skills&state={{ pilihan_negeri }}&clinic={{ pilihan_klinik }}&officer={{ pilihan_doktor }}&quarter=Q5" class="quarter-btn {% if pilihan_quarter == 'Q5' %}active{% endif %}">2025 Q5</a>
-                                        <a href="?dept=FMS&tab=Skills&state={{ pilihan_negeri }}&clinic={{ pilihan_klinik }}&officer={{ pilihan_doktor }}&quarter=Q6" class="quarter-btn {% if pilihan_quarter == 'Q6' %}active{% endif %}">2025 Q6</a>
-                                        <a href="?dept=FMS&tab=Skills&state={{ pilihan_negeri }}&clinic={{ pilihan_klinik }}&officer={{ pilihan_doktor }}&quarter=Q7" class="quarter-btn {% if pilihan_quarter == 'Q7' %}active{% endif %}">2025 Q7</a>
-                                        <a href="?dept=FMS&tab=Skills&state={{ pilihan_negeri }}&clinic={{ pilihan_klinik }}&officer={{ pilihan_doktor }}&quarter=Q8" class="quarter-btn {% if pilihan_quarter == 'Q8' %}active{% endif %}">2025 Q8</a>
-                                    </div>
-                                </div>
-
-                                <h4 style="color:#150a35; margin-top:0; padding-bottom: 5px; margin-bottom: 15px; display: flex; align-items: center; gap: 8px;">
-                                    <svg style="width:18px; height:18px; color:#6d3ec4;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/></svg>
-                                    Clinical Report Card: {{ pilihan_doktor }}
-                                </h4>
-
-                                <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px;">
-                                    <div style="background: #f3edff; padding: 15px; border-radius: 10px; border-left: 4px solid #6d3ec4; border: 1px solid #e7dff2; border-left-width: 4px;">
-                                        <div style="font-size: 11px; color: #6d3ec4; font-weight: bold; text-transform: uppercase;">Total Patient Cohort</div>
-                                        <div style="font-size: 24px; font-weight: 900; color: #150a35;">{{ fms_total_patients }}</div>
-                                        <div style="font-size: 11px; color: #a577ff; font-weight: 600;">Active patients (12 Months)</div>
-                                    </div>
-
-                                    {% if fms_prestasi == 'Excellent' %}
-                                        <div style="background: #f0fdf4; padding: 15px; border-radius: 10px; border-left: 4px solid #16a34a; border: 1px solid #bbf7d0; border-left-width: 4px;">
-                                            <div style="font-size: 11px; color: #15803d; font-weight: bold; text-transform: uppercase;">Control Rate (HbA1c < 7.0%)</div>
-                                            <div style="font-size: 24px; font-weight: 900; color: #16a34a;">{{ fms_kadar_kawalan }}%</div>
-                                            <div style="font-size: 11px; color: #15803d; font-weight:bold;">Status: {{ fms_prestasi }}</div>
-                                        </div>
-                                    {% elif fms_prestasi == 'Moderate' %}
-                                        <div style="background: #fffbeb; padding: 15px; border-radius: 10px; border-left: 4px solid #d97706; border: 1px solid #fef3c7; border-left-width: 4px;">
-                                            <div style="font-size: 11px; color: #b45309; font-weight: bold; text-transform: uppercase;">Control Rate (HbA1c < 7.0%)</div>
-                                            <div style="font-size: 24px; font-weight: 900; color: #d97706;">{{ fms_kadar_kawalan }}%</div>
-                                            <div style="font-size: 11px; color: #b45309; font-weight:bold;">Status: {{ fms_prestasi }}</div>
-                                        </div>
-                                    {% else %}
-                                        <div style="background: #fee2e2; padding: 15px; border-radius: 10px; border-left: 4px solid #dc2626; border: 1px solid #fecaca; border-left-width: 4px;">
-                                            <div style="font-size: 11px; color: #991b1b; font-weight: bold; text-transform: uppercase;">Control Rate (HbA1c < 7.0%)</div>
-                                            <div style="font-size: 24px; font-weight: 900; color: #dc2626;">{{ fms_kadar_kawalan }}%</div>
-                                            <div style="font-size: 11px; color: #991b1b; font-weight:bold;">Status: {{ fms_prestasi }}</div>
-                                        </div>
-                                    {% endif %}
-
-                                    <div style="background: #f3edff; padding: 15px; border-radius: 10px; border-left: 4px solid #6d3ec4; border: 1px solid #e7dff2; border-left-width: 4px;">
-                                        <div style="font-size: 11px; color: #6d3ec4; font-weight: bold; text-transform: uppercase;">Efficacy Test (GEE p-value)</div>
-                                        <div style="font-size: 24px; font-weight: 900; color: #150a35;">{{ fms_p_value }}</div>
-                                        <div style="font-size: 11px; color: #a577ff; font-weight: 600;">Trend significance value</div>
-                                    </div>
-                                </div>
-                            </div>
-
-                        {% else %}
-                            <div style="margin-top: 10px;">
-                                {{ chart_html|safe }}
-                            </div>
+                        {% if hba1c_cusum_data.evaluated_cohort or hba1c_cusum_data.pending_cohort %}
+                        <div style="margin-top: 14px; overflow-x: auto; border: 1px solid #e7dff2; border-radius: 10px;">
+                            <table class="custom-table" style="margin: 0; width: 100%; font-size: 12px;">
+                                <thead>
+                                    <tr>
+                                        <th>Patient Ref (PDPA)</th>
+                                        <th>Baseline HbA1c</th>
+                                        <th>6-Month Follow-Up</th>
+                                        <th>Reduction (&Delta;)</th>
+                                        <th>Indicator-1 Outcome</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for pt in hba1c_cusum_data.evaluated_cohort %}
+                                    <tr>
+                                        <td style="font-weight: 800; color: #150a35;">{{ pt.patient_ref }}</td>
+                                        <td><b>{{ pt.baseline_hba1c|floatformat:1 }}%</b> <span style="font-size: 10.5px; color: #64748b;">({{ pt.baseline_date }})</span></td>
+                                        <td>{% if pt.followup_hba1c %}<b>{{ pt.followup_hba1c|floatformat:1 }}%</b> <span style="font-size: 10.5px; color: #64748b;">({{ pt.followup_date }})</span>{% else %}{{ pt.followup_date }}{% endif %}</td>
+                                        <td style="font-weight: 800; color: {% if pt.achieved %}#16a34a{% else %}#dc2626{% endif %};">{% if pt.followup_hba1c %}-{{ pt.reduction|floatformat:1 }}%{% else %}—{% endif %}</td>
+                                        <td>
+                                            {% if pt.achieved %}
+                                                <span style="background: #dcfce7; color: #15803d; padding: 3px 10px; border-radius: 12px; font-size: 11px; font-weight: 800;">✓ {{ pt.status_label }}</span>
+                                            {% else %}
+                                                <span style="background: #fee2e2; color: #dc2626; padding: 3px 10px; border-radius: 12px; font-size: 11px; font-weight: 800;">✗ {{ pt.status_label }}</span>
+                                            {% endif %}
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                    {% for pnd in hba1c_cusum_data.pending_cohort %}
+                                    <tr style="background: #fffbeb;">
+                                        <td style="font-weight: 800; color: #150a35;">{{ pnd.patient_ref }}</td>
+                                        <td><b>{{ pnd.baseline_hba1c|floatformat:1 }}%</b> <span style="font-size: 10.5px; color: #64748b;">({{ pnd.baseline_date }})</span></td>
+                                        <td colspan="2" style="color: #b45309; font-weight: 600;">Menunggu bacaan susulan (Baki tetingkap 6 bulan: {{ pnd.days_remaining }} hari)</td>
+                                        <td><span style="background: #fef3c7; color: #b45309; padding: 3px 10px; border-radius: 12px; font-size: 11px; font-weight: 800;">⏳ Pending 6-Mo</span></td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
                         {% endif %}
                     </div>
 
+                    <div class="grid-2" style="grid-template-columns: 1.4fr 1fr; align-items: start; padding-bottom: 20px;">
+                        <div style="background: white; border: 1px solid #e7dff2; border-radius: 12px; padding: 18px;">
+                            <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #e7dff2; padding-bottom: 10px; margin-bottom: 12px;">
+                                <h4 style="margin: 0; color: #150a35; font-size: 14px; font-weight: 800;">Clinical Case Verification Queue</h4>
+                                <span style="font-size: 11px; font-weight: 800; color: #6d3ec4; background: #f3edff; padding: 3px 10px; border-radius: 12px;">{{ pending_procedures|length }} Pending</span>
+                            </div>
 
-                </div> <div class="grid-2" style="margin-bottom: 0;">
-                        <div>
-                            <label class="input-label" style="margin-top: 0;">New Procedure Score</label>
-                            <input type="range" class="custom-slider" min="0" max="100" value="85">
+                            {% if pending_procedures %}
+                                <div style="display: flex; flex-direction: column; gap: 10px;">
+                                    {% for proc in pending_procedures %}
+                                    <div style="background: #faf8ff; border: 1px solid #e7dff2; border-left: 4px solid #d97706; border-radius: 10px; padding: 12px 14px; display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap;">
+                                        <div>
+                                            <div style="font-size: 13px; font-weight: 800; color: #150a35;">{{ proc.procedure_name }}</div>
+                                            <div style="font-size: 11px; color: #6f628b; margin-top: 2px;">
+                                                Tarikh: <b>{{ proc.procedure_date|date:"d M Y" }}</b> &bull; Skor Kendiri: <b>{{ proc.score|floatformat:0 }}%</b>
+                                            </div>
+                                        </div>
+                                        <form method="POST" style="margin: 0;">
+                                            {% csrf_token %}
+                                            <input type="hidden" name="form_type" value="verify_procedure_log">
+                                            <input type="hidden" name="procedure_id" value="{{ proc.id }}">
+                                            <button type="submit" style="background: #16a34a; color: white; border: none; padding: 7px 14px; border-radius: 8px; font-size: 11.5px; font-weight: 800; cursor: pointer;">
+                                                ✓ Verify Case
+                                            </button>
+                                        </form>
+                                    </div>
+                                    {% endfor %}
+                                </div>
+                            {% else %}
+                                <div style="text-align: center; padding: 22px; background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 10px; color: #15803d; font-size: 12.5px; font-weight: 700;">
+                                    ✓ Semua kes klinikal yang dihantar oleh pegawai ini telah disahkan.
+                                </div>
+                            {% endif %}
                         </div>
-                        <div>
-                            <button class="btn-save" style="margin-top: 15px;">Save Skills Score</button>
+
+                        <div style="background: #faf8ff; border: 1px solid #d8c7f4; border-radius: 12px; padding: 18px;">
+                            <h4 style="margin: 0 0 6px 0; color: #150a35; font-size: 14px; font-weight: 800;">HOD Clinical Coaching Feedback</h4>
+                            <p style="margin: 0 0 12px 0; font-size: 11.5px; color: #6f628b; line-height: 1.45;">
+                                {% if clin_cusum_drift %}
+                                    ⚠️ Isyarat <b>CUSUM Drift</b> dikesan. Sila hantar maklum balas bimbingan klinikal segera kepada pegawai.
+                                {% else %}
+                                    Hantar ulasan audit kes atau pengiktirafan amalan klinikal terus kepada <b>{{ pilihan_doktor }}</b>.
+                                {% endif %}
+                            </p>
+                            <form method="POST" style="margin: 0;">
+                                {% csrf_token %}
+                                <input type="hidden" name="form_type" value="send_hod_feedback">
+                                <input type="hidden" name="target_username" value="{{ pilihan_doktor_username }}">
+                                <input type="hidden" name="module_ref" value="Clinical Delivery (CUSUM)">
+                                <input type="hidden" name="severity" value="{% if clin_cusum_drift %}URGENT{% else %}INFO{% endif %}">
+                                <textarea name="message_text" class="custom-textarea" required style="background: white; height: 80px; margin-bottom: 10px;" placeholder="Tulis ulasan klinikal atau panduan rawatan untuk {{ pilihan_doktor }}..."></textarea>
+                                <button type="submit" class="btn-save" style="display: flex; align-items: center; justify-content: center; gap: 8px;">
+                                    Send Clinical Feedback
+                                </button>
+                            </form>
                         </div>
                     </div>
 
-                {% elif active_tab == 'Knowledge' %}
-                    <h3 style="color:#150a35; margin-top:0; margin-bottom: 15px; font-size: 16px; font-weight: 800;">2. Knowledge & Competency</h3>
+                {% elif active_tab == 'Documentation' %}
+                    <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 15px; flex-wrap: wrap; gap: 10px;">
+                        <div>
+                            <h3 style="color:#150a35; margin:0; font-size: 16px; font-weight: 900;">2. Clinical Documentation &amp; 4-Hour SLA Surveillance</h3>
+                            <p style="margin: 3px 0 0 0; color: #6f628b; font-size: 12px;">Pemantauan ketepatan masa pengesahan nota pesakit (SLA 4 Jam) &amp; isyarat CUSUM Shadow.</p>
+                        </div>
+                        <span style="font-size: 11px; font-weight: 800; padding: 5px 12px; border-radius: 20px;
+                            {% if doc_metrics.cusum_state == 'IN_CONTROL' %}background: #dcfce7; color: #15803d; border: 1px solid #bbf7d0;
+                            {% elif doc_metrics.cusum_state == 'WATCH' %}background: #fef3c7; color: #b45309; border: 1px solid #fde68a;
+                            {% elif doc_metrics.cusum_state == 'ALERT' %}background: #fee2e2; color: #dc2626; border: 1px solid #fecaca;
+                            {% else %}background: #f1f5f9; color: #64748b; border: 1px solid #cbd5e1;{% endif %}">
+                            CUSUM SLA: {{ doc_metrics.cusum_state_label }} ({{ doc_metrics.cusum_value|floatformat:4 }})
+                        </span>
+                    </div>
 
-                    <div class="grid-2" style="margin-bottom: 15px;">
+                    <div class="grid-4" style="margin-bottom: 18px;">
+                        <div class="metric-box" style="padding:12px; margin-bottom:0;"><div class="metric-title" style="font-size:10px;">Total Entries</div><div class="metric-val" style="font-size:22px;">{{ doc_metrics.total_entries }}</div></div>
+                        <div class="metric-box" style="padding:12px; margin-bottom:0;"><div class="metric-title" style="font-size:10px;">4H SLA On-Time</div><div class="metric-val" style="font-size:22px; color:#16a34a;">{{ doc_metrics.ontime_pct }}%</div></div>
+                        <div class="metric-box" style="padding:12px; margin-bottom:0;"><div class="metric-title" style="font-size:10px;">Avg Turnaround</div><div class="metric-val" style="font-size:22px;">{{ doc_metrics.avg_time_display }}</div></div>
+                        <div class="metric-box" style="padding:12px; margin-bottom:0;"><div class="metric-title" style="font-size:10px;">Pending Sign-Off</div><div class="metric-val" style="font-size:22px; color:{% if doc_metrics.pending_count > 0 %}#d97706{% else %}#150a35{% endif %};">{{ doc_metrics.pending_count }}</div></div>
+                    </div>
+
+                    <div class="box-border" style="padding: 15px; margin-bottom: 18px; background: white; border: 1px solid #e7dff2; border-radius: 12px;">
+                        <h4 style="color:#150a35; margin:0; font-size: 14px; font-weight: 800;">Timeliness Patient Entry Review (Live DB)</h4>
+                        <div style="margin-top: 8px;">{{ time_chart_html|safe }}</div>
+                    </div>
+
+                    <h4 style="color:#6d3ec4; margin:0 0 10px 0; font-size: 14px; font-weight: 800;">
+                        Delayed / Pending Documentation Attention List
+                    </h4>
+
+                    <div style="margin-bottom: 20px;">
+                        {{ delayed_html|safe }}
+                    </div>
+
+                    {% if doc_metrics.needs_reminder %}
+                    <div style="background: #fffbeb; border: 1px solid #fde68a; border-left: 4px solid #d97706; border-radius: 12px; padding: 16px; margin-bottom: 20px;">
+                        <h4 style="margin: 0 0 6px 0; color: #92400e; font-size: 13.5px; font-weight: 800;">⚠️ Tindakan Peringatan SLA Diperlukan</h4>
+                        <p style="margin: 0 0 10px 0; font-size: 12px; color: #b45309;">Terdapat rekod dokumentasi melebihi had 4 jam atau masih menunggu pengesahan. Hantar peringatan rasmi ke papan pemuka staf:</p>
+                        <form method="POST" style="display: flex; gap: 10px; flex-wrap: wrap; margin: 0;">
+                            {% csrf_token %}
+                            <input type="hidden" name="form_type" value="send_hod_feedback">
+                            <input type="hidden" name="target_username" value="{{ pilihan_doktor_username }}">
+                            <input type="hidden" name="module_ref" value="Clinical Documentation (SLA 4H)">
+                            <input type="hidden" name="severity" value="WARNING">
+                            <input type="text" name="message_text" required value="Sila semak dan lengkapkan nota dokumentasi klinikal tertunggak dalam tempoh SLA 4 jam yang ditetapkan." style="flex: 1; min-width: 260px; padding: 10px 12px; border-radius: 8px; border: 1px solid #fcd34d; font-size: 12.5px; color: #150a35; background: white;">
+                            <button type="submit" class="btn-reminder" style="background-color: #d97706; border: none; cursor: pointer; display: inline-flex; align-items: center; gap: 8px; padding: 10px 18px;">
+                                🔔 Send SLA Reminder to Staff
+                            </button>
+                        </form>
+                    </div>
+                    {% endif %}
+
+                {% elif active_tab == 'Policies' %}
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 18px; flex-wrap: wrap; gap: 12px;">
+                        <div>
+                            <h3 style="color:#150a35; margin:0; font-size: 16px; font-weight: 900;">3. Policy &amp; Protocol Compliance (CPG Micro-Audit Surveillance)</h3>
+                            <p style="color:#6f628b; font-size:12px; margin: 3px 0 0 0; font-weight: 500;">
+                                {% if policy_review.has_data %}
+                                    Rekod Audit Terkini: <b>{{ policy_review.declaration.submitted_at|date:"d M Y, h:i A" }}</b> &bull; Purata Pematuhan: <b>{{ policy_review.overall_pct }}%</b>
+                                {% else %}
+                                    Pegawai ini belum mempunyai rekod penghantaran audit polisi tahun semasa.
+                                {% endif %}
+                            </p>
+                        </div>
+
+                        <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                            {% if policy_review.has_data and not policy_review.declaration.is_verified %}
+                            <form method="POST" style="margin: 0;">
+                                {% csrf_token %}
+                                <input type="hidden" name="form_type" value="verify_policy_declaration">
+                                <input type="hidden" name="declaration_id" value="{{ policy_review.declaration.id }}">
+                                <button type="submit" style="background: #16a34a; color: white; border: none; padding: 9px 16px; border-radius: 8px; font-size: 12px; font-weight: 800; cursor: pointer;">
+                                    ✓ Verify Audit Record
+                                </button>
+                            </form>
+                            {% elif policy_review.has_data and policy_review.declaration.is_verified %}
+                            <span style="background: #dcfce7; color: #15803d; border: 1px solid #bbf7d0; padding: 8px 14px; border-radius: 8px; font-size: 12px; font-weight: 800;">
+                                ✓ Verified by HOD
+                            </span>
+                            {% endif %}
+
+                            <form method="POST" style="margin: 0;">
+                                {% csrf_token %}
+                                <input type="hidden" name="form_type" value="send_hod_feedback">
+                                <input type="hidden" name="target_username" value="{{ pilihan_doktor_username }}">
+                                <input type="hidden" name="module_ref" value="Adherence To Policies (Spot Audit)">
+                                <input type="hidden" name="severity" value="URGENT">
+                                <input type="hidden" name="message_text" value="Arahan HOD: Sila lengkapkan semakan pematuhan CPG &amp; protokol klinikal bagi kes pesakit terkini anda.">
+                                <button type="submit" style="background: #6d3ec4; color: white; border: none; padding: 9px 16px; border-radius: 8px; font-size: 12px; font-weight: 800; cursor: pointer;">
+                                    ⚡ Trigger Spot Audit Notice
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+
+                    {% if policy_review.has_data %}
+                        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(175px, 1fr)); gap: 14px; margin-bottom: 20px;">
+                            {% for dom in policy_review.domains %}
+                            <div style="background: white; border: 1px solid #e7dff2; border-radius: 12px; padding: 14px; border-left: 4px solid {% if dom.score >= 80 %}#16a34a{% elif dom.score >= 65 %}#d97706{% else %}#dc2626{% endif %};">
+                                <div style="font-size: 10.5px; color: #6d3ec4; font-weight: 800; text-transform: uppercase;">{{ dom.code }}</div>
+                                <div style="font-size: 13px; font-weight: 800; color: #150a35; margin: 4px 0;">{{ dom.name }}</div>
+                                <div style="display:flex; align-items:center; gap:8px; margin-top: 8px;">
+                                    <div style="background: #f3edff; border-radius: 10px; height: 7px; flex-grow: 1; overflow: hidden;">
+                                        <div style="background: {% if dom.score >= 80 %}#16a34a{% elif dom.score >= 65 %}#d97706{% else %}#dc2626{% endif %}; height: 100%; width: {{ dom.score }}%;"></div>
+                                    </div>
+                                    <span style="font-size:12px; font-weight:900; color:#150a35;">{{ dom.score|floatformat:0 }}%</span>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+
+                        <div class="grid-2" style="padding-bottom: 20px; align-items: start;">
+                            <div class="box-border" style="background: white; border: 1px solid #e7dff2; border-radius: 12px; padding: 18px; margin-bottom: 0;">
+                                <h4 style="color:#150a35; margin-top:0; border-bottom: 1px solid #e7dff2; padding-bottom: 10px; font-size: 14px; font-weight: 800;">
+                                    Audit Item Breakdown ({{ policy_review.items|length }} Items Evaluated)
+                                </h4>
+                                <table style="width: 100%; font-size: 12px; color: #150a35; border-collapse: collapse;">
+                                    {% for itm in policy_review.items %}
+                                    <tr style="border-bottom: 1px solid #f3edff; {% if not itm.is_compliant %}background: #fffafa;{% endif %}">
+                                        <td style="padding: 8px 4px; font-weight: 600;">{{ itm.num }}. {{ itm.title }}</td>
+                                        <td style="text-align:right; white-space: nowrap; font-weight: 800; color: {% if itm.is_compliant %}#16a34a{% else %}#dc2626{% endif %};">
+                                            {% if itm.is_compliant %}✓ {{ itm.pct }}%{% else %}✗ {{ itm.pct }}%{% endif %}
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </table>
+                            </div>
+
+                            <div style="display: flex; flex-direction: column; gap: 16px;">
+                                <div style="background: {% if policy_review.critical_misses %}#fef2f2; border: 1px solid #fecaca; border-left: 5px solid #dc2626;{% else %}#f0fdf4; border: 1px solid #bbf7d0; border-left: 5px solid #16a34a;{% endif %} border-radius: 12px; padding: 18px;">
+                                    <h4 style="color:{% if policy_review.critical_misses %}#991b1b{% else %}#14532d{% endif %}; margin-top:0; font-size: 14px; font-weight: 800;">
+                                        {% if policy_review.critical_misses %}⚠️ Critical Misses (Red Flags){% else %}✓ Zero Critical Misses{% endif %}
+                                    </h4>
+                                    {% if policy_review.critical_misses %}
+                                        <ul style="margin: 0; padding-left: 18px; font-size: 12.5px; color: #991b1b; line-height: 1.6; font-weight: 600;">
+                                            {% for miss in policy_review.critical_misses %}
+                                                <li>{{ miss }}</li>
+                                            {% endfor %}
+                                        </ul>
+                                    {% else %}
+                                        <p style="margin: 0; font-size: 12.5px; color: #166534; font-weight: 600;">Semua item yang disampel dalam audit terkini mematuhi piawaian CPG.</p>
+                                    {% endif %}
+                                </div>
+
+                                <div style="background: #faf8ff; border: 1px solid #d8c7f4; border-radius: 12px; padding: 18px;">
+                                    <h4 style="color:#150a35; margin-top:0; font-size: 14px; font-weight: 800;">HOD Action Plan &amp; Supervisory Feedback</h4>
+                                    <form method="POST" style="margin: 0;">
+                                        {% csrf_token %}
+                                        <input type="hidden" name="form_type" value="send_hod_feedback">
+                                        <input type="hidden" name="target_username" value="{{ pilihan_doktor_username }}">
+                                        <input type="hidden" name="module_ref" value="Clinical Excellence (Policies)">
+                                        <select name="severity" class="filter-select" style="background: white; margin-bottom: 10px;">
+                                            <option value="WARNING" selected>Warning — Pembetulan Pematuhan Protokol</option>
+                                            <option value="URGENT">Urgent — Tindakan Segera Diperlukan</option>
+                                            <option value="INFO">General Guidance / Pengiktirafan</option>
+                                        </select>
+                                        <textarea name="message_text" class="custom-textarea" required style="background: white; height: 75px; margin-bottom: 10px; color: #150a35;" placeholder="Write guidance or remarks for {{ pilihan_doktor }}..."></textarea>
+                                        <button type="submit" class="btn-save" style="display: flex; align-items: center; justify-content: center; gap: 8px;">
+                                            Send Feedback to MO
+                                        </button>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                    {% else %}
+                        <div style="text-align: center; padding: 32px; background: #faf8ff; border: 1px dashed #d8c7f4; border-radius: 12px; color: #6f628b; font-size: 13px;">
+                            Tiada rekod audit polisi ditemui dalam pangkalan data untuk pegawai ini. Klik <b>Trigger Spot Audit Notice</b> di atas untuk mengarahkan semakan.
+                        </div>
+                    {% endif %}
+
+                {% elif active_tab == 'Knowledge' %}
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; flex-wrap: wrap; gap: 10px;">
+                        <div>
+                            <h3 style="color:#150a35; margin:0; font-size: 16px; font-weight: 900;">4. Knowledge &amp; Competency (myCPD 2.0 Verification &amp; Surveillance)</h3>
+                            <p style="margin: 3px 0 0 0; color: #6f628b; font-size: 12px;">
+                                Mata Diluluskan: <b>{{ cpd_metrics.approved_pts }} / {{ cpd_metrics.target_pts }} mata</b> &bull; Menunggu Kelulusan: <b>{{ cpd_metrics.pending_pts }} mata ({{ cpd_metrics.pending_count }} tuntutan)</b>
+                            </p>
+                        </div>
+                    </div>
+
+                    <div class="grid-2" style="margin-bottom: 20px;">
                         <div class="box-border" style="text-align: center; padding: 12px; margin-bottom: 0; background: white; border: 1px solid #e7dff2; border-radius: 12px;">
                             {{ gauge_score_html|safe }}
-                            <p style="margin:0; font-weight:800; color:#150a35; font-size: 13px; display: inline-flex; align-items: center; justify-content: center; gap: 6px;">
-                                <span>Current Level:</span>
-                                <span class="status-{{ cpd_css_class }}" style="display: inline-flex; align-items: center; gap: 4px;">
-                                    {% if cpd_css_class == 'outstanding' or cpd_css_class == 'good' or cpd_css_class == 'competent' %}
-                                        <svg style="width: 15px; height: 15px; color: #6d3ec4;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>
-                                    {% else %}
-                                        <svg style="width: 15px; height: 15px; color: #d97706;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
-                                    {% endif %}
-                                    {{ cpd_text }}
-                                </span>
+                            <p style="margin:0; font-weight:800; color:#150a35; font-size: 13px;">
+                                Attainment Level: <span class="status-{{ cpd_css_class }}">{{ cpd_text }}</span>
                             </p>
                         </div>
                         <div class="box-border" style="text-align: center; padding: 12px; margin-bottom: 0; background: white; border: 1px solid #e7dff2; border-radius: 12px;">
                             {{ gauge_peer_html|safe }}
-                            <p style="margin:0; font-weight:800; color:#150a35; font-size: 13px; display: inline-flex; align-items: center; justify-content: center; gap: 6px;">
-                                <span>Status:</span>
-                                <span class="status-{{ peer_css_class }}" style="display: inline-flex; align-items: center; gap: 4px;">
-                                    {% if peer_css_class == 'outstanding' or peer_css_class == 'good' or peer_css_class == 'competent' %}
-                                        <svg style="width: 15px; height: 15px; color: #6d3ec4;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>
-                                    {% else %}
-                                        <svg style="width: 15px; height: 15px; color: #d97706;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
-                                    {% endif %}
-                                    {{ peer_text }}
-                                </span>
+                            <p style="margin:0; font-weight:800; color:#150a35; font-size: 13px;">
+                                Facility Benchmark: <span class="status-{{ peer_css_class }}">{{ peer_text }}</span>
                             </p>
                         </div>
                     </div>
 
-                    <h4 style="color:#150a35; margin:0 0 10px 0; font-size: 14px; display: flex; align-items: center; gap: 8px;">
-                        <svg style="width:16px; height:16px; color:#6d3ec4;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
-                        Activity Log
-                    </h4>
-                    {{ history_html|safe }}
-
-                    <hr style="border:0; border-top:1px solid #e2e8f0; margin: 15px 0;">
-                    <div style="padding-bottom: 30px;">
-                        <label class="input-label" style="margin-top:0;">Update Test Score / New CPD Points</label>
-                        <input type="range" class="custom-slider" min="0" max="100" value="90">
-                        <button class="btn-save">Save Knowledge Score</button>
-                    </div>
-
-                {% elif active_tab == 'Documentation' %}
-                <h3 style="color:#2b3674; margin-top:0; font-size: 16px;">3. Clinical Documentation Monitoring</h3>
-
-                <div class="grid-4" style="margin-bottom: 15px;">
-                    <div class="metric-box" style="padding:10px;"><div class="metric-title" style="font-size:10px;">Total Entries</div><div class="metric-val" style="font-size:20px;">1,247</div></div>
-                    <div class="metric-box" style="padding:10px;"><div class="metric-title" style="font-size:10px;">On-time (%)</div><div class="metric-val" style="font-size:20px;">85%</div></div>
-                    <div class="metric-box" style="padding:10px;"><div class="metric-title" style="font-size:10px;">Avg Time</div><div class="metric-val" style="font-size:20px;">1h 10m</div></div>
-                    <div class="metric-box" style="padding:10px;"><div class="metric-title" style="font-size:10px;">Dept Rank</div><div class="metric-val" style="font-size:20px;">1 / 25</div></div>
-                </div>
-
-                <div class="box-border" style="padding: 15px; margin-bottom: 15px;">
-                    <h4 style="color:#2b3674; margin:0;">Timeliness Patient Entry Review</h4>
-                    <div style="margin-top: 10px;">{{ time_chart_html|safe }}</div>
-                </div>
-
-                <h4 style="color:#6d3ec4; margin:0 0 10px 0; font-size: 14px; display: flex; align-items: center; gap: 8px;">
-                    <svg style="width:18px; height:18px; color:#6d3ec4;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
-                    Delayed Entry Attention List
-                </h4>
-
-                <div style="padding-bottom: 30px;">
-                    {{ delayed_html|safe }}
-
-                    <button class="btn-reminder" style="margin-top: 15px; background-color: #6d3ec4; display: inline-flex; align-items: center; gap: 8px;">
-                        <svg style="width:16px; height:16px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 00-2 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/></svg>
-                        Send 'Reminder' to Staff
-                    </button>
-                </div>
-
-                {% elif active_tab == 'Policies' %}
-                    <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 20px;">
-                        <div>
-                            <h3 style="color:#150a35; margin-top:0; font-size: 18px; margin-bottom: 5px; font-weight: 800;">4. Policy & Protocol Compliance (DM Screening)</h3>
-                            <p style="color:#a577ff; font-size:13px; margin: 0; font-weight: 600;">Historical compliance overview based on previous patient audits.</p>
-                        </div>
-                        <button class="btn-save" style="width: auto; padding: 10px 20px; background: #6d3ec4; display: flex; align-items: center; gap: 8px;" onclick="alert('Membuka borang audit baharu...')">
-                            <svg style="width:16px; height:16px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
-                            Perform New Audit
-                        </button>
-                    </div>
-
-                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 15px; margin-bottom: 20px;">
-                        <div style="background: white; border: 1px solid #e7dff2; border-radius: 12px; padding: 15px; border-left: 4px solid #150a35; box-shadow: 0 2px 10px rgba(190, 18, 60, 0.02);">
-                            <div style="font-size: 11px; color: #6d3ec4; font-weight: bold; text-transform: uppercase;">Domain A</div>
-                            <div style="font-size: 13px; font-weight: 800; color: #150a35; margin: 5px 0;">Clinical Assessment</div>
-                            <div style="display:flex; align-items:center; gap:8px; margin-top: 10px;">
-                                <div style="background: #f3edff; border-radius: 10px; height: 8px; flex-grow: 1; overflow: hidden;">
-                                    <div class="domain-bar" style="background: #150a35; height: 100%; width: 85%;"></div>
+                    {% if pending_cpd_claims %}
+                    <div style="background: #fffbeb; border: 1px solid #fde68a; border-left: 4px solid #d97706; border-radius: 12px; padding: 16px; margin-bottom: 20px;">
+                        <h4 style="margin: 0 0 12px 0; color: #92400e; font-size: 14px; font-weight: 800;">
+                            ⏳ Pending CPD Claims Awaiting HOD Approval ({{ pending_cpd_claims|length }})
+                        </h4>
+                        <div style="display: flex; flex-direction: column; gap: 10px;">
+                            {% for claim in pending_cpd_claims %}
+                            <div style="background: white; border: 1px solid #fde68a; border-radius: 10px; padding: 12px 15px; display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap;">
+                                <div>
+                                    <div style="font-size: 13.5px; font-weight: 800; color: #150a35;">{{ claim.topic }}</div>
+                                    <div style="font-size: 11.5px; color: #6f628b; margin-top: 2px;">
+                                        {{ claim.category }} &bull; {{ claim.sub_category|default:"Standard" }} ({{ claim.role }}) &bull; <b>{{ claim.points }} mata</b> &bull; Tarikh: {{ claim.event_date|date:"d/m/Y" }}
+                                        {% if claim.certificate %}
+                                            &bull; <a href="{{ claim.certificate.url }}" target="_blank" style="color: #6d3ec4; font-weight: 800; text-decoration: underline;">Lihat Sijil ↗</a>
+                                        {% endif %}
+                                    </div>
                                 </div>
-                                <span style="font-size:12px; font-weight:bold; color:#150a35;">85%</span>
-                            </div>
-                        </div>
-
-                        <div style="background: white; border: 1px solid #e7dff2; border-radius: 12px; padding: 15px; border-left: 4px solid #6d3ec4; box-shadow: 0 2px 10px rgba(190, 18, 60, 0.02);">
-                            <div style="font-size: 11px; color: #6d3ec4; font-weight: bold; text-transform: uppercase;">Domain B</div>
-                            <div style="font-size: 13px; font-weight: 800; color: #150a35; margin: 5px 0;">Risk Factors & Meds</div>
-                            <div style="display:flex; align-items:center; gap:8px; margin-top: 10px;">
-                                <div style="background: #f3edff; border-radius: 10px; height: 8px; flex-grow: 1; overflow: hidden;">
-                                    <div class="domain-bar" style="background: #6d3ec4; height: 100%; width: 90%;"></div>
+                                <div style="display: flex; gap: 8px; align-items: center;">
+                                    <form method="POST" style="margin: 0;">
+                                        {% csrf_token %}
+                                        <input type="hidden" name="form_type" value="review_cpd_claim">
+                                        <input type="hidden" name="claim_id" value="{{ claim.id }}">
+                                        <input type="hidden" name="decision" value="APPROVED">
+                                        <button type="submit" style="background: #16a34a; color: white; border: none; padding: 7px 14px; border-radius: 8px; font-size: 11.5px; font-weight: 800; cursor: pointer;">
+                                            ✓ Approve
+                                        </button>
+                                    </form>
+                                    <form method="POST" style="margin: 0;">
+                                        {% csrf_token %}
+                                        <input type="hidden" name="form_type" value="review_cpd_claim">
+                                        <input type="hidden" name="claim_id" value="{{ claim.id }}">
+                                        <input type="hidden" name="decision" value="REJECTED">
+                                        <button type="submit" style="background: #dc2626; color: white; border: none; padding: 7px 14px; border-radius: 8px; font-size: 11.5px; font-weight: 800; cursor: pointer;">
+                                            ✕ Reject
+                                        </button>
+                                    </form>
                                 </div>
-                                <span style="font-size:12px; font-weight:bold; color:#6d3ec4;">90%</span>
                             </div>
-                        </div>
-
-                        <div style="background: white; border: 1px solid #e7dff2; border-radius: 12px; padding: 15px; border-left: 4px solid #d97706; box-shadow: 0 2px 10px rgba(190, 18, 60, 0.02);">
-                            <div style="font-size: 11px; color: #d97706; font-weight: bold; text-transform: uppercase;">Domain C</div>
-                            <div style="font-size: 13px; font-weight: 800; color: #150a35; margin: 5px 0;">Referrals & Follow-up</div>
-                            <div style="display:flex; align-items:center; gap:8px; margin-top: 10px;">
-                                <div style="background: #f3edff; border-radius: 10px; height: 8px; flex-grow: 1; overflow: hidden;">
-                                    <div class="domain-bar" style="background: #d97706; height: 100%; width: 66%;"></div>
-                                </div>
-                                <span style="font-size:12px; font-weight:bold; color:#d97706;">66%</span>
-                            </div>
-                        </div>
-
-                        <div style="background: white; border: 1px solid #e7dff2; border-radius: 12px; padding: 15px; border-left: 4px solid #16a34a; box-shadow: 0 2px 10px rgba(190, 18, 60, 0.02);">
-                            <div style="font-size: 11px; color: #16a34a; font-weight: bold; text-transform: uppercase;">Domain D</div>
-                            <div style="font-size: 13px; font-weight: 800; color: #150a35; margin: 5px 0;">Labs & Diagnostics</div>
-                            <div style="display:flex; align-items:center; gap:8px; margin-top: 10px;">
-                                <div style="background: #f3edff; border-radius: 10px; height: 8px; flex-grow: 1; overflow: hidden;">
-                                    <div class="domain-bar" style="background: #16a34a; height: 100%; width: 92%;"></div>
-                                </div>
-                                <span style="font-size:12px; font-weight:bold; color:#16a34a;">92%</span>
-                            </div>
-                        </div>
-
-                        <div style="background: white; border: 1px solid #e7dff2; border-radius: 12px; padding: 15px; border-left: 4px solid #150a35; box-shadow: 0 2px 10px rgba(190, 18, 60, 0.02);">
-                            <div style="font-size: 11px; color: #6d3ec4; font-weight: bold; text-transform: uppercase;">Domain E</div>
-                            <div style="font-size: 13px; font-weight: 800; color: #150a35; margin: 5px 0;">Targets & Prevention</div>
-                            <div style="display:flex; align-items:center; gap:8px; margin-top: 10px;">
-                                <div style="background: #f3edff; border-radius: 10px; height: 8px; flex-grow: 1; overflow: hidden;">
-                                    <div class="domain-bar" style="background: #150a35; height: 100%; width: 88%;"></div>
-                                </div>
-                                <span style="font-size:12px; font-weight:bold; color:#150a35;">88%</span>
-                            </div>
+                            {% endfor %}
                         </div>
                     </div>
+                    {% endif %}
 
-                    <div class="grid-2">
-                        <div class="box-border" style="background: white; border: 1px solid #e7dff2; border-radius: 12px; padding: 20px; margin-bottom: 0;">
-                            <h4 style="color:#150a35; margin-top:0; border-bottom: 1px solid #e7dff2; padding-bottom: 10px; display: flex; align-items: center; gap: 8px;">
-                                <svg style="width:18px; height:18px; color:#6d3ec4;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 012-2h2a2 2 0 012-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/></svg>
-                                Last Audit Checklist Results
-                            </h4>
-
-                            <table style="width: 100%; font-size: 12px; color: #150a35; border-collapse: collapse;">
-                                <tr style="border-bottom: 1px solid #e7dff2;">
-                                    <td style="padding: 8px 0; font-weight: 600;">1. ASCVD & Symptoms Assessment</td><td style="text-align:right; color:#16a34a; font-weight:bold;">✓</td>
-                                </tr>
-                                <tr style="border-bottom: 1px solid #e7dff2;">
-                                    <td style="padding: 8px 0; font-weight: 600;">2. Physical & Foot Exam</td><td style="text-align:right; color:#16a34a; font-weight:bold;">✓</td>
-                                </tr>
-                                <tr style="border-bottom: 1px solid #e7dff2;">
-                                    <td style="padding: 8px 0; font-weight: 600;">3. Documented Underlying Risks</td><td style="text-align:right; color:#16a34a; font-weight:bold;">✓</td>
-                                </tr>
-                                <tr style="border-bottom: 1px solid #e7dff2;">
-                                    <td style="padding: 8px 0; font-weight: 600;">4. Review of Current Meds</td><td style="text-align:right; color:#16a34a; font-weight:bold;">✓</td>
-                                </tr>
-                                <tr style="border-bottom: 1px solid #e7dff2;">
-                                    <td style="padding: 8px 0; font-weight: 600;">5. Medication Adherence Checked</td><td style="text-align:right; color:#16a34a; font-weight:bold;">✓</td>
-                                </tr>
-                                <tr style="border-bottom: 1px solid #e7dff2;">
-                                    <td style="padding: 8px 0; font-weight: 600;">6. Complementary Meds Assessed</td><td style="text-align:right; opacity: 0.5;">—</td>
-                                </tr>
-                                <tr style="border-bottom: 1px solid #e7dff2;">
-                                    <td style="padding: 8px 0; font-weight: 600;">7. Social Barriers Identified</td><td style="text-align:right; color:#16a34a; font-weight:bold;">✓</td>
-                                </tr>
-                                <tr style="border-bottom: 1px solid #e7dff2; background: #f3edff;">
-                                    <td style="padding: 8px 0; color:#6d3ec4; font-weight:bold;">8. Dilated Retinal Exam Referral</td><td style="text-align:right; color:#6d3ec4; font-weight:bold;">✗</td>
-                                </tr>
-                                <tr style="border-bottom: 1px solid #e7dff2;">
-                                    <td style="padding: 8px 0; font-weight: 600;">9. Dietitian Referral</td><td style="text-align:right; color:#16a34a; font-weight:bold;">✓</td>
-                                </tr>
+                    <h4 style="color:#150a35; margin:0 0 10px 0; font-size: 14px; font-weight: 800;">CPD Claims Activity Log (myCPD 2.0)</h4>
+                    <div style="overflow-x: auto; border: 1px solid #e7dff2; border-radius: 10px; background: white; margin-bottom: 20px;">
+                        <table class="custom-table" style="margin: 0; width: 100%;">
+                            <thead>
                                 <tr>
-                                    <td style="padding: 8px 0; color:#6d3ec4; font-weight:bold;">10. Self-Management Ed. (DSMES)</td><td style="text-align:right; color:#6d3ec4; font-weight:bold;">✗</td>
+                                    <th>Date</th>
+                                    <th>Category</th>
+                                    <th>Program / Topic</th>
+                                    <th>Points</th>
+                                    <th>Status</th>
                                 </tr>
-                            </table>
-                        </div>
-
-                        <div style="display: flex; flex-direction: column; gap: 20px;">
-
-                            <div style="background: #f3edff; border: 1px solid #fecdd3; border-radius: 12px; padding: 20px; border-left: 5px solid #6d3ec4;">
-                                <h4 style="color:#150a35; margin-top:0; display:flex; align-items:center; gap:8px;">
-                                    <svg style="width:18px; height:18px; color:#6d3ec4;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
-                                    Critical Misses (Red Flags)
-                                </h4>
-                                <ul style="margin: 0; padding-left: 20px; font-size: 13px; color: #6d3ec4; line-height: 1.6; font-weight: 500;">
-                                    <li><b>Question 8:</b> Officer frequently forgets to arrange dilated retinal exams for newly diagnosed patients.</li>
-                                    <li><b>Question 10:</b> Lack of clear documentation for DSMES arrangements.</li>
-                                </ul>
-                            </div>
-
-                            <div style="background: #f3edff; border: 1px solid #e7dff2; border-radius: 12px; padding: 20px;">
-                                <h4 style="color:#150a35; margin-top:0; display:flex; align-items:center; gap:8px;">
-                                    <svg style="width:18px; height:18px; color:#6d3ec4;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
-                                    HOD Action Plan
-                                </h4>
-                                <form method="POST">
-                                    {% csrf_token %}
-                                    <input type="hidden" name="form_type" value="send_hod_feedback">
-                                    
-                                    <!-- Parameter Data Tersembunyi (Hidden) -->
-                                    <input type="hidden" name="target_username" value="{{ pilihan_doktor }}">
-                                    <input type="hidden" name="module_ref" value="Clinical Excellence (Policies)">
-                                    <input type="hidden" name="severity" value="WARNING">
-                                    
-                                    <textarea name="message_text" class="custom-textarea" required style="background: white; border-color: #fecdd3; height: 70px; margin-bottom: 10px; color: #150a35;" placeholder="Write guidance or remarks for {{ pilihan_doktor|default:'this officer' }}..."></textarea>
-                                    
-                                    <button type="submit" class="btn-reminder" style="width: 100%; justify-content: center; padding: 12px; background: #6d3ec4; border:none; cursor:pointer;">
-                                        <svg style="width:16px; height:16px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/></svg>
-                                        Send Feedback to MO
-                                    </button>
-                                </form>
-                            </div>
-
-                        </div>
+                            </thead>
+                            <tbody>
+                                {% for c in all_cpd_claims %}
+                                <tr>
+                                    <td>{{ c.event_date|date:"d/m/Y" }}</td>
+                                    <td>{{ c.category }}</td>
+                                    <td style="font-weight: 700;">{{ c.topic }}</td>
+                                    <td style="font-weight: 800;">{{ c.points }} pts</td>
+                                    <td>
+                                        {% if c.status == 'APPROVED' %}
+                                            <span style="background: #dcfce7; color: #15803d; padding: 3px 10px; border-radius: 12px; font-size: 11px; font-weight: 800;">Approved</span>
+                                        {% elif c.status == 'PENDING' %}
+                                            <span style="background: #fef3c7; color: #b45309; padding: 3px 10px; border-radius: 12px; font-size: 11px; font-weight: 800;">Pending</span>
+                                        {% else %}
+                                            <span style="background: #fee2e2; color: #dc2626; padding: 3px 10px; border-radius: 12px; font-size: 11px; font-weight: 800;">Rejected</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="5" style="text-align: center; padding: 20px; color: #6f628b; font-style: italic;">Tiada rekod tuntutan CPD dalam pangkalan data bagi pegawai ini.</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
                     </div>
                 {% endif %}
             </div>

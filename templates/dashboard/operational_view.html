@@ -126,93 +126,195 @@
             </div>
 
             {% if active_tab == 'Productivity' %}
-                <h3 style="color:#150a35; margin-bottom: 20px; font-weight: 800;">1. Productivity & Efficiency Metrics</h3>
-
-                <div class="eval-card grid-4">
-                    <div><div class="metric-label">Avg Patients/Day</div><div class="metric-value">42</div><div class="metric-trend-up">↑ +5 vs last month</div></div>
-                    <div><div class="metric-label">Avg Consult Time</div><div class="metric-value">12 min</div><div class="metric-trend-up">Optimal Range</div></div>
-                    <div><div class="metric-label">Punctuality Rate</div><div class="metric-value">95%</div><div class="metric-trend-up">Target: >90%</div></div>
-                    <div><div class="metric-label">Sick Leaves Taken</div><div class="metric-value">2 Days</div><div class="metric-trend-down">YTD 2026</div></div>
+                <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; flex-wrap: wrap; gap: 10px;">
+                    <div>
+                        <h3 style="color:#150a35; margin:0; font-size: 16px; font-weight: 900;">1. Productivity &amp; Workload Burnout Surveillance (EWMA)</h3>
+                        <p style="margin: 3px 0 0 0; color: #6f628b; font-size: 12px; font-weight: 500;">
+                            Pemantauan purata bergerak berwajaran eksponen (EWMA &lambda;=0.30) bagi mengesan kejatuhan mendadak atau keletihan konsultasi.
+                        </p>
+                    </div>
+                    <span style="background: {{ prod_metrics.ewma_badge_bg }}; color: {{ prod_metrics.ewma_badge_color }}; padding: 5px 14px; border-radius: 20px; font-size: 11px; font-weight: 800; border: 1px solid #e7dff2;">
+                        ● {{ prod_metrics.ewma_status }}
+                    </span>
                 </div>
 
-                <div class="grid-2" style="grid-template-columns: 1.5fr 1fr; padding-bottom: 30px;">
+                <!-- 4 KAD METRIK SEBENAR DARI PANGKALAN DATA -->
+                <div class="eval-card grid-4" style="margin-bottom: 20px;">
                     <div>
-                        <h4 style="color:#150a35; display: flex; align-items: center; gap: 8px;">
-                            <svg style="width: 18px; height: 18px; color: #6d3ec4;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 8v8m-4-5v5m-4-2v2m-2 4h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
-                            Patient Clearance Trend (Last 7 Days)
-                        </h4>
-                        <div style="border:1px solid #e7dff2; border-radius: 12px; padding: 10px;">
-                            {{ area_chart_html|safe }}
+                        <div class="metric-label">Avg Patients / Day</div>
+                        <div class="metric-value">{{ prod_metrics.avg_patients|floatformat:1 }}</div>
+                        <div class="metric-trend-up">EWMA Latest: {{ prod_metrics.ewma_latest }} (Target: 38.2)</div>
+                    </div>
+                    <div>
+                        <div class="metric-label">Avg Consult Time</div>
+                        <div class="metric-value">{{ prod_metrics.avg_consult|floatformat:1 }} min</div>
+                        <div style="font-size: 11.5px; font-weight: 700; margin-top: 4px; color: {% if prod_metrics.consult_is_ok %}#16a34a{% else %}#d97706{% endif %};">
+                            {{ prod_metrics.consult_status }}
                         </div>
                     </div>
                     <div>
-                        <h4 style="color:#150a35; display: flex; align-items: center; gap: 8px;">
-                            <svg style="width: 18px; height: 18px; color: #6d3ec4;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-                            Supervisor Evaluation
+                        <div class="metric-label">Punctuality Rate</div>
+                        <div class="metric-value">{{ prod_metrics.punctuality_avg|floatformat:0 }}%</div>
+                        <div class="metric-trend-up">Target KKM: &ge; 90%</div>
+                    </div>
+                    <div>
+                        <div class="metric-label">Logs Tracked</div>
+                        <div class="metric-value">{{ prod_metrics.total_logs }} <span style="font-size: 13px; font-weight: 700; color: #6f628b;">Days</span></div>
+                        <div style="font-size: 11.5px; font-weight: 600; color: #6f628b; margin-top: 4px;">Live ProductivityLog</div>
+                    </div>
+                </div>
+
+                <div class="grid-2" style="grid-template-columns: 1.5fr 1fr; padding-bottom: 25px; align-items: start;">
+                    <!-- KIRI: CARTA EWMA VELOCITY -->
+                    <div style="background: white; border: 1px solid #e7dff2; border-radius: 14px; padding: 16px;">
+                        <h4 style="color:#150a35; margin: 0 0 10px 0; font-size: 14px; font-weight: 800; display: flex; align-items: center; gap: 8px;">
+                            <svg style="width: 18px; height: 18px; color: #6d3ec4;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z"/></svg>
+                            EWMA Patient Clearance Trajectory (Last 20 Logs)
                         </h4>
-                        <label class="input-label" style="margin-top:0;">Time Management & Punctuality</label>
-                        <input type="range" class="custom-slider" min="0" max="100" value="85">
+                        {{ area_chart_html|safe }}
+                        <div style="background: #faf8ff; border: 1px dashed #d8c7f4; border-radius: 10px; padding: 10px 14px; margin-top: 10px; font-size: 11.5px; color: #150a35;">
+                            <b style="color: #6d3ec4;">📌 EWMA Diagnostic Note:</b> {{ prod_metrics.ewma_note }}
+                        </div>
+                    </div>
 
-                        <label class="input-label">Patient Flow Handling (Clinic/Ward)</label>
-                        <input type="range" class="custom-slider" min="0" max="100" value="80">
+                    <!-- KANAN: INTERVENSI & WELLNESS CHECK-IN HOD -->
+                    <div style="background: #faf8ff; border: 1px solid #d8c7f4; border-radius: 14px; padding: 18px;">
+                        <h4 style="color:#150a35; margin: 0 0 6px 0; font-size: 14px; font-weight: 800; display: flex; align-items: center; gap: 8px;">
+                            <svg style="width: 18px; height: 18px; color: #6d3ec4;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"/></svg>
+                            HOD Workload &amp; Wellness Check-In
+                        </h4>
+                        <p style="font-size: 12px; color: #6f628b; margin: 0 0 14px 0; line-height: 1.5;">
+                            Hantar mesej bimbingan atau penyelarasan agihan pesakit terus kepada <b>{{ pilihan_doktor }}</b> sekiranya berlaku beban kerja berlebihan.
+                        </p>
 
-                        <label class="input-label">Resource Utilization</label>
-                        <input type="range" class="custom-slider" min="0" max="100" value="75">
+                        <form method="POST" style="margin: 0;">
+                            {% csrf_token %}
+                            <input type="hidden" name="form_type" value="send_hod_feedback">
+                            <input type="hidden" name="target_username" value="{{ pilihan_doktor_username }}">
+                            <input type="hidden" name="module_ref" value="Operational (Productivity & Workload)">
 
-                        <button class="btn-save" style="margin-top: 20px; display: flex; align-items: center; justify-content: center; gap: 8px;">
-                            <svg style="width: 18px; height: 18px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"/></svg>
-                            Save Productivity Score
-                        </button>
+                            <label class="input-label" style="margin-top: 0;">Tahap Keutamaan (Priority)</label>
+                            <select name="severity" class="filter-select" style="background: white; margin-bottom: 12px;">
+                                <option value="INFO">General Check-In / Sokongan Beban Kerja</option>
+                                <option value="WARNING" selected>Advisory — Semak Masa Konsultasi &amp; Aliran Klinik</option>
+                                <option value="URGENT">Urgent — Penjadualan Semula Tugas (Burnout Risk)</option>
+                            </select>
+
+                            <label class="input-label" style="margin-top: 0;">Catatan Penyeliaan HOD</label>
+                            <textarea name="message_text" class="custom-textarea" required style="background: white; height: 95px; margin-bottom: 12px;" placeholder="Tulis cadangan penyelarasan klinik atau sokongan untuk {{ pilihan_doktor }}..."></textarea>
+
+                            <button type="submit" class="btn-save" style="display: flex; align-items: center; justify-content: center; gap: 8px;">
+                                <svg style="width: 17px; height: 17px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/></svg>
+                                Send Workload Check-In
+                            </button>
+                        </form>
                     </div>
                 </div>
 
             {% elif active_tab == 'Innovation' %}
-                <h3 style="color:#150a35; font-weight: 800;">2. Innovation</h3>
-                <div style="background-color: #f3edff; color:#150a35; padding: 15px; border-radius: 8px; margin-bottom: 20px; font-size: 14px; border: 1px solid #e7dff2; display: flex; align-items: center; gap: 8px;">
-                    <svg style="width: 18px; height: 18px; color: #6d3ec4; flex-shrink: 0;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-                    <span>Evaluate the officer's ability to handle crises, propose system improvements, and execute operational tasks efficiently.</span>
+                <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; flex-wrap: wrap; gap: 10px;">
+                    <div>
+                        <h3 style="color:#150a35; margin:0; font-size: 16px; font-weight: 900;">2. Innovation Portfolio &amp; HOD Verification</h3>
+                        <p style="margin: 3px 0 0 0; color: #6f628b; font-size: 12px; font-weight: 500;">
+                            Pengesahan projek penyelidikan, percubaan klinikal, teknologi &amp; penerbitan (Matriks Wajaran Base Points &times; Multiplier).
+                        </p>
+                    </div>
+                    <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                        <span style="background: #dcfce7; color: #15803d; border: 1px solid #bbf7d0; padding: 4px 12px; border-radius: 20px; font-size: 11px; font-weight: 800;">
+                            ✓ Verified: {{ innov_summary.verified_points|floatformat:1 }} / 20 pts ({{ innov_summary.attainment_pct }}%)
+                        </span>
+                        {% if innov_summary.pending_count > 0 %}
+                        <span style="background: #fef3c7; color: #b45309; border: 1px solid #fde68a; padding: 4px 12px; border-radius: 20px; font-size: 11px; font-weight: 800;">
+                            ⏳ {{ innov_summary.pending_count }} Menunggu Pengesahan
+                        </span>
+                        {% endif %}
+                    </div>
                 </div>
 
-                <div class="grid-2" style="padding-bottom: 30px;">
-                    <div class="eval-card" style="margin-bottom:0; background: white; border: 1px solid #e7dff2; border-radius: 12px; box-shadow: 0 4px 12px rgba(190, 18, 60, 0.03);">
-                        <h4 style="color:#150a35; margin-top:0;">Continuous Quality Improvement (CQI)</h4>
-                        <p style="font-size:13px; color:#6d3ec4; font-weight: 600;">Does the officer actively participate in or lead CQI / Lean Healthcare projects?</p>
+                <div class="grid-2" style="grid-template-columns: 1.35fr 1fr; padding-bottom: 25px; align-items: start;">
+                    <!-- KIRI: SENARAI PROJEK & BUTANG PENGESAHAN HOD -->
+                    <div class="eval-card" style="margin-bottom:0; background: white; border: 1px solid #e7dff2; border-radius: 14px;">
+                        <h4 style="color:#150a35; margin-top:0; border-bottom: 1px solid #e7dff2; padding-bottom: 10px;">
+                            Submitted Innovation &amp; Research Projects ({{ innov_summary.total_count }})
+                        </h4>
 
-                        <div class="radio-group" style="color: #150a35;">
-                            <label><input type="radio" name="cqi" checked> Lead/Initiator</label>
-                            <label><input type="radio" name="cqi"> Active Member</label>
-                            <label><input type="radio" name="cqi"> Passive Participant</label>
-                            <label><input type="radio" name="cqi"> None</label>
-                        </div>
+                        {% if officer_projects %}
+                            <div style="display: flex; flex-direction: column; gap: 12px;">
+                                {% for proj in officer_projects %}
+                                <div style="background: #faf8ff; border: 1px solid #e7dff2; border-left: 4px solid {% if proj.is_verified %}#16a34a{% else %}#d97706{% endif %}; border-radius: 10px; padding: 14px;">
+                                    <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; flex-wrap: wrap;">
+                                        <div>
+                                            <span style="font-size: 10px; font-weight: 800; color: #6d3ec4; background: #f3edff; padding: 2px 8px; border-radius: 6px; text-transform: uppercase;">
+                                                {{ proj.innovation_type|default:proj.category }}
+                                            </span>
+                                            <h5 style="margin: 6px 0 4px 0; color: #150a35; font-size: 14px; font-weight: 800;">{{ proj.project_title }}</h5>
+                                            <div style="font-size: 11.5px; color: #6f628b; font-weight: 600;">
+                                                Aktiviti: <b>{{ proj.activity_type|default:"—" }}</b> &bull; Peranan: <b>{{ proj.contribution_level|default:proj.research_role|default:"—" }}</b> (&times;{{ proj.multiplier|floatformat:0 }})
+                                            </div>
+                                            {% if proj.nmrr_id or proj.doi %}
+                                            <div style="font-size: 11px; color: #6d3ec4; font-weight: 700; margin-top: 3px;">
+                                                {% if proj.nmrr_id %}NMRR ID: {{ proj.nmrr_id }}{% endif %}
+                                                {% if proj.nmrr_id and proj.doi %} &bull; {% endif %}
+                                                {% if proj.doi %}DOI: {{ proj.doi }}{% endif %}
+                                            </div>
+                                            {% endif %}
+                                            <p style="margin: 8px 0 0 0; font-size: 12px; color: #475569; line-height: 1.45;">{{ proj.description }}</p>
+                                        </div>
 
-                        <label class="input-label">Project Name / Description:</label>
-                        <input type="text" class="filter-select" placeholder="Enter project details..." style="margin-bottom:20px; background:white;">
-
-                        <label class="input-label">Impact of the Project</label>
-                        <input type="range" class="custom-slider" min="0" max="100" value="85">
-
-                        <hr style="border:0; border-top:1px solid #e7dff2; margin: 20px 0;">
-
-                        <h4 style="color:#150a35;">Crisis Management</h4>
-                        <label class="input-label">Ability to handle Code Blue / Emergency</label>
-                        <input type="range" class="custom-slider" min="0" max="100" value="88">
-
-                        <label class="input-label">Conflict resolution (patients/staff)</label>
-                        <input type="range" class="custom-slider" min="0" max="100" value="80">
+                                        <div style="text-align: right; min-width: 120px;">
+                                            <div style="font-size: 18px; font-weight: 900; color: #150a35;">{{ proj.final_points|floatformat:1 }} <span style="font-size: 11px; color: #6d3ec4;">pts</span></div>
+                                            <div style="margin-top: 8px;">
+                                                {% if proj.is_verified %}
+                                                    <span style="background: #dcfce7; color: #15803d; border: 1px solid #bbf7d0; padding: 4px 10px; border-radius: 8px; font-size: 11px; font-weight: 800; display: inline-block;">
+                                                        ✓ Verified
+                                                    </span>
+                                                {% else %}
+                                                    <form method="POST" style="margin: 0;">
+                                                        {% csrf_token %}
+                                                        <input type="hidden" name="form_type" value="verify_innovation_project">
+                                                        <input type="hidden" name="project_id" value="{{ proj.id }}">
+                                                        <button type="submit" style="background: #16a34a; color: white; border: none; padding: 7px 14px; border-radius: 8px; font-size: 11.5px; font-weight: 800; cursor: pointer; box-shadow: 0 3px 8px rgba(22, 163, 74, 0.25);">
+                                                            ✓ Verify Project
+                                                        </button>
+                                                    </form>
+                                                {% endif %}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </div>
+                        {% else %}
+                            <div style="text-align: center; padding: 30px 15px; color: #6f628b; font-size: 13px; border: 1px dashed #d8c7f4; border-radius: 10px;">
+                                Pegawai ini belum menghantar sebarang rekod projek inovasi atau penyelidikan.
+                            </div>
+                        {% endif %}
                     </div>
 
-                    <div class="eval-card" style="margin-bottom:0; background: white; border: 1px solid #e7dff2; border-radius: 12px; box-shadow: 0 4px 12px rgba(190, 18, 60, 0.03);">
-                        <h4 style="color:#150a35; margin-top:0;">Operational Skill Profiling</h4>
-                        <div style="margin-bottom: 20px;">
+                    <!-- KANAN: GRAF PECAHAN MATA WAJARAN & CATATAN HOD -->
+                    <div class="eval-card" style="margin-bottom:0; background: white; border: 1px solid #e7dff2; border-radius: 14px;">
+                        <h4 style="color:#150a35; margin-top:0; border-bottom: 1px solid #e7dff2; padding-bottom: 10px;">
+                            Weighted Points by Innovation Category
+                        </h4>
+                        <div style="margin-bottom: 16px;">
                             {{ radar_chart_html|safe }}
                         </div>
-                        <label class="input-label">HOD Comments on Innovation:</label>
-                        <textarea class="custom-textarea" placeholder="Enter comments here..."></textarea>
 
-                        <button class="btn-save" style="display: flex; align-items: center; justify-content: center; gap: 8px;">
-                            <svg style="width: 18px; height: 18px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
-                            Save Innovation Score
-                        </button>
+                        <form method="POST" style="margin: 0; border-top: 1px dashed #e7dff2; padding-top: 14px;">
+                            {% csrf_token %}
+                            <input type="hidden" name="form_type" value="send_hod_feedback">
+                            <input type="hidden" name="target_username" value="{{ pilihan_doktor_username }}">
+                            <input type="hidden" name="module_ref" value="Operational (Innovation & Research)">
+                            <input type="hidden" name="severity" value="KUDOS">
+
+                            <label class="input-label" style="margin-top: 0;">HOD Endorsement / Guidance on Innovation:</label>
+                            <textarea name="message_text" class="custom-textarea" required style="height: 75px; margin-bottom: 10px;" placeholder="Tulis ulasan pengiktirafan atau cadangan penyelidikan kepada pegawai..."></textarea>
+
+                            <button type="submit" class="btn-save" style="display: flex; align-items: center; justify-content: center; gap: 8px;">
+                                <svg style="width: 17px; height: 17px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/></svg>
+                                Send Innovation Feedback
+                            </button>
+                        </form>
                     </div>
                 </div>
             {% endif %}

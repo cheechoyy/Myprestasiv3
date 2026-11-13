@@ -14,11 +14,7 @@
         <!-- NAMA HOD & KLINIK -->
         <div class="header-tool" style="flex-direction: column; align-items: flex-start; gap: 1px; line-height: 1.2;">
             <span style="font-size: 13px; font-weight: 800; color: #150a35;">
-                {% if hod_name == 'dr_azlan' or hod_name == 'Dr_azlan' %}
-                    Dr. Azlan Shah
-                {% else %}
-                    {{ hod_name|default:user.get_full_name|default:user.username|cut:"_"|title }}
-                {% endif %}
+                {{ hod_name|default:user.get_full_name|default:user.username|cut:"_"|title }}
             </span>
             <span style="font-size: 11px; font-weight: 600; color: #a577ff;">HOD{% if hod_facility_label %} | {{ hod_facility_label }}{% endif %}</span>
         </div>
@@ -26,8 +22,8 @@
         <!-- BUTANG WORK SCHEDULE & KALENDAR -->
         <div class="header-tool" onclick="openScheduleModal()" style="cursor: pointer; transition: all 0.2s ease;" onmouseover="this.style.borderColor='#6d3ec4'; this.style.background='#f3edff';" onmouseout="this.style.borderColor='#e7dff2'; this.style.background='white';" title="Click to open Work Schedule & MyPrestasi Monthly Calendar">
             <svg style="width: 16px; height: 16px; margin-right: 6px; color: #6d3ec4;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
-            02 October 2026
-            <span style="background: #6d3ec4; color: white; border-radius: 50%; width: 18px; height: 18px; font-size: 10px; display: inline-flex; align-items: center; justify-content: center; font-weight: 800; margin-left: 6px;">5</span>
+            {% now "d F Y" %}
+            <span style="background: #6d3ec4; color: white; border-radius: 50%; width: 18px; height: 18px; font-size: 10px; display: inline-flex; align-items: center; justify-content: center; font-weight: 800; margin-left: 6px;">{{ pending_validation_count|default:"0" }}</span>
         </div>
 
         <!-- GOOGLE-STYLE INLINE SEARCH BAR -->
@@ -50,16 +46,16 @@
                 <svg style="width: 18px; height: 18px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
             </div>
             <div class="dropdown-menu" id="adminInbox">
-                <div class="dropdown-header">HOD Inbox (1 Urgent)</div>
+                <div class="dropdown-header">HOD Inbox ({{ action_urgent_count|default:"0" }} Urgent)</div>
                 <div class="dropdown-item" style="border-left: 3px solid #6d3ec4;">
-                    <span class="time">09:30</span>
-                    <strong>HQ Ministry of Health</strong>
-                    Pending review for Q1 Performance Audit.
+                    <span class="time">Today</span>
+                    <strong>Validation Queue</strong>
+                    {{ pending_validation_count|default:"0" }} item{{ pending_validation_count|default:"0"|pluralize }} awaiting HOD validation.
                 </div>
                 <div class="dropdown-item">
-                    <span class="time">Yesterday</span>
-                    <strong>Dr. Aminah (Staff)</strong>
-                    Procedure log submission for validation.
+                    <span class="time">Live</span>
+                    <strong>Fast-Track Promotion</strong>
+                    {{ fast_track_count|default:"0" }} MO{{ fast_track_count|default:"0"|pluralize }} eligible for review.
                 </div>
             </div>
         </div>
@@ -68,15 +64,23 @@
         <div class="dropdown-wrapper">
             <div class="icon-btn" onclick="toggleDropdown('adminNotif')" style="position:relative;">
                 <svg style="width: 18px; height: 18px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/></svg>
-                <span style="position:absolute; top:6px; right:8px; width:8px; height:8px; background:#ff4b4b; border-radius:50%; border: 2px solid white;"></span>
+                {% if action_urgent_count %}<span style="position:absolute; top:6px; right:8px; width:8px; height:8px; background:#ff4b4b; border-radius:50%; border: 2px solid white;"></span>{% endif %}
             </div>
             <div class="dropdown-menu" id="adminNotif">
                 <div class="dropdown-header">System Alerts</div>
+                {% if cusum_top_alerts %}
                 <div class="dropdown-item">
-                    <span class="time">Just Now</span>
+                    <span class="time">Live</span>
                     <strong>CUSUM Alert</strong>
-                    Dr. Lim Abdullah has breached the CUSUM control limit.
+                    {{ cusum_top_alerts.0.officer_name }} ({{ cusum_top_alerts.0.alert_count }} alert{{ cusum_top_alerts.0.alert_count|pluralize }}).
                 </div>
+                {% else %}
+                <div class="dropdown-item">
+                    <span class="time">Live</span>
+                    <strong>CUSUM Status</strong>
+                    All monitored officers are in control.
+                </div>
+                {% endif %}
             </div>
         </div>
 

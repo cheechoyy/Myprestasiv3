@@ -221,6 +221,231 @@ def _score_status(score, provisional=False):
     return 'ZERO' if score == 0 else 'OK'
 
 
+def _kkm_hba1c_result(user, as_of=None):
+    """Kira attainment KKM Indicator-1 daripada bacaan HbA1c pesakit.
+
+    Kohort menggunakan pesakit T2DM yang mempunyai bacaan asas HbA1c > 10.0%
+    apabila kohort tersebut wujud; jika belum ada, pesakit tidak terkawal
+    (HbA1c > 7.0%) digunakan sebagai kohort sandaran. Sasaran adalah
+    pengurangan >= 1.0% atau HbA1c susulan <= 7.0% dalam tempoh 183 hari.
+
+    Fungsi ini tidak menggunakan data preview/simulasi. Ia mengembalikan
+    numerator, denominator dan senarai kohort supaya paparan Clinical dan
+    agregasi HOD menggunakan sumber yang sama.
+    """
+    if as_of is None:
+        as_of = timezone.localdate()
+    elif isinstance(as_of, datetime):
+        if timezone.is_naive(as_of):
+            as_of = timezone.make_aware(as_of)
+        as_of = timezone.localtime(as_of).date()
+    elif not isinstance(as_of, date):
+        raise TypeError('as_of mesti date, datetime atau None')
+
+    procedures = list(
+        ProcedureLog.objects.filter(
+            officer=user,
+            procedure_date__lte=as_of,
+        )
+        .prefetch_related('doc_logs')
+        .order_by('procedure_date', 'id')
+    )
+
+    result = {
+        'has_records': bool(procedures),
+        'evaluated_cohort': [],
+        'pending_cohort': [],
+        'excluded_count': 0,
+        'cohort_mode_label': 'Indicator-1 Cohort (Baseline HbA1c > 10.0%)',
+        'numerator': 0,
+        'denominator': 0,
+        'score': None,
+        'status': 'NO_DATA',
+        'reason': 'Tiada rekod prosedur.',
+    }
+    if not procedures:
+        return result
+
+    patient_groups = {}
+    for procedure in procedures:
+        linked_docs = list(procedure.doc_logs.all())
+        doc_label = linked_docs[0].patient_id if linked_docs else ''
+        patient_key = (
+            procedure.patient_ref
+            or doc_label
+            or f'CASE-{procedure.id:04d}'
+        )
+        if patient_key not in patient_groups:
+            patient_groups[patient_key] = {
+                'patient_ref': (
+                    procedure.patient_ref
+                    or (doc_label.split(' (')[0].strip() if doc_label else patient_key)
+                ),
+                'visits': [],
+            }
+        patient_groups[patient_key]['visits'].append(procedure)
+
+    eligible_patients = []
+    for patient_key, patient_data in patient_groups.items():
+        visits = patient_data['visits']
+        is_excluded = False
+        for visit in visits:
+            diagnosis_blob = (
+                f"{visit.primary_diagnosis or ''} {visit.procedure_name or ''}"
+            ).lower()
+            comorbidities = [
+                str(item).lower() for item in (visit.comorbidities or [])
+            ]
+            if (
+                't1dm' in diagnosis_blob
+                or 'type 1' in diagnosis_blob
+                or 'gdm' in diagnosis_blob
+                or 'gestational' in diagnosis_blob
+                or any(
+                    'severe mental' in item or 'palliative' in item
+                    for item in comorbidities
+                )
+            ):
+                is_excluded = True
+                break
+        if is_excluded:
+            result['excluded_count'] += 1
+            continue
+
+        hba1c_visits = [v for v in visits if v.hba1c_percent is not None]
+        if not hba1c_visits:
+            continue
+        eligible_patients.append({
+            'patient_ref': patient_data['patient_ref'],
+            'hba1c_visits': hba1c_visits,
+        })
+
+    strict_cohort = [
+        item for item in eligible_patients
+        if float(item['hba1c_visits'][0].hba1c_percent) > 10.0
+    ]
+    if strict_cohort:
+        active_cohort = strict_cohort
+    else:
+        active_cohort = [
+            item for item in eligible_patients
+            if float(item['hba1c_visits'][0].hba1c_percent) > 7.0
+        ]
+        if active_cohort:
+            result['cohort_mode_label'] = (
+                'T2DM Uncontrolled Cohort (Baseline HbA1c > 7.0%)'
+            )
+
+    if not active_cohort:
+        if result['excluded_count'] and not eligible_patients:
+            result['reason'] = 'Semua pesakit dikecualikan daripada kohort KKM.'
+        elif eligible_patients:
+            result['reason'] = (
+                'Tiada kohort T2DM tidak terkawal (HbA1c > 7.0%) '
+                'bagi tempoh semasa.'
+            )
+        else:
+            result['reason'] = 'Tiada bacaan HbA1c dalam rekod prosedur.'
+        return result
+
+    active_cohort.sort(
+        key=lambda item: (
+            item['hba1c_visits'][0].procedure_date,
+            item['hba1c_visits'][0].id,
+        )
+    )
+
+    for patient in active_cohort:
+        visits = patient['hba1c_visits']
+        baseline = visits[0]
+        baseline_date = baseline.procedure_date
+        baseline_hba1c = float(baseline.hba1c_percent)
+        within_six_months = [
+            visit for visit in visits[1:]
+            if 0 < (visit.procedure_date - baseline_date).days <= 183
+        ]
+        # Susulan selepas 183 hari tidak boleh dianggap sebagai kejayaan
+        # dalam tempoh Indicator-1; pesakit tersebut dikira overdue.
+        followup_visits = within_six_months
+
+        if followup_visits:
+            best_followup = min(
+                followup_visits,
+                key=lambda visit: float(visit.hba1c_percent),
+            )
+            followup_hba1c = float(best_followup.hba1c_percent)
+            reduction = round(baseline_hba1c - followup_hba1c, 2)
+            achieved = (reduction >= 1.0) or (followup_hba1c <= 7.0)
+            result['evaluated_cohort'].append({
+                'patient_ref': patient['patient_ref'],
+                'baseline_date': baseline_date.strftime('%d %b %Y'),
+                'baseline_hba1c': baseline_hba1c,
+                'followup_date': best_followup.procedure_date.strftime('%d %b %Y'),
+                'followup_hba1c': followup_hba1c,
+                'reduction': reduction,
+                'days_diff': (best_followup.procedure_date - baseline_date).days,
+                'achieved': achieved,
+                'is_failure': not achieved,
+                'status_label': (
+                    f'Achieved (-{reduction:.1f}%)' if reduction >= 1.0
+                    else (
+                        'Target <=7.0% Reached'
+                        if followup_hba1c <= 7.0
+                        else f'Not Met ({reduction:+.1f}%)'
+                    )
+                ),
+            })
+        else:
+            days_elapsed = (as_of - baseline_date).days
+            if days_elapsed > 183:
+                result['evaluated_cohort'].append({
+                    'patient_ref': patient['patient_ref'],
+                    'baseline_date': baseline_date.strftime('%d %b %Y'),
+                    'baseline_hba1c': baseline_hba1c,
+                    'followup_date': 'Overdue (>6 Mo)',
+                    'followup_hba1c': None,
+                    'reduction': 0.0,
+                    'days_diff': days_elapsed,
+                    'achieved': False,
+                    'is_failure': True,
+                    'status_label': 'Overdue (>183 Days No 6M HbA1c)',
+                })
+            else:
+                result['pending_cohort'].append({
+                    'patient_ref': patient['patient_ref'],
+                    'baseline_date': baseline_date.strftime('%d %b %Y'),
+                    'baseline_hba1c': baseline_hba1c,
+                    'days_remaining': max(0, 183 - days_elapsed),
+                })
+
+    evaluated = result['evaluated_cohort']
+    numerator = sum(1 for item in evaluated if item['achieved'])
+    denominator = len(evaluated)
+    result.update({
+        'numerator': numerator,
+        'denominator': denominator,
+    })
+
+    if denominator:
+        score = _clamp_score((numerator / denominator) * 100.0)
+        result.update({
+            'score': score,
+            'status': _score_status(score),
+            'reason': None,
+        })
+    elif result['pending_cohort']:
+        result.update({
+            'status': 'PENDING_VERIFICATION',
+            'reason': 'Kohort HbA1c masih menunggu susulan 6 bulan.',
+        })
+    else:
+        result.update({
+            'status': 'NO_DATA',
+            'reason': 'Tiada pesakit dalam kohort yang boleh dinilai.',
+        })
+    return result
+
+
 def get_module_scores(user, as_of=None):
     """
     Kira skor 0-100 untuk 10 modul berdasarkan data DB sebenar.
@@ -240,38 +465,55 @@ def get_module_scores(user, as_of=None):
     modules = []
 
     # 1. Clinical Delivery
-    procedures = ProcedureLog.objects.filter(officer=user)
-    has_proc_records = procedures.exists()
-    verified_procedures = procedures.filter(
-        procedure_date__year=as_of.year,
-        is_verified=True,
-    )
-    verified_count = verified_procedures.count()
-    if not has_proc_records:
+    department = getattr(getattr(user, 'profile', None), 'department', None)
+    if department == 'FMS':
+        kkm_result = _kkm_hba1c_result(user, as_of=as_of)
         modules.append(_module_result(
             'clinical_delivery', 'Clinical Delivery',
-            status='NO_DATA', reason='Tiada rekod prosedur.',
-            source='ProcedureLog.is_successful (verified)',
-        ))
-    elif not verified_count:
-        modules.append(_module_result(
-            'clinical_delivery', 'Clinical Delivery',
-            n=0, denominator=0, status='PENDING_VERIFICATION',
-            reason='Tiada prosedur verified bagi tahun semasa.',
-            has_records=True,
-            source='ProcedureLog.is_successful (verified)',
+            score=kkm_result['score'],
+            n=kkm_result['denominator'],
+            denominator=kkm_result['denominator'],
+            raw_value=kkm_result['numerator'],
+            status=kkm_result['status'],
+            reason=kkm_result['reason'],
+            has_records=kkm_result['has_records'],
+            source='ProcedureLog.hba1c_percent (KKM Indicator-1)',
+            target=80,
         ))
     else:
-        successful_count = verified_procedures.filter(is_successful=True).count()
-        score = _clamp_score((successful_count / verified_count) * 100.0)
-        modules.append(_module_result(
-            'clinical_delivery', 'Clinical Delivery',
-            score=score, n=verified_count, denominator=verified_count,
-            raw_value=successful_count,
-            status=_score_status(score),
-            has_records=True,
-            source='ProcedureLog.is_successful (verified)',
-        ))
+        # Laluan lama dikekalkan untuk jabatan bukan FMS (cth. CTS).
+        procedures = ProcedureLog.objects.filter(officer=user)
+        has_proc_records = procedures.exists()
+        verified_procedures = procedures.filter(
+            procedure_date__year=as_of.year,
+            is_verified=True,
+        )
+        verified_count = verified_procedures.count()
+        if not has_proc_records:
+            modules.append(_module_result(
+                'clinical_delivery', 'Clinical Delivery',
+                status='NO_DATA', reason='Tiada rekod prosedur.',
+                source='ProcedureLog.is_successful (verified)',
+            ))
+        elif not verified_count:
+            modules.append(_module_result(
+                'clinical_delivery', 'Clinical Delivery',
+                n=0, denominator=0, status='PENDING_VERIFICATION',
+                reason='Tiada prosedur verified bagi tahun semasa.',
+                has_records=True,
+                source='ProcedureLog.is_successful (verified)',
+            ))
+        else:
+            successful_count = verified_procedures.filter(is_successful=True).count()
+            score = _clamp_score((successful_count / verified_count) * 100.0)
+            modules.append(_module_result(
+                'clinical_delivery', 'Clinical Delivery',
+                score=score, n=verified_count, denominator=verified_count,
+                raw_value=successful_count,
+                status=_score_status(score),
+                has_records=True,
+                source='ProcedureLog.is_successful (verified)',
+            ))
 
     # 2. Documentation
     all_docs = DocumentationLog.objects.filter(officer=user)

@@ -337,3 +337,157 @@ class HODFeedback(models.Model):
 
     def __str__(self):
         return f"From {self.sender_hod.username} to {self.receiver_staff.username} ({self.severity})"
+
+
+# ==========================================
+# 7. CUSUM SHADOW MONITORING (PROOF OF CONCEPT)
+# ==========================================
+CUSUM_MODULE_CHOICES = (
+    ('documentation', 'Documentation'),
+)
+
+CUSUM_STATE_CHOICES = (
+    ('INSUFFICIENT_DATA', 'Insufficient Data'),
+    ('IN_CONTROL', 'In Control'),
+    ('WATCH', 'Watch'),
+    ('ALERT', 'Alert'),
+)
+
+CUSUM_EPISODE_STATUS_CHOICES = (
+    ('OPEN', 'Open'),
+)
+
+
+class CusumSnapshot(models.Model):
+    """Keadaan CUSUM semasa bagi seorang officer untuk satu modul.
+
+    Fasa PoC menggunakan satu baris bagi setiap (officer, module). Model ini
+    hanya menyimpan isyarat shadow; ia tidak mengubah skor radar.
+    """
+
+    officer = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name='cusum_snapshots',
+    )
+    module = models.CharField(
+        max_length=50,
+        choices=CUSUM_MODULE_CHOICES,
+        default='documentation',
+        db_index=True,
+    )
+    state = models.CharField(
+        max_length=24,
+        choices=CUSUM_STATE_CHOICES,
+        default='INSUFFICIENT_DATA',
+    )
+
+    cusum_value = models.FloatField(default=0.0)
+    alert_count = models.PositiveIntegerField(default=0)
+    observation_count = models.PositiveIntegerField(default=0)
+    skipped_count = models.PositiveIntegerField(default=0)
+
+    last_sequence = models.PositiveIntegerField(default=0)
+    last_event_at = models.DateTimeField(null=True, blank=True)
+    last_alert_at = models.DateTimeField(null=True, blank=True)
+    last_alert_number = models.PositiveIntegerField(default=0)
+
+    window_start = models.DateTimeField(null=True, blank=True)
+    window_end = models.DateTimeField(null=True, blank=True)
+
+    last_source_model = models.CharField(
+        max_length=50,
+        default='DocumentationLog',
+    )
+    last_source_id = models.PositiveBigIntegerField(null=True, blank=True)
+
+    p0 = models.FloatField(default=0.20)
+    p1 = models.FloatField(default=0.35)
+    h = models.FloatField(default=4.5)
+
+    computed_at = models.DateTimeField(auto_now=True)
+    metadata = models.JSONField(default=dict, blank=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=('officer', 'module'),
+                name='uniq_cusum_snap_officer_module',
+            ),
+        ]
+        indexes = [
+            models.Index(
+                fields=('module', 'state'),
+                name='idx_cusum_snap_module_state',
+            ),
+        ]
+
+    def __str__(self):
+        return (
+            f'{self.officer.username} - {self.module} '
+            f'- {self.state} ({self.cusum_value:.2f})'
+        )
+
+
+class CusumEpisode(models.Model):
+    """Rekod satu lintasan ambang CUSUM (alert) untuk tujuan audit."""
+
+    officer = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name='cusum_episodes',
+    )
+    module = models.CharField(
+        max_length=50,
+        choices=CUSUM_MODULE_CHOICES,
+        default='documentation',
+        db_index=True,
+    )
+
+    alert_number = models.PositiveIntegerField()
+    trigger_sequence = models.PositiveIntegerField()
+    triggered_at = models.DateTimeField()
+
+    cusum_value = models.FloatField()
+    peak_cusum = models.FloatField(default=0.0)
+    observation_count = models.PositiveIntegerField(default=0)
+
+    status = models.CharField(
+        max_length=20,
+        choices=CUSUM_EPISODE_STATUS_CHOICES,
+        default='OPEN',
+    )
+
+    source_model = models.CharField(
+        max_length=50,
+        default='DocumentationLog',
+    )
+    source_id = models.PositiveBigIntegerField(null=True, blank=True)
+
+    p0 = models.FloatField(default=0.20)
+    p1 = models.FloatField(default=0.35)
+    h = models.FloatField(default=4.5)
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    metadata = models.JSONField(default=dict, blank=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=('officer', 'module', 'source_model', 'source_id'),
+                name='uniq_cusum_episode_source',
+            ),
+        ]
+        indexes = [
+            models.Index(
+                fields=('officer', 'module', 'status'),
+                name='idx_cusum_episode_status',
+            ),
+        ]
+
+    def __str__(self):
+        return (
+            f'{self.officer.username} - {self.module} '
+            f'- Alert #{self.alert_number}'
+        )

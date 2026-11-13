@@ -28,18 +28,32 @@
                 <div class="tab-btn" onclick="openTab(event, 'tab-doc')">
                     Documentation
                 </div>
-                <div class="tab-btn" onclick="openTab(event, 'tab-cpd')">
-                    Knowledge & Competency
-                </div>
                 <div class="tab-btn" onclick="openTab(event, 'tab-policy')">
                     Adherence To Policies & Protocols
                 </div>
+                <div class="tab-btn" onclick="openTab(event, 'tab-cpd')">
+                    Knowledge & Competency
+                </div>
             </div>
 
-            <div class="card tab-content active" id="tab-preclerking" style="max-height: 65vh; overflow-y: auto;">
-                <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 15px; border-bottom: 2px solid #e7dff2; padding-bottom: 10px;">
-                    <h3 style="color:#150a35; margin:0; font-size:16px;">New Clinical / Procedural Record</h3>
+            <div class="card tab-content active" id="tab-preclerking" style="max-height: 68vh; overflow-y: auto;">
+                <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; margin-bottom: 18px; border-bottom: 2px solid #e7dff2; padding-bottom: 12px;">
+                    <div>
+                        <h3 id="clinDeliveryHeading" style="color:#150a35; margin:0; font-size:16px; font-weight: 800;">New Clinical / Procedural Record</h3>
+                        <p style="margin: 2px 0 0 0; color: #6f628b; font-size: 11.5px; font-weight: 500;">Daftar kes klinikal baharu atau semak sejarah rekod yang telah dihantar.</p>
+                    </div>
+
+                    <div style="display: inline-flex; background: #f3edff; padding: 4px; border-radius: 10px; border: 1px solid #d8c7f4; gap: 4px;">
+                        <button type="button" id="btn-clinDelivery-entry" onclick="toggleWorkspaceMode('clinDelivery', 'entry')" style="background: #6d3ec4; color: white; border: none; padding: 8px 16px; border-radius: 8px; font-size: 12px; font-weight: 800; cursor: pointer; transition: all 0.2s;">
+                            + New Entry
+                        </button>
+                        <button type="button" id="btn-clinDelivery-history" onclick="toggleWorkspaceMode('clinDelivery', 'history')" style="background: transparent; color: #150a35; border: none; padding: 8px 16px; border-radius: 8px; font-size: 12px; font-weight: 800; cursor: pointer; transition: all 0.2s;">
+                            View History ({{ procedure_log_count|default:0 }})
+                        </button>
+                    </div>
                 </div>
+
+                <div id="clinDeliveryEntryPane" style="display: block;">
 
                 <div style="margin-bottom: 20px;">
                     <label style="margin-top:0; margin-bottom:10px; color:#6d3ec4; font-size:12px; font-weight:700;">Active Evaluation Module:</label>
@@ -312,7 +326,7 @@
                             </div>
                         </div>
 
-                        <label style="margin-top: 20px;">Lifestyle Risk Factors & Comorbidities</label>
+                        <label style="margin-top: 20px;">Lifestyle Risk Factors, Comorbidities &amp; Clinical Exclusions</label>
                         <div class="checkbox-container grid-3" style="border-left: 4px solid #f59e0b; background:#fffbeb; border-color:#fef3c7;">
                             <label style="margin:0; font-weight:normal;"><input type="checkbox" name="comorbidities" value="None"> None</label>
                             <label style="margin:0; font-weight:normal;"><input type="checkbox" name="comorbidities" value="Active Smoker"> Active Smoker</label>
@@ -320,6 +334,8 @@
                             <label style="margin:0; font-weight:normal;"><input type="checkbox" name="comorbidities" value="Ischaemic Heart Disease"> Ischaemic Heart Disease</label>
                             <label style="margin:0; font-weight:normal;"><input type="checkbox" name="comorbidities" value="Chronic Kidney Disease (CKD)"> Chronic Kidney Disease (CKD)</label>
                             <label style="margin:0; font-weight:normal;"><input type="checkbox" name="comorbidities" value="Diabetic Retinopathy"> Diabetic Retinopathy</label>
+                            <label style="margin:0; font-weight:normal;"><input type="checkbox" name="comorbidities" value="Severe Mental Illness"> Severe Mental Illness (Excl.)</label>
+                            <label style="margin:0; font-weight:normal;"><input type="checkbox" name="comorbidities" value="Palliative Care"> Palliative Care (Excl.)</label>
                         </div>
 
                         <!-- SECTION 3 : VITAL SIGNS & RENAL PROFILE -->
@@ -518,6 +534,74 @@
                         </div>
                     </form>
                 </div> {% endif %}
+                </div>
+
+                <!-- PAPARAN SEJARAH CLINICAL DELIVERY (VIEW HISTORY) -->
+                <div id="clinDeliveryHistoryPane" style="display: none;">
+                    <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; flex-wrap: wrap; gap: 10px;">
+                        <div style="font-size: 13px; font-weight: 800; color: #150a35;">
+                            Submitted Clinical &amp; Procedural Records ({{ procedure_log_count|default:0 }} Total)
+                        </div>
+                        <a href="?section=Patients" style="font-size: 11.5px; font-weight: 800; color: #6d3ec4; text-decoration: none; background: #f3edff; border: 1px solid #d8c7f4; padding: 5px 12px; border-radius: 8px;">
+                            👥 Buka My Patients (Trend HbA1c) ➔
+                        </a>
+                    </div>
+
+                    <div style="overflow-x: auto; border: 1px solid #e7dff2; border-radius: 12px; background: white;">
+                        <table class="staff-table" style="margin: 0; width: 100%;">
+                            <thead>
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Patient Ref / Domain</th>
+                                    <th>Diagnosis / Procedure</th>
+                                    <th>Clinical Parameters</th>
+                                    <th>Self-Score</th>
+                                    <th>HOD Verification</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for proc in procedure_logs %}
+                                <tr>
+                                    <td style="white-space: nowrap; font-weight: 700; color: #150a35;">{{ proc.procedure_date|date:"d M Y" }}</td>
+                                    <td style="white-space: nowrap;">
+                                        <span style="font-weight: 800; color: #6d3ec4;">{{ proc.patient_ref|default:"Anonymous" }}</span>
+                                        <span style="display: block; font-size: 10px; color: #6f628b; font-weight: 700;">{{ proc.clinical_domain|default:staff_dept }}</span>
+                                    </td>
+                                    <td>
+                                        <div style="font-weight: 800; color: #150a35;">{{ proc.procedure_name }}</div>
+                                        {% if proc.primary_diagnosis %}
+                                            <div style="font-size: 11px; color: #64748b;">{{ proc.primary_diagnosis }}</div>
+                                        {% endif %}
+                                    </td>
+                                    <td style="font-size: 11.5px; color: #150a35;">
+                                        {% if proc.hba1c_percent %}<b>HbA1c:</b> {{ proc.hba1c_percent }}% &bull; {% endif %}
+                                        {% if proc.systolic_bp and proc.diastolic_bp %}<b>BP:</b> {{ proc.systolic_bp }}/{{ proc.diastolic_bp }} &bull; {% endif %}
+                                        {% if proc.ckd_stage %}<b>CKD:</b> {{ proc.ckd_stage }}{% endif %}
+                                        {% if proc.lvef_percent %}<b>LVEF:</b> {{ proc.lvef_percent }}%{% endif %}
+                                        {% if not proc.hba1c_percent and not proc.systolic_bp and not proc.ckd_stage and not proc.lvef_percent %}
+                                            <span style="color: #94a3b8;">Standard Encounter</span>
+                                        {% endif %}
+                                    </td>
+                                    <td style="font-weight: 900; color: #150a35;">{{ proc.score|floatformat:0 }}%</td>
+                                    <td style="white-space: nowrap;">
+                                        {% if proc.is_verified %}
+                                            <span class="status-badge bg-success">✓ Verified</span>
+                                        {% else %}
+                                            <span class="status-badge bg-warning">⏳ Pending HOD</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="6" style="text-align: center; padding: 28px; color: #6f628b; font-style: italic;">
+                                        Tiada rekod klinikal ditemui lagi. Klik <b>+ New Entry</b> untuk mendaftarkan kes pertama anda.
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
 
             </div> <div class="card tab-content" id="tab-cpd">
                 <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 15px; border-bottom: 2px solid #e7dff2; padding-bottom: 10px;">
@@ -550,7 +634,20 @@
                     </div>
                 </div>
 
-                <div style="background: #f3edff; padding: 20px; border-radius: 12px; border: 1px solid #e7dff2; margin-bottom: 35px;">
+                <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; margin-bottom: 18px; border-bottom: 1.5px solid #e7dff2; padding-bottom: 12px;">
+                    <div style="font-size: 13.5px; font-weight: 800; color: #150a35;">myCPD 2.0 Activity Workspace</div>
+                    <div style="display: inline-flex; background: #f3edff; padding: 4px; border-radius: 10px; border: 1px solid #d8c7f4; gap: 4px;">
+                        <button type="button" id="btn-cpdWork-entry" onclick="toggleWorkspaceMode('cpdWork', 'entry')" style="background: #6d3ec4; color: white; border: none; padding: 7px 15px; border-radius: 8px; font-size: 12px; font-weight: 800; cursor: pointer; transition: all 0.2s;">
+                            + New Entry
+                        </button>
+                        <button type="button" id="btn-cpdWork-history" onclick="toggleWorkspaceMode('cpdWork', 'history')" style="background: transparent; color: #150a35; border: none; padding: 7px 15px; border-radius: 8px; font-size: 12px; font-weight: 800; cursor: pointer; transition: all 0.2s;">
+                            View History ({{ cpd_claim_count }})
+                        </button>
+                    </div>
+                </div>
+
+                <div id="cpdWorkEntryPane" style="display: block;">
+                <div style="background: #f3edff; padding: 20px; border-radius: 12px; border: 1px solid #e7dff2; margin-bottom: 20px;">
                     <div style="display: flex; align-items: center; gap: 8px; margin-bottom:15px;">
                         <h4 style="color:#150a35; margin:0; font-size:14px;">Submit New CPD Claim</h4>
                     </div>
@@ -617,7 +714,9 @@
                         </button>
                     </form>
                 </div>
+                </div>
 
+                <div id="cpdWorkHistoryPane" style="display: none;">
                 <div style="display: flex; align-items: center; gap: 8px; margin-bottom:15px;">
                     <h4 style="color:#150a35; margin:0; font-size:14px;">CPD Claim History ({{ cpd_year }})</h4>
                 </div>
@@ -665,6 +764,7 @@
                             {% endfor %}
                         </tbody>
                     </table>
+                </div>
                 </div>
 
             </div>
@@ -898,18 +998,57 @@
             </script>
 
             <div class="card tab-content" id="tab-policy">
-                <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 15px; border-bottom: 2px solid #e7dff2; padding-bottom: 10px;">
-                    <h3 style="color:#150a35; margin:0; font-size:16px;">Annual Policy & Clinical SOP Declaration</h3>
-                </div>
+                {% if not policy_audit_active %}
+                    <!-- KEADAAN LALAI: ALL CLEAR (SOALAN DISEMBUNYIKAN SEHINGGA DOKUMENTASI DISAHKAN) -->
+                    <div style="background: linear-gradient(135deg, #ffffff 0%, #f3edff 100%); border: 1.5px solid #d8c7f4; border-radius: 18px; padding: 38px 28px; text-align: center; box-shadow: 0 6px 20px rgba(21, 10, 53, 0.04);">
+                        <div style="width: 64px; height: 64px; border-radius: 50%; background: #dcfce7; border: 2px solid #bbf7d0; color: #16a34a; display: flex; align-items: center; justify-content: center; margin: 0 auto 16px auto;">
+                            <svg style="width: 34px; height: 34px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                        </div>
+                        <span style="display: inline-block; background: #dcfce7; color: #166534; border: 1px solid #bbf7d0; font-size: 11px; font-weight: 800; padding: 4px 14px; border-radius: 20px; text-transform: uppercase; letter-spacing: 0.6px; margin-bottom: 10px;">
+                            ● Status: All Clear
+                        </span>
+                        <h3 style="margin: 0 0 8px 0; color: #150a35; font-size: 20px; font-weight: 900;">
+                            Tiada Micro-Audit Polisi Tertunggak
+                        </h3>
+                        <p style="margin: 0 auto 22px auto; max-width: 540px; color: #6f628b; font-size: 13px; font-weight: 500; line-height: 1.6;">
+                            Soalan pematuhan CPG &amp; SOP dijana secara rawak dan bermasa (<b>2 minit</b>) hanya selepas anda mendaftarkan kes di <b>Clinical Delivery</b> dan menandatangani nota di <b>Documentation</b>.
+                        </p>
 
-                <div style="background-color: #f3edff; color:#150a35; padding: 15px; border-radius: 8px; margin-bottom: 20px; font-size: 13px; border-left: 4px solid #6d3ec4; display: flex; align-items: center; gap: 8px;">
-                    <svg style="width: 18px; height: 18px; color: #6d3ec4; flex-shrink:0;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-                    <span><b>Self-Audit Requirement:</b> As part of the 2026 Clinical Governance, Staffs are required to complete this comprehensive 20-point self-assessment regarding Clinical Guidelines (e.g. Diabetes Management) before confirming the declaration.</span>
-                </div>
+                        <div style="display: inline-flex; gap: 12px; flex-wrap: wrap; justify-content: center;">
+                            <a href="?section=Clinical&tab=delivery" style="background: #6d3ec4; color: white; padding: 10px 20px; border-radius: 10px; font-size: 12.5px; font-weight: 800; text-decoration: none; box-shadow: 0 4px 12px rgba(109, 62, 196, 0.22);">
+                                1. Daftar Kes Klinikal ➔
+                            </a>
+                            <a href="?section=Clinical&tab=doc" style="background: white; color: #150a35; border: 1.5px solid #d8c7f4; padding: 10px 20px; border-radius: 10px; font-size: 12.5px; font-weight: 800; text-decoration: none;">
+                                2. Semak Giliran Dokumentasi ({{ pending_docs_count|default:0 }} Pending)
+                            </a>
+                        </div>
+                    </div>
+                {% else %}
+                    <!-- KEADAAN TERCETUS: BANNER PEMASA BERDETIK 2 MINIT (ANTI-TIRU) -->
+                    <div id="policyTimerBanner" style="background: linear-gradient(135deg, #150a35 0%, #6d3ec4 100%); color: white; border-radius: 16px; padding: 18px 24px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px; box-shadow: 0 8px 22px rgba(21, 10, 53, 0.2);">
+                        <div>
+                            <div style="display: inline-flex; align-items: center; gap: 6px; background: rgba(255,255,255,0.18); padding: 3px 10px; border-radius: 20px; font-size: 10.5px; font-weight: 800; text-transform: uppercase; margin-bottom: 6px;">
+                                <span>⚡ Live Clinical Governance Micro-Audit</span>
+                            </div>
+                            <h3 style="margin: 0 0 4px 0; font-size: 17px; font-weight: 900; color: white;">
+                                Pengesahan Protokol: {{ policy_audit_trigger.case_category|default:"Clinical Case" }} ({{ policy_audit_trigger.patient_id }})
+                            </h3>
+                            <p style="margin: 0; font-size: 12px; color: rgba(255,255,255,0.85);">
+                                5 soalan rawak dipilih. Borang akan dihantar secara automatik apabila masa 2 minit tamat.
+                            </p>
+                        </div>
 
-                <form method="POST">
-                    {% csrf_token %}
-                    <input type="hidden" name="form_type" value="policy">
+                        <div style="background: rgba(255,255,255,0.14); border: 1.5px solid rgba(255,255,255,0.35); border-radius: 14px; padding: 10px 20px; text-align: center; min-width: 130px;">
+                            <div style="font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.6px; color: #e7dff2;">Baki Masa</div>
+                            <div id="policyCountdownDisplay" style="font-size: 28px; font-weight: 900; font-variant-numeric: tabular-nums; letter-spacing: 1px; margin-top: 2px;">02:00</div>
+                        </div>
+                    </div>
+
+                    <form method="POST" id="timedPolicyForm">
+                        {% csrf_token %}
+                        <input type="hidden" name="form_type" value="policy">
+                        <input type="hidden" name="audit_mode" value="timed_random">
+                        <input type="hidden" name="presented_questions" id="presentedQuestionsInput" value="">
 
                     <div style="border: 1px solid #e7dff2; padding: 20px; margin-bottom: 20px; border-radius: 12px; background: white; box-shadow: 0 2px 10px rgba(0,0,0,0.02);">
                         <h4 style="color:#150a35; margin-top:0; border-bottom: 1px solid #e7dff2; padding-bottom: 10px;">A. Clinical Screening & Assessment</h4>
@@ -1062,9 +1201,10 @@
                     </div>
 
                     <button type="submit" class="submit-btn" style="margin-top: 15px; display:flex; align-items:center; justify-content:center; gap:8px;">
-                        Submit Annual SOP Declaration
-                    </button>
-                </form>
+                            Submit Micro-Audit Declaration
+                        </button>
+                    </form>
+                {% endif %}
             </div>
 </div>
 
@@ -1268,4 +1408,157 @@
             pointsInput.value = '';
         }
     }
+
+    // 7. Toggle Mod '+ New Entry' vs 'View History'
+    function toggleWorkspaceMode(prefix, mode) {
+        var entryPane = document.getElementById(prefix + 'EntryPane');
+        var historyPane = document.getElementById(prefix + 'HistoryPane');
+        var btnEntry = document.getElementById('btn-' + prefix + '-entry');
+        var btnHistory = document.getElementById('btn-' + prefix + '-history');
+
+        if (!entryPane || !historyPane) return;
+
+        var isEntry = (mode === 'entry');
+        entryPane.style.display = isEntry ? 'block' : 'none';
+        historyPane.style.display = isEntry ? 'none' : 'block';
+
+        if (btnEntry && btnHistory) {
+            btnEntry.style.background = isEntry ? '#6d3ec4' : 'transparent';
+            btnEntry.style.color = isEntry ? 'white' : '#150a35';
+            btnHistory.style.background = isEntry ? 'transparent' : '#6d3ec4';
+            btnHistory.style.color = isEntry ? '#150a35' : 'white';
+        }
+    }
 </script>
+
+{% if policy_audit_active %}
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+    const policyTab = document.getElementById("tab-policy");
+    const form = document.getElementById("timedPolicyForm");
+    if (!policyTab || !form) return;
+
+    // Sekat copy-paste teks soalan semasa audit berjalan
+    policyTab.style.userSelect = "none";
+    policyTab.addEventListener("copy", function (e) { e.preventDefault(); });
+
+    // Pemetaan tepat setiap blok soalan q1 hingga q20
+    const questionItems = [];
+    for (let q = 1; q <= 20; q++) {
+        const inputs = Array.from(form.querySelectorAll(`[name="q${q}"]`));
+        if (!inputs.length) continue;
+
+        let elementsToToggle = [];
+        const checkboxBox = inputs[0].closest(".checkbox-container");
+        const tableRow = inputs[0].closest("tr");
+        const radioGroup = inputs[0].closest(".radio-group");
+
+        if (checkboxBox) {
+            elementsToToggle = [checkboxBox];
+            if (checkboxBox.previousElementSibling) {
+                elementsToToggle.push(checkboxBox.previousElementSibling);
+            }
+        } else if (tableRow) {
+            elementsToToggle = [tableRow];
+        } else if (radioGroup && radioGroup.parentElement) {
+            elementsToToggle = [radioGroup.parentElement];
+        }
+
+        questionItems.push({
+            q: q,
+            inputs: inputs,
+            elements: elementsToToggle
+        });
+    }
+
+    // Kocok susunan (Fisher-Yates Shuffle) dan pilih 5 soalan rawak
+    for (let i = questionItems.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [questionItems[i], questionItems[j]] = [questionItems[j], questionItems[i]];
+    }
+
+    const selected = questionItems.slice(0, 5);
+    const selectedSet = new Set(selected.map(item => item.q));
+
+    // Sembunyikan semua 20 soalan & buang atribut 'required' pada soalan yang tidak dipilih
+    questionItems.forEach(item => {
+        const isChosen = selectedSet.has(item.q);
+        item.elements.forEach(el => {
+            el.style.display = isChosen ? "" : "none";
+        });
+        item.inputs.forEach(inp => {
+            if (!isChosen) {
+                inp.removeAttribute("required");
+            }
+        });
+    });
+
+    // Sembunyikan kad Domain (A, B, C, D, E) yang tiada soalan terpilih supaya tiada kotak kosong
+    form.querySelectorAll("div[style*='border: 1px solid #e7dff2']").forEach(domainCard => {
+        const hasVisibleQuestion = Array.from(domainCard.querySelectorAll("input[name^='q']")).some(inp => {
+            const container = inp.closest("tr") || inp.closest(".checkbox-container") || inp.closest(".radio-group")?.parentElement;
+            return container && container.style.display !== "none";
+        });
+        if (!hasVisibleQuestion) {
+            domainCard.style.display = "none";
+        }
+    });
+
+    // Sembunyikan pembalut .grid-2 jika semua anak di dalamnya tersembunyi
+    form.querySelectorAll(".grid-2").forEach(gridBox => {
+        const hasVisibleChild = Array.from(gridBox.children).some(child => child.style.display !== "none");
+        if (!hasVisibleChild) {
+            gridBox.style.display = "none";
+        }
+    });
+
+    // Tandakan checkbox deklarasi akhir secara automatik supaya auto-submit tidak tersekat
+    const declCheck = form.querySelector('[name="declaration_confirm"]');
+    if (declCheck) declCheck.checked = true;
+
+    const presentedInput = document.getElementById("presentedQuestionsInput");
+    if (presentedInput) {
+        presentedInput.value = Array.from(selectedSet).sort((a, b) => a - b).join(",");
+    }
+
+    // Pemasa Berdetik 2 Minit (120 saat) disegerakkan dengan server
+    let remaining = parseInt("{{ policy_audit_remaining_seconds|default:120 }}", 10);
+    const displayEl = document.getElementById("policyCountdownDisplay");
+    const bannerEl = document.getElementById("policyTimerBanner");
+    let submitted = false;
+
+    function formatTime(sec) {
+        const m = Math.floor(sec / 60);
+        const s = sec % 60;
+        return String(m).padStart(2, "0") + ":" + String(s).padStart(2, "0");
+    }
+
+    function triggerAutoSubmit() {
+        if (submitted) return;
+        submitted = true;
+        form.submit();
+    }
+
+    if (displayEl) displayEl.textContent = formatTime(remaining);
+    if (remaining <= 0) {
+        triggerAutoSubmit();
+        return;
+    }
+
+    const timerInterval = setInterval(function () {
+        remaining -= 1;
+        if (displayEl) displayEl.textContent = formatTime(Math.max(0, remaining));
+
+        // Tukar warna amaran merah apabila baki masa <= 30 saat
+        if (remaining <= 30 && bannerEl) {
+            bannerEl.style.background = "linear-gradient(135deg, #7f1d1d 0%, #dc2626 100%)";
+        }
+
+        if (remaining <= 0) {
+            clearInterval(timerInterval);
+            triggerAutoSubmit();
+        }
+    }, 1000);
+});
+</script>
+{% endif %}

@@ -1,3 +1,4 @@
+import json
 import shutil
 import tempfile
 from datetime import date, datetime, timedelta
@@ -12,8 +13,11 @@ from django.test import TestCase, override_settings
 from django.urls import reverse
 from django.utils import timezone
 
+from .cusum import CusumParameters, bernoulli_cusum
 from .models import (
     CPDClaim,
+    CusumEpisode,
+    CusumSnapshot,
     DocumentationLog,
     EmotionalReflection,
     HODFeedback,
@@ -27,11 +31,17 @@ from .models import (
     ProductivityLog,
     UserProfile,
 )
-from .services import calculate_pri_score, get_module_scores
+from .services import (
+    _kkm_hba1c_result,
+    calculate_pri_score,
+    get_module_scores,
+)
 from .views import (
     MAX_CPD_CERTIFICATE_SIZE,
     POLICY_MULTI_OPTIONS,
     _average_reflection_domains,
+    _build_hod_module_scorecards,
+    _build_hod_staff_picker,
     _parse_datetime_value,
 )
 
@@ -2468,3 +2478,1068 @@ class SimulationSeederTests(TestCase):
             DocumentationLog.objects.filter(pk=real_log.pk).exists()
         )
         self.assertIn('Dipadam', output)
+
+
+class CusumEngineTests(TestCase):
+    def test_default_parameters_match_documentation_contract(self):
+        parameters = CusumParameters()
+
+        self.assertEqual(parameters.p0, 0.20)
+        self.assertEqual(parameters.p1, 0.35)
+        self.assertEqual(parameters.h, 4.5)
+        self.assertAlmostEqual(
+            parameters.late_increment,
+            0.559616,
+            places=6,
+        )
+        self.assertAlmostEqual(
+            parameters.on_time_increment,
+            -0.207639,
+            places=6,
+        )
+        self.assertEqual(parameters.watch_threshold, 2.25)
+
+    def test_six_late_out_of_twenty_does_not_alert(self):
+        outcomes = [True] * 6 + [False] * 14
+
+        result = bernoulli_cusum(outcomes)
+
+        self.assertEqual(result.observation_count, 20)
+        self.assertEqual(result.alert_count, 0)
+        self.assertEqual(result.state, 'IN_CONTROL')
+        self.assertLess(max(step.cusum_value for step in result.steps), 4.5)
+        self.assertAlmostEqual(
+            max(step.cusum_value for step in result.steps),
+            3.357695,
+            places=6,
+        )
+
+    def test_nine_consecutive_late_notes_trigger_alert(self):
+        result = bernoulli_cusum([True] * 9)
+
+        self.assertEqual(result.observation_count, 9)
+        self.assertEqual(result.alert_count, 1)
+        self.assertEqual(result.state, 'ALERT')
+        self.assertEqual(len(result.alerts), 1)
+        self.assertEqual(result.alerts[0].sequence, 9)
+        self.assertFalse(result.steps[7].alert_triggered)
+        self.assertTrue(result.steps[8].alert_triggered)
+        self.assertAlmostEqual(result.cusum_value, 5.036542, places=6)
+
+    def test_alert_resets_on_the_next_observation(self):
+        result = bernoulli_cusum([True] * 9 + [False])
+
+        self.assertEqual(result.alert_count, 1)
+        self.assertEqual(result.observation_count, 10)
+        self.assertEqual(result.steps[9].cusum_before, 0.0)
+        self.assertEqual(result.steps[9].cusum_value, 0.0)
+        self.assertEqual(result.state, 'IN_CONTROL')
+
+    def test_five_late_notes_enter_watch_band(self):
+        result = bernoulli_cusum([True] * 5)
+
+        self.assertEqual(result.alert_count, 0)
+        self.assertEqual(result.state, 'WATCH')
+        self.assertAlmostEqual(result.cusum_value, 2.798079, places=6)
+
+    def test_ten_on_time_notes_stay_in_control(self):
+        result = bernoulli_cusum([False] * 10)
+
+        self.assertEqual(result.alert_count, 0)
+        self.assertEqual(result.state, 'IN_CONTROL')
+        self.assertEqual(result.cusum_value, 0.0)
+
+    def test_empty_history_is_insufficient_data(self):
+        result = bernoulli_cusum([])
+
+        self.assertEqual(result.observation_count, 0)
+        self.assertEqual(result.alert_count, 0)
+        self.assertEqual(result.state, 'INSUFFICIENT_DATA')
+        self.assertEqual(result.steps, ())
+        self.assertEqual(result.cusum_value, 0.0)
+
+    def test_multiple_alerts_are_counted_with_reset(self):
+        result = bernoulli_cusum([True] * 9 + [False] + [True] * 9)
+
+        self.assertEqual(result.alert_count, 2)
+        self.assertEqual(
+            [alert.sequence for alert in result.alerts],
+            [9, 19],
+        )
+        self.assertEqual(
+            [alert.alert_number for alert in result.alerts],
+            [1, 2],
+        )
+
+    def test_invalid_parameters_are_rejected(self):
+        invalid_cases = (
+            {'p0': 0.0},
+            {'p1': 1.0},
+            {'p0': 0.35, 'p1': 0.20},
+            {'h': 0.0},
+        )
+
+        for parameters in invalid_cases:
+            with self.subTest(parameters=parameters):
+                with self.assertRaises(ValueError):
+                    CusumParameters(**parameters)
+
+
+class RecomputeCusumCommandTests(TestCase):
+    AUTO = object()
+
+    def setUp(self):
+        self.as_of = date(2026, 6, 30)
+        self.user = User.objects.create_user(username='cusum_doctor')
+        self.other_user = User.objects.create_user(
+            username='cusum_other_doctor'
+        )
+
+    def _run(self, *args):
+        output = StringIO()
+        call_command('recompute_cusum', *args, stdout=output)
+        return output.getvalue()
+
+    def _make_log(
+        self,
+        officer=None,
+        index=0,
+        late=False,
+        encounter_at=None,
+        completed_at=AUTO,
+        is_completed=True,
+    ):
+        officer = officer or self.user
+        if encounter_at is None:
+            encounter_at = timezone.make_aware(
+                datetime(2026, 1, 1, 9, 0)
+            ) + timedelta(days=index)
+        if completed_at is self.AUTO:
+            completed_at = encounter_at + timedelta(
+                hours=5 if late else 2
+            )
+        delay_hours = 0.0
+        if completed_at is not None:
+            delay_hours = (
+                (completed_at - encounter_at).total_seconds() / 3600.0
+            )
+        return DocumentationLog.objects.create(
+            officer=officer,
+            patient_id=f'CUSUM-{officer.username}-{index}',
+            encounter_type='Outpatient Consultation',
+            encounter_at=encounter_at,
+            completed_at=completed_at,
+            delay_hours=delay_hours,
+            is_ontime=not late,
+            is_completed=is_completed,
+        )
+
+    def _make_sequence(self, outcomes, officer=None):
+        logs = []
+        for index, late in enumerate(outcomes):
+            logs.append(self._make_log(
+                officer=officer,
+                index=index,
+                late=late,
+            ))
+        return logs
+
+    def test_nine_late_notes_create_snapshot_and_open_episode(self):
+        logs = self._make_sequence([True] * 9)
+
+        output = self._run(
+            '--username', self.user.username,
+            '--as-of', self.as_of.isoformat(),
+        )
+
+        snapshot = CusumSnapshot.objects.get(
+            officer=self.user,
+            module='documentation',
+        )
+        self.assertEqual(snapshot.state, 'ALERT')
+        self.assertEqual(snapshot.observation_count, 9)
+        self.assertEqual(snapshot.skipped_count, 0)
+        self.assertEqual(snapshot.alert_count, 1)
+        self.assertEqual(snapshot.last_sequence, 9)
+        self.assertEqual(snapshot.last_source_id, logs[-1].id)
+        self.assertEqual(snapshot.last_alert_number, 1)
+        self.assertIsNotNone(snapshot.last_alert_at)
+        self.assertAlmostEqual(snapshot.cusum_value, 5.036542, places=6)
+
+        episode = CusumEpisode.objects.get(officer=self.user)
+        self.assertEqual(episode.status, 'OPEN')
+        self.assertEqual(episode.alert_number, 1)
+        self.assertEqual(episode.trigger_sequence, 9)
+        self.assertEqual(episode.source_id, logs[-1].id)
+        self.assertEqual(episode.triggered_at, logs[-1].completed_at)
+        self.assertAlmostEqual(episode.cusum_value, 5.036542, places=6)
+        self.assertIn('state=ALERT', output)
+        self.assertIn('alerts=1', output)
+
+    def test_six_late_notes_out_of_twenty_do_not_create_alert(self):
+        self._make_sequence([True] * 6 + [False] * 14)
+
+        self._run(
+            '--username', self.user.username,
+            '--as-of', self.as_of.isoformat(),
+        )
+
+        snapshot = CusumSnapshot.objects.get(officer=self.user)
+        self.assertEqual(snapshot.state, 'IN_CONTROL')
+        self.assertEqual(snapshot.observation_count, 20)
+        self.assertEqual(snapshot.alert_count, 0)
+        self.assertLess(snapshot.cusum_value, 4.5)
+        self.assertFalse(CusumEpisode.objects.exists())
+
+    def test_pending_previous_year_and_invalid_logs_are_handled(self):
+        self._make_log(index=0, late=False)
+        self._make_log(index=1, late=False)
+
+        previous_year_encounter = timezone.make_aware(
+            datetime(2025, 12, 31, 9, 0)
+        )
+        self._make_log(
+            index=2,
+            encounter_at=previous_year_encounter,
+            completed_at=previous_year_encounter + timedelta(hours=2),
+        )
+        self._make_log(
+            index=3,
+            encounter_at=timezone.make_aware(datetime(2026, 2, 1, 9, 0)),
+            completed_at=None,
+            is_completed=True,
+        )
+        reversed_encounter = timezone.make_aware(
+            datetime(2026, 2, 2, 9, 0)
+        )
+        self._make_log(
+            index=4,
+            encounter_at=reversed_encounter,
+            completed_at=reversed_encounter - timedelta(hours=1),
+        )
+        self._make_log(
+            index=5,
+            encounter_at=timezone.make_aware(datetime(2026, 2, 3, 9, 0)),
+            completed_at=timezone.make_aware(datetime(2026, 7, 2, 9, 0)),
+        )
+        DocumentationLog.objects.create(
+            officer=self.user,
+            patient_id='PENDING-1',
+            encounter_at=timezone.make_aware(datetime(2026, 2, 4, 9, 0)),
+            completed_at=None,
+            is_completed=False,
+        )
+
+        self._run(
+            '--username', self.user.username,
+            '--as-of', self.as_of.isoformat(),
+        )
+
+        snapshot = CusumSnapshot.objects.get(officer=self.user)
+        self.assertEqual(snapshot.observation_count, 2)
+        self.assertEqual(snapshot.skipped_count, 2)
+        self.assertEqual(snapshot.alert_count, 0)
+        self.assertEqual(snapshot.state, 'IN_CONTROL')
+
+    def test_exact_four_hour_completion_is_on_time(self):
+        encounter = timezone.make_aware(datetime(2026, 3, 1, 9, 0))
+        self._make_log(
+            encounter_at=encounter,
+            completed_at=encounter + timedelta(hours=4),
+        )
+
+        self._run(
+            '--username', self.user.username,
+            '--as-of', self.as_of.isoformat(),
+        )
+
+        snapshot = CusumSnapshot.objects.get(officer=self.user)
+        self.assertEqual(snapshot.observation_count, 1)
+        self.assertEqual(snapshot.cusum_value, 0.0)
+        self.assertEqual(snapshot.state, 'IN_CONTROL')
+        self.assertEqual(snapshot.alert_count, 0)
+
+    def test_completion_after_four_hours_is_late(self):
+        encounter = timezone.make_aware(datetime(2026, 3, 2, 9, 0))
+        self._make_log(
+            encounter_at=encounter,
+            completed_at=encounter + timedelta(hours=4, seconds=1),
+        )
+
+        self._run(
+            '--username', self.user.username,
+            '--as-of', self.as_of.isoformat(),
+        )
+
+        snapshot = CusumSnapshot.objects.get(officer=self.user)
+        self.assertEqual(snapshot.observation_count, 1)
+        self.assertAlmostEqual(snapshot.cusum_value, 0.559616, places=6)
+        self.assertEqual(snapshot.state, 'IN_CONTROL')
+
+    def test_dry_run_json_does_not_write(self):
+        self._make_sequence([True] * 9)
+
+        output = self._run(
+            '--username', self.user.username,
+            '--as-of', self.as_of.isoformat(),
+            '--dry-run',
+            '--json',
+        )
+        payload = json.loads(output)
+        result = payload['results'][0]
+
+        self.assertTrue(payload['dry_run'])
+        self.assertEqual(result['state'], 'ALERT')
+        self.assertEqual(result['observation_count'], 9)
+        self.assertEqual(result['alert_count'], 1)
+        self.assertEqual(result['alert_sequences'], [9])
+        self.assertIsNone(result['snapshot_written'])
+        self.assertFalse(CusumSnapshot.objects.exists())
+        self.assertFalse(CusumEpisode.objects.exists())
+
+    def test_recompute_is_idempotent(self):
+        self._make_sequence([True] * 9)
+        args = (
+            '--username', self.user.username,
+            '--as-of', self.as_of.isoformat(),
+        )
+
+        self._run(*args)
+        snapshot_id = CusumSnapshot.objects.get(officer=self.user).id
+        output = self._run(*args)
+
+        self.assertEqual(CusumSnapshot.objects.count(), 1)
+        self.assertEqual(CusumEpisode.objects.count(), 1)
+        self.assertEqual(
+            CusumSnapshot.objects.get(officer=self.user).id,
+            snapshot_id,
+        )
+        self.assertIn('snapshot_created=False', output)
+        self.assertIn('episodes_updated=1', output)
+
+    def test_reset_clears_stale_snapshot_and_episodes(self):
+        self._make_sequence([True] * 9)
+        args = (
+            '--username', self.user.username,
+            '--as-of', self.as_of.isoformat(),
+        )
+        self._run(*args)
+        self.assertEqual(CusumEpisode.objects.count(), 1)
+
+        DocumentationLog.objects.filter(officer=self.user).delete()
+        self._run(*args, '--reset')
+
+        snapshot = CusumSnapshot.objects.get(officer=self.user)
+        self.assertEqual(snapshot.state, 'INSUFFICIENT_DATA')
+        self.assertEqual(snapshot.observation_count, 0)
+        self.assertEqual(snapshot.alert_count, 0)
+        self.assertIsNone(snapshot.last_source_id)
+        self.assertFalse(CusumEpisode.objects.exists())
+
+    def test_all_processes_every_officer_with_documentation(self):
+        self._make_sequence([True] * 9)
+        self._make_log(officer=self.other_user, index=0, late=True)
+
+        output = self._run(
+            '--all',
+            '--as-of', self.as_of.isoformat(),
+        )
+
+        self.assertEqual(CusumSnapshot.objects.count(), 2)
+        self.assertEqual(
+            CusumSnapshot.objects.get(officer=self.user).state,
+            'ALERT',
+        )
+        self.assertEqual(
+            CusumSnapshot.objects.get(officer=self.other_user).state,
+            'IN_CONTROL',
+        )
+        self.assertIn(self.user.username, output)
+        self.assertIn(self.other_user.username, output)
+
+    def test_parameter_override_is_persisted(self):
+        self._make_sequence([True] * 6)
+
+        self._run(
+            '--username', self.user.username,
+            '--as-of', self.as_of.isoformat(),
+            '--h', '3.0',
+        )
+
+        snapshot = CusumSnapshot.objects.get(officer=self.user)
+        self.assertEqual(snapshot.h, 3.0)
+        self.assertEqual(snapshot.state, 'ALERT')
+        self.assertEqual(snapshot.alert_count, 1)
+        self.assertEqual(CusumEpisode.objects.count(), 1)
+
+    def test_shadow_mode_does_not_change_module_scores(self):
+        self._make_sequence([True] * 9)
+        before = get_module_scores(self.user, as_of=self.as_of)
+
+        self._run(
+            '--username', self.user.username,
+            '--as-of', self.as_of.isoformat(),
+        )
+
+        after = get_module_scores(self.user, as_of=self.as_of)
+        self.assertEqual(
+            before['by_key']['documentation'],
+            after['by_key']['documentation'],
+        )
+        self.assertEqual(before, after)
+
+    def test_metadata_includes_late_on_time_and_pending_counts(self):
+        self._make_sequence([False, False, True, True, True])
+        self._make_log(index=5, is_completed=False, completed_at=None)
+
+        output = self._run(
+            '--username', self.user.username,
+            '--as-of', self.as_of.isoformat(),
+        )
+
+        snapshot = CusumSnapshot.objects.get(officer=self.user)
+        self.assertEqual(snapshot.metadata['late_count'], 3)
+        self.assertEqual(snapshot.metadata['on_time_count'], 2)
+        self.assertEqual(snapshot.metadata['pending_count'], 1)
+        self.assertEqual(snapshot.observation_count, 5)
+        self.assertIn('late=3 on_time=2 pending=1', output)
+
+    def test_all_processes_officer_with_only_pending_notes(self):
+        self._make_log(
+            officer=self.other_user,
+            index=0,
+            is_completed=False,
+            completed_at=None,
+        )
+
+        self._run('--all', '--as-of', self.as_of.isoformat())
+
+        snapshot = CusumSnapshot.objects.get(officer=self.other_user)
+        self.assertEqual(snapshot.observation_count, 0)
+        self.assertEqual(snapshot.state, 'INSUFFICIENT_DATA')
+        self.assertEqual(snapshot.metadata['late_count'], 0)
+        self.assertEqual(snapshot.metadata['on_time_count'], 0)
+        self.assertEqual(snapshot.metadata['pending_count'], 1)
+
+    def test_requires_exactly_one_officer_selector(self):
+        with self.assertRaises(CommandError):
+            self._run('--as-of', self.as_of.isoformat())
+
+        with self.assertRaises(CommandError):
+            self._run(
+                '--all',
+                '--username', self.user.username,
+                '--as-of', self.as_of.isoformat(),
+            )
+
+    def test_unknown_username_and_invalid_module_raise(self):
+        with self.assertRaises(CommandError):
+            self._run(
+                '--username', 'not-a-real-user',
+                '--as-of', self.as_of.isoformat(),
+            )
+
+        with self.assertRaises(CommandError):
+            self._run(
+                '--username', self.user.username,
+                '--module', 'productivity',
+                '--as-of', self.as_of.isoformat(),
+            )
+
+    def test_since_must_stay_within_as_of_year(self):
+        with self.assertRaises(CommandError):
+            self._run(
+                '--username', self.user.username,
+                '--as-of', self.as_of.isoformat(),
+                '--since', '2025-12-31',
+            )
+
+
+class StaffCusumPerformanceCardTests(TestCase):
+    """The staff Performance card must not show a false green CUSUM state."""
+
+    def setUp(self):
+        copy_patcher = patch('django.test.client.copy', new=lambda value: value)
+        copy_patcher.start()
+        self.addCleanup(copy_patcher.stop)
+
+        self.user = User.objects.create_user(
+            username='staff_cusum_card',
+            first_name='Siti',
+            last_name='Aminah',
+        )
+        UserProfile.objects.create(
+            user=self.user,
+            role='STAFF',
+            department='CTS',
+        )
+        self.client.force_login(self.user)
+        self.url = reverse('staff_dashboard') + '?section=Performance'
+
+    def _snapshot(self, state='IN_CONTROL', metadata=None):
+        return CusumSnapshot.objects.create(
+            officer=self.user,
+            module='documentation',
+            state=state,
+            cusum_value=1.0,
+            alert_count=0,
+            observation_count=5,
+            metadata=metadata if metadata is not None else {},
+        )
+
+    def test_in_control_with_late_and_pending_notes_is_not_green(self):
+        self._snapshot(metadata={'late_count': 1, 'pending_count': 2})
+
+        response = self.client.get(self.url)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.context['cusum_late_count'], 1)
+        self.assertEqual(response.context['cusum_pending_count'], 2)
+        self.assertContains(response, 'Perlu Perhatian')
+        self.assertContains(
+            response, 'Anda ada <b>1</b> nota lewat SLA 4 jam.'
+        )
+        self.assertContains(response, 'nota masih belum ditandatangani.')
+        self.assertContains(response, 'background: #d97706; width:')
+        self.assertNotContains(response, '#dcfce7')
+
+    def test_snapshot_without_metadata_keys_defaults_to_zero(self):
+        self._snapshot(metadata={'as_of': '2026-06-30'})
+
+        response = self.client.get(self.url)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.context['cusum_late_count'], 0)
+        self.assertEqual(response.context['cusum_pending_count'], 0)
+        self.assertContains(response, '● In Control')
+        self.assertContains(response, '#dcfce7')
+        self.assertNotContains(response, 'nota lewat SLA 4 jam')
+        self.assertNotContains(response, 'belum ditandatangani')
+
+    def test_clean_in_control_remains_green(self):
+        self._snapshot(metadata={'late_count': 0, 'pending_count': 0})
+
+        response = self.client.get(self.url)
+
+        self.assertContains(response, '● In Control')
+        self.assertContains(response, '#dcfce7')
+        self.assertContains(response, 'background: #16a34a; width:')
+        self.assertNotContains(response, 'Perlu Perhatian')
+
+    def test_alert_state_remains_red(self):
+        self._snapshot(state='ALERT', metadata={
+            'late_count': 0,
+            'pending_count': 0,
+        })
+
+        response = self.client.get(self.url)
+
+        self.assertContains(response, '● Alert')
+        self.assertContains(response, '#fee2e2')
+        self.assertNotContains(response, 'Perlu Perhatian')
+
+    def test_watch_state_remains_yellow(self):
+        self._snapshot(state='WATCH', metadata={
+            'late_count': 0,
+            'pending_count': 0,
+        })
+
+        response = self.client.get(self.url)
+
+        self.assertContains(response, '● Watch')
+        self.assertContains(response, 'background: #d97706; width:')
+
+
+class KKMHba1cClinicalDeliveryTests(TestCase):
+    """KKM Indicator-1 HbA1c logic for the FMS Clinical Delivery module."""
+
+    def setUp(self):
+        self.today = timezone.localdate()
+        self.user = User.objects.create_user(username='kkm_fms_doctor')
+        UserProfile.objects.create(
+            user=self.user,
+            role='STAFF',
+            department='FMS',
+        )
+
+    def _visit(self, patient_ref, days_ago, hba1c, **overrides):
+        values = {
+            'officer': self.user,
+            'patient_ref': patient_ref,
+            'clinical_domain': 'FMS',
+            'procedure_name': 'Type 2 Diabetes Mellitus (T2DM)',
+            'primary_diagnosis': 'Type 2 Diabetes Mellitus',
+            'procedure_date': self.today - timedelta(days=days_ago),
+            'hba1c_percent': hba1c,
+        }
+        values.update(overrides)
+        return ProcedureLog.objects.create(**values)
+
+    def test_strict_baseline_reduction_is_counted_as_success(self):
+        self._visit('P1', 120, 11.0)
+        self._visit('P1', 30, 9.8)
+
+        result = _kkm_hba1c_result(self.user, as_of=self.today)
+
+        self.assertEqual(result['denominator'], 1)
+        self.assertEqual(result['numerator'], 1)
+        self.assertEqual(result['score'], 100.0)
+        self.assertEqual(
+            result['cohort_mode_label'],
+            'Indicator-1 Cohort (Baseline HbA1c > 10.0%)',
+        )
+        self.assertTrue(result['evaluated_cohort'][0]['achieved'])
+
+        module = get_module_scores(
+            self.user, as_of=self.today
+        )['by_key']['clinical_delivery']
+        self.assertEqual(module['score'], 100.0)
+        self.assertEqual(module['raw_value'], 1.0)
+        self.assertEqual(module['denominator'], 1)
+        self.assertIn('KKM Indicator-1', module['source'])
+
+    def test_fallback_uncontrolled_t2dm_cohort_uses_seven_percent_target(self):
+        self._visit('P2', 100, 8.0)
+        self._visit('P2', 20, 7.0)
+
+        result = _kkm_hba1c_result(self.user, as_of=self.today)
+
+        self.assertEqual(
+            result['cohort_mode_label'],
+            'T2DM Uncontrolled Cohort (Baseline HbA1c > 7.0%)',
+        )
+        self.assertEqual(result['denominator'], 1)
+        self.assertEqual(result['score'], 100.0)
+        self.assertEqual(
+            result['evaluated_cohort'][0]['status_label'],
+            'Achieved (-1.0%)',
+        )
+
+    def test_overdue_patient_without_followup_counts_as_failure(self):
+        self._visit('P3', 200, 11.0)
+
+        result = _kkm_hba1c_result(self.user, as_of=self.today)
+
+        self.assertEqual(result['denominator'], 1)
+        self.assertEqual(result['numerator'], 0)
+        self.assertEqual(result['score'], 0.0)
+        self.assertEqual(
+            result['evaluated_cohort'][0]['status_label'],
+            'Overdue (>183 Days No 6M HbA1c)',
+        )
+
+    def test_followup_outside_183_day_window_counts_as_failure(self):
+        self._visit('P3-LATE', 300, 11.0)
+        self._visit('P3-LATE', 100, 7.0)
+
+        result = _kkm_hba1c_result(self.user, as_of=self.today)
+
+        self.assertEqual(result['denominator'], 1)
+        self.assertEqual(result['numerator'], 0)
+        self.assertEqual(result['score'], 0.0)
+        self.assertEqual(
+            result['evaluated_cohort'][0]['status_label'],
+            'Overdue (>183 Days No 6M HbA1c)',
+        )
+
+    def test_excluded_cohorts_do_not_reduce_score(self):
+        self._visit(
+            'P4',
+            120,
+            11.0,
+            procedure_name='Type 1 Diabetes Mellitus (T1DM)',
+            primary_diagnosis='Type 1 Diabetes Mellitus',
+        )
+        self._visit(
+            'P5',
+            120,
+            11.0,
+            primary_diagnosis='Gestational Diabetes Mellitus (GDM)',
+        )
+
+        result = _kkm_hba1c_result(self.user, as_of=self.today)
+
+        self.assertEqual(result['excluded_count'], 2)
+        self.assertEqual(result['denominator'], 0)
+        self.assertIsNone(result['score'])
+        self.assertEqual(result['status'], 'NO_DATA')
+
+
+
+class HODAggregationAndPickerTests(TestCase):
+    """HOD aggregation must pool clinical data and ignore NO_DATA values."""
+
+    def _module(self, key, score, denominator=0, raw_value=None, status='OK'):
+        return {
+            'key': key,
+            'score': score,
+            'denominator': denominator,
+            'raw_value': raw_value,
+            'status': status,
+            'has_records': status != 'NO_DATA',
+        }
+
+    @patch('dashboard.views.get_module_scores')
+    def test_clinical_delivery_is_pooled_by_numerator_and_denominator(self, mocked):
+        first = User.objects.create_user(username='agg_first')
+        second = User.objects.create_user(username='agg_second')
+
+        def fake_scores(user):
+            if user.pk == first.pk:
+                return {'modules': [
+                    self._module('clinical_delivery', 50.0, 2, 1),
+                    self._module('documentation', 80.0),
+                    self._module('cpd', 90.0),
+                    self._module('policies', None, status='NO_DATA'),
+                ]}
+            return {'modules': [
+                self._module('clinical_delivery', 66.7, 3, 2),
+                self._module('documentation', None, status='NO_DATA'),
+                self._module('cpd', None, status='NO_DATA'),
+                self._module('policies', 70.0),
+            ]}
+
+        mocked.side_effect = fake_scores
+        cards, summaries = _build_hod_module_scorecards([first, second])
+        by_key = {card['key']: card for card in cards}
+
+        self.assertEqual(by_key['clinical_delivery']['score'], 60.0)
+        self.assertEqual(by_key['clinical_delivery']['n'], 5)
+        self.assertTrue(by_key['clinical_delivery']['is_pooled'])
+        # NO_DATA is not treated as zero for averaged modules.
+        self.assertEqual(by_key['documentation']['score'], 80.0)
+        self.assertEqual(by_key['cpd']['score'], 90.0)
+        self.assertEqual(by_key['policies']['score'], 70.0)
+        self.assertEqual(len(summaries), 2)
+        self.assertEqual(summaries[0]['scorable_modules'], 3)
+
+    def test_picker_returns_real_staff_only_and_disambiguates_names(self):
+        first = User.objects.create_user(
+            username='same_one', first_name='Same', last_name='Name'
+        )
+        second = User.objects.create_user(
+            username='same_two', first_name='Same', last_name='Name'
+        )
+        other_department = User.objects.create_user(
+            username='cts_only', first_name='Cts', last_name='Only'
+        )
+        UserProfile.objects.create(
+            user=first, role='STAFF', department='FMS',
+            assigned_state='Selangor',
+        )
+        UserProfile.objects.create(
+            user=second, role='STAFF', department='FMS',
+        )
+        UserProfile.objects.create(
+            user=other_department, role='STAFF', department='CTS',
+            assigned_state='Selangor',
+        )
+
+        labels, staff_by_label = _build_hod_staff_picker(
+            'FMS', 'Selangor', 'All Clinics'
+        )
+
+        self.assertEqual(len(labels), 2)
+        self.assertEqual(
+            {staff.username for staff in staff_by_label.values()},
+            {'same_one', 'same_two'},
+        )
+        self.assertTrue(any('[same_two]' in label for label in labels))
+        self.assertNotIn('cts_only', {
+            staff.username for staff in staff_by_label.values()
+        })
+
+
+
+class HODDashboardDynamicDataTests(TestCase):
+    """HOD dashboard and action center must use real staff and live counts."""
+
+    def setUp(self):
+        # Keep response.context usable under Django 5.0.3 + Python 3.14.
+        copy_patcher = patch('django.test.client.copy', new=lambda value: value)
+        copy_patcher.start()
+        self.addCleanup(copy_patcher.stop)
+
+        self.today = timezone.localdate()
+        self.hod = User.objects.create_user(
+            username='hod_live', first_name='Hod', last_name='Live'
+        )
+        UserProfile.objects.create(
+            user=self.hod,
+            role='HOD',
+            department='FMS',
+            hod_scope='NATIONAL',
+        )
+        self.staff_a = User.objects.create_user(
+            username='live_a', first_name='Alpha', last_name='One'
+        )
+        self.staff_b = User.objects.create_user(
+            username='live_b', first_name='Beta', last_name='Two'
+        )
+        for staff in (self.staff_a, self.staff_b):
+            UserProfile.objects.create(
+                user=staff, role='STAFF', department='FMS'
+            )
+
+        # Staff A: one KKM success.
+        self._visit(self.staff_a, 'A1', 90, 11.0)
+        self._visit(self.staff_a, 'A1', 30, 9.5)
+        # Staff B: one failure, one success -> pooled 2/3.
+        self._visit(self.staff_b, 'B1', 90, 11.0)
+        self._visit(self.staff_b, 'B1', 30, 10.5)
+        self._visit(self.staff_b, 'B2', 90, 12.0)
+        self._visit(self.staff_b, 'B2', 30, 10.0)
+
+        self.client.force_login(self.hod)
+
+    def _visit(self, officer, patient_ref, days_ago, hba1c):
+        return ProcedureLog.objects.create(
+            officer=officer,
+            patient_ref=patient_ref,
+            clinical_domain='FMS',
+            procedure_name='Type 2 Diabetes Mellitus (T2DM)',
+            primary_diagnosis='Type 2 Diabetes Mellitus',
+            procedure_date=self.today - timedelta(days=days_ago),
+            hba1c_percent=hba1c,
+            is_verified=False,
+        )
+
+
+    def test_dashboard_uses_real_roster_pooled_scores_and_live_counts(self):
+        response = self.client.get(reverse('hod_dashboard'))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.context['total_staff'], 2)
+        self.assertEqual(len(response.context['senarai_doktor']), 2)
+        self.assertIsNotNone(response.context['selected_hod_staff'])
+        self.assertEqual(response.context['pending_validation_count'], 6)
+        self.assertEqual(response.context['action_urgent_count'], 0)
+
+        clinical = next(
+            card for card in response.context['hod_module_scorecards']
+            if card['key'] == 'clinical_delivery'
+        )
+        self.assertEqual(clinical['score'], 66.7)
+        self.assertEqual(clinical['n'], 3)
+        self.assertTrue(clinical['is_pooled'])
+
+        self.assertNotContains(response, '24 MOs Eligible')
+        self.assertNotContains(response, '8 Pending')
+        self.assertNotContains(response, 'Dr. dr_abu')
+        self.assertContains(response, 'Alpha One')
+        self.assertContains(response, '6 Pending')
+        self.assertContains(response, 'All Facilities')
+        self.assertNotContains(response, 'HPU Putrajaya')
+
+    def test_action_center_red_flags_use_live_pending_counts(self):
+        response = self.client.get(reverse('action_center_insight'))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.context['pending_validation_count'], 6)
+        pending_flags = [
+            flag for flag in response.context['red_flags']
+            if flag['type'] == 'Pending Approval Log'
+        ]
+        self.assertEqual(len(pending_flags), 1)
+        self.assertIn('6 item(s)', pending_flags[0]['detail'])
+        self.assertNotContains(response, '24 Staffs')
+
+    def test_hod_feedback_uses_selected_real_staff_username(self):
+        response = self.client.get(reverse('cts_module'))
+
+        self.assertEqual(response.status_code, 200)
+        selected_username = response.context['pilihan_doktor_username']
+        self.assertIn(
+            selected_username,
+            {self.staff_a.username, self.staff_b.username},
+        )
+        self.assertContains(
+            response,
+            f'name="target_username" value="{selected_username}"',
+        )
+
+        response = self.client.post(
+            reverse('cts_module'),
+            {
+                'form_type': 'send_hod_feedback',
+                'target_username': selected_username,
+                'message_text': 'Semak susulan HbA1c pesakit.',
+                'module_ref': 'Clinical Delivery (CUSUM)',
+                'severity': 'INFO',
+            },
+        )
+
+        self.assertEqual(response.status_code, 302)
+        feedback = HODFeedback.objects.get()
+        self.assertEqual(feedback.sender_hod, self.hod)
+        self.assertEqual(feedback.receiver_staff.username, selected_username)
+
+    def test_dashboard_calendar_only_includes_staff_in_hod_scope(self):
+        outsider = User.objects.create_user(
+            username='cts_outsider', first_name='Outside', last_name='Scope'
+        )
+        UserProfile.objects.create(
+            user=outsider, role='STAFF', department='CTS'
+        )
+        CPDClaim.objects.create(
+            officer=self.staff_a,
+            topic='IN-SCOPE CPD',
+            points=10,
+            event_date=self.today,
+            status='PENDING',
+        )
+        CPDClaim.objects.create(
+            officer=outsider,
+            topic='OUT-OF-SCOPE CPD',
+            points=10,
+            event_date=self.today,
+            status='PENDING',
+        )
+        DocumentationLog.objects.create(
+            officer=outsider,
+            patient_id='OUT-OF-SCOPE DOC',
+            is_ontime=False,
+        )
+
+        response = self.client.get(reverse('hod_dashboard'))
+
+        self.assertEqual(response.status_code, 200)
+        calendar_events = response.context['calendar_events_json']
+        self.assertIn('IN-SCOPE CPD', calendar_events)
+        self.assertNotIn('OUT-OF-SCOPE CPD', calendar_events)
+        self.assertNotIn('OUT-OF-SCOPE DOC', calendar_events)
+
+    def test_hod_profile_section_uses_signed_in_identity_and_scope(self):
+        response = self.client.get(
+            reverse('hod_dashboard'), {'section': 'Profile'}
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Dr. Hod Live')
+        self.assertContains(response, 'All Facilities')
+        self.assertNotContains(response, 'Dr. Azlan Shah')
+        self.assertNotContains(response, 'HPU Putrajaya')
+
+    def test_action_center_header_exposes_real_cusum_alert(self):
+        CusumSnapshot.objects.create(
+            officer=self.staff_a,
+            module='documentation',
+            state='ALERT',
+            cusum_value=5.2,
+            alert_count=2,
+            last_alert_at=timezone.now(),
+        )
+
+        response = self.client.get(reverse('action_center_insight'))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.context['action_urgent_count'], 1)
+        self.assertEqual(
+            response.context['cusum_top_alerts'][0]['officer_name'],
+            'Dr. Alpha One',
+        )
+        self.assertContains(response, 'CUSUM Alert')
+
+    def test_overall_analytics_uses_real_roster_and_live_feedback(self):
+        HODFeedback.objects.create(
+            sender_hod=self.hod,
+            receiver_staff=self.staff_a,
+            module_reference='Clinical Delivery (CUSUM)',
+            severity='KUDOS',
+            message_text='Susulan HbA1c yang baik.',
+        )
+
+        response = self.client.get(reverse('overall_analytics'))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.context['total_staff'], 2)
+        self.assertEqual(response.context['evaluations_completed'], 2)
+        self.assertEqual(response.context['tier_distribution']['no_data_count'], 0)
+        self.assertEqual(response.context['tier_distribution']['tier_1_count'], 1)
+        self.assertEqual(response.context['tier_distribution']['tier_3_count'], 1)
+        self.assertEqual(
+            [row['username'] for row in response.context['senarai_doktor_lengkap']],
+            ['live_a', 'live_b'],
+        )
+        self.assertEqual(
+            len(response.context['recent_evaluations']),
+            1,
+        )
+        self.assertEqual(
+            response.context['recent_evaluations'][0]['receiver_name'],
+            'Dr. Alpha One',
+        )
+        roster_response = self.client.get(
+            reverse('overall_analytics'), {'type': 'staff'}
+        )
+        self.assertContains(roster_response, 'Dr. Alpha One')
+        self.assertNotContains(roster_response, 'Dr. Siti Nurhaliza')
+        evaluation_response = self.client.get(
+            reverse('overall_analytics'), {'type': 'evaluations'}
+        )
+        self.assertContains(evaluation_response, 'Kudos')
+        self.assertNotContains(evaluation_response, 'Load More Audit Logs')
+
+    def test_overall_analytics_without_staff_is_explicitly_empty(self):
+        empty_hod = User.objects.create_user(
+            username='hod_empty', first_name='Empty', last_name='Scope'
+        )
+        UserProfile.objects.create(
+            user=empty_hod,
+            role='HOD',
+            department='CTS',
+            hod_scope='NATIONAL',
+        )
+        self.client.force_login(empty_hod)
+
+        response = self.client.get(
+            reverse('overall_analytics'), {'type': 'staff'}
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.context['total_staff'], 0)
+        self.assertIsNone(response.context['avg_performance'])
+        self.assertEqual(response.context['evaluations_completed'], 0)
+        self.assertEqual(response.context['tier_distribution']['tier_1_rate'], 0)
+        self.assertEqual(response.context['recent_evaluations'], [])
+        self.assertContains(response, 'No Staffs found for this filter.')
+        self.assertNotContains(response, 'Dr. Alpha One')
+        self.assertNotContains(response, 'Dr. dr_abu')
+
+
+
+    def test_unscored_staff_surfaces_as_no_data(self):
+        no_data_staff = User.objects.create_user(
+            username='live_c', first_name='Gamma', last_name='Three'
+        )
+        UserProfile.objects.create(
+            user=no_data_staff,
+            role='STAFF',
+            department='FMS',
+            assigned_state='Selangor',
+            assigned_facility='Klinik Kesihatan Shah Alam',
+        )
+        response = self.client.get(
+            reverse('overall_analytics'), {'type': 'staff'}
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.context['total_staff'], 3)
+        self.assertEqual(response.context['tier_distribution']['no_data_count'], 1)
+        self.assertContains(response, 'No Data')
+        self.assertContains(response, 'Dr. Gamma Three')
+        directory_response = self.client.get(reverse('officers_directory_insight'))
+        self.assertContains(directory_response, 'Dr. Gamma Three')
+        self.assertContains(directory_response, 'No Data')
+
+    def test_officers_directory_uses_real_roster_only(self):
+        response = self.client.get(reverse('officers_directory_insight'))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(
+            [row['username'] for row in response.context['senarai_doktor_lengkap']],
+            ['live_a', 'live_b'],
+        )
+        self.assertContains(response, 'Alpha One')
+        self.assertContains(response, 'Beta Two')
+        self.assertNotContains(response, 'Dr. dr_abu')
+        self.assertNotContains(response, 'Klinik Kesihatan Medong')

@@ -11,6 +11,11 @@
             </a>
 
             <div class="top-header-right">
+                <button type="button" onclick="openQuickAddModal()" style="background: linear-gradient(135deg, #6d3ec4 0%, #5528a6 100%); color: white; border: none; padding: 8px 15px; border-radius: 20px; font-family: 'Inter'; font-size: 12px; font-weight: 800; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; box-shadow: 0 4px 12px rgba(109, 62, 196, 0.25); transition: all 0.2s ease;" onmouseover="this.style.transform='translateY(-1px)';" onmouseout="this.style.transform='translateY(0)';" title="Tambah rekod baharu dengan pantas">
+                    <svg style="width: 15px; height: 15px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"/></svg>
+                    <span>Quick Add</span>
+                </button>
+
                 <div class="header-tool" onclick="openScheduleModal()" style="cursor: pointer; transition: all 0.2s ease;" onmouseover="this.style.borderColor='#6d3ec4'; this.style.background='#f3edff';" onmouseout="this.style.borderColor='#e7dff2'; this.style.background='white';" title="Klik untuk buka Work Schedule & MyPrestasi Due Tracker">
                     <svg style="width: 16px; height: 16px; margin-right: 6px; color: #6d3ec4;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
                     {{ today_date }}
@@ -73,14 +78,22 @@
 <!-- TAJUK HALAMAN (KEMAS: MENGEKALKAN TAJUK MODUL SAHAJA TANPA "UPDATE DATA") -->
 <div class="top-header" style="margin-bottom: 18px;">
             <div class="top-header-left">
-                {% if section == 'Dashboard' or section == 'Performance' %}
+                {% if section == 'Dashboard' %}
                     <h1 style="color: #150a35; font-weight: 900; margin: 0 0 4px 0;">Good Morning, <strong>{{ staff_name }}</strong></h1>
-                    <p style="color: #64748b; margin: 0; font-size: 14px; font-weight: 500;">Your {{ section|lower }} summary and analysis for today.</p>
+                    <p style="color: #64748b; margin: 0; font-size: 14px; font-weight: 500;">Your daily coaching hub &amp; priority action summary.</p>
+                {% elif section == 'Performance' %}
+                    <h1 style="color: #150a35; font-weight: 900; margin: 0 0 4px 0;">My Performance &amp; <strong>Analytics</strong></h1>
+                    <p style="color: #64748b; margin: 0; font-size: 14px; font-weight: 500;">10-Module Holistic Radar &amp; CUSUM Surveillance.</p>
+                {% elif section == 'Patients' %}
+                    <h1 style="color: #150a35; font-weight: 900; margin: 0 0 4px 0;">My <strong>Patients</strong></h1>
+                    <p style="color: #64748b; margin: 0; font-size: 14px; font-weight: 500;">Chronic disease longitudinal tracker &amp; HbA1c trends.</p>
+                {% elif section == 'Clinical' %}
+                    <h1 style="color: #150a35; font-weight: 900; font-size: 26px; margin: 0; letter-spacing: -0.5px;">Clinical Data Workspace</h1>
                 {% elif section == 'Profile' or section == 'Settings' %}
                     <h1 style="color: #150a35; font-weight: 900; margin: 0 0 4px 0;">Update <strong>{{ section }}</strong></h1>
                     <p style="color: #64748b; margin: 0; font-size: 14px; font-weight: 500;">Manage your personal data and system preferences.</p>
                 {% else %}
-                    <h1 style="color: #150a35; font-weight: 900; font-size: 26px; margin: 0; letter-spacing: -0.5px;">{{ section }} Excellence</h1>
+                    <h1 style="color: #150a35; font-weight: 900; font-size: 26px; margin: 0; letter-spacing: -0.5px;">{{ section }} Workspace</h1>
                 {% endif %}
             </div>
 </div>
