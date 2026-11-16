@@ -33,6 +33,7 @@ from .models import (
 )
 from .services import (
     _kkm_hba1c_result,
+    build_cpd_trajectory,
     calculate_pri_score,
     get_module_scores,
 )
@@ -126,6 +127,10 @@ class DocumentationLogPhase2Tests(TestCase):
 
 class CPDClaimPhase2Tests(TestCase):
     def setUp(self):
+        copy_patcher = patch('django.test.client.copy', new=lambda value: value)
+        copy_patcher.start()
+        self.addCleanup(copy_patcher.stop)
+
         self.media_root = tempfile.mkdtemp(prefix='myprestasi-cpd-')
         self.media_override = override_settings(MEDIA_ROOT=self.media_root)
         self.media_override.enable()
@@ -147,9 +152,11 @@ class CPDClaimPhase2Tests(TestCase):
             'form_type': 'cpd',
             'tajuk': 'Advanced Cardiac Life Support',
             'category': 'A2 - Seminar / Workshop',
+            'kkm_domain': 'INTERNAL_MEDICINE',
+            'sub_category': 'ONE AND A HALF DAYS',
+            'role': 'ATTENDEE',
             'start_date': '2026-10-10',
             'end_date': '2026-10-12',
-            'mata': '12',
         }
         data.update(overrides)
         return self.client.post(
@@ -171,6 +178,8 @@ class CPDClaimPhase2Tests(TestCase):
         claim = CPDClaim.objects.get(officer=self.user)
         self.assertEqual(claim.end_date, date(2026, 10, 12))
         self.assertEqual(claim.status, 'PENDING')
+        self.assertEqual(claim.kkm_domain, 'INTERNAL_MEDICINE')
+        self.assertEqual(claim.points, 12)
         self.assertTrue(claim.certificate.name.startswith('cpd_certificates/'))
         self.assertTrue(
             claim.certificate.storage.exists(claim.certificate.name)
@@ -277,6 +286,197 @@ class CPDClaimPhase2Tests(TestCase):
 
         self.assertEqual(response.status_code, 302)
         self.assertFalse(CPDClaim.objects.filter(officer=self.user).exists())
+
+    def test_cpd_rejects_missing_kkm_domain(self):
+        response = self._post_cpd(kkm_domain='')
+
+        self.assertEqual(response.status_code, 302)
+        self.assertFalse(CPDClaim.objects.filter(officer=self.user).exists())
+
+    def test_cpd_rejects_unknown_kkm_domain(self):
+        response = self._post_cpd(kkm_domain='NOT_A_DOMAIN')
+
+        self.assertEqual(response.status_code, 302)
+        self.assertFalse(CPDClaim.objects.filter(officer=self.user).exists())
+
+    def test_cpd_rejects_unknown_duration(self):
+        response = self._post_cpd(sub_category='FREEFORM DURATION')
+
+        self.assertEqual(response.status_code, 302)
+        self.assertFalse(CPDClaim.objects.filter(officer=self.user).exists())
+
+    def test_cpd_points_are_calculated_server_side(self):
+        response = self._post_cpd(
+            role='PRESENTER',
+            mata='999',
+            sub_category='TWO FULL DAYS',
+        )
+
+        self.assertEqual(response.status_code, 302)
+        claim = CPDClaim.objects.get(officer=self.user)
+        self.assertEqual(claim.role, 'PRESENTER')
+        self.assertEqual(claim.points, 21)
+
+    def test_staff_cpd_form_renders_domain_duration_and_rare_badges(self):
+        response = self.client.get(
+            reverse('staff_dashboard') + '?section=Clinical&tab=cpd'
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'KKM Core Domain')
+        self.assertContains(response, 'value="MATERNAL_CHILD_HEALTH"')
+        self.assertContains(response, 'Rare (1.5x)')
+        self.assertContains(response, 'TWO AND A HALF DAYS OR MORE')
+        self.assertContains(response, 'Presenter / Speaker (+5 mata)')
+
+
+class CPDClaimModelTests(TestCase):
+    def setUp(self):
+        self.user = User.objects.create_user(username='cpd_model_user')
+
+    def test_save_calculates_points_from_duration_and_role(self):
+        claim = CPDClaim.objects.create(
+            officer=self.user,
+            topic='Geriatric Update',
+            kkm_domain='GERIATRIC',
+            sub_category='HALF DAY',
+            role='PRESENTER',
+            event_date=date(2026, 3, 1),
+        )
+
+        self.assertEqual(claim.points, 9)
+
+    def test_rare_domain_does_not_inflate_claim_points(self):
+        claim = CPDClaim.objects.create(
+            officer=self.user,
+            topic='Mental Health Update',
+            kkm_domain='MENTAL_HEALTH',
+            sub_category='FULL DAY',
+            role='ATTENDEE',
+            event_date=date(2026, 3, 1),
+        )
+
+        self.assertEqual(claim.points, 8)
+        self.assertTrue(claim.is_rare_domain)
+
+    def test_legacy_claim_preserves_points_and_is_flagged(self):
+        claim = CPDClaim.objects.create(
+            officer=self.user,
+            topic='Legacy Claim',
+            points=7,
+            event_date=date(2026, 3, 1),
+        )
+
+        self.assertEqual(claim.points, 7)
+        self.assertTrue(claim.is_legacy)
+        self.assertFalse(claim.is_rare_domain)
+        self.assertEqual(claim.kkm_domain_label, 'Legacy — Not Counted')
+
+
+class CPDCompositeScoringTests(TestCase):
+    as_of = date(2026, 6, 30)
+
+    def setUp(self):
+        self.user = User.objects.create_user(username='cpd_score_user')
+
+    def _claim(self, domain, points, status='APPROVED', officer=None):
+        return CPDClaim.objects.create(
+            officer=officer or self.user,
+            topic=f'{domain} CPD',
+            kkm_domain=domain,
+            points=points,
+            event_date=date(2026, 3, 1),
+            status=status,
+        )
+
+    def test_no_claims_returns_no_data(self):
+        trajectory = build_cpd_trajectory(self.user, as_of=self.as_of)
+
+        self.assertIsNone(trajectory['score']['final'])
+        self.assertEqual(trajectory['status'], 'NO_DATA')
+        self.assertFalse(trajectory['has_eligible_claims'])
+
+    def test_points_and_weighted_coverage_form_60_40_composite(self):
+        self._claim('INTERNAL_MEDICINE', 30)
+        self._claim('GERIATRIC', 20)
+
+        trajectory = build_cpd_trajectory(self.user, as_of=self.as_of)
+
+        self.assertEqual(trajectory['points']['approved'], 50)
+        self.assertEqual(trajectory['points']['pct'], 100.0)
+        self.assertEqual(trajectory['coverage']['weighted_pct'], 33.3)
+        self.assertEqual(trajectory['coverage']['unweighted_pct'], 33.3)
+        self.assertEqual(trajectory['score']['final'], 73.3)
+        self.assertEqual(
+            trajectory['score']['points_component'], 60.0
+        )
+        self.assertEqual(
+            trajectory['score']['coverage_component'], 13.3
+        )
+
+    def test_rare_domain_weight_applies_only_to_coverage(self):
+        internal_user = User.objects.create_user(username='cpd_internal_user')
+        rare_user = User.objects.create_user(username='cpd_rare_user')
+        internal = self._claim(
+            'INTERNAL_MEDICINE', 10, officer=internal_user
+        )
+        rare = self._claim('GERIATRIC', 10, officer=rare_user)
+
+        internal_trajectory = build_cpd_trajectory(
+            internal_user, as_of=self.as_of
+        )
+        rare_trajectory = build_cpd_trajectory(
+            rare_user, as_of=self.as_of
+        )
+
+        self.assertEqual(internal.points, rare.points)
+        self.assertEqual(
+            internal_trajectory['points']['pct'],
+            rare_trajectory['points']['pct'],
+        )
+        self.assertEqual(
+            internal_trajectory['coverage']['weighted_pct'], 13.3
+        )
+        self.assertEqual(
+            rare_trajectory['coverage']['weighted_pct'], 20.0
+        )
+        self.assertGreater(
+            rare_trajectory['score']['final'],
+            internal_trajectory['score']['final'],
+        )
+        rare_domain = next(
+            domain for domain in rare_trajectory['per_domain']
+            if domain['code'] == 'GERIATRIC'
+        )
+        self.assertTrue(rare_domain['is_rare'])
+        self.assertEqual(rare_domain['weight'], 1.5)
+
+    def test_legacy_claim_is_not_counted(self):
+        self._claim('INTERNAL_MEDICINE', 10)
+        self._claim(None, 50)
+
+        trajectory = build_cpd_trajectory(self.user, as_of=self.as_of)
+
+        self.assertEqual(trajectory['legacy_ignored_count'], 1)
+        self.assertEqual(trajectory['legacy_ignored_total'], 1)
+        self.assertEqual(trajectory['points']['approved'], 10)
+        self.assertEqual(trajectory['score']['final'], 17.3)
+
+    def test_pending_only_has_no_final_score(self):
+        self._claim('SURGERY', 20, status='PENDING')
+
+        trajectory = build_cpd_trajectory(self.user, as_of=self.as_of)
+
+        self.assertIsNone(trajectory['score']['final'])
+        self.assertEqual(trajectory['status'], 'PENDING_VERIFICATION')
+        self.assertEqual(trajectory['points']['pending'], 20)
+
+    def test_pri_excludes_cpd_instead_of_using_zero(self):
+        result = calculate_pri_score(self.user)
+
+        self.assertIsNone(result['score_cpd'])
+        self.assertEqual(result['score_clinical'], 85)
+        self.assertIsNone(result['cpd_trajectory']['score']['final'])
 
 
 class PolicyDeclarationPhase2Tests(TestCase):
@@ -2047,16 +2247,26 @@ class ModuleScoreEngineTests(TestCase):
             is_completed=False,
         )
 
-        CPDClaim.objects.create(
-            officer=self.user,
-            topic='Approved CPD',
-            points=30,
-            event_date=self.today,
-            status='APPROVED',
-        )
+        for domain in (
+            'INTERNAL_MEDICINE',
+            'SURGERY',
+            'PAEDIATRICS',
+            'GERIATRIC',
+            'MENTAL_HEALTH',
+            'MATERNAL_CHILD_HEALTH',
+        ):
+            CPDClaim.objects.create(
+                officer=self.user,
+                topic=f'Approved CPD {domain}',
+                kkm_domain=domain,
+                points=10,
+                event_date=self.today,
+                status='APPROVED',
+            )
         CPDClaim.objects.create(
             officer=self.user,
             topic='Pending CPD',
+            kkm_domain='INTERNAL_MEDICINE',
             points=20,
             event_date=self.today,
             status='PENDING',
@@ -2064,6 +2274,7 @@ class ModuleScoreEngineTests(TestCase):
         CPDClaim.objects.create(
             officer=self.user,
             topic='Rejected CPD',
+            kkm_domain='SURGERY',
             points=10,
             event_date=self.today,
             status='REJECTED',
@@ -2190,7 +2401,10 @@ class ModuleScoreEngineTests(TestCase):
         )
         self.assertEqual(documentation['raw_value'], 2.0)
 
-        self._assert_module(result, 'cpd', 60.0, n=1)
+        cpd = self._assert_module(result, 'cpd', 100.0, n=6)
+        self.assertEqual(cpd['breakdown']['points']['approved'], 60)
+        self.assertEqual(cpd['breakdown']['coverage']['covered_count'], 6)
+        self.assertEqual(cpd['breakdown']['coverage']['weighted_pct'], 100.0)
         self._assert_module(result, 'policies', 90.0, n=20)
         productivity = self._assert_module(
             result, 'productivity', 52.3, n=30
@@ -2390,13 +2604,17 @@ class SimulationSeederTests(TestCase):
             officer=user,
             topic__startswith='[SIM]',
         )
-        self.assertEqual(cpd.count(), 5)
+        self.assertEqual(cpd.count(), 6)
         self.assertEqual(
             sum(
                 claim.points for claim in cpd
                 if claim.status == 'APPROVED'
             ),
-            45,
+            48,
+        )
+        self.assertEqual(
+            cpd.filter(kkm_domain__isnull=True).count(),
+            0,
         )
 
         scores = get_module_scores(user, as_of=timezone.localdate())
@@ -2408,7 +2626,7 @@ class SimulationSeederTests(TestCase):
         self.assertIsNotNone(
             scores['by_key']['productivity']['score']
         )
-        self.assertEqual(scores['by_key']['cpd']['score'], 90.0)
+        self.assertEqual(scores['by_key']['cpd']['score'], 81.6)
 
         self.assertIn('SEEDED', output)
         self.assertIn('Module scores', output)
@@ -2478,6 +2696,36 @@ class SimulationSeederTests(TestCase):
             DocumentationLog.objects.filter(pk=real_log.pk).exists()
         )
         self.assertIn('Dipadam', output)
+
+
+class StaffDataSeederTests(TestCase):
+    def test_seed_staff_data_creates_domain_scored_cpd_claims(self):
+        call_command(
+            'seed_staff_data',
+            username='seeded_staff_user',
+            stdout=StringIO(),
+        )
+
+        user = User.objects.get(username='seeded_staff_user')
+        claims = CPDClaim.objects.filter(officer=user).order_by('event_date')
+
+        self.assertEqual(claims.count(), 4)
+        self.assertEqual(
+            {claim.kkm_domain for claim in claims},
+            {'INTERNAL_MEDICINE', 'SURGERY', 'PAEDIATRICS', 'GERIATRIC'},
+        )
+        self.assertTrue(all(claim.sub_category for claim in claims))
+        self.assertEqual(
+            [claim.points for claim in claims],
+            [20, 12, 8, 13],
+        )
+        self.assertEqual(
+            sum(
+                claim.points for claim in claims
+                if claim.status == 'APPROVED'
+            ),
+            40,
+        )
 
 
 class CusumEngineTests(TestCase):
@@ -3305,6 +3553,47 @@ class HODDashboardDynamicDataTests(TestCase):
         )
 
 
+    def test_knowledge_tab_renders_weighted_cpd_metrics_and_legacy_notice(self):
+        for staff in (self.staff_a, self.staff_b):
+            CPDClaim.objects.create(
+                officer=staff,
+                topic='Internal Medicine CME',
+                kkm_domain='INTERNAL_MEDICINE',
+                points=30,
+                event_date=self.today,
+                status='APPROVED',
+            )
+            CPDClaim.objects.create(
+                officer=staff,
+                topic='Geriatric CME',
+                kkm_domain='GERIATRIC',
+                points=20,
+                event_date=self.today,
+                status='APPROVED',
+            )
+            CPDClaim.objects.create(
+                officer=staff,
+                topic='Legacy CME',
+                points=50,
+                event_date=self.today,
+                status='APPROVED',
+            )
+
+        response = self.client.get(
+            reverse('cts_module') + '?tab=Knowledge'
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.context['cpd_metrics']['approved_pts'], 50)
+        self.assertEqual(response.context['cpd_metrics']['covered_count'], 2)
+        self.assertEqual(response.context['cpd_metrics']['core_total'], 6)
+        self.assertEqual(response.context['cpd_metrics']['coverage_pct'], 33.3)
+        self.assertEqual(response.context['cpd_metrics']['legacy_count'], 1)
+        self.assertEqual(response.context['cpd_score'], 73.3)
+        self.assertContains(response, 'Liputan Domain:')
+        self.assertContains(response, '60% Mata + 40% Coverage')
+        self.assertContains(response, 'Legacy — Not Counted')
+
     def test_dashboard_uses_real_roster_pooled_scores_and_live_counts(self):
         response = self.client.get(reverse('hod_dashboard'))
 
@@ -3384,6 +3673,7 @@ class HODDashboardDynamicDataTests(TestCase):
         CPDClaim.objects.create(
             officer=self.staff_a,
             topic='IN-SCOPE CPD',
+            kkm_domain='INTERNAL_MEDICINE',
             points=10,
             event_date=self.today,
             status='PENDING',
@@ -3391,6 +3681,7 @@ class HODDashboardDynamicDataTests(TestCase):
         CPDClaim.objects.create(
             officer=outsider,
             topic='OUT-OF-SCOPE CPD',
+            kkm_domain='INTERNAL_MEDICINE',
             points=10,
             event_date=self.today,
             status='PENDING',

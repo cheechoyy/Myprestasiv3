@@ -29,6 +29,8 @@ from .mock_data import STATE_CENTERS, MOCK_KLINIK, MOCK_CUSUM_DATA
 from .services import (
     MODULE_ORDER,
     _kkm_hba1c_result,
+    build_cpd_trajectory,
+    calculate_cpd_points,
     calculate_pri_score,
     get_module_scores,
 )
@@ -37,7 +39,8 @@ from .models import (
     PolicyItemResponse, DocumentationLog, CPDClaim, ProductivityLog,
     InnovationProject, EmotionalReflection, PeerKudos, MentorshipSession,
     HODFeedback,
-    CusumSnapshot, CusumEpisode  # CUSUM Shadow Mode Models
+    CusumSnapshot, CusumEpisode,  # CUSUM Shadow Mode Models
+    KKM_CORE_DOMAINS, KKM_DOMAIN_CHOICES,
 )
 
 
@@ -1462,6 +1465,8 @@ def cts_view(request):
     }
     pending_cpd_claims = []
     all_cpd_claims = []
+    cpd_trajectory = None
+    cpd_score = None
 
     # ==========================================
     # TAB 1: CLINICAL DELIVERY (INDICATOR-1 HbA1c >= 1% REDUCTION CUSUM)
@@ -1665,28 +1670,47 @@ def cts_view(request):
     # TAB 4: KNOWLEDGE & COMPETENCY (myCPD 2.0 APPROVAL & SURVEILLANCE)
     # ==========================================
     elif active_tab == 'Knowledge':
-        cpd_score = 0
+        cpd_score = None
+        cpd_trajectory = None
         if target_user:
-            cpd_claims_qs = Policy_or_cpd = CPDClaim.objects.filter(officer=target_user).order_by('-submitted_at', '-event_date')
+            cpd_claims_qs = CPDClaim.objects.filter(
+                officer=target_user
+            ).order_by('-submitted_at', '-event_date')
             all_cpd_claims = list(cpd_claims_qs)
-            pending_cpd_claims = [c for c in all_cpd_claims if c.status == 'PENDING']
-            approved_pts = sum(c.points for c in all_cpd_claims if c.status == 'APPROVED')
-            pending_pts = sum(c.points for c in all_cpd_claims if c.status == 'PENDING')
-            cpd_score = min(100, int(round((approved_pts / 50.0) * 100)))
+            pending_cpd_claims = [
+                claim for claim in all_cpd_claims
+                if claim.status == 'PENDING'
+            ]
+            cpd_trajectory = build_cpd_trajectory(target_user)
+            approved_pts = cpd_trajectory['points']['approved']
+            pending_pts = cpd_trajectory['points']['pending']
+            cpd_score = cpd_trajectory['score']['final']
             cpd_metrics = {
                 'approved_pts': approved_pts,
                 'pending_pts': pending_pts,
-                'pending_count': len(pending_cpd_claims),
-                'target_pts': 50,
+                'pending_count': cpd_trajectory['points']['pending_count'],
+                'target_pts': cpd_trajectory['target_points'],
+                'points_pct': cpd_trajectory['points']['pct'],
+                'coverage_pct': cpd_trajectory['coverage']['weighted_pct'],
+                'covered_count': cpd_trajectory['coverage']['covered_count'],
+                'core_total': cpd_trajectory['coverage']['core_total'],
+                'legacy_count': cpd_trajectory['legacy_ignored_count'],
+                'status': cpd_trajectory['status'],
+                'reason': cpd_trajectory['reason'],
             }
         else:
-            random.seed(pilihan_doktor)
-            cpd_score = random.randint(74, 92)
             cpd_metrics = {
-                'approved_pts': int(round((cpd_score / 100.0) * 50)),
+                'approved_pts': 0,
                 'pending_pts': 0,
                 'pending_count': 0,
                 'target_pts': 50,
+                'points_pct': 0.0,
+                'coverage_pct': 0.0,
+                'covered_count': 0,
+                'core_total': len(KKM_DOMAIN_CHOICES),
+                'legacy_count': 0,
+                'status': 'NO_DATA',
+                'reason': 'Tiada staf dipilih.',
             }
 
         peer_score = avg_performance if avg_performance > 0 else 75
@@ -1697,12 +1721,20 @@ def cts_view(request):
             elif score >= 65: return "Competent", "competent"
             else: return "Needs Attention", "needs-attention"
 
-        cpd_text, cpd_css_class = get_status_info(cpd_score)
+        if cpd_score is None:
+            if cpd_metrics['status'] == 'PENDING_VERIFICATION':
+                cpd_text, cpd_css_class = 'Pending Verification', 'needs-attention'
+            else:
+                cpd_text, cpd_css_class = 'No Data', 'needs-attention'
+            gauge_cpd_value = 0
+        else:
+            cpd_text, cpd_css_class = get_status_info(cpd_score)
+            gauge_cpd_value = cpd_score
         peer_text, peer_css_class = get_status_info(peer_score)
 
         fig_ind = go.Figure(go.Indicator(
-            mode="gauge+number", value=cpd_score,
-            title={'text': "Approved CPD Attainment (%)", 'font': {'size': 15, 'color': '#150a35'}},
+            mode="gauge+number", value=gauge_cpd_value,
+            title={'text': "CPD Composite Score 60/40 (%)", 'font': {'size': 15, 'color': '#150a35'}},
             number={'font': {'color': '#150a35'}},
             gauge={
                 'axis': {'range': [0, 100], 'tickfont': {'color': '#150a35'}},
@@ -1766,6 +1798,9 @@ def cts_view(request):
         'doc_metrics': doc_metrics,
         'policy_review': policy_review,
         'cpd_metrics': cpd_metrics,
+        'cpd_score': cpd_score,
+        'cpd_trajectory': cpd_trajectory,
+        'kkm_domain_choices': KKM_DOMAIN_CHOICES,
         'pending_cpd_claims': pending_cpd_claims,
         'all_cpd_claims': all_cpd_claims,
     }
@@ -3696,11 +3731,20 @@ def _build_clinical_context(user, doc_logs):
         CPDClaim.objects.filter(officer=user, event_date__year=current_year)
         .order_by('-submitted_at', '-event_date', '-id')
     )
-    approved_points = sum(
-        claim.points for claim in claims if claim.status == 'APPROVED'
-    )
-    pending_claims = [claim for claim in claims if claim.status == 'PENDING']
-    pending_points = sum(claim.points for claim in pending_claims)
+    cpd_trajectory = build_cpd_trajectory(user)
+    approved_points = cpd_trajectory['points']['approved']
+    pending_claims = [
+        claim for claim in claims
+        if claim.status == 'PENDING' and claim.kkm_domain in KKM_CORE_DOMAINS
+    ]
+    pending_points = cpd_trajectory['points']['pending']
+    cpd_points_pct = cpd_trajectory['points']['pct']
+    cpd_coverage_pct = cpd_trajectory['coverage']['weighted_pct']
+    cpd_covered_count = cpd_trajectory['coverage']['covered_count']
+    cpd_core_total = cpd_trajectory['coverage']['core_total']
+    cpd_missing_domains = cpd_trajectory['coverage']['missing']
+    cpd_rare_missing = cpd_trajectory['coverage']['rare_missing']
+    cpd_legacy_count = cpd_trajectory['legacy_ignored_count']
 
     now_ts = timezone.now()
     
@@ -3744,16 +3788,29 @@ def _build_clinical_context(user, doc_logs):
         round((ontime_completed / total_completed) * 100) if total_completed else None
     )
 
-    if not claims:
+    if not cpd_trajectory['has_eligible_claims']:
         status_label = 'Not Started'
         status_color = '#6d3ec4'
         status_background = '#f3edff'
         status_border = '#e7dff2'
-    elif approved_points >= CLINICAL_CPD_TARGET_POINTS:
-        status_label = 'On Track'
+    elif not approved_points and pending_points:
+        status_label = 'Pending Verification'
+        status_color = '#D97706'
+        status_background = '#FFFBEB'
+        status_border = '#FEF08A'
+    elif (
+        approved_points >= CLINICAL_CPD_TARGET_POINTS
+        and cpd_covered_count >= cpd_core_total
+    ):
+        status_label = 'Completed'
         status_color = '#16A34A'
         status_background = '#F0FDF4'
         status_border = '#BBF7D0'
+    elif approved_points >= CLINICAL_CPD_TARGET_POINTS:
+        status_label = 'Coverage Gap'
+        status_color = '#D97706'
+        status_background = '#FFFBEB'
+        status_border = '#FEF08A'
     else:
         status_label = 'Behind Target'
         status_color = '#D97706'
@@ -3774,9 +3831,21 @@ def _build_clinical_context(user, doc_logs):
         'cpd_pending_points': pending_points,
         'cpd_pending_count': len(pending_claims),
         'cpd_target_points': CLINICAL_CPD_TARGET_POINTS,
+        'cpd_score': cpd_trajectory['score']['final'],
+        'cpd_points_pct': cpd_points_pct,
+        'cpd_coverage_pct': cpd_coverage_pct,
+        'cpd_covered_count': cpd_covered_count,
+        'cpd_core_total': cpd_core_total,
+        'cpd_missing_domains': cpd_missing_domains,
+        'cpd_rare_missing': cpd_rare_missing,
+        'cpd_legacy_count': cpd_legacy_count,
+        'cpd_trajectory': cpd_trajectory,
         'cpd_on_track': (
-            bool(claims) and approved_points >= CLINICAL_CPD_TARGET_POINTS
+            cpd_trajectory['has_eligible_claims']
+            and approved_points >= CLINICAL_CPD_TARGET_POINTS
+            and cpd_covered_count >= cpd_core_total
         ),
+        'kkm_domain_choices': KKM_DOMAIN_CHOICES,
         'cpd_status_label': status_label,
         'cpd_status_color': status_color,
         'cpd_status_background': status_background,
@@ -4505,28 +4574,24 @@ def staff_dashboard_view(request):
             )
 
         elif form_type == 'cpd':
-            # myCPD 2.0 Backend Security Calculation
-            sub_category = (request.POST.get('sub_category') or '').strip()
-            role = request.POST.get('role', 'ATTENDEE').upper()
-            
-            # Pengiraan Asas
-            base_points = 0
-            if sub_category == 'ONE FULL DAY':
-                base_points = 8
-            elif sub_category == 'ONE AND A HALF DAYS':
-                base_points = 12
-            elif sub_category == 'TWO FULL DAYS':
-                base_points = 16
-            elif sub_category == 'TWO AND A HALF DAYS OR MORE':
-                base_points = 20
-                
-            # Bonus Peranan (Role)
-            role_bonus = 5 if role == 'PRESENTER' else 0
-            
-            # Jika user guna manual input (fallback), ambil dari 'mata'
-            mata = base_points + role_bonus
-            if mata == 0: 
-                mata = max(0, _parse_int(request.POST.get('mata'), 0))
+            # myCPD 2.0: domain wajib, mata dikira 100% di backend.
+            kkm_domain = (request.POST.get('kkm_domain') or '').strip().upper()
+            sub_category = (request.POST.get('sub_category') or '').strip().upper()
+            role = (request.POST.get('role') or 'ATTENDEE').strip().upper()
+            if role not in ('ATTENDEE', 'PRESENTER'):
+                role = 'ATTENDEE'
+
+            if kkm_domain not in KKM_CORE_DOMAINS:
+                messages.error(request, "❌ Sila pilih domain KKM yang sah.")
+                return redirect(f'/staff/?section={section}')
+
+            mata = calculate_cpd_points(sub_category, role)
+            if mata <= 0:
+                messages.error(
+                    request,
+                    "❌ Duration tidak sah. Sila pilih duration yang disediakan.",
+                )
+                return redirect(f'/staff/?section={section}')
 
             tajuk = ((request.POST.get('tajuk') or '').strip() or 'Program CME')[:200]
             category = (request.POST.get('category') or '').strip() or 'CME Workshop'
@@ -4556,9 +4621,9 @@ def staff_dashboard_view(request):
             CPDClaim.objects.create(
                 officer=request.user,
                 topic=tajuk,
-                points=mata,
                 category=category,
                 sub_category=sub_category,
+                kkm_domain=kkm_domain,
                 role=role,
                 event_date=event_date,
                 end_date=end_date,
@@ -4567,7 +4632,8 @@ def staff_dashboard_view(request):
             )
             messages.success(
                 request,
-                f"✅ {mata} mata CPD untuk '{tajuk}' disimpan (status: Pending Verification)."
+                f"✅ {mata} mata CPD untuk '{tajuk}' disimpan "
+                "(status: Pending Verification)."
             )
 
         elif form_type == 'sign_ot_note':
@@ -5078,10 +5144,11 @@ def staff_dashboard_view(request):
         task_vel_doc_ontime = completed_docs_qs.filter(is_ontime=True).count()
         task_vel_doc_pct = int(round((task_vel_doc_ontime / task_vel_doc_total) * 100)) if task_vel_doc_total > 0 else 0
 
-        current_yr = timezone.localdate().year
-        approved_cpd_qs = CPDClaim.objects.filter(officer=request.user, event_date__year=current_yr, status='APPROVED')
-        task_vel_cpd_pts = sum(c.points for c in approved_cpd_qs)
-        task_vel_cpd_pct = min(100, int(round((task_vel_cpd_pts / 50.0) * 100)))
+        cpd_trajectory = build_cpd_trajectory(request.user)
+        task_vel_cpd_pts = cpd_trajectory['points']['approved']
+        task_vel_cpd_pct = min(
+            100, int(round(cpd_trajectory['points']['pct']))
+        )
 
         if prod_series:
             avg_consult = round(sum(item.avg_consult_minutes for item in prod_series) / len(prod_series), 1)
@@ -5393,7 +5460,7 @@ def staff_dashboard_view(request):
     score_clinical = scores.get('score_clinical', 85)
     score_ops_coding = scores.get('score_operational', 80)
     score_interpersonal = scores.get('score_interpersonal', 88)
-    score_cpd = scores.get('score_cpd', 90)
+    score_cpd = scores.get('score_cpd')
     pri_score = scores.get('pri_score', 85)
     promotion_tier = scores.get('promotion_tier', 'Tier 1: Fast-Track Candidate')
     promotion_color = scores.get('promotion_color', '#16a34a')
@@ -5932,7 +5999,7 @@ def officer_profile_view(request):
         score_clinical = scores.get('score_clinical', 85)
         score_ops = scores.get('score_operational', 80)
         score_interp = scores.get('score_interpersonal', 88)
-        score_cpd = scores.get('score_cpd', 90)
+        score_cpd = scores.get('score_cpd') or 0
         total_score = scores.get('pri_score', 85)
         promotion_tier = scores.get('promotion_tier', 'Tier 1: Fast-Track Candidate')
         grade_label = target_user.profile.get_department_display() if hasattr(target_user, 'profile') else 'Medical Officer'

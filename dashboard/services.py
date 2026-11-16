@@ -1,13 +1,21 @@
 from datetime import date, datetime, timedelta
 
-from django.db.models import Sum
+from django.db.models import Q, Sum
 from django.utils import timezone
 
 from .models import (
     ProcedureLog, PolicyDeclaration, DocumentationLog,
     CPDClaim, ProductivityLog, InnovationProject,
-    MyPSQFeedback, EmotionalReflection, PeerKudos, MentorshipSession
+    MyPSQFeedback, EmotionalReflection, PeerKudos, MentorshipSession,
+    KKM_CORE_DOMAINS, KKM_CORE_DOMAIN_LABELS, KKM_CORE_DOMAIN_WEIGHTS,
+    KKM_RARE_DOMAINS,
+    calculate_cpd_claim_points as _calculate_cpd_claim_points,
 )
+
+
+CPD_TARGET_POINTS = 50
+CPD_POINTS_WEIGHT = 0.60
+CPD_COVERAGE_WEIGHT = 0.40
 
 
 MODULE_ORDER = (
@@ -61,8 +69,10 @@ def calculate_pri_score(user):
     score_delivery = (sum([p.score for p in procedures]) / procedures.count()) if procedures.exists() else 88.0
 
     # Sub 2: Knowledge & Competency (CPD Claims)
-    cpd_claims = CPDClaim.objects.filter(officer=user)
-    score_knowledge = min(100.0, (sum([c.points for c in cpd_claims]) / 50.0) * 100.0) if cpd_claims.exists() else 90.0
+    # Skor komposit 60% mata + 40% liputan domain teras. Tiada data sah =
+    # None, dan komponen ini dikecualikan daripada purata PRI.
+    cpd_trajectory = build_cpd_trajectory(user)
+    score_knowledge = cpd_trajectory['score']['final']
 
     # Sub 3: Adherence To Policies & Protocols
     policy = PolicyDeclaration.objects.filter(officer=user).order_by('-submitted_at').first()
@@ -78,7 +88,17 @@ def calculate_pri_score(user):
     score_doc = (sum([100.0 if d.is_ontime else 60.0 for d in docs]) / docs.count()) if docs.exists() else 82.0
 
     # PURATA TUNJANG 1: CLINICAL EXCELLENCE
-    score_clinical = int((score_delivery + score_knowledge + score_policy + score_doc) / 4.0)
+    # CPD yang tiada data sah tidak diberi 0 atau fallback 90; ia dikecualikan.
+    clinical_components = [
+        score_delivery, score_knowledge, score_policy, score_doc,
+    ]
+    available_clinical = [
+        value for value in clinical_components if value is not None
+    ]
+    score_clinical = (
+        int(round(sum(available_clinical) / len(available_clinical)))
+        if available_clinical else 0
+    )
 
 
     # ==========================================
@@ -149,7 +169,11 @@ def calculate_pri_score(user):
         'score_clinical': score_clinical,
         'score_operational': score_operational,
         'score_interpersonal': score_interpersonal,
-        'score_cpd': int(score_knowledge),  # <--- TAMBAHKAN KUNCI INI
+        'score_cpd': (
+            int(round(score_knowledge))
+            if score_knowledge is not None else None
+        ),
+        'cpd_trajectory': cpd_trajectory,
         'pri_score': pri_score,
         'promotion_tier': tier,
         'promotion_color': color,
@@ -189,6 +213,7 @@ def _module_result(
     has_records=False,
     source='',
     target=None,
+    breakdown=None,
 ):
     rounded_score = _round_score(score)
     rounded_raw = (
@@ -210,6 +235,7 @@ def _module_result(
         'has_records': bool(has_records),
         'source': source,
         'target': target,
+        'breakdown': breakdown,
     }
 
 
@@ -219,6 +245,217 @@ def _score_status(score, provisional=False):
     if provisional:
         return 'PROVISIONAL'
     return 'ZERO' if score == 0 else 'OK'
+
+
+def calculate_cpd_points(sub_category, role):
+    """Public API: mata CPD daripada Duration + Role (0 jika tidak dikenali)."""
+    points = _calculate_cpd_claim_points(sub_category, role)
+    return points if points is not None else 0
+
+
+def _resolve_cpd_as_of(as_of):
+    if as_of is None:
+        return timezone.localdate()
+    if isinstance(as_of, datetime):
+        if timezone.is_naive(as_of):
+            as_of = timezone.make_aware(as_of)
+        return timezone.localtime(as_of).date()
+    if isinstance(as_of, date):
+        return as_of
+    raise TypeError('as_of mesti date, datetime atau None')
+
+
+def eligible_cpd_claims(user, as_of=None):
+    """Satu gate tunggal: hanya claim tahun semasa dengan domain teras sah."""
+    as_of = _resolve_cpd_as_of(as_of)
+    return CPDClaim.objects.filter(
+        officer=user,
+        event_date__year=as_of.year,
+        kkm_domain__in=KKM_CORE_DOMAINS,
+    )
+
+
+def _cpd_legacy_filter():
+    return Q(kkm_domain__isnull=True) | Q(kkm_domain='')
+
+
+def build_cpd_trajectory(user, as_of=None):
+    """
+    Trajektori CPD tahunan:
+      - 60% mata (approved / 50)
+      - 40% liputan domain teras berwajaran (rare = 1.5x)
+    Rekod tanpa ``kkm_domain`` dianggap legacy dan tidak dikira.
+    """
+    as_of = _resolve_cpd_as_of(as_of)
+    all_claims = CPDClaim.objects.filter(
+        officer=user, event_date__year=as_of.year
+    )
+    has_any_claims = all_claims.exists()
+    legacy_claims = all_claims.filter(_cpd_legacy_filter())
+    legacy_ignored_count = legacy_claims.count()
+    legacy_ignored_total = CPDClaim.objects.filter(
+        officer=user
+    ).filter(_cpd_legacy_filter()).count()
+
+    eligible_qs = eligible_cpd_claims(user, as_of=as_of)
+    approved_claims = list(eligible_qs.filter(status='APPROVED'))
+    pending_claims = list(eligible_qs.filter(status='PENDING'))
+    approved_points = sum(claim.points for claim in approved_claims)
+    pending_points = sum(claim.points for claim in pending_claims)
+    approved_count = len(approved_claims)
+    pending_count = len(pending_claims)
+
+    approved_by_domain = {
+        code: {'points': 0, 'count': 0} for code in KKM_CORE_DOMAINS
+    }
+    pending_by_domain = {
+        code: {'points': 0, 'count': 0} for code in KKM_CORE_DOMAINS
+    }
+    for claim in approved_claims:
+        bucket = approved_by_domain[claim.kkm_domain]
+        bucket['points'] += claim.points
+        bucket['count'] += 1
+    for claim in pending_claims:
+        bucket = pending_by_domain[claim.kkm_domain]
+        bucket['points'] += claim.points
+        bucket['count'] += 1
+
+    per_domain = []
+    covered_domains = []
+    pending_domains = []
+    missing_domains = []
+    for code in KKM_CORE_DOMAINS:
+        approved_bucket = approved_by_domain[code]
+        pending_bucket = pending_by_domain[code]
+        if approved_bucket['count']:
+            status = 'COVERED'
+            covered_domains.append(code)
+        elif pending_bucket['count']:
+            status = 'PENDING'
+            pending_domains.append(code)
+        else:
+            status = 'MISSING'
+            missing_domains.append(code)
+        per_domain.append({
+            'code': code,
+            'label': KKM_CORE_DOMAIN_LABELS.get(code, code),
+            'weight': KKM_CORE_DOMAIN_WEIGHTS.get(code, 1.0),
+            'is_rare': code in KKM_RARE_DOMAINS,
+            'status': status,
+            'approved_points': approved_bucket['points'],
+            'approved_count': approved_bucket['count'],
+            'pending_points': pending_bucket['points'],
+            'pending_count': pending_bucket['count'],
+        })
+
+    weight_total = sum(
+        KKM_CORE_DOMAIN_WEIGHTS.get(code, 1.0)
+        for code in KKM_CORE_DOMAINS
+    )
+    weight_covered = sum(
+        KKM_CORE_DOMAIN_WEIGHTS.get(code, 1.0)
+        for code in covered_domains
+    )
+    coverage_pct = (
+        _clamp_score((weight_covered / weight_total) * 100.0)
+        if weight_total else 0.0
+    )
+    unweighted_coverage_pct = (
+        _clamp_score(
+            (len(covered_domains) / len(KKM_CORE_DOMAINS)) * 100.0
+        ) if KKM_CORE_DOMAINS else 0.0
+    )
+    points_pct = (
+        _clamp_score(
+            (approved_points / float(CPD_TARGET_POINTS)) * 100.0
+        ) if approved_count else 0.0
+    )
+
+    final_score = None
+    if approved_count:
+        final_score = _round_score(
+            (CPD_POINTS_WEIGHT * points_pct)
+            + (CPD_COVERAGE_WEIGHT * coverage_pct)
+        )
+
+    if final_score is None:
+        if pending_count:
+            status = 'PENDING_VERIFICATION'
+            reason = (
+                'Tiada mata CPD diluluskan; terdapat claim menunggu '
+                'verifikasi.'
+            )
+        elif legacy_ignored_count:
+            status = 'NO_DATA'
+            reason = (
+                f'{legacy_ignored_count} rekod legacy tanpa domain KKM '
+                'tidak dikira.'
+            )
+        else:
+            status = 'NO_DATA'
+            reason = 'Tiada claim CPD dengan domain KKM bagi tahun semasa.'
+    else:
+        if final_score >= 100:
+            status = 'COMPLETED'
+            reason = 'Sasaran mata dan liputan semua domain teras dicapai.'
+        elif points_pct >= 100 and coverage_pct < 100:
+            status = 'POINTS_MET_COVERAGE_GAP'
+            reason = 'Sasaran mata dicapai tetapi liputan domain belum lengkap.'
+        elif coverage_pct >= 100 and points_pct < 100:
+            status = 'COVERAGE_MET_POINTS_GAP'
+            reason = 'Semua domain diliputi tetapi sasaran mata belum dicapai.'
+        elif final_score == 0:
+            status = 'ZERO'
+            reason = 'Rekod sah wujud tetapi mata dan liputan domain sifar.'
+        else:
+            status = 'BEHIND'
+            reason = 'Mata atau liputan domain masih di bawah sasaran.'
+
+    rare_missing = [
+        code for code in missing_domains if code in KKM_RARE_DOMAINS
+    ]
+    return {
+        'as_of': as_of,
+        'target_points': CPD_TARGET_POINTS,
+        'points': {
+            'approved': approved_points,
+            'pending': pending_points,
+            'approved_count': approved_count,
+            'pending_count': pending_count,
+            'target': CPD_TARGET_POINTS,
+            'pct': _round_score(points_pct),
+        },
+        'coverage': {
+            'core_total': len(KKM_CORE_DOMAINS),
+            'covered_count': len(covered_domains),
+            'covered': covered_domains,
+            'pending_covered': pending_domains,
+            'missing': missing_domains,
+            'rare_missing': rare_missing,
+            'weight_total': round(weight_total, 2),
+            'weight_covered': round(weight_covered, 2),
+            'weighted_pct': _round_score(coverage_pct),
+            'unweighted_pct': _round_score(unweighted_coverage_pct),
+        },
+        'per_domain': per_domain,
+        'score': {
+            'final': final_score,
+            'points_component': _round_score(
+                CPD_POINTS_WEIGHT * points_pct
+            ),
+            'coverage_component': _round_score(
+                CPD_COVERAGE_WEIGHT * coverage_pct
+            ),
+            'points_pct': _round_score(points_pct),
+            'coverage_pct': _round_score(coverage_pct),
+        },
+        'status': status,
+        'reason': reason,
+        'has_any_claims': has_any_claims,
+        'has_eligible_claims': bool(approved_count or pending_count),
+        'legacy_ignored_count': legacy_ignored_count,
+        'legacy_ignored_total': legacy_ignored_total,
+    }
 
 
 def _kkm_hba1c_result(user, as_of=None):
@@ -569,41 +806,29 @@ def get_module_scores(user, as_of=None):
         ))
 
     # 3. Knowledge & Competency (CPD)
-    cpd_claims = CPDClaim.objects.filter(officer=user)
-    has_cpd_records = cpd_claims.exists()
-    year_claims = cpd_claims.filter(event_date__year=as_of.year)
-    if not year_claims.exists():
-        modules.append(_module_result(
-            'cpd', 'Knowledge & Competency (CPD)',
-            status='NO_DATA', reason='Tiada claim CPD bagi tahun semasa.',
-            has_records=has_cpd_records,
-            source='CPDClaim.points (approved)',
-            target=50,
-        ))
-    else:
-        approved_claims = year_claims.filter(status='APPROVED')
-        approved_count = approved_claims.count()
-        approved_points = (
-            approved_claims.aggregate(total=Sum('points'))['total'] or 0
+    cpd_trajectory = build_cpd_trajectory(user, as_of=as_of)
+    cpd_score = cpd_trajectory['score']['final']
+    if cpd_score is None:
+        cpd_status = (
+            'PENDING_VERIFICATION'
+            if cpd_trajectory['status'] == 'PENDING_VERIFICATION'
+            else 'NO_DATA'
         )
-        score = _clamp_score((approved_points / 50.0) * 100.0)
-        if approved_count:
-            status = _score_status(score)
-        elif year_claims.filter(status='PENDING').exists():
-            status = 'PENDING_VERIFICATION'
-        else:
-            status = 'ZERO'
-        modules.append(_module_result(
-            'cpd', 'Knowledge & Competency (CPD)',
-            score=score,
-            n=approved_count,
-            denominator=50,
-            raw_value=approved_points,
-            status=status,
-            has_records=True,
-            source='CPDClaim.points (approved)',
-            target=50,
-        ))
+    else:
+        cpd_status = _score_status(cpd_score)
+    modules.append(_module_result(
+        'cpd', 'Knowledge & Competency (CPD)',
+        score=cpd_score,
+        n=cpd_trajectory['points']['approved_count'],
+        denominator=CPD_TARGET_POINTS,
+        raw_value=cpd_trajectory['points']['approved'],
+        status=cpd_status,
+        reason=cpd_trajectory['reason'],
+        has_records=cpd_trajectory['has_any_claims'],
+        source='CPDClaim.points + kkm_domain (60/40 composite)',
+        target=CPD_TARGET_POINTS,
+        breakdown=cpd_trajectory,
+    ))
 
 
     # 4. Adherence To Policies

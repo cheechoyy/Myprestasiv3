@@ -464,14 +464,33 @@
                             <p style="margin: 3px 0 0 0; color: #6f628b; font-size: 12px;">
                                 Mata Diluluskan: <b>{{ cpd_metrics.approved_pts }} / {{ cpd_metrics.target_pts }} mata</b> &bull; Menunggu Kelulusan: <b>{{ cpd_metrics.pending_pts }} mata ({{ cpd_metrics.pending_count }} tuntutan)</b>
                             </p>
+                            <p style="margin: 4px 0 0 0; color: #6f628b; font-size: 12px;">
+                                Liputan Domain: <b>{{ cpd_metrics.covered_count }} / {{ cpd_metrics.core_total }}</b> ({{ cpd_metrics.coverage_pct|floatformat:1 }}% berwajaran) &bull;
+                                Skor Komposit: <b>{% if cpd_score is not None %}{{ cpd_score|floatformat:1 }}%{% else %}No Data{% endif %}</b>
+                                &bull; <span style="color:#6d3ec4;">60% Mata + 40% Coverage</span>
+                            </p>
+                            {% if cpd_trajectory and cpd_trajectory.coverage.missing %}
+                            <p style="margin: 4px 0 0 0; color: #9a3412; font-size: 11.5px; font-weight: 700;">
+                                Domain belum diliputi:
+                                {% for domain in cpd_trajectory.per_domain %}
+                                    {% if domain.status == 'MISSING' %}{{ domain.label }}{% if domain.is_rare %} (Rare 1.5x){% endif %}{% if not forloop.last %}, {% endif %}{% endif %}
+                                {% endfor %}
+                            </p>
+                            {% endif %}
                         </div>
                     </div>
+
+                    {% if cpd_metrics.legacy_count %}
+                    <div style="background:#fff7ed; border:1px solid #fed7aa; border-left:4px solid #ea580c; color:#9a3412; border-radius:10px; padding:11px 14px; margin-bottom:16px; font-size:12px; font-weight:700;">
+                        ⚠️ {{ cpd_metrics.legacy_count }} rekod CPD legacy tanpa domain KKM. Rekod ini dipaparkan sebagai <b>Legacy — Not Counted</b> dan tidak mempengaruhi skor komposit.
+                    </div>
+                    {% endif %}
 
                     <div class="grid-2" style="margin-bottom: 20px;">
                         <div class="box-border" style="text-align: center; padding: 12px; margin-bottom: 0; background: white; border: 1px solid #e7dff2; border-radius: 12px;">
                             {{ gauge_score_html|safe }}
                             <p style="margin:0; font-weight:800; color:#150a35; font-size: 13px;">
-                                Attainment Level: <span class="status-{{ cpd_css_class }}">{{ cpd_text }}</span>
+                                Composite Status: <span class="status-{{ cpd_css_class }}">{{ cpd_text }}</span>
                             </p>
                         </div>
                         <div class="box-border" style="text-align: center; padding: 12px; margin-bottom: 0; background: white; border: 1px solid #e7dff2; border-radius: 12px;">
@@ -492,7 +511,17 @@
                             <div style="background: white; border: 1px solid #fde68a; border-radius: 10px; padding: 12px 15px; display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap;">
                                 <div>
                                     <div style="font-size: 13.5px; font-weight: 800; color: #150a35;">{{ claim.topic }}</div>
-                                    <div style="font-size: 11.5px; color: #6f628b; margin-top: 2px;">
+                                    <div style="margin-top: 4px;">
+                                        {% if claim.is_legacy %}
+                                        <span style="background:#fff7ed; color:#9a3412; border:1px solid #fed7aa; padding:3px 9px; border-radius:20px; font-size:10px; font-weight:800;">Legacy — Not Counted</span>
+                                        {% else %}
+                                        <span style="background:#f3edff; color:#6d3ec4; border:1px solid #d8c7f4; padding:3px 9px; border-radius:20px; font-size:10px; font-weight:800;">Domain: {{ claim.kkm_domain_label }}</span>
+                                        {% if claim.is_rare_domain %}
+                                        <span style="background:#fef3c7; color:#b45309; border:1px solid #fde68a; padding:3px 9px; border-radius:20px; font-size:10px; font-weight:800; margin-left:4px;">Rare 1.5x</span>
+                                        {% endif %}
+                                        {% endif %}
+                                    </div>
+                                    <div style="font-size: 11.5px; color: #6f628b; margin-top: 4px;">
                                         {{ claim.category }} &bull; {{ claim.sub_category|default:"Standard" }} ({{ claim.role }}) &bull; <b>{{ claim.points }} mata</b> &bull; Tarikh: {{ claim.event_date|date:"d/m/Y" }}
                                         {% if claim.certificate %}
                                             &bull; <a href="{{ claim.certificate.url }}" target="_blank" style="color: #6d3ec4; font-weight: 800; text-decoration: underline;">Lihat Sijil ↗</a>
@@ -531,7 +560,8 @@
                             <thead>
                                 <tr>
                                     <th>Date</th>
-                                    <th>Category</th>
+                                    <th>KKM Domain</th>
+                                    <th>Category / Duration</th>
                                     <th>Program / Topic</th>
                                     <th>Points</th>
                                     <th>Status</th>
@@ -541,9 +571,28 @@
                                 {% for c in all_cpd_claims %}
                                 <tr>
                                     <td>{{ c.event_date|date:"d/m/Y" }}</td>
-                                    <td>{{ c.category }}</td>
+                                    <td>
+                                        {% if c.is_legacy %}
+                                        <span style="background:#fff7ed; color:#9a3412; border:1px solid #fed7aa; padding:3px 8px; border-radius:20px; font-size:10px; font-weight:800; white-space:nowrap;">Legacy — Not Counted</span>
+                                        {% else %}
+                                        <span style="color:#150a35; font-weight:700;">{{ c.kkm_domain_label }}</span>
+                                        {% if c.is_rare_domain %}
+                                        <span style="background:#f3edff; color:#6d3ec4; border:1px solid #d8c7f4; padding:2px 7px; border-radius:20px; font-size:9.5px; font-weight:800;">Rare 1.5x</span>
+                                        {% endif %}
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <div style="font-weight:600;">{{ c.category }}</div>
+                                        <div style="font-size:10.5px; color:#6f628b;">{{ c.sub_category|default:"—" }} &bull; {{ c.role|title }}</div>
+                                    </td>
                                     <td style="font-weight: 700;">{{ c.topic }}</td>
-                                    <td style="font-weight: 800;">{{ c.points }} pts</td>
+                                    <td style="font-weight: 800;">
+                                        {% if c.is_legacy %}
+                                        <span style="color:#9a3412;">{{ c.points }} pts <span style="font-size:9.5px;">(not counted)</span></span>
+                                        {% else %}
+                                        {{ c.points }} pts
+                                        {% endif %}
+                                    </td>
                                     <td>
                                         {% if c.status == 'APPROVED' %}
                                             <span style="background: #dcfce7; color: #15803d; padding: 3px 10px; border-radius: 12px; font-size: 11px; font-weight: 800;">Approved</span>
@@ -556,7 +605,7 @@
                                 </tr>
                                 {% empty %}
                                 <tr>
-                                    <td colspan="5" style="text-align: center; padding: 20px; color: #6f628b; font-style: italic;">Tiada rekod tuntutan CPD dalam pangkalan data bagi pegawai ini.</td>
+                                    <td colspan="6" style="text-align: center; padding: 20px; color: #6f628b; font-style: italic;">Tiada rekod tuntutan CPD dalam pangkalan data bagi pegawai ini.</td>
                                 </tr>
                                 {% endfor %}
                             </tbody>

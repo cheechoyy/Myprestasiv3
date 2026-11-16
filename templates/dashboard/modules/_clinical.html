@@ -608,15 +608,21 @@
                     <h3 style="color:#150a35; margin:0; font-size:16px;">CPD / CME Management</h3>
                 </div>
 
-                <div class="grid-3" style="margin-bottom: 30px;">
+                <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(180px, 1fr)); gap:15px; margin-bottom: 30px;">
                     <div style="background: #f3edff; border: 1px solid #e7dff2; padding: 15px; border-radius: 8px; border-left: 4px solid #6d3ec4;">
                         <div style="font-size: 11px; color: #150a35; font-weight: bold; text-transform: uppercase;">Total Approved Points</div>
                         <div style="font-size: 26px; font-weight: 900; color: #150a35;">{{ cpd_approved_points }} <span style="font-size:12px; color:#6d3ec4; font-weight:normal;">/ {{ cpd_target_points }} Target</span></div>
+                        <div style="font-size: 11px; color: #6d3ec4; margin-top: 4px;">{{ cpd_points_pct|floatformat:1 }}% of points target</div>
                     </div>
                     <div style="background: #FFFBEB; border: 1px solid #FEF08A; padding: 15px; border-radius: 8px; border-left: 4px solid #D97706;">
                         <div style="font-size: 11px; color: #b45309; font-weight: bold; text-transform: uppercase;">Pending Verification</div>
                         <div style="font-size: 26px; font-weight: 900; color: #D97706;">{{ cpd_pending_points }}</div>
                         <div style="font-size: 11px; color: #b45309; margin-top: 4px;">{{ cpd_pending_count }} claim{{ cpd_pending_count|pluralize }} awaiting review</div>
+                    </div>
+                    <div style="background: #F0FDF4; border: 1px solid #BBF7D0; padding: 15px; border-radius: 8px; border-left: 4px solid #16A34A;">
+                        <div style="font-size: 11px; color: #15803D; font-weight: bold; text-transform: uppercase;">Core Domain Coverage</div>
+                        <div style="font-size: 26px; font-weight: 900; color: #15803D;">{{ cpd_covered_count }} <span style="font-size:12px; color:#16A34A; font-weight:normal;">/ {{ cpd_core_total }} domains</span></div>
+                        <div style="font-size: 11px; color: #15803D; margin-top: 4px;">{{ cpd_coverage_pct|floatformat:1 }}% weighted (rare = 1.5x)</div>
                     </div>
                     <div style="background: {{ cpd_status_background }}; border: 1px solid {{ cpd_status_border }}; padding: 15px; border-radius: 8px; border-left: 4px solid {{ cpd_status_color }};">
                         <div style="font-size: 11px; color: {{ cpd_status_color }}; font-weight: bold; text-transform: uppercase;">Annual Status</div>
@@ -630,9 +636,19 @@
                                 <svg style="width: 18px; height: 18px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
                             {% endif %}
                         </div>
-                        <div style="font-size: 11px; color: {{ cpd_status_color }}; margin-top: 4px;">{{ cpd_claim_count }} claim{{ cpd_claim_count|pluralize }} recorded</div>
+                        <div style="font-size: 11px; color: {{ cpd_status_color }}; margin-top: 4px;">
+                            CPD Composite:
+                            {% if cpd_score is not None %}<b>{{ cpd_score|floatformat:1 }}%</b>{% else %}<b>No Data</b>{% endif %}
+                            &bull; {{ cpd_claim_count }} claim{{ cpd_claim_count|pluralize }} recorded
+                        </div>
                     </div>
                 </div>
+
+                {% if cpd_legacy_count %}
+                <div style="background:#fff7ed; border:1px solid #fed7aa; border-left:4px solid #ea580c; color:#9a3412; border-radius:10px; padding:12px 15px; margin-bottom:18px; font-size:12px; font-weight:700;">
+                    ⚠️ {{ cpd_legacy_count }} rekod legacy tanpa domain KKM dikesan. Rekod ini dipaparkan sebagai <b>Legacy — Not Counted</b> dan tidak dimasukkan ke dalam skor CPD.
+                </div>
+                {% endif %}
 
                 <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; margin-bottom: 18px; border-bottom: 1.5px solid #e7dff2; padding-bottom: 12px;">
                     <div style="font-size: 13.5px; font-weight: 800; color: #150a35;">myCPD 2.0 Activity Workspace</div>
@@ -676,10 +692,21 @@
                         <!-- MODUL KHAS myCPD 2.0 (SUB-KATEGORI & PERANAN) -->
                         <div class="grid-3" style="margin-bottom: 15px; background: #faf8ff; border: 1.5px dashed #d8c7f4; padding: 15px; border-radius: 12px; align-items: flex-end;">
                             <div>
+                                <label style="margin-top:0; color:#150a35; font-weight:700;">KKM Core Domain <span style="color:red;">*</span></label>
+                                <select id="cpd_domain" name="kkm_domain" onchange="calculateMyCPD()" required style="background:white; border-color:#d8c7f4; font-weight:600; width:100%;">
+                                    <option value="" disabled selected>Select Domain...</option>
+                                    {% for code, label in kkm_domain_choices %}
+                                    <option value="{{ code }}">{{ label }}{% if code == 'GERIATRIC' or code == 'MENTAL_HEALTH' or code == 'MATERNAL_CHILD_HEALTH' %} — Rare (1.5x){% endif %}</option>
+                                    {% endfor %}
+                                </select>
+                                <div style="font-size:10.5px; color:#6f628b; margin-top:4px;">Rare domains diberi pemberat 1.5x pada liputan, bukan pada mata.</div>
+                            </div>
+                            <div>
                                 <label style="margin-top:0; color:#150a35; font-weight:700;">Sub Category (Duration) <span style="color:red;">*</span></label>
                                 <select id="cpd_subcat" name="sub_category" onchange="calculateMyCPD()" required style="background:white; border-color:#d8c7f4; font-weight:600; width:100%;">
                                     <option value="" disabled selected>Select Duration...</option>
-                                    <option value="ONE FULL DAY">One Full Day</option>
+                                    <option value="HALF DAY">Half Day</option>
+                                    <option value="FULL DAY">Full Day</option>
                                     <option value="ONE AND A HALF DAYS">One and a Half Days</option>
                                     <option value="TWO FULL DAYS">Two Full Days</option>
                                     <option value="TWO AND A HALF DAYS OR MORE">Two and a Half Days or More</option>
@@ -689,12 +716,21 @@
                                 <label style="margin-top:0; color:#150a35; font-weight:700;">Participation Role <span style="color:red;">*</span></label>
                                 <select id="cpd_role" name="role" onchange="calculateMyCPD()" required style="background:white; border-color:#d8c7f4; font-weight:600; width:100%;">
                                     <option value="ATTENDEE" selected>Attendee</option>
-                                    <option value="PRESENTER">Presenter / Speaker</option>
+                                    <option value="PRESENTER">Presenter / Speaker (+5 mata)</option>
                                 </select>
                             </div>
+                        </div>
+
+                        <div style="display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap; background:#f3edff; border:1px solid #d8c7f4; border-radius:10px; padding:12px 15px; margin-bottom:15px;">
                             <div>
-                                <label style="margin-top:0; color:#6d3ec4; font-weight:800;">Calculated Points Claimed</label>
-                                <input type="number" id="cpd_mata" name="mata" readonly style="background:#f3edff; border:1px solid #d8c7f4; color:#150a35; font-weight:900; width:100%; cursor:not-allowed;">
+                                <div style="font-size:10.5px; color:#6d3ec4; font-weight:800; text-transform:uppercase;">Auto-Calculated Preview</div>
+                                <div style="font-size:13px; color:#150a35; margin-top:3px;">
+                                    <b id="cpdPreviewPoints" style="font-size:20px;">0</b> mata
+                                    &bull; <span id="cpdPreviewDomain">No domain selected</span>
+                                </div>
+                            </div>
+                            <div style="font-size:11px; color:#6f628b; max-width:320px;">
+                                Mata dikira oleh backend. Skor radar CPD = <b>60% mata + 40% liputan domain</b>.
                             </div>
                         </div>
 
@@ -726,7 +762,8 @@
                             <tr>
                                 <th>Date Submitted</th>
                                 <th>Program Title</th>
-                                <th>Category</th>
+                                <th>KKM Domain</th>
+                                <th>Category / Duration</th>
                                 <th>Points</th>
                                 <th>Status</th>
                             </tr>
@@ -736,8 +773,27 @@
                             <tr>
                                 <td>{{ claim.submitted_at|date:"d M Y" }}</td>
                                 <td>{{ claim.topic }}</td>
-                                <td>{{ claim.category }}</td>
-                                <td>{{ claim.points }}</td>
+                                <td>
+                                    {% if claim.is_legacy %}
+                                    <span style="background:#fff7ed; color:#9a3412; border:1px solid #fed7aa; padding:3px 8px; border-radius:20px; font-size:10px; font-weight:800; white-space:nowrap;">Legacy — Not Counted</span>
+                                    {% else %}
+                                    <span style="color:#150a35; font-weight:700;">{{ claim.kkm_domain_label }}</span>
+                                    {% if claim.is_rare_domain %}
+                                    <span style="background:#f3edff; color:#6d3ec4; border:1px solid #d8c7f4; padding:2px 7px; border-radius:20px; font-size:9.5px; font-weight:800;">Rare 1.5x</span>
+                                    {% endif %}
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <div style="font-weight:600;">{{ claim.category }}</div>
+                                    <div style="font-size:10.5px; color:#6f628b;">{{ claim.sub_category|default:"—" }} &bull; {{ claim.role|title }}</div>
+                                </td>
+                                <td>
+                                    {% if claim.is_legacy %}
+                                    <span style="color:#9a3412; font-weight:700;">{{ claim.points }} <span style="font-size:9.5px;">(not counted)</span></span>
+                                    {% else %}
+                                    {{ claim.points }}
+                                    {% endif %}
+                                </td>
                                 <td>
                                     {% if claim.status == 'APPROVED' %}
                                     <span class="status-badge bg-success" style="display: inline-flex; align-items: center; gap: 4px;">
@@ -759,7 +815,7 @@
                             </tr>
                             {% empty %}
                             <tr>
-                                <td colspan="5" style="text-align: center; color: #6d3ec4; font-style: italic;">No CPD claims recorded yet. Submit your first claim above.</td>
+                                <td colspan="6" style="text-align: center; color: #6d3ec4; font-style: italic;">No CPD claims recorded yet. Submit your first claim above.</td>
                             </tr>
                             {% endfor %}
                         </tbody>
@@ -1388,26 +1444,36 @@
         }
     }
 
-    // 6. Pengiraan Pintar myCPD 2.0 (Sub-Kategori + Peranan)
+    // 6. Pengiraan Pintar myCPD 2.0 (Domain + Duration + Peranan)
     function calculateMyCPD() {
-        var subcat = document.getElementById('cpd_subcat').value;
-        var role = document.getElementById('cpd_role').value;
-        var pointsInput = document.getElementById('cpd_mata');
-        
-        var basePts = 0;
-        if (subcat === 'ONE FULL DAY') basePts = 8;
-        else if (subcat === 'ONE AND A HALF DAYS') basePts = 12;
-        else if (subcat === 'TWO FULL DAYS') basePts = 16;
-        else if (subcat === 'TWO AND A HALF DAYS OR MORE') basePts = 20;
+        var subcatEl = document.getElementById('cpd_subcat');
+        var roleEl = document.getElementById('cpd_role');
+        var domainEl = document.getElementById('cpd_domain');
+        var pointsPreview = document.getElementById('cpdPreviewPoints');
+        var domainPreview = document.getElementById('cpdPreviewDomain');
+        if (!subcatEl || !roleEl || !pointsPreview) return;
 
-        var roleBonus = (role === 'PRESENTER') ? 5 : 0;
-        
-        if (basePts > 0) {
-            pointsInput.value = basePts + roleBonus;
-        } else {
-            pointsInput.value = '';
+        var basePoints = {
+            'HALF DAY': 4,
+            'FULL DAY': 8,
+            'ONE FULL DAY': 8,
+            'ONE AND A HALF DAYS': 12,
+            'TWO FULL DAYS': 16,
+            'TWO AND A HALF DAYS OR MORE': 20
+        };
+        var basePts = basePoints[subcatEl.value] || 0;
+        var roleBonus = (roleEl.value === 'PRESENTER') ? 5 : 0;
+        var total = basePts > 0 ? (basePts + roleBonus) : 0;
+        pointsPreview.textContent = total;
+
+        if (domainPreview && domainEl) {
+            var selectedOption = domainEl.options[domainEl.selectedIndex];
+            domainPreview.textContent = domainEl.value && selectedOption
+                ? selectedOption.text
+                : 'No domain selected';
         }
     }
+    document.addEventListener('DOMContentLoaded', calculateMyCPD);
 
     // 7. Toggle Mod '+ New Entry' vs 'View History'
     function toggleWorkspaceMode(prefix, mode) {

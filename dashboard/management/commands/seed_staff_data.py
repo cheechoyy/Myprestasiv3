@@ -101,11 +101,48 @@ class Command(BaseCommand):
             )
 
         # B. Knowledge & Competency (CPD Claims)
+        # Mata dikira automatik daripada Duration + Role oleh CPDClaim.save().
         CPDClaim.objects.filter(officer=user).delete()
-        CPDClaim.objects.create(officer=user, topic="National Diabetes Management Protocol 2026", category="CME Workshop", points=20, event_date=date.today() - timedelta(days=25), status='APPROVED')
-        CPDClaim.objects.create(officer=user, topic="Advanced Insulin Titration Workshop", category="Workshop", points=15, event_date=date.today() - timedelta(days=14), status='APPROVED')
-        CPDClaim.objects.create(officer=user, topic="Medical Ethics & Clinical Governance", category="Online Quiz", points=10, event_date=date.today() - timedelta(days=5), status='APPROVED')
-        CPDClaim.objects.create(officer=user, topic="Cardiovascular Risk Stratification Update", category="CME", points=10, event_date=date.today(), status='PENDING')
+        CPDClaim.objects.create(
+            officer=user,
+            topic="National Diabetes Management Protocol 2026",
+            category="CME Workshop",
+            kkm_domain='INTERNAL_MEDICINE',
+            sub_category='TWO AND A HALF DAYS OR MORE',
+            role='ATTENDEE',
+            event_date=date.today() - timedelta(days=25),
+            status='APPROVED',
+        )
+        CPDClaim.objects.create(
+            officer=user,
+            topic="Basic Surgical Skills Workshop",
+            category="Workshop",
+            kkm_domain='SURGERY',
+            sub_category='ONE AND A HALF DAYS',
+            role='ATTENDEE',
+            event_date=date.today() - timedelta(days=14),
+            status='APPROVED',
+        )
+        CPDClaim.objects.create(
+            officer=user,
+            topic="Paediatric Asthma Management Update",
+            category="Online Quiz",
+            kkm_domain='PAEDIATRICS',
+            sub_category='FULL DAY',
+            role='ATTENDEE',
+            event_date=date.today() - timedelta(days=5),
+            status='APPROVED',
+        )
+        CPDClaim.objects.create(
+            officer=user,
+            topic="Geriatric Falls Prevention Symposium",
+            category="CME",
+            kkm_domain='GERIATRIC',
+            sub_category='FULL DAY',
+            role='PRESENTER',
+            event_date=date.today(),
+            status='PENDING',
+        )
 
         # C. Documentation Monitoring
         DocumentationLog.objects.filter(officer=user).delete()

@@ -100,21 +100,31 @@ def _build_productivity_rows(rng, start_date, days):
 
 def _build_cpd_rows(days, today):
     specs = (
-        (20, 'APPROVED', 'CME Workshop', 0.85),
-        (15, 'APPROVED', 'Workshop', 0.60),
-        (10, 'APPROVED', 'Online Quiz', 0.35),
-        (10, 'PENDING', 'CME', 0.20),
-        (5, 'REJECTED', 'Conference', 0.10),
+        (20, 'APPROVED', 'CME Workshop', 'INTERNAL_MEDICINE',
+         'TWO AND A HALF DAYS OR MORE', 'ATTENDEE', 0.85),
+        (12, 'APPROVED', 'Workshop', 'SURGERY',
+         'ONE AND A HALF DAYS', 'ATTENDEE', 0.60),
+        (8, 'APPROVED', 'Online Quiz', 'PAEDIATRICS',
+         'FULL DAY', 'ATTENDEE', 0.35),
+        (13, 'PENDING', 'CME', 'GERIATRIC',
+         'FULL DAY', 'PRESENTER', 0.20),
+        (4, 'REJECTED', 'Conference', 'MENTAL_HEALTH',
+         'HALF DAY', 'ATTENDEE', 0.10),
+        (8, 'APPROVED', 'CME Workshop', 'MATERNAL_CHILD_HEALTH',
+         'FULL DAY', 'ATTENDEE', 0.05),
     )
     topics = (
         'National Diabetes Management Protocol Update',
-        'Advanced Insulin Titration Workshop',
-        'Medical Ethics and Clinical Governance',
-        'Cardiovascular Risk Stratification',
-        'Primary Care Quality Improvement Forum',
+        'Basic Surgical Skills Workshop',
+        'Paediatric Asthma Management Update',
+        'Geriatric Falls Prevention Symposium',
+        'Mental Health First Aid Forum',
+        'Maternal and Child Health Screening Workshop',
     )
     rows = []
-    for index, (points, status, category, fraction) in enumerate(specs):
+    for index, (
+        points, status, category, domain, duration, role, fraction
+    ) in enumerate(specs):
         days_ago = max(
             1,
             min(days - 1, int(round(days * fraction))),
@@ -122,8 +132,9 @@ def _build_cpd_rows(days, today):
         event_date = today - timedelta(days=days_ago)
         rows.append({
             'category': category,
-            'sub_category': 'Simulation',
-            'role': 'ATTENDEE',
+            'sub_category': duration,
+            'kkm_domain': domain,
+            'role': role,
             'topic': f'{SIM_CPD_PREFIX} {topics[index]}',
             'points': points,
             'event_date': event_date,

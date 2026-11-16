@@ -1,3 +1,4 @@
+from django.core.exceptions import ValidationError
 from django.db import models
 from django.contrib.auth.models import User
 from django.utils import timezone
@@ -151,6 +152,53 @@ class DocumentationLog(models.Model):
 # ==========================================
 # 3. KNOWLEDGE & CAPACITY (CPD / CME)
 # ==========================================
+# Starter taxonomy. Label rasmi KKM boleh dikemas kini tanpa mengubah kod skor
+# selagi kod domain dan pemberat kekal konsisten.
+KKM_DOMAIN_CHOICES = (
+    ('NCD', 'NCD Management'),
+    ('CHILD_ADOLESCENT', 'Child and Adolescent Health'),
+    ('GERIATRIC_PALLIATIVE', 'Geriatric and Palliative Care'),
+    ('MENTAL_HEALTH', 'Mental Health and Psychosocial Care'),
+    ('WOMENS_HEALTH', "Women's, Maternal and Reproductive Health"),
+    ('COMMUNICABLE_DISEASE', 'Communicable Disease'),
+)
+KKM_CORE_DOMAINS = tuple(code for code, _label in KKM_DOMAIN_CHOICES)
+KKM_CORE_DOMAIN_LABELS = dict(KKM_DOMAIN_CHOICES)
+KKM_CORE_DOMAIN_WEIGHTS = {
+    'NCD': 1.0,
+    'CHILD_ADOLESCENT': 1.5,
+    'GERIATRIC_PALLIATIVE': 1.5,
+    'MENTAL_HEALTH': 1.5,
+    'WOMENS_HEALTH': 1.5,
+    'COMMUNICABLE_DISEASE': 1.0,
+}
+KKM_RARE_DOMAINS = tuple(
+    code for code, weight in KKM_CORE_DOMAIN_WEIGHTS.items() if weight > 1.0
+)
+
+CPD_DURATION_BASE_POINTS = {
+    'HALF DAY': 4,
+    'FULL DAY': 8,
+    'ONE FULL DAY': 8,
+    'ONE AND A HALF DAYS': 12,
+    'TWO FULL DAYS': 16,
+    'TWO AND A HALF DAYS OR MORE': 20,
+}
+CPD_ROLE_BONUS = {
+    'PRESENTER': 5,
+}
+
+
+def calculate_cpd_claim_points(sub_category, role):
+    """Kira mata CPD mengikut Duration + Role. None = duration tidak dikenali."""
+    duration_key = (sub_category or '').strip().upper()
+    base_points = CPD_DURATION_BASE_POINTS.get(duration_key)
+    if base_points is None:
+        return None
+    role_key = (role or '').strip().upper()
+    return base_points + CPD_ROLE_BONUS.get(role_key, 0)
+
+
 class CPDClaim(models.Model):
     STATUS_CHOICES = (
         ('PENDING', 'Pending Verification'),
@@ -163,10 +211,18 @@ class CPDClaim(models.Model):
     
     # myCPD 2.0 KKM Standard
     sub_category = models.CharField(max_length=100, blank=True, null=True) 
+    kkm_domain = models.CharField(
+        max_length=50,
+        choices=KKM_DOMAIN_CHOICES,
+        blank=True,
+        null=True,
+        db_index=True,
+        help_text='Domain teras KKM. Null = rekod legacy yang tidak dikira.',
+    )
     role = models.CharField(max_length=20, default='ATTENDEE') # ATTENDEE / PRESENTER
     
     topic = models.CharField(max_length=200)
-    points = models.IntegerField(default=10)
+    points = models.IntegerField(default=10, editable=False)
     event_date = models.DateField()
     end_date = models.DateField(blank=True, null=True)
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='PENDING')
@@ -175,6 +231,37 @@ class CPDClaim(models.Model):
     verified_at = models.DateTimeField(blank=True, null=True)
     rejection_reason = models.TextField(blank=True, null=True)
     submitted_at = models.DateTimeField(auto_now_add=True)
+
+    def clean(self):
+        super().clean()
+        if self.kkm_domain and self.kkm_domain not in KKM_CORE_DOMAINS:
+            raise ValidationError({
+                'kkm_domain': 'Domain KKM tidak sah.',
+            })
+
+    def save(self, *args, **kwargs):
+        computed_points = calculate_cpd_claim_points(
+            self.sub_category, self.role
+        )
+        if computed_points is not None:
+            self.points = computed_points
+        super().save(*args, **kwargs)
+
+    @property
+    def is_legacy(self):
+        return not bool(self.kkm_domain)
+
+    @property
+    def is_rare_domain(self):
+        return self.kkm_domain in KKM_RARE_DOMAINS
+
+    @property
+    def kkm_domain_label(self):
+        if not self.kkm_domain:
+            return 'Legacy — Not Counted'
+        return KKM_CORE_DOMAIN_LABELS.get(
+            self.kkm_domain, self.kkm_domain.replace('_', ' ').title()
+        )
 
     def __str__(self):
         return f"CPD ({self.points} pts) - {self.officer.username} - {self.topic}"
