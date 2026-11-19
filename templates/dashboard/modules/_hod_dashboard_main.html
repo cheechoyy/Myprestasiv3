@@ -98,6 +98,86 @@
     {% endif %}
 </div>
 
+<!-- EWMA PRODUCTIVITY & BURNOUT SURVEILLANCE MONITOR (HOD) -->
+<div class="card" style="margin-bottom: 20px; border: 1px solid #e7dff2; border-radius: 16px; padding: 18px 22px; background: white; box-shadow: 0 4px 15px rgba(21, 10, 53, 0.03);">
+    <div style="display: flex; align-items: center; justify-content: space-between; border-bottom: 1px dashed #e7dff2; padding-bottom: 12px; margin-bottom: 14px; flex-wrap: wrap; gap: 10px;">
+        <div style="display: flex; align-items: center; gap: 10px;">
+            <div style="width: 32px; height: 32px; background: #f3edff; border: 1px solid #d8c7f4; border-radius: 8px; display: flex; align-items: center; justify-content: center; color: #6d3ec4;">
+                <svg style="width: 17px; height: 17px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+            </div>
+            <div>
+                <h4 style="margin: 0; color: #150a35; font-size: 14.5px; font-weight: 900;">EWMA Productivity &amp; Burnout Surveillance (&lambda; = 0.30)</h4>
+                <p style="margin: 2px 0 0 0; font-size: 11px; color: #6f628b; font-weight: 500;">
+                    30-day patient clearance velocity &amp; consultation fatigue detection &bull; <a href="{% url 'operational_module' %}?dept={{ user.profile.department|default:'FMS' }}&state={{ pilihan_negeri }}&clinic={{ pilihan_klinik }}&tab=Productivity" style="color: #6d3ec4; font-weight: 800; text-decoration: none;">Buka Graf EWMA Terperinci ➔</a>
+                </p>
+            </div>
+        </div>
+        <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+            <span style="font-size: 11px; font-weight: 800; background: #dcfce7; color: #16a34a; border: 1px solid #bbf7d0; padding: 4px 10px; border-radius: 20px;">
+                ● {{ ewma_summary.in_control }} In Control
+            </span>
+            <span style="font-size: 11px; font-weight: 800; background: #fef3c7; color: #d97706; border: 1px solid #fde68a; padding: 4px 10px; border-radius: 20px;">
+                ● {{ ewma_summary.watch }} Watch
+            </span>
+            <span style="font-size: 11px; font-weight: 800; background: #fee2e2; color: #dc2626; border: 1px solid #fecaca; padding: 4px 10px; border-radius: 20px;">
+                ● {{ ewma_summary.alert }} Alert
+            </span>
+            {% if ewma_summary.no_data %}
+            <span style="font-size: 11px; font-weight: 800; background: #f1f5f9; color: #64748b; border: 1px solid #cbd5e1; padding: 4px 10px; border-radius: 20px;">
+                ● {{ ewma_summary.no_data }} No Data
+            </span>
+            {% endif %}
+        </div>
+    </div>
+
+    {% if ewma_snapshots %}
+        <div style="overflow-x: auto;">
+            <table class="staff-table" style="margin: 0; width: 100%;">
+                <thead>
+                    <tr>
+                        <th style="padding: 8px 10px; font-size: 10.5px;">Officer Name</th>
+                        <th style="padding: 8px 10px; font-size: 10.5px;">EWMA Status</th>
+                        <th style="padding: 8px 10px; font-size: 10.5px;">EWMA Velocity</th>
+                        <th style="padding: 8px 10px; font-size: 10.5px;">LCL Threshold</th>
+                        <th style="padding: 8px 10px; font-size: 10.5px;">Avg Consult</th>
+                        <th style="padding: 8px 10px; font-size: 10.5px;">30d Logs</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in ewma_snapshots %}
+                        <tr>
+                            <td style="font-weight: 800; color: #150a35; padding: 8px 10px; font-size: 12px;">{{ item.officer_name }}</td>
+                            <td style="padding: 8px 10px;">
+                                <span style="font-size: 10.5px; font-weight: 800; padding: 2px 8px; border-radius: 12px;
+                                    {% if item.status == 'IN_CONTROL' %}background: #dcfce7; color: #16a34a; border: 1px solid #bbf7d0;
+                                    {% elif item.status == 'WATCH' %}background: #fef3c7; color: #d97706; border: 1px solid #fde68a;
+                                    {% elif item.status == 'ALERT' %}background: #fee2e2; color: #dc2626; border: 1px solid #fecaca;
+                                    {% else %}background: #f1f5f9; color: #64748b; border: 1px solid #cbd5e1;{% endif %}">
+                                    {{ item.badge_label }}
+                                </span>
+                            </td>
+                            <td style="font-weight: 800; color: #150a35; padding: 8px 10px; font-size: 12px;">
+                                {% if item.ewma_latest is not None %}{{ item.ewma_latest|floatformat:1 }} / day{% else %}No Data{% endif %}
+                            </td>
+                            <td style="color: #6f628b; padding: 8px 10px; font-size: 12px;">
+                                {% if item.lcl_latest is not None %}{{ item.lcl_latest|floatformat:1 }}{% else %}—{% endif %}
+                            </td>
+                            <td style="color: #6f628b; padding: 8px 10px; font-size: 12px;">
+                                {% if item.avg_consult is not None %}{{ item.avg_consult|floatformat:1 }} min{% else %}—{% endif %}
+                            </td>
+                            <td style="color: #6f628b; padding: 8px 10px; font-size: 12px;">{{ item.observation_count }} days</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% else %}
+        <div style="text-align: center; padding: 16px; color: #6f628b; font-size: 12px; font-style: italic;">
+            No officers found in this facility scope.
+        </div>
+    {% endif %}
+</div>
+
 <div class="orbital-hub-wrapper">
 
     <!-- 1. POD KIRI ATAS: ACTION CENTER (Semua elemen selamat di zon kiri) -->

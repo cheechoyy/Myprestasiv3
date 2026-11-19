@@ -2522,6 +2522,25 @@ class ModuleScoreEngineTests(TestCase):
         self.assertEqual(productivity['n'], 1)
         self.assertEqual(productivity['raw_value'], 50.0)
 
+    def test_productivity_ewma_detects_burnout_drift(self):
+        from .services import get_productivity_ewma_profile
+
+        for i in range(10):
+            day = self.today - timedelta(days=9 - i)
+            cleared = 42 if i < 5 else 18
+            consult = 12.0 if i < 5 else 19.0
+            ProductivityLog.objects.create(
+                officer=self.user,
+                record_date=day,
+                patients_cleared=cleared,
+                avg_consult_minutes=consult,
+            )
+
+        profile = get_productivity_ewma_profile(self.user, as_of=self.today)
+        self.assertTrue(profile['has_data'])
+        self.assertEqual(profile['status'], 'ALERT')
+        self.assertLess(profile['ewma_latest'], profile['lcl_latest'])
+
 
 
 class SimulationSeederTests(TestCase):
@@ -3834,3 +3853,280 @@ class HODDashboardDynamicDataTests(TestCase):
         self.assertContains(response, 'Beta Two')
         self.assertNotContains(response, 'Dr. dr_abu')
         self.assertNotContains(response, 'Klinik Kesihatan Medong')
+
+    def test_innovation_milestone_profile_and_hod_verification(self):
+        from .services import get_innovation_milestone_profile
+
+        empty_prof = get_innovation_milestone_profile(self.staff_a)
+        self.assertFalse(empty_prof['has_data'])
+        self.assertEqual(empty_prof['status'], 'NO_DATA')
+
+        p_verified = InnovationProject.objects.create(
+            officer=self.staff_a,
+            project_title='Klinik Diabetes Dashboard',
+            innovation_type='Technology Adoption',
+            final_points=10.0,
+            score=10.0,
+            is_verified=True,
+        )
+        p_pending = InnovationProject.objects.create(
+            officer=self.staff_a,
+            project_title='Audit HbA1c Kohort',
+            innovation_type='Research',
+            final_points=10.0,
+            score=10.0,
+            is_verified=False,
+        )
+
+        prof = get_innovation_milestone_profile(self.staff_a)
+        self.assertTrue(prof['has_data'])
+        self.assertEqual(prof['verified_points'], 10.0)
+        self.assertEqual(prof['pending_points'], 10.0)
+        self.assertEqual(prof['verified_pct'], 50)
+        self.assertEqual(prof['pending_pct'], 50)
+        self.assertEqual(prof['status'], 'PENDING_VERIFICATION')
+
+        # HOD mengesahkan projek kedua melalui operational_view
+        resp = self.client.post(
+            reverse('operational_module') + '?tab=Innovation',
+            {
+                'form_type': 'verify_innovation_project',
+                'project_id': p_pending.id,
+            },
+        )
+        self.assertEqual(resp.status_code, 302)
+        p_pending.refresh_from_db()
+        self.assertTrue(p_pending.is_verified)
+
+        updated_prof = get_innovation_milestone_profile(self.staff_a)
+        self.assertEqual(updated_prof['verified_points'], 20.0)
+        self.assertEqual(updated_prof['verified_pct'], 100)
+        self.assertEqual(updated_prof['status'], 'TARGET_MET')
+
+    def test_fms_kudos_categories_qr_scan_and_30_point_ceiling(self):
+        from .services import get_teamwork_recognition_profile
+
+        self.client.force_login(self.staff_b)
+
+        # 1. Imbas QR Kudos milik staff_a mempra-pilih penerima pada borang
+        qr_resp = self.client.get(
+            reverse('staff_dashboard')
+            + f'?section=Interpersonal&tab=teamwork&kudos_to={self.staff_a.username}'
+        )
+        self.assertEqual(qr_resp.status_code, 200)
+        self.assertEqual(qr_resp.context['kudos_qr_target_id'], self.staff_a.id)
+        self.assertContains(qr_resp, 'QR Scan Verified')
+
+        # 2. Hantar Kudos aktiviti rasmi FMS (+5 pts) melalui QR
+        post_qr = self.client.post(
+            reverse('staff_dashboard') + '?section=Interpersonal',
+            {
+                'form_type': 'int_team',
+                'via_qr': '1',
+                'peer_id': self.staff_a.id,
+                'kudos_category': 'Consultation based on subspecialty/AOI',
+                'kudos_note': 'Konsultasi subkepakaran kes T2DM',
+            },
+        )
+        self.assertEqual(post_qr.status_code, 302)
+        self.assertEqual(
+            PeerKudos.objects.filter(receiver=self.staff_a).first().points,
+            5,
+        )
+
+        # 3. Imbasan QR kedua dalam tempoh 24 jam disekat (anti-gaming cooldown)
+        self.client.post(
+            reverse('staff_dashboard') + '?section=Interpersonal',
+            {
+                'form_type': 'int_team',
+                'via_qr': '1',
+                'peer_id': self.staff_a.id,
+                'kudos_category': 'Accepting referrals from other FMS',
+                'kudos_note': 'Cuba imbas kali kedua dalam 24 jam',
+            },
+        )
+        self.assertEqual(PeerKudos.objects.filter(receiver=self.staff_a).count(), 1)
+
+        # 4. Uji had siling maksimum (Ceiling = 30 mata)
+        for _ in range(7):
+            self.client.post(
+                reverse('staff_dashboard') + '?section=Interpersonal',
+                {
+                    'form_type': 'int_team',
+                    'via_qr': '0',
+                    'peer_id': self.staff_a.id,
+                    'kudos_category': 'Covering inter / intrafacility FMS',
+                    'kudos_note': 'Liputan klinik FMS',
+                },
+            )
+
+        prof = get_teamwork_recognition_profile(self.staff_a, as_of=self.today)
+        self.assertEqual(prof['received_points'], 30)
+        self.assertEqual(prof['attainment_pct'], 100)
+        self.assertEqual(prof['status'], 'TARGET_MET')
+
+    def test_mentorship_trajectory_and_hod_verification(self):
+        from .services import get_mentorship_trajectory_profile
+
+        empty_m = get_mentorship_trajectory_profile(self.staff_a, as_of=self.today)
+        self.assertFalse(empty_m['has_data'])
+        self.assertEqual(empty_m['status'], 'NO_DATA')
+
+        # Staff menghantar sesi baharu (Post-grad students & SWE) -> berstatus pending HOD
+        self.client.force_login(self.staff_a)
+        self.client.post(
+            reverse('staff_dashboard') + '?section=Interpersonal',
+            {
+                'form_type': 'int_mentor',
+                'mentor_role': 'mentor',
+                'mentee_name': 'Dr. Farhan (Post-grad)',
+                'mentor_date': self.today.isoformat(),
+                'mentor_duration': '2 Hours',
+                'mentor_domain': 'Post-grad students',
+                'mentor_notes': 'Bimbingan kes T2DM & persediaan peperiksaan.',
+            },
+        )
+        sess = MentorshipSession.objects.get(mentor=self.staff_a)
+        self.assertFalse(sess.is_verified)
+
+        pending_prof = get_mentorship_trajectory_profile(self.staff_a, as_of=self.today)
+        self.assertEqual(pending_prof['pending_hours'], 2.0)
+        self.assertEqual(pending_prof['verified_hours'], 0.0)
+        self.assertEqual(pending_prof['individual_trainees_count'], 1)
+        self.assertEqual(pending_prof['status'], 'PENDING_VERIFICATION')
+
+        # HOD mengesahkan sesi tersebut di interpersonal_view
+        self.client.force_login(self.hod)
+        resp_verify = self.client.post(
+            reverse('interpersonal_module') + '?tab=Mentorship',
+            {
+                'form_type': 'verify_mentorship_session',
+                'session_id': sess.id,
+            },
+        )
+        self.assertEqual(resp_verify.status_code, 302)
+        sess.refresh_from_db()
+        self.assertTrue(sess.is_verified)
+
+        verified_prof = get_mentorship_trajectory_profile(self.staff_a, as_of=self.today)
+        self.assertEqual(verified_prof['verified_hours'], 2.0)
+        self.assertEqual(verified_prof['verified_pct'], 20)
+        self.assertEqual(verified_prof['status'], 'IN_PROGRESS')
+
+    def test_mypsq_rolling_three_month_profile_and_hod_surveillance(self):
+        from .services import get_mypsq_rolling_profile
+
+        # 1. Keadaan tanpa data mesti NO_DATA (tiada komen palsu Dr. Ramesh)
+        empty_mypsq = get_mypsq_rolling_profile(self.staff_a, as_of=self.today)
+        self.assertFalse(empty_mypsq['has_data'])
+        self.assertEqual(empty_mypsq['status'], 'NO_DATA')
+
+        resp_empty = self.client.get(reverse('interpersonal_module') + '?tab=Patient')
+        self.assertEqual(resp_empty.status_code, 200)
+        self.assertNotContains(resp_empty, 'Dr. Ramesh was exceptionally clear')
+        self.assertContains(resp_empty, 'Tiada maklum balas MyPSQ direkodkan')
+
+        # 2. Maklum balas lama (> 90 hari) tidak termasuk dalam purata rolling 3 bulan
+        old_fb = MyPSQFeedback.objects.create(
+            doctor=self.staff_a,
+            q1_general=2, q2_technical=2, q3_interpersonal=2,
+            q4_communication=2, q5_financial=2, q6_time=2, q7_accessibility=2,
+        )
+        MyPSQFeedback.objects.filter(pk=old_fb.pk).update(
+            created_at=timezone.now() - timedelta(days=120)
+        )
+
+        # 3. Maklum balas dalam 90 hari terakhir (purata 4.6 / 5.0 = 92%)
+        MyPSQFeedback.objects.create(
+            doctor=self.staff_a,
+            q1_general=5, q2_technical=5, q3_interpersonal=5,
+            q4_communication=5, q5_financial=4, q6_time=4, q7_accessibility=4,
+            patient_comments='Penjelasan doktor sangat jelas dan mesra.',
+        )
+
+        prof = get_mypsq_rolling_profile(self.staff_a, as_of=self.today)
+        self.assertTrue(prof['has_data'])
+        self.assertEqual(prof['response_count'], 1)
+        self.assertEqual(prof['all_time_count'], 2)
+        self.assertAlmostEqual(prof['avg_score'], 4.6, places=1)
+        self.assertEqual(prof['status'], 'OPTIMAL')
+        self.assertIn('Penjelasan doktor sangat jelas', self.client.get(
+            reverse('interpersonal_module') + '?tab=Patient'
+        ).content.decode('utf-8'))
+
+    def test_ei_wellness_profile_and_hod_privacy_surveillance(self):
+        from .services import get_ei_wellness_profile
+
+        empty_ei = get_ei_wellness_profile(self.staff_a, as_of=self.today)
+        self.assertFalse(empty_ei['has_data'])
+        self.assertEqual(empty_ei['status'], 'NO_DATA')
+
+        secret_diary_note = 'SULIT_PERIBADI_REFLEKSI_DOKTOR_9988'
+        EmotionalReflection.objects.create(
+            officer=self.staff_a,
+            record_date=self.today - timedelta(days=7),
+            self_awareness_score=55,
+            self_regulation_score=50,
+            empathy_score=60,
+            deescalation_score=55,
+            reflection_notes=secret_diary_note,
+        )
+        EmotionalReflection.objects.create(
+            officer=self.staff_a,
+            record_date=self.today,
+            self_awareness_score=50,
+            self_regulation_score=52,
+            empathy_score=58,
+            deescalation_score=50,
+            reflection_notes=secret_diary_note,
+        )
+
+        prof = get_ei_wellness_profile(self.staff_a, as_of=self.today)
+        self.assertTrue(prof['has_data'])
+        self.assertEqual(prof['status'], 'ALERT')
+        self.assertLess(prof['ewma_latest'], 60.0)
+
+        # Pastikan paparan HOD tidak mendedahkan nota refleksi peribadi staf
+        resp_hod = self.client.get(reverse('interpersonal_module') + '?tab=EI')
+        self.assertEqual(resp_hod.status_code, 200)
+        self.assertNotContains(resp_hod, secret_diary_note)
+        self.assertContains(resp_hod, 'Privacy-Protected Surveillance')
+
+    def test_teamwork_rolling_recognition_and_hod_leaderboard(self):
+        from .services import get_teamwork_recognition_profile
+
+        empty_tw = get_teamwork_recognition_profile(self.staff_a, as_of=self.today)
+        self.assertFalse(empty_tw['has_data'])
+        self.assertEqual(empty_tw['status'], 'NO_DATA')
+
+        # Rekod Kudos lama (> 365 hari) dikecualikan daripada tetingkap 12 bulan
+        old_kudos = PeerKudos.objects.create(
+            sender=self.staff_b,
+            receiver=self.staff_a,
+            category='Shift Cover & Ward Relief',
+            points=10,
+        )
+        PeerKudos.objects.filter(pk=old_kudos.pk).update(
+            sent_at=timezone.now() - timedelta(days=400)
+        )
+
+        # Rekod Kudos dalam 365 hari terakhir (30 mata penuh = 100%)
+        for _ in range(3):
+            PeerKudos.objects.create(
+                sender=self.staff_b,
+                receiver=self.staff_a,
+                category='Emergency & On-Call Assistance',
+                points=10,
+                message='Terima kasih bantu kes kecemasan.',
+            )
+
+        prof = get_teamwork_recognition_profile(self.staff_a, as_of=self.today)
+        self.assertTrue(prof['has_data'])
+        self.assertEqual(prof['received_points'], 30)
+        self.assertEqual(prof['attainment_pct'], 100)
+        self.assertEqual(prof['status'], 'TARGET_MET')
+
+        resp_hod = self.client.get(reverse('interpersonal_module') + '?tab=Teamwork')
+        self.assertEqual(resp_hod.status_code, 200)
+        self.assertContains(resp_hod, 'Department Kudos Leaderboard')
+        self.assertEqual(resp_hod.context['kudos_leaderboard'][0]['username'], 'live_a')

@@ -214,9 +214,9 @@
             {% elif active_tab == 'Innovation' %}
                 <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; flex-wrap: wrap; gap: 10px;">
                     <div>
-                        <h3 style="color:#150a35; margin:0; font-size: 16px; font-weight: 900;">2. Innovation Portfolio &amp; HOD Verification</h3>
+                        <h3 style="color:#150a35; margin:0; font-size: 16px; font-weight: 900;">2. Innovation Surveillance &amp; Pending Verification Queue</h3>
                         <p style="margin: 3px 0 0 0; color: #6f628b; font-size: 12px; font-weight: 500;">
-                            Pengesahan projek penyelidikan, percubaan klinikal, teknologi &amp; penerbitan (Matriks Wajaran Base Points &times; Multiplier).
+                            Pemantauan pencapaian sasaran 20 mata inovasi &amp; pengesahan projek penyelidikan, percubaan klinikal, teknologi serta penerbitan.
                         </p>
                     </div>
                     <div style="display: flex; gap: 8px; flex-wrap: wrap;">
@@ -225,76 +225,103 @@
                         </span>
                         {% if innov_summary.pending_count > 0 %}
                         <span style="background: #fef3c7; color: #b45309; border: 1px solid #fde68a; padding: 4px 12px; border-radius: 20px; font-size: 11px; font-weight: 800;">
-                            ⏳ {{ innov_summary.pending_count }} Menunggu Pengesahan
+                            ⏳ {{ innov_summary.pending_count }} Pending Verification ({{ innov_summary.pending_points|floatformat:1 }} pts)
                         </span>
                         {% endif %}
                     </div>
                 </div>
 
                 <div class="grid-2" style="grid-template-columns: 1.35fr 1fr; padding-bottom: 25px; align-items: start;">
-                    <!-- KIRI: SENARAI PROJEK & BUTANG PENGESAHAN HOD -->
-                    <div class="eval-card" style="margin-bottom:0; background: white; border: 1px solid #e7dff2; border-radius: 14px;">
-                        <h4 style="color:#150a35; margin-top:0; border-bottom: 1px solid #e7dff2; padding-bottom: 10px;">
-                            Submitted Innovation &amp; Research Projects ({{ innov_summary.total_count }})
-                        </h4>
+                    <!-- KIRI: SENARAI PENDING VERIFICATION & PORTFOLIO DISAHKAN -->
+                    <div style="display: flex; flex-direction: column; gap: 18px;">
+                        <!-- 1. BARIS GILIR PENDING VERIFICATION -->
+                        <div class="eval-card" style="margin-bottom:0; background: #fffdf5; border: 1.5px solid #fde68a; border-radius: 14px;">
+                            <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #fde68a; padding-bottom: 10px; margin-bottom: 12px;">
+                                <h4 style="color:#92400e; margin:0; font-size: 14px; font-weight: 900;">
+                                    ⏳ Pending Verification Queue ({{ pending_innov_projects|length }})
+                                </h4>
+                                <span style="font-size: 11px; font-weight: 800; color: #b45309;">Memerlukan Semakan HOD</span>
+                            </div>
 
-                        {% if officer_projects %}
-                            <div style="display: flex; flex-direction: column; gap: 12px;">
-                                {% for proj in officer_projects %}
-                                <div style="background: #faf8ff; border: 1px solid #e7dff2; border-left: 4px solid {% if proj.is_verified %}#16a34a{% else %}#d97706{% endif %}; border-radius: 10px; padding: 14px;">
-                                    <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; flex-wrap: wrap;">
+                            {% if pending_innov_projects %}
+                                <div style="display: flex; flex-direction: column; gap: 10px;">
+                                    {% for proj in pending_innov_projects %}
+                                    <div style="background: white; border: 1px solid #fde68a; border-left: 4px solid #f59e0b; border-radius: 10px; padding: 13px;">
+                                        <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; flex-wrap: wrap;">
+                                            <div>
+                                                <span style="font-size: 10px; font-weight: 800; color: #6d3ec4; background: #f3edff; padding: 2px 8px; border-radius: 6px; text-transform: uppercase;">
+                                                    {{ proj.innovation_type|default:proj.category }}
+                                                </span>
+                                                <h5 style="margin: 5px 0 3px 0; color: #150a35; font-size: 13.5px; font-weight: 800;">{{ proj.project_title }}</h5>
+                                                <div style="font-size: 11px; color: #6f628b; font-weight: 600;">
+                                                    Aktiviti: <b>{{ proj.activity_type|default:"—" }}</b> &bull; Peranan: <b>{{ proj.contribution_level|default:proj.research_role|default:"—" }}</b> (&times;{{ proj.multiplier|floatformat:0 }})
+                                                </div>
+                                                {% if proj.nmrr_id or proj.doi %}
+                                                <div style="font-size: 11px; color: #6d3ec4; font-weight: 700; margin-top: 2px;">
+                                                    {% if proj.nmrr_id %}NMRR: {{ proj.nmrr_id }}{% endif %}
+                                                    {% if proj.nmrr_id and proj.doi %} &bull; {% endif %}
+                                                    {% if proj.doi %}DOI: {{ proj.doi }}{% endif %}
+                                                </div>
+                                                {% endif %}
+                                            </div>
+                                            <div style="text-align: right; min-width: 120px;">
+                                                <div style="font-size: 17px; font-weight: 900; color: #d97706;">+{{ proj.final_points|floatformat:1 }} <span style="font-size: 11px;">pts</span></div>
+                                                <form method="POST" style="margin-top: 6px;">
+                                                    {% csrf_token %}
+                                                    <input type="hidden" name="form_type" value="verify_innovation_project">
+                                                    <input type="hidden" name="project_id" value="{{ proj.id }}">
+                                                    <button type="submit" style="background: #16a34a; color: white; border: none; padding: 6px 13px; border-radius: 8px; font-size: 11.5px; font-weight: 800; cursor: pointer;">
+                                                        ✓ Verify Project
+                                                    </button>
+                                                </form>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    {% endfor %}
+                                </div>
+                            {% else %}
+                                <div style="text-align: center; padding: 14px; color: #15803d; font-size: 12px; font-weight: 700; background: #f0fdf4; border-radius: 8px; border: 1px solid #bbf7d0;">
+                                    ✓ Tiada projek inovasi menunggu pengesahan bagi pegawai ini.
+                                </div>
+                            {% endif %}
+                        </div>
+
+                        <!-- 2. PORTFOLIO PROJEK YANG TELAH DISAHKAN -->
+                        <div class="eval-card" style="margin-bottom:0; background: white; border: 1px solid #e7dff2; border-radius: 14px;">
+                            <h4 style="color:#150a35; margin-top:0; border-bottom: 1px solid #e7dff2; padding-bottom: 10px;">
+                                ✓ Verified Innovation Portfolio ({{ verified_innov_projects|length }})
+                            </h4>
+
+                            {% if verified_innov_projects %}
+                                <div style="display: flex; flex-direction: column; gap: 10px;">
+                                    {% for proj in verified_innov_projects %}
+                                    <div style="background: #faf8ff; border: 1px solid #e7dff2; border-left: 4px solid #16a34a; border-radius: 10px; padding: 12px 14px; display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap;">
                                         <div>
                                             <span style="font-size: 10px; font-weight: 800; color: #6d3ec4; background: #f3edff; padding: 2px 8px; border-radius: 6px; text-transform: uppercase;">
                                                 {{ proj.innovation_type|default:proj.category }}
                                             </span>
-                                            <h5 style="margin: 6px 0 4px 0; color: #150a35; font-size: 14px; font-weight: 800;">{{ proj.project_title }}</h5>
-                                            <div style="font-size: 11.5px; color: #6f628b; font-weight: 600;">
-                                                Aktiviti: <b>{{ proj.activity_type|default:"—" }}</b> &bull; Peranan: <b>{{ proj.contribution_level|default:proj.research_role|default:"—" }}</b> (&times;{{ proj.multiplier|floatformat:0 }})
-                                            </div>
-                                            {% if proj.nmrr_id or proj.doi %}
-                                            <div style="font-size: 11px; color: #6d3ec4; font-weight: 700; margin-top: 3px;">
-                                                {% if proj.nmrr_id %}NMRR ID: {{ proj.nmrr_id }}{% endif %}
-                                                {% if proj.nmrr_id and proj.doi %} &bull; {% endif %}
-                                                {% if proj.doi %}DOI: {{ proj.doi }}{% endif %}
-                                            </div>
-                                            {% endif %}
-                                            <p style="margin: 8px 0 0 0; font-size: 12px; color: #475569; line-height: 1.45;">{{ proj.description }}</p>
+                                            <div style="margin-top: 4px; color: #150a35; font-size: 13.5px; font-weight: 800;">{{ proj.project_title }}</div>
+                                            <div style="font-size: 11px; color: #6f628b;">{{ proj.contribution_level|default:proj.research_role|default:"Standard" }} (&times;{{ proj.multiplier|floatformat:0 }})</div>
                                         </div>
-
-                                        <div style="text-align: right; min-width: 120px;">
-                                            <div style="font-size: 18px; font-weight: 900; color: #150a35;">{{ proj.final_points|floatformat:1 }} <span style="font-size: 11px; color: #6d3ec4;">pts</span></div>
-                                            <div style="margin-top: 8px;">
-                                                {% if proj.is_verified %}
-                                                    <span style="background: #dcfce7; color: #15803d; border: 1px solid #bbf7d0; padding: 4px 10px; border-radius: 8px; font-size: 11px; font-weight: 800; display: inline-block;">
-                                                        ✓ Verified
-                                                    </span>
-                                                {% else %}
-                                                    <form method="POST" style="margin: 0;">
-                                                        {% csrf_token %}
-                                                        <input type="hidden" name="form_type" value="verify_innovation_project">
-                                                        <input type="hidden" name="project_id" value="{{ proj.id }}">
-                                                        <button type="submit" style="background: #16a34a; color: white; border: none; padding: 7px 14px; border-radius: 8px; font-size: 11.5px; font-weight: 800; cursor: pointer; box-shadow: 0 3px 8px rgba(22, 163, 74, 0.25);">
-                                                            ✓ Verify Project
-                                                        </button>
-                                                    </form>
-                                                {% endif %}
-                                            </div>
+                                        <div style="text-align: right;">
+                                            <div style="font-size: 16px; font-weight: 900; color: #16a34a;">{{ proj.final_points|floatformat:1 }} pts</div>
+                                            <span style="font-size: 10.5px; font-weight: 800; color: #15803d;">✓ Verified</span>
                                         </div>
                                     </div>
+                                    {% endfor %}
                                 </div>
-                                {% endfor %}
-                            </div>
-                        {% else %}
-                            <div style="text-align: center; padding: 30px 15px; color: #6f628b; font-size: 13px; border: 1px dashed #d8c7f4; border-radius: 10px;">
-                                Pegawai ini belum menghantar sebarang rekod projek inovasi atau penyelidikan.
-                            </div>
-                        {% endif %}
+                            {% else %}
+                                <div style="text-align: center; padding: 22px 15px; color: #6f628b; font-size: 12.5px; border: 1px dashed #d8c7f4; border-radius: 10px;">
+                                    Belum ada projek inovasi yang disahkan untuk pegawai ini.
+                                </div>
+                            {% endif %}
+                        </div>
                     </div>
 
-                    <!-- KANAN: GRAF PECAHAN MATA WAJARAN & CATATAN HOD -->
+                    <!-- KANAN: BAR CHART TABURAN KATEGORI & CATATAN HOD -->
                     <div class="eval-card" style="margin-bottom:0; background: white; border: 1px solid #e7dff2; border-radius: 14px;">
                         <h4 style="color:#150a35; margin-top:0; border-bottom: 1px solid #e7dff2; padding-bottom: 10px;">
-                            Weighted Points by Innovation Category
+                            Category Distribution Bar Chart (20-Pt Target)
                         </h4>
                         <div style="margin-bottom: 16px;">
                             {{ radar_chart_html|safe }}

@@ -1,4 +1,5 @@
 from datetime import date, datetime, timedelta
+import math
 
 from django.db.models import Q, Sum
 from django.utils import timezone
@@ -890,42 +891,28 @@ def get_module_scores(user, as_of=None):
                 target=20,
             ))
 
-    # 5. Productivity
-    all_productivity = ProductivityLog.objects.filter(officer=user)
-    has_productivity_records = all_productivity.exists()
-    productivity_start = as_of - timedelta(days=29)
-    productivity_rows = all_productivity.filter(
-        record_date__gte=productivity_start,
-        record_date__lte=as_of,
-    ).order_by('record_date', 'id').values_list(
-        'record_date', 'patients_cleared'
-    )
-    patients_by_date = {}
-    for record_date, patients_cleared in productivity_rows:
-        patients_by_date[record_date] = max(0, patients_cleared or 0)
-
-    if not patients_by_date:
+    # 5. Productivity (EWMA lambda = 0.30)
+    ewma_profile = get_productivity_ewma_profile(user, as_of=as_of, window_days=30)
+    if not ewma_profile['has_data']:
         modules.append(_module_result(
             'productivity', 'Productivity',
             status='NO_DATA', reason='Tiada log produktiviti 30 hari terakhir.',
-            has_records=has_productivity_records,
-            source='ProductivityLog.patients_cleared',
+            has_records=ewma_profile['has_any_records'],
+            source='ProductivityLog.patients_cleared (EWMA λ=0.3)',
             target=38.22,
         ))
     else:
-        average_patients = (
-            sum(patients_by_date.values()) / len(patients_by_date)
-        )
-        score = _clamp_score(50.0 * average_patients / 38.22)
+        ewma_latest = ewma_profile['ewma_latest']
+        score = _clamp_score(50.0 * ewma_latest / 38.22)
         modules.append(_module_result(
             'productivity', 'Productivity',
             score=score,
-            n=len(patients_by_date),
+            n=ewma_profile['observation_count'],
             denominator=30,
-            raw_value=average_patients,
+            raw_value=ewma_latest,
             status=_score_status(score),
             has_records=True,
-            source='ProductivityLog.patients_cleared',
+            source='ProductivityLog.patients_cleared (EWMA λ=0.3)',
             target=38.22,
         ))
 
@@ -1074,7 +1061,7 @@ def get_module_scores(user, as_of=None):
             target=30,
         ))
     else:
-        total_points = sum(kudos_points)
+        total_points = min(30, sum(kudos_points))
         score = _clamp_score((total_points / 30.0) * 100.0)
         modules.append(_module_result(
             'teamwork', 'Teamwork & Collaboration',
@@ -1144,3 +1131,1481 @@ def get_module_scores(user, as_of=None):
             1 for module in modules if module['score'] is not None
         ),
     }
+
+
+MYPSQ_DIMENSION_META = (
+    ('q1', 'q1_general', 'Kepuasan Am (General Satisfaction)'),
+    ('q2', 'q2_technical', 'Kualiti Teknikal (Technical Quality)'),
+    ('q3', 'q3_interpersonal', 'Sikap Interpersonal (Interpersonal Manner)'),
+    ('q4', 'q4_communication', 'Kejelasan Komunikasi (Communication)'),
+    ('q5', 'q5_financial', 'Aspek Kewangan (Financial Value)'),
+    ('q6', 'q6_time', 'Masa Bersama Pesakit (Time Spent)'),
+    ('q7', 'q7_accessibility', 'Akses & Masa Menunggu (Accessibility)'),
+)
+
+
+def _shift_month_start(anchor_date, delta_months):
+    """Pulangkan tarikh hari pertama bulan selepas anjakan delta_months."""
+    total_months = (anchor_date.year * 12 + (anchor_date.month - 1)) + delta_months
+    year = total_months // 12
+    month = (total_months % 12) + 1
+    return date(year, month, 1)
+
+
+def get_mypsq_rolling_profile(user, as_of=None, window_days=90, target_pct=80.0):
+    """
+    Kira purata bergerak 3 bulan (90 hari) MyPSQ, pecahan 7 dimensi rasmi,
+    siri trend bulanan berbanding sasaran 80% (4.0/5.0), dan mesej coaching.
+    """
+    if as_of is None:
+        as_of = timezone.localdate()
+    elif isinstance(as_of, datetime):
+        if timezone.is_naive(as_of):
+            as_of = timezone.make_aware(as_of)
+        as_of = timezone.localtime(as_of).date()
+
+    empty_dim_scores = {code: 0.0 for code, _field, _label in MYPSQ_DIMENSION_META}
+    empty_dim_list = [
+        {'code': code, 'label': label, 'score': None, 'pct': 0}
+        for code, _field, label in MYPSQ_DIMENSION_META
+    ]
+
+    if user is None:
+        return {
+            'has_data': False,
+            'has_any_records': False,
+            'avg_score': None,
+            'score_pct': None,
+            'response_count': 0,
+            'all_time_count': 0,
+            'star_count': 0,
+            'stars_display': '☆☆☆☆☆',
+            'dim_scores': empty_dim_scores,
+            'dimensions': empty_dim_list,
+            'strongest_dimension': None,
+            'weakest_dimension': None,
+            'monthly_series': [],
+            'target_pct': target_pct,
+            'status': 'NO_DATA',
+            'badge_label': 'No Data',
+            'badge_bg': '#f1f5f9',
+            'badge_color': '#64748b',
+            'badge_border': '#cbd5e1',
+            'card_bg': '#f8fafc',
+            'card_border': '#cbd5e1',
+            'coaching_msg': 'Tiada maklum balas pesakit MyPSQ direkodkan dalam 90 hari terakhir.',
+        }
+
+    all_qs = MyPSQFeedback.objects.filter(doctor=user)
+    all_time_count = all_qs.count()
+    start_date = as_of - timedelta(days=max(1, window_days) - 1)
+    recent_feedbacks = list(
+        all_qs.filter(
+            created_at__date__gte=start_date,
+            created_at__date__lte=as_of,
+        ).order_by('-created_at', '-id')
+    )
+
+    # Bina siri trend 3 bulan terakhir untuk graf garis HOD
+    monthly_series = []
+    for offset in (-2, -1, 0):
+        m_start = _shift_month_start(as_of, offset)
+        m_next = _shift_month_start(as_of, offset + 1)
+        m_items = [
+            fb for fb in recent_feedbacks
+            if m_start <= _local_date(fb.created_at) < m_next
+        ]
+        if m_items:
+            m_avg = sum(fb.average_score for fb in m_items) / len(m_items)
+            m_pct = round((m_avg / 5.0) * 100.0, 1)
+        else:
+            m_avg = None
+            m_pct = None
+        monthly_series.append({
+            'month_label': m_start.strftime('%b %Y'),
+            'avg_score': round(m_avg, 2) if m_avg is not None else None,
+            'score_pct': m_pct,
+            'count': len(m_items),
+        })
+
+    if not recent_feedbacks:
+        return {
+            'has_data': False,
+            'has_any_records': all_time_count > 0,
+            'avg_score': None,
+            'score_pct': None,
+            'response_count': 0,
+            'all_time_count': all_time_count,
+            'star_count': 0,
+            'stars_display': '☆☆☆☆☆',
+            'dim_scores': empty_dim_scores,
+            'dimensions': empty_dim_list,
+            'strongest_dimension': None,
+            'weakest_dimension': None,
+            'monthly_series': monthly_series,
+            'target_pct': target_pct,
+            'status': 'NO_DATA',
+            'badge_label': 'No Data',
+            'badge_bg': '#f1f5f9',
+            'badge_color': '#64748b',
+            'badge_border': '#cbd5e1',
+            'card_bg': '#f8fafc',
+            'card_border': '#cbd5e1',
+            'coaching_msg': (
+                'Belum ada penilaian pesakit MyPSQ dalam 90 hari terakhir. '
+                'Kongsi kod QR peribadi anda di kaunter/bilik konsultasi selepas rawatan.'
+            ),
+        }
+
+    n = len(recent_feedbacks)
+    avg_score = round(sum(fb.average_score for fb in recent_feedbacks) / n, 1)
+    score_pct = round((avg_score / 5.0) * 100.0, 1)
+    star_count = max(1, min(5, int(round(avg_score))))
+    stars_display = ('★' * star_count) + ('☆' * (5 - star_count))
+
+    dim_scores = {}
+    dimensions = []
+    for code, field_name, label in MYPSQ_DIMENSION_META:
+        d_avg = round(sum(getattr(fb, field_name) for fb in recent_feedbacks) / n, 1)
+        d_pct = int(round((d_avg / 5.0) * 100.0))
+        dim_scores[code] = d_avg
+        dimensions.append({
+            'code': code,
+            'label': label,
+            'score': d_avg,
+            'pct': d_pct,
+        })
+
+    strongest = max(dimensions, key=lambda item: item['score'])
+    weakest = min(dimensions, key=lambda item: item['score'])
+
+    if score_pct >= 85.0:
+        status = 'OPTIMAL'
+        badge_label = f'Cemerlang ({avg_score:.1f}/5.0)'
+        badge_bg, badge_color, badge_border = '#dcfce7', '#16a34a', '#bbf7d0'
+        card_bg, card_border = '#f0fdf4', '#bbf7d0'
+        coaching_msg = (
+            f"Pesakit sangat berpuas hati, terutamanya dalam aspek {strongest['label'].split(' (')[0]} "
+            f"({strongest['score']:.1f}/5.0). Teruskan layanan empati dan mesra pesakit!"
+        )
+    elif score_pct >= target_pct:
+        status = 'GOOD'
+        badge_label = f'Melepasi Sasaran ({avg_score:.1f}/5.0)'
+        badge_bg, badge_color, badge_border = '#f3edff', '#6d3ec4', '#d8c7f4'
+        card_bg, card_border = '#faf8ff', '#d8c7f4'
+        coaching_msg = (
+            f"Purata 3 bulan anda ({score_pct:.0f}%) melepasi sasaran 80%. "
+            f"Kekuatan utama: {strongest['label'].split(' (')[0]} ({strongest['score']:.1f}/5.0)."
+        )
+    else:
+        status = 'NEEDS_ATTENTION'
+        badge_label = f'Perlu Perhatian ({avg_score:.1f}/5.0)'
+        badge_bg, badge_color, badge_border = '#fef3c7', '#d97706', '#fde68a'
+        card_bg, card_border = '#fffdf5', '#fde68a'
+        coaching_msg = (
+            f"Purata 3 bulan semasa ({score_pct:.0f}%) berada di bawah sasaran 80%. "
+            f"Fokus penambahbaikan pada {weakest['label'].split(' (')[0]} ({weakest['score']:.1f}/5.0)."
+        )
+
+    return {
+        'has_data': True,
+        'has_any_records': True,
+        'avg_score': avg_score,
+        'score_pct': score_pct,
+        'response_count': n,
+        'all_time_count': all_time_count,
+        'star_count': star_count,
+        'stars_display': stars_display,
+        'dim_scores': dim_scores,
+        'dimensions': dimensions,
+        'strongest_dimension': strongest,
+        'weakest_dimension': weakest,
+        'monthly_series': monthly_series,
+        'target_pct': target_pct,
+        'status': status,
+        'badge_label': badge_label,
+        'badge_bg': badge_bg,
+        'badge_color': badge_color,
+        'badge_border': badge_border,
+        'card_bg': card_bg,
+        'card_border': card_border,
+        'coaching_msg': coaching_msg,
+    }
+
+
+EI_DOMAIN_LABELS = (
+    ('self_awareness_score', 'Self-Awareness'),
+    ('self_regulation_score', 'Self-Regulation'),
+    ('empathy_score', 'Empathy'),
+    ('deescalation_score', 'De-escalation'),
+)
+
+
+def get_ei_wellness_profile(user, as_of=None, window_days=365, lam=0.30):
+    """
+    Kira analisis trend EWMA (lambda=0.30) bagi skor Refleksi Emosi (EI) 4 domain.
+
+    PRIVASI: Fungsi ini TIDAK sekali-kali memulangkan ``reflection_notes``,
+    ``trigger_event``, atau ``coping_strategy`` supaya nota peribadi staf
+    tidak terdedah kepada paparan HOD.
+    """
+    if as_of is None:
+        as_of = timezone.localdate()
+    elif isinstance(as_of, datetime):
+        if timezone.is_naive(as_of):
+            as_of = timezone.make_aware(as_of)
+        as_of = timezone.localtime(as_of).date()
+
+    empty_domains = [
+        {'key': field, 'label': label, 'score': None, 'display': 'No Data'}
+        for field, label in EI_DOMAIN_LABELS
+    ]
+
+    if user is None:
+        return {
+            'has_data': False,
+            'has_any_records': False,
+            'status': 'NO_DATA',
+            'badge_label': 'No Data',
+            'badge_bg': '#f1f5f9',
+            'badge_color': '#64748b',
+            'badge_border': '#cbd5e1',
+            'card_bg': '#f8fafc',
+            'card_border': '#cbd5e1',
+            'ewma_latest': None,
+            'composite_avg': None,
+            'delta': 0.0,
+            'session_count': 0,
+            'dates': [],
+            'raw_series': [],
+            'ewma_series': [],
+            'domains': empty_domains,
+            'domain_values': [0, 0, 0, 0],
+            'coaching_msg': 'Tiada log refleksi EI direkodkan dalam 365 hari terakhir.',
+            'surveillance_note': 'Pegawai ini belum mempunyai rekod refleksi kesejahteraan emosi.',
+        }
+
+    all_qs = EmotionalReflection.objects.filter(officer=user)
+    has_any_records = all_qs.exists()
+    start_date = as_of - timedelta(days=max(1, window_days) - 1)
+    reflections = list(
+        all_qs.filter(
+            record_date__gte=start_date,
+            record_date__lte=as_of,
+        ).order_by('record_date', 'id')
+    )
+
+    dates = []
+    raw_series = []
+    domain_buckets = {field: [] for field, _label in EI_DOMAIN_LABELS}
+
+    for ref in reflections:
+        avail = []
+        for field, _label in EI_DOMAIN_LABELS:
+            val = getattr(ref, field, None)
+            if val is not None:
+                fval = float(val)
+                avail.append(fval)
+                domain_buckets[field].append(fval)
+        if avail:
+            dates.append(ref.record_date)
+            raw_series.append(round(sum(avail) / len(avail), 1))
+
+    if not raw_series:
+        return {
+            'has_data': False,
+            'has_any_records': has_any_records,
+            'status': 'NO_DATA',
+            'badge_label': 'No Data',
+            'badge_bg': '#f1f5f9',
+            'badge_color': '#64748b',
+            'badge_border': '#cbd5e1',
+            'card_bg': '#f8fafc',
+            'card_border': '#cbd5e1',
+            'ewma_latest': None,
+            'composite_avg': None,
+            'delta': 0.0,
+            'session_count': 0,
+            'dates': [],
+            'raw_series': [],
+            'ewma_series': [],
+            'domains': empty_domains,
+            'domain_values': [0, 0, 0, 0],
+            'coaching_msg': (
+                'Belum ada rekod Wellness Check-In EI dalam 365 hari terakhir. '
+                'Luangkan 1 minit merekod tahap tenaga dan emosi anda selepas syif.'
+            ),
+            'surveillance_note': 'Tiada data trend EI bagi pegawai ini dalam tempoh semasa.',
+        }
+
+    ewma_series = []
+    z_curr = raw_series[0]
+    for idx, val in enumerate(raw_series):
+        if idx == 0:
+            z_curr = val
+        else:
+            z_curr = (lam * val) + ((1.0 - lam) * z_curr)
+        ewma_series.append(round(z_curr, 1))
+
+    ewma_latest = ewma_series[-1]
+    composite_avg = round(sum(raw_series) / len(raw_series), 1)
+    delta = round(ewma_latest - ewma_series[0], 1) if len(ewma_series) > 1 else 0.0
+
+    domains = []
+    domain_values = []
+    for field, label in EI_DOMAIN_LABELS:
+        vals = domain_buckets[field]
+        if vals:
+            avg_d = round(sum(vals) / len(vals), 1)
+            domains.append({
+                'key': field,
+                'label': label,
+                'score': avg_d,
+                'display': f'{avg_d:.0f}%',
+            })
+            domain_values.append(avg_d)
+        else:
+            domains.append({
+                'key': field,
+                'label': label,
+                'score': None,
+                'display': 'No Data',
+            })
+            domain_values.append(0)
+
+    weakest_dom = min(
+        (d for d in domains if d['score'] is not None),
+        key=lambda item: item['score'],
+    )
+
+    if ewma_latest < 60.0:
+        status = 'ALERT'
+        badge_label = 'Perlu Rehat • High Stress'
+        badge_bg, badge_color, badge_border = '#fee2e2', '#dc2626', '#fecaca'
+        card_bg, card_border = '#fffafa', '#fecaca'
+        coaching_msg = (
+            f'Trend EI EWMA semasa ({ewma_latest:.1f}%) menunjukkan tahap tekanan tinggi. '
+            'Sila ambil masa untuk self-care, rehat mencukupi, atau berbincang dengan mentor/HOD.'
+        )
+        surveillance_note = (
+            f'Isyarat Tekanan Tinggi: Trend EWMA EI berada pada {ewma_latest:.1f}% (<60%). '
+            'Pertimbangkan sesi sokongan beban kerja (nota refleksi kekal sulit).'
+        )
+    elif ewma_latest < 75.0 or delta < -10.0:
+        status = 'WATCH'
+        badge_label = 'Perhatian Awal • Calibration'
+        badge_bg, badge_color, badge_border = '#fef3c7', '#d97706', '#fde68a'
+        card_bg, card_border = '#fffdf5', '#fde68a'
+        coaching_msg = (
+            f'Tahap stres memerlukan perhatian ringan (EWMA {ewma_latest:.1f}%). '
+            f'Fokus pengukuhan pada domain {weakest_dom["label"]} ({weakest_dom["display"]}).'
+        )
+        surveillance_note = (
+            f'Pemerhatian Awal: Trend EWMA EI pada {ewma_latest:.1f}% '
+            f'(domain terendah: {weakest_dom["label"]} {weakest_dom["display"]}).'
+        )
+    else:
+        status = 'OPTIMAL'
+        badge_label = 'Stabil • Resilient'
+        badge_bg, badge_color, badge_border = '#dcfce7', '#16a34a', '#bbf7d0'
+        card_bg, card_border = '#f0fdf4', '#bbf7d0'
+        coaching_msg = (
+            f'Tahap kesejahteraan emosi anda stabil minggu ini (EWMA {ewma_latest:.1f}%). '
+            'Teruskan amalan pengurusan stres yang sihat!'
+        )
+        surveillance_note = (
+            f'Kesejahteraan Emosi Stabil: Trend EWMA EI berada pada {ewma_latest:.1f}% '
+            f'merentas {len(raw_series)} sesi refleksi.'
+        )
+
+    return {
+        'has_data': True,
+        'has_any_records': True,
+        'status': status,
+        'badge_label': badge_label,
+        'badge_bg': badge_bg,
+        'badge_color': badge_color,
+        'badge_border': badge_border,
+        'card_bg': card_bg,
+        'card_border': card_border,
+        'ewma_latest': ewma_latest,
+        'composite_avg': composite_avg,
+        'delta': delta,
+        'session_count': len(raw_series),
+        'dates': dates,
+        'raw_series': raw_series,
+        'ewma_series': ewma_series,
+        'domains': domains,
+        'domain_values': domain_values,
+        'coaching_msg': coaching_msg,
+        'surveillance_note': surveillance_note,
+    }
+
+
+KUDOS_POINT_CEILING = 30
+
+KUDOS_CATEGORY_LIST = (
+    'Consultation based on subspecialty/AOI',
+    'Accepting referrals from other FMS',
+    'Covering inter / intrafacility FMS',
+    'Non-clinical consultation',
+    'Research /Innovation related support',
+    'Sharing resources – drugs, staff, lab',
+    'Clinical-related activities',
+    'General clinical consultation',
+)
+
+
+def get_teamwork_recognition_profile(
+    user,
+    as_of=None,
+    window_days=365,
+    target_points=30.0,
+):
+    """
+    Kira Indeks Pengiktirafan Kerja Berpasukan (Rolling 12-Month Recognition Index)
+    berasaskan mata Kudos diterima dalam 365 hari terakhir berbanding sasaran 30 mata.
+    """
+    if as_of is None:
+        as_of = timezone.localdate()
+    elif isinstance(as_of, datetime):
+        if timezone.is_naive(as_of):
+            as_of = timezone.make_aware(as_of)
+        as_of = timezone.localtime(as_of).date()
+
+    empty_categories = [
+        {'label': cat, 'points': 0, 'count': 0}
+        for cat in KUDOS_CATEGORY_LIST
+    ]
+
+    if user is None:
+        return {
+            'has_data': False,
+            'has_any_records': False,
+            'received_points': 0,
+            'given_points': 0,
+            'received_count': 0,
+            'given_count': 0,
+            'unique_peers': 0,
+            'target_points': int(target_points),
+            'attainment_pct': 0,
+            'category_breakdown': empty_categories,
+            'status': 'NO_DATA',
+            'badge_label': 'No Data',
+            'badge_bg': '#f1f5f9',
+            'badge_color': '#64748b',
+            'badge_border': '#cbd5e1',
+            'card_bg': '#f8fafc',
+            'card_border': '#cbd5e1',
+            'coaching_msg': 'Tiada rekod Peer Kudos dalam 365 hari terakhir.',
+        }
+
+    start_date = as_of - timedelta(days=max(1, window_days) - 1)
+    all_received = PeerKudos.objects.filter(receiver=user)
+    has_any_records = (
+        all_received.exists()
+        or PeerKudos.objects.filter(sender=user).exists()
+    )
+
+    received_qs = list(
+        all_received.filter(
+            sent_at__date__gte=start_date,
+            sent_at__date__lte=as_of,
+        ).select_related('sender').order_by('-sent_at', '-id')
+    )
+    given_qs = list(
+        PeerKudos.objects.filter(
+            sender=user,
+            sent_at__date__gte=start_date,
+            sent_at__date__lte=as_of,
+        ).values_list('points', 'receiver_id')
+    )
+
+    raw_received_points = sum(max(0, k.points or 0) for k in received_qs)
+    received_points = min(int(target_points), raw_received_points)
+    given_points = sum(max(0, pts or 0) for pts, _rid in given_qs)
+    unique_peers = len(
+        {k.sender_id for k in received_qs}
+        | {rid for _pts, rid in given_qs}
+    )
+
+    cat_map = {cat: {'label': cat, 'points': 0, 'count': 0} for cat in KUDOS_CATEGORY_LIST}
+    other_bucket = {'label': 'Peer Endorsement', 'points': 0, 'count': 0}
+
+    for k in received_qs:
+        pts = max(0, k.points or 0)
+        cat_name = (k.category or '').strip()
+        if cat_name in cat_map:
+            cat_map[cat_name]['points'] += pts
+            cat_map[cat_name]['count'] += 1
+        else:
+            other_bucket['points'] += pts
+            other_bucket['count'] += 1
+
+    category_breakdown = list(cat_map.values())
+    if other_bucket['count'] > 0:
+        category_breakdown.append(other_bucket)
+
+    if not received_qs:
+        return {
+            'has_data': False,
+            'has_any_records': has_any_records,
+            'received_points': 0,
+            'given_points': given_points,
+            'received_count': 0,
+            'given_count': len(given_qs),
+            'unique_peers': unique_peers,
+            'target_points': int(target_points),
+            'attainment_pct': 0,
+            'category_breakdown': category_breakdown,
+            'status': 'NO_DATA',
+            'badge_label': 'No Data',
+            'badge_bg': '#f1f5f9',
+            'badge_color': '#64748b',
+            'badge_border': '#cbd5e1',
+            'card_bg': '#f8fafc',
+            'card_border': '#cbd5e1',
+            'coaching_msg': (
+                'Belum ada Kudos diterima dalam 365 hari terakhir. '
+                'Mulakan budaya penghargaan dengan menghantar Kudos kepada rakan sekerja!'
+            ),
+        }
+
+    attainment_pct = min(100, int(round((received_points / float(target_points)) * 100.0)))
+    top_cat = max(category_breakdown, key=lambda item: item['points'])
+
+    if received_points >= target_points:
+        status = 'TARGET_MET'
+        badge_label = f'High Collaborator ({received_points}/{int(target_points)} Pts)'
+        badge_bg, badge_color, badge_border = '#dcfce7', '#16a34a', '#bbf7d0'
+        card_bg, card_border = '#f0fdf4', '#bbf7d0'
+        coaching_msg = (
+            f'Cemerlang! Anda menerima {received_points} mata Kudos daripada rakan sekerja '
+            f'(kekuatan utama: {top_cat["label"]}). Teruskan semangat kerja berpasukan!'
+        )
+    else:
+        remaining = max(0, int(target_points) - received_points)
+        status = 'IN_PROGRESS'
+        badge_label = f'Active ({received_points}/{int(target_points)} Pts)'
+        badge_bg, badge_color, badge_border = '#f3edff', '#6d3ec4', '#d8c7f4'
+        card_bg, card_border = '#faf8ff', '#d8c7f4'
+        coaching_msg = (
+            f'Anda telah mengumpul {received_points}/{int(target_points)} mata Kudos '
+            f'(baki {remaining} mata). Sumbangan paling menyerlah: {top_cat["label"]}.'
+        )
+
+    return {
+        'has_data': True,
+        'has_any_records': True,
+        'received_points': received_points,
+        'given_points': given_points,
+        'received_count': len(received_qs),
+        'given_count': len(given_qs),
+        'unique_peers': unique_peers,
+        'target_points': int(target_points),
+        'attainment_pct': attainment_pct,
+        'category_breakdown': category_breakdown,
+        'status': status,
+        'badge_label': badge_label,
+        'badge_bg': badge_bg,
+        'badge_color': badge_color,
+        'badge_border': badge_border,
+        'card_bg': card_bg,
+        'card_border': card_border,
+        'coaching_msg': coaching_msg,
+    }
+
+
+def build_department_kudos_leaderboard(
+    staff_users,
+    selected_user=None,
+    as_of=None,
+    window_days=365,
+    target_points=30.0,
+):
+    """
+    Bina papan pendahulu (Leaderboard) Kudos 12 bulan terakhir bagi staf sebenar
+    dalam skop jabatan/klinik HOD.
+    """
+    if as_of is None:
+        as_of = timezone.localdate()
+    elif isinstance(as_of, datetime):
+        if timezone.is_naive(as_of):
+            as_of = timezone.make_aware(as_of)
+        as_of = timezone.localtime(as_of).date()
+
+    staff_list = list(staff_users or [])
+    if not staff_list:
+        return []
+
+    start_date = as_of - timedelta(days=max(1, window_days) - 1)
+    staff_ids = [u.id for u in staff_list]
+
+    received_rows = PeerKudos.objects.filter(
+        receiver_id__in=staff_ids,
+        sent_at__date__gte=start_date,
+        sent_at__date__lte=as_of,
+    ).values_list('receiver_id', 'points')
+
+    given_rows = PeerKudos.objects.filter(
+        sender_id__in=staff_ids,
+        sent_at__date__gte=start_date,
+        sent_at__date__lte=as_of,
+    ).values_list('sender_id', 'points')
+
+    rec_pts_map = {uid: 0 for uid in staff_ids}
+    rec_cnt_map = {uid: 0 for uid in staff_ids}
+    for uid, pts in received_rows:
+        rec_pts_map[uid] = rec_pts_map.get(uid, 0) + max(0, pts or 0)
+        rec_cnt_map[uid] = rec_cnt_map.get(uid, 0) + 1
+
+    giv_pts_map = {uid: 0 for uid in staff_ids}
+    for uid, pts in given_rows:
+        giv_pts_map[uid] = giv_pts_map.get(uid, 0) + max(0, pts or 0)
+
+    board = []
+    for u in staff_list:
+        full_name = f"{u.first_name} {u.last_name}".strip()
+        disp_name = f"Dr. {full_name}" if full_name else f"Dr. {u.username}"
+        r_pts = min(int(target_points), rec_pts_map.get(u.id, 0))
+        g_pts = giv_pts_map.get(u.id, 0)
+        board.append({
+            'user_id': u.id,
+            'username': u.username,
+            'name': disp_name,
+            'received_points': r_pts,
+            'received_count': rec_cnt_map.get(u.id, 0),
+            'given_points': g_pts,
+            'attainment_pct': min(100, int(round((r_pts / float(target_points)) * 100.0))),
+            'is_selected': bool(selected_user and u.id == selected_user.id),
+        })
+
+    board.sort(
+        key=lambda item: (
+            -item['received_points'],
+            -item['received_count'],
+            -item['given_points'],
+            item['name'].casefold(),
+        )
+    )
+    for idx, item in enumerate(board, start=1):
+        item['rank'] = idx
+
+    return board
+
+
+FMS_MENTORSHIP_ACTIVITIES = (
+    ('Post-grad students', 'By individual'),
+    ('SWE', 'By individual'),
+    ('Medical students', 'Based on group (KIV)'),
+    ('Attachment doctors', 'By individual'),
+    ('Credentialing & Privileging', 'By individual'),
+    ('Others', 'Optional / Custom'),
+)
+
+
+def get_mentorship_trajectory_profile(user, as_of=None, target_hours=10.0):
+    """
+    Kira profil Trajectory Tracking Training & Mentorship (Jam Disahkan / 10 Jam)
+    serta pecahan aktiviti pelatih FMS (By individual vs Group KIV).
+    """
+    if as_of is None:
+        as_of = timezone.localdate()
+    elif isinstance(as_of, datetime):
+        if timezone.is_naive(as_of):
+            as_of = timezone.make_aware(as_of)
+        as_of = timezone.localtime(as_of).date()
+
+    empty_activities = [
+        {'activity': act, 'tracking_mode': mode, 'hours': 0.0, 'sessions': 0}
+        for act, mode in FMS_MENTORSHIP_ACTIVITIES
+    ]
+
+    if user is None:
+        return {
+            'has_data': False,
+            'has_any_records': False,
+            'year': as_of.year,
+            'target_hours': target_hours,
+            'verified_hours': 0.0,
+            'pending_hours': 0.0,
+            'total_hours': 0.0,
+            'remaining_hours': target_hours,
+            'verified_pct': 0,
+            'pending_pct': 0,
+            'total_pct': 0,
+            'verified_count': 0,
+            'pending_count': 0,
+            'total_count': 0,
+            'individual_trainees_count': 0,
+            'group_kiv_sessions_count': 0,
+            'activity_breakdown': empty_activities,
+            'status': 'NO_DATA',
+            'badge_label': 'No Data',
+            'badge_bg': '#f1f5f9',
+            'badge_color': '#64748b',
+            'badge_border': '#cbd5e1',
+            'card_bg': '#f8fafc',
+            'card_border': '#cbd5e1',
+            'coaching_msg': 'Tiada sesi bimbingan (mentor) direkodkan untuk tahun semasa.',
+        }
+
+    all_mentor_qs = MentorshipSession.objects.filter(
+        mentor=user,
+        participant_role='mentor',
+    )
+    has_any_records = all_mentor_qs.exists()
+    year_sessions = list(
+        all_mentor_qs.filter(session_date__year=as_of.year).order_by('-session_date', '-id')
+    )
+
+    if not year_sessions:
+        return {
+            'has_data': False,
+            'has_any_records': has_any_records,
+            'year': as_of.year,
+            'target_hours': target_hours,
+            'verified_hours': 0.0,
+            'pending_hours': 0.0,
+            'total_hours': 0.0,
+            'remaining_hours': target_hours,
+            'verified_pct': 0,
+            'pending_pct': 0,
+            'total_pct': 0,
+            'verified_count': 0,
+            'pending_count': 0,
+            'total_count': 0,
+            'individual_trainees_count': 0,
+            'group_kiv_sessions_count': 0,
+            'activity_breakdown': empty_activities,
+            'status': 'NO_DATA',
+            'badge_label': 'No Data',
+            'badge_bg': '#f1f5f9',
+            'badge_color': '#64748b',
+            'badge_border': '#cbd5e1',
+            'card_bg': '#f8fafc',
+            'card_border': '#cbd5e1',
+            'coaching_msg': (
+                f'Belum ada sesi latihan & mentorship tahun {as_of.year}. '
+                'Rekod bimbingan Post-grad, SWE, Attachment doctors atau C&P untuk mencapai 10 jam.'
+            ),
+        }
+
+    act_map = {
+        act: {'activity': act, 'tracking_mode': mode, 'hours': 0.0, 'sessions': 0}
+        for act, mode in FMS_MENTORSHIP_ACTIVITIES
+    }
+
+    verified_hours = 0.0
+    pending_hours = 0.0
+    verified_count = 0
+    pending_count = 0
+    individual_trainees = set()
+    group_kiv_sessions = 0
+
+    for s in year_sessions:
+        hrs = float(s.duration_hours or 0.0)
+        topic_clean = (s.topic or '').strip()
+        bucket_key = topic_clean if topic_clean in act_map else 'Others'
+        act_map[bucket_key]['hours'] = round(act_map[bucket_key]['hours'] + hrs, 1)
+        act_map[bucket_key]['sessions'] += 1
+
+        if bucket_key == 'Medical students':
+            group_kiv_sessions += 1
+        else:
+            norm_trainee = ' '.join((s.mentee_name or '').strip().lower().split())
+            if norm_trainee:
+                individual_trainees.add(norm_trainee)
+
+        if s.is_verified:
+            verified_hours += hrs
+            verified_count += 1
+        else:
+            pending_hours += hrs
+            pending_count += 1
+
+    verified_hours = round(verified_hours, 1)
+    pending_hours = round(pending_hours, 1)
+    total_hours = round(verified_hours + pending_hours, 1)
+    remaining_hours = round(max(0.0, target_hours - verified_hours), 1)
+
+    verified_pct = min(100, int(round((verified_hours / target_hours) * 100.0)))
+    total_pct = min(100, int(round((total_hours / target_hours) * 100.0)))
+    pending_pct = max(0, total_pct - verified_pct)
+
+    if verified_hours >= target_hours:
+        status = 'TARGET_MET'
+        badge_label = f'Target Achieved ({verified_hours:g}/{target_hours:g} Hrs)'
+        badge_bg, badge_color, badge_border = '#dcfce7', '#16a34a', '#bbf7d0'
+        card_bg, card_border = '#f0fdf4', '#bbf7d0'
+        coaching_msg = (
+            f'Cemerlang! Anda telah melengkapkan {verified_hours:g} jam bimbingan disahkan '
+            f'melibatkan {len(individual_trainees)} pelatih individu.'
+        )
+    elif pending_count > 0 and verified_hours == 0:
+        status = 'PENDING_VERIFICATION'
+        badge_label = f'Pending HOD Verification ({pending_hours:g} Hrs)'
+        badge_bg, badge_color, badge_border = '#fef3c7', '#d97706', '#fde68a'
+        card_bg, card_border = '#fffdf5', '#fde68a'
+        coaching_msg = (
+            f'{pending_count} sesi bimbingan ({pending_hours:g} jam) telah direkodkan '
+            'dan sedang menunggu pengesahan HOD.'
+        )
+    else:
+        status = 'IN_PROGRESS'
+        badge_label = (
+            f'In Progress ({verified_hours:g}/{target_hours:g} Hrs)'
+            if pending_count == 0
+            else f'{verified_hours:g}h Verified • {pending_hours:g}h Pending'
+        )
+        badge_bg, badge_color, badge_border = '#f3edff', '#6d3ec4', '#d8c7f4'
+        card_bg, card_border = '#faf8ff', '#d8c7f4'
+        coaching_msg = (
+            f'Baki {remaining_hours:g} jam disahkan lagi untuk mencapai sasaran {target_hours:g} jam '
+            f'({len(individual_trainees)} pelatih individu dibimbing setakat ini).'
+        )
+
+    return {
+        'has_data': True,
+        'has_any_records': True,
+        'year': as_of.year,
+        'target_hours': target_hours,
+        'verified_hours': verified_hours,
+        'pending_hours': pending_hours,
+        'total_hours': total_hours,
+        'remaining_hours': remaining_hours,
+        'verified_pct': verified_pct,
+        'pending_pct': pending_pct,
+        'total_pct': total_pct,
+        'verified_count': verified_count,
+        'pending_count': pending_count,
+        'total_count': len(year_sessions),
+        'individual_trainees_count': len(individual_trainees),
+        'group_kiv_sessions_count': group_kiv_sessions,
+        'activity_breakdown': list(act_map.values()),
+        'status': status,
+        'badge_label': badge_label,
+        'badge_bg': badge_bg,
+        'badge_color': badge_color,
+        'badge_border': badge_border,
+        'card_bg': card_bg,
+        'card_border': card_border,
+        'coaching_msg': coaching_msg,
+    }
+
+
+INNOVATION_MILESTONE_CATEGORIES = (
+    'Research',
+    'Clinical Trial',
+    'Technology Adoption',
+    'Publication',
+)
+
+
+def get_innovation_milestone_profile(user, as_of=None, target_points=20.0):
+    """
+    Kira profil pencapaian Milestone Inovasi (sasaran 20 mata tahunan) dengan
+    membezakan mata yang telah disahkan HOD (Verified) dan menunggu sah (Pending).
+    """
+    if as_of is None:
+        as_of = timezone.localdate()
+    elif isinstance(as_of, datetime):
+        if timezone.is_naive(as_of):
+            as_of = timezone.make_aware(as_of)
+        as_of = timezone.localtime(as_of).date()
+
+    empty_breakdown = {
+        cat: {'verified': 0.0, 'pending': 0.0, 'total': 0.0, 'count': 0}
+        for cat in INNOVATION_MILESTONE_CATEGORIES
+    }
+    empty_breakdown['General/Uncategorised'] = {
+        'verified': 0.0, 'pending': 0.0, 'total': 0.0, 'count': 0
+    }
+
+    if user is None:
+        return {
+            'has_data': False,
+            'has_any_records': False,
+            'year': as_of.year,
+            'target_points': target_points,
+            'verified_points': 0.0,
+            'pending_points': 0.0,
+            'total_points': 0.0,
+            'remaining_points': target_points,
+            'verified_pct': 0,
+            'pending_pct': 0,
+            'total_pct': 0,
+            'total_count': 0,
+            'verified_count': 0,
+            'pending_count': 0,
+            'status': 'NO_DATA',
+            'badge_label': 'No Data',
+            'badge_bg': '#f1f5f9',
+            'badge_color': '#64748b',
+            'badge_border': '#cbd5e1',
+            'category_breakdown': empty_breakdown,
+            'coaching_msg': 'Tiada projek inovasi direkodkan untuk tahun semasa.',
+        }
+
+    all_projects = InnovationProject.objects.filter(officer=user)
+    has_any_records = all_projects.exists()
+    year_projects = list(
+        all_projects.filter(submitted_at__year=as_of.year).order_by('-submitted_at', '-id')
+    )
+
+    if not year_projects:
+        return {
+            'has_data': False,
+            'has_any_records': has_any_records,
+            'year': as_of.year,
+            'target_points': target_points,
+            'verified_points': 0.0,
+            'pending_points': 0.0,
+            'total_points': 0.0,
+            'remaining_points': target_points,
+            'verified_pct': 0,
+            'pending_pct': 0,
+            'total_pct': 0,
+            'total_count': 0,
+            'verified_count': 0,
+            'pending_count': 0,
+            'status': 'NO_DATA',
+            'badge_label': 'No Data',
+            'badge_bg': '#f1f5f9',
+            'badge_color': '#64748b',
+            'badge_border': '#cbd5e1',
+            'category_breakdown': empty_breakdown,
+            'coaching_msg': (
+                f'Tiada projek inovasi tahun {as_of.year}. '
+                'Satu laporan kes atau projek CQI boleh menyumbang sehingga 10–40 mata.'
+            ),
+        }
+
+    breakdown = {
+        cat: {'verified': 0.0, 'pending': 0.0, 'total': 0.0, 'count': 0}
+        for cat in INNOVATION_MILESTONE_CATEGORIES
+    }
+    breakdown['General/Uncategorised'] = {
+        'verified': 0.0, 'pending': 0.0, 'total': 0.0, 'count': 0
+    }
+
+    verified_pts = 0.0
+    pending_pts = 0.0
+    verified_cnt = 0
+    pending_cnt = 0
+
+    for proj in year_projects:
+        pts = float(proj.final_points or 0.0)
+        raw_type = (proj.innovation_type or proj.category or '').strip()
+        if raw_type == 'Technology Adaptation':
+            raw_type = 'Technology Adoption'
+        bucket_key = (
+            raw_type if raw_type in INNOVATION_MILESTONE_CATEGORIES
+            else 'General/Uncategorised'
+        )
+        breakdown[bucket_key]['count'] += 1
+        breakdown[bucket_key]['total'] = round(breakdown[bucket_key]['total'] + pts, 1)
+
+        if proj.is_verified:
+            verified_pts += pts
+            verified_cnt += 1
+            breakdown[bucket_key]['verified'] = round(
+                breakdown[bucket_key]['verified'] + pts, 1
+            )
+        else:
+            pending_pts += pts
+            pending_cnt += 1
+            breakdown[bucket_key]['pending'] = round(
+                breakdown[bucket_key]['pending'] + pts, 1
+            )
+
+    verified_pts = round(verified_pts, 1)
+    pending_pts = round(pending_pts, 1)
+    total_pts = round(verified_pts + pending_pts, 1)
+    remaining_pts = round(max(0.0, target_points - verified_pts), 1)
+
+    verified_pct = min(100, int(round((verified_pts / target_points) * 100.0)))
+    total_pct = min(100, int(round((total_pts / target_points) * 100.0)))
+    pending_pct = max(0, total_pct - verified_pct)
+
+    if verified_pts >= target_points:
+        status = 'TARGET_MET'
+        badge_label = 'Milestone Achieved (20/20 Pts)'
+        badge_bg, badge_color, badge_border = '#dcfce7', '#16a34a', '#bbf7d0'
+        coaching_msg = (
+            f'Tahniah! Anda telah mencapai {verified_pts:g} mata inovasi yang disahkan '
+            f'(melepasi sasaran {target_points:g} mata tahunan).'
+        )
+    elif pending_cnt > 0 and total_pts >= target_points:
+        status = 'PENDING_VERIFICATION'
+        badge_label = f'{pending_cnt} Menunggu Pengesahan HOD'
+        badge_bg, badge_color, badge_border = '#fef3c7', '#b45309', '#fde68a'
+        coaching_msg = (
+            f'Anda mempunyai {total_pts:g} mata terkumpul ({verified_pts:g} disahkan, '
+            f'{pending_pts:g} menunggu pengesahan HOD).'
+        )
+    else:
+        status = 'PENDING_VERIFICATION' if pending_cnt > 0 else 'IN_PROGRESS'
+        badge_label = (
+            f'In Progress ({verified_pts:g}/{target_points:g} Pts)'
+            if pending_cnt == 0
+            else f'{verified_pts:g} Verified • {pending_pts:g} Pending'
+        )
+        badge_bg, badge_color, badge_border = '#f3edff', '#6d3ec4', '#d8c7f4'
+        coaching_msg = (
+            f'Baki {remaining_pts:g} mata lagi diperlukan untuk melengkapkan sasaran '
+            f'{target_points:g} mata inovasi tahun {as_of.year}.'
+        )
+
+    return {
+        'has_data': True,
+        'has_any_records': True,
+        'year': as_of.year,
+        'target_points': target_points,
+        'verified_points': verified_pts,
+        'pending_points': pending_pts,
+        'total_points': total_pts,
+        'remaining_points': remaining_pts,
+        'verified_pct': verified_pct,
+        'pending_pct': pending_pct,
+        'total_pct': total_pct,
+        'total_count': len(year_projects),
+        'verified_count': verified_cnt,
+        'pending_count': pending_cnt,
+        'status': status,
+        'badge_label': badge_label,
+        'badge_bg': badge_bg,
+        'badge_color': badge_color,
+        'badge_border': badge_border,
+        'category_breakdown': breakdown,
+        'coaching_msg': coaching_msg,
+    }
+
+
+def _compute_productivity_ewma(
+    daily_entries,
+    lam=0.30,
+    target=38.22,
+    control_limit_l=2.5,
+):
+    """
+    Kira siri EWMA (lambda=0.30) dan Lower Control Limit (LCL) bagi mengesan
+    risiko burnout atau kejatuhan mendadak pelepasan pesakit harian.
+    """
+    if not daily_entries:
+        return {
+            'has_data': False,
+            'status': 'NO_DATA',
+            'badge_label': 'No Data',
+            'badge_bg': '#f1f5f9',
+            'badge_color': '#64748b',
+            'badge_border': '#cbd5e1',
+            'card_bg': '#f8fafc',
+            'card_border': '#cbd5e1',
+            'dates': [],
+            'raw_series': [],
+            'ewma_series': [],
+            'lcl_series': [],
+            'ewma_latest': None,
+            'lcl_latest': None,
+            'avg_patients': None,
+            'avg_consult': None,
+            'punctuality_avg': None,
+            'consult_status': 'Tiada Rekod',
+            'consult_is_ok': True,
+            'coaching_msg': (
+                'Belum ada log produktiviti 30 hari terakhir. '
+                'Rekod beban kerja harian anda untuk mengaktifkan pemantauan EWMA.'
+            ),
+            'surveillance_note': 'Pegawai ini belum mempunyai log produktiviti dalam tempoh pemantauan.',
+            'observation_count': 0,
+            'target': target,
+            'lambda': lam,
+        }
+
+    dates = [entry[0] for entry in daily_entries]
+    xs = [float(max(0, entry[1] or 0)) for entry in daily_entries]
+    consults = [
+        float(entry[2]) for entry in daily_entries
+        if entry[2] is not None and float(entry[2]) > 0
+    ]
+    punctualities = [
+        float(entry[3]) for entry in daily_entries
+        if len(entry) > 3 and entry[3] is not None
+    ]
+
+    n = len(xs)
+    mean_x = sum(xs) / n
+    if n > 1:
+        variance = sum((x - mean_x) ** 2 for x in xs) / (n - 1)
+        sigma = max(4.0, math.sqrt(variance))
+    else:
+        sigma = 4.0
+
+    ewma_series = []
+    lcl_series = []
+    z_curr = xs[0]
+    for idx, x_val in enumerate(xs, start=1):
+        if idx == 1:
+            z_curr = x_val
+        else:
+            z_curr = (lam * x_val) + ((1.0 - lam) * z_curr)
+        ewma_series.append(round(z_curr, 2))
+
+        factor = math.sqrt((lam / (2.0 - lam)) * (1.0 - ((1.0 - lam) ** (2 * idx))))
+        lcl_val = max(0.0, target - (control_limit_l * sigma * factor))
+        lcl_series.append(round(lcl_val, 2))
+
+    ewma_latest = ewma_series[-1]
+    lcl_latest = lcl_series[-1]
+    avg_patients = round(mean_x, 1)
+    avg_consult = round(sum(consults) / len(consults), 1) if consults else None
+    punctuality_avg = round(sum(punctualities) / len(punctualities), 1) if punctualities else None
+
+    half_n = max(1, n // 2)
+    baseline_ewma = sum(ewma_series[:half_n]) / half_n
+
+    if avg_consult is None:
+        consult_status, consult_is_ok = 'Tiada Rekod Masa', True
+    elif avg_consult > 15.0:
+        consult_status, consult_is_ok = 'Melebihi 15m (Risiko Keletihan)', False
+    elif avg_consult < 8.0:
+        consult_status, consult_is_ok = 'Terlalu Singkat (<8m)', False
+    else:
+        consult_status, consult_is_ok = 'Julat Optimum (10–15m)', True
+
+    is_alert = (
+        ewma_latest < lcl_latest
+        or ewma_latest < 26.0
+        or (avg_consult is not None and avg_consult > 18.0)
+    )
+    is_watch = (
+        ewma_latest < 32.5
+        or (n >= 4 and baseline_ewma > 0 and ewma_latest < baseline_ewma * 0.85)
+        or (avg_consult is not None and (avg_consult > 15.0 or avg_consult < 8.0))
+    )
+
+    if is_alert:
+        status = 'ALERT'
+        badge_label = 'Alert • Burnout Risk'
+        badge_bg, badge_color, badge_border = '#fee2e2', '#dc2626', '#fecaca'
+        card_bg, card_border = '#fffafa', '#fecaca'
+        coaching_msg = (
+            f'EWMA semasa ({ewma_latest:.1f} kes/hari) melepasi had kawalan bawah '
+            'atau purata masa konsultasi tinggi. Sila ambil rehat taktikal dan bincang agihan tugas.'
+        )
+        surveillance_note = (
+            f'Amaran Burnout/Drift: EWMA ({ewma_latest:.1f} kes/hari) berada di bawah '
+            f'LCL ({lcl_latest:.1f}) atau masa konsultasi melebihi 18 minit.'
+        )
+    elif is_watch:
+        status = 'WATCH'
+        badge_label = 'Watch • Early Drift'
+        badge_bg, badge_color, badge_border = '#fef3c7', '#d97706', '#fde68a'
+        card_bg, card_border = '#fffdf5', '#fde68a'
+        coaching_msg = (
+            f'Rentak EWMA ({ewma_latest:.1f} kes/hari) atau tempoh konsultasi menunjukkan tanda keletihan awal. '
+            'Jaga rentak klinikal dan berehat seketika jika perlu.'
+        )
+        surveillance_note = (
+            f'Pemerhatian Awal (Watch): EWMA ({ewma_latest:.1f} kes/hari) atau purata konsultasi '
+            f'({avg_consult if avg_consult is not None else "—"} min) mula menyusut.'
+        )
+    else:
+        status = 'IN_CONTROL'
+        badge_label = 'In Control • Optimal'
+        badge_bg, badge_color, badge_border = '#dcfce7', '#16a34a', '#bbf7d0'
+        card_bg, card_border = '#f0fdf4', '#bbf7d0'
+        coaching_msg = (
+            f'Prestasi EWMA ({ewma_latest:.1f} kes/hari) stabil dan seimbang. '
+            'Teruskan momentum kerja yang sihat!'
+        )
+        surveillance_note = (
+            f'Trajektori EWMA ({ewma_latest:.1f} kes/hari) stabil di atas LCL ({lcl_latest:.1f}) '
+            f'dengan masa konsultasi purata {avg_consult if avg_consult is not None else "—"} min/pesakit.'
+        )
+
+    return {
+        'has_data': True,
+        'status': status,
+        'badge_label': badge_label,
+        'badge_bg': badge_bg,
+        'badge_color': badge_color,
+        'badge_border': badge_border,
+        'card_bg': card_bg,
+        'card_border': card_border,
+        'dates': dates,
+        'raw_series': xs,
+        'ewma_series': ewma_series,
+        'lcl_series': lcl_series,
+        'ewma_latest': ewma_latest,
+        'lcl_latest': lcl_latest,
+        'avg_patients': avg_patients,
+        'avg_consult': avg_consult,
+        'punctuality_avg': punctuality_avg,
+        'consult_status': consult_status,
+        'consult_is_ok': consult_is_ok,
+        'coaching_msg': coaching_msg,
+        'surveillance_note': surveillance_note,
+        'observation_count': n,
+        'target': target,
+        'lambda': lam,
+    }
+
+
+def get_productivity_ewma_profile(user, as_of=None, window_days=30):
+    """Tarik log ProductivityLog pegawai dalam tetingkap hari dan kira profil EWMA."""
+    if as_of is None:
+        as_of = timezone.localdate()
+    elif isinstance(as_of, datetime):
+        if timezone.is_naive(as_of):
+            as_of = timezone.make_aware(as_of)
+        as_of = timezone.localtime(as_of).date()
+
+    if user is None:
+        profile = _compute_productivity_ewma([])
+        profile['has_any_records'] = False
+        return profile
+
+    all_productivity = ProductivityLog.objects.filter(officer=user)
+    has_any_records = all_productivity.exists()
+    start_date = as_of - timedelta(days=max(1, window_days) - 1)
+    rows = all_productivity.filter(
+        record_date__gte=start_date,
+        record_date__lte=as_of,
+    ).order_by('record_date', 'id').values_list(
+        'record_date',
+        'patients_cleared',
+        'avg_consult_minutes',
+        'punctuality_rate',
+    )
+
+    by_date = {}
+    for rec_date, cleared, consult_mins, punc_rate in rows:
+        by_date[rec_date] = (
+            rec_date,
+            max(0, cleared or 0),
+            consult_mins,
+            punc_rate,
+        )
+
+    ordered_entries = [by_date[d] for d in sorted(by_date.keys())]
+    profile = _compute_productivity_ewma(ordered_entries)
+    profile['has_any_records'] = has_any_records
+    return profile
+
+
+def _compute_productivity_ewma(
+    daily_entries,
+    lam=0.30,
+    target=38.22,
+    control_limit_l=2.5,
+):
+    """
+    Kira siri EWMA (lambda=0.30) dan Lower Control Limit (LCL) bagi mengesan
+    risiko burnout atau kejatuhan mendadak pelepasan pesakit harian.
+
+    ``daily_entries`` ialah senarai tuple (record_date, patients_cleared, avg_consult_minutes)
+    yang telah disusun secara kronologi menaik.
+    """
+    if not daily_entries:
+        return {
+            'has_data': False,
+            'status': 'NO_DATA',
+            'badge_label': 'No Data',
+            'badge_bg': '#f1f5f9',
+            'badge_color': '#64748b',
+            'badge_border': '#cbd5e1',
+            'card_bg': '#f8fafc',
+            'card_border': '#cbd5e1',
+            'dates': [],
+            'raw_series': [],
+            'ewma_series': [],
+            'lcl_series': [],
+            'ewma_latest': None,
+            'lcl_latest': None,
+            'avg_patients': None,
+            'avg_consult': None,
+            'punctuality_avg': None,
+            'consult_status': 'Tiada Rekod',
+            'consult_is_ok': True,
+            'coaching_msg': (
+                'Belum ada log produktiviti 30 hari terakhir. '
+                'Rekod beban kerja harian anda untuk mengaktifkan pemantauan EWMA.'
+            ),
+            'surveillance_note': 'Pegawai ini belum mempunyai log produktiviti dalam tempoh pemantauan.',
+            'observation_count': 0,
+            'target': target,
+            'lambda': lam,
+        }
+
+    dates = [entry[0] for entry in daily_entries]
+    xs = [float(max(0, entry[1] or 0)) for entry in daily_entries]
+    consults = [
+        float(entry[2]) for entry in daily_entries
+        if entry[2] is not None and float(entry[2]) > 0
+    ]
+    punctualities = [
+        float(entry[3]) for entry in daily_entries
+        if len(entry) > 3 and entry[3] is not None
+    ]
+
+    n = len(xs)
+    mean_x = sum(xs) / n
+    if n > 1:
+        variance = sum((x - mean_x) ** 2 for x in xs) / (n - 1)
+        sigma = max(4.0, math.sqrt(variance))
+    else:
+        sigma = 4.0
+
+    ewma_series = []
+    lcl_series = []
+    z_curr = xs[0]
+    for idx, x_val in enumerate(xs, start=1):
+        if idx == 1:
+            z_curr = x_val
+        else:
+            z_curr = (lam * x_val) + ((1.0 - lam) * z_curr)
+        ewma_series.append(round(z_curr, 2))
+
+        factor = math.sqrt((lam / (2.0 - lam)) * (1.0 - ((1.0 - lam) ** (2 * idx))))
+        lcl_val = max(0.0, target - (control_limit_l * sigma * factor))
+        lcl_series.append(round(lcl_val, 2))
+
+    ewma_latest = ewma_series[-1]
+    lcl_latest = lcl_series[-1]
+    avg_patients = round(mean_x, 1)
+    avg_consult = round(sum(consults) / len(consults), 1) if consults else None
+    punctuality_avg = round(sum(punctualities) / len(punctualities), 1) if punctualities else None
+
+    half_n = max(1, n // 2)
+    baseline_ewma = sum(ewma_series[:half_n]) / half_n
+
+    if avg_consult is None:
+        consult_status, consult_is_ok = 'Tiada Rekod Masa', True
+    elif avg_consult > 15.0:
+        consult_status, consult_is_ok = 'Melebihi 15m (Risiko Keletihan)', False
+    elif avg_consult < 8.0:
+        consult_status, consult_is_ok = 'Terlalu Singkat (<8m)', False
+    else:
+        consult_status, consult_is_ok = 'Julat Optimum (10–15m)', True
+
+    is_alert = (
+        ewma_latest < lcl_latest
+        or ewma_latest < 26.0
+        or (avg_consult is not None and avg_consult > 18.0)
+    )
+    is_watch = (
+        ewma_latest < 32.5
+        or (n >= 4 and baseline_ewma > 0 and ewma_latest < baseline_ewma * 0.85)
+        or (avg_consult is not None and (avg_consult > 15.0 or avg_consult < 8.0))
+    )
+
+    if is_alert:
+        status = 'ALERT'
+        badge_label = 'Alert • Burnout Risk'
+        badge_bg, badge_color, badge_border = '#fee2e2', '#dc2626', '#fecaca'
+        card_bg, card_border = '#fffafa', '#fecaca'
+        coaching_msg = (
+            f'EWMA semasa ({ewma_latest:.1f} kes/hari) melepasi had kawalan bawah '
+            'atau purata masa konsultasi tinggi. Sila ambil rehat taktikal dan bincang agihan tugas.'
+        )
+        surveillance_note = (
+            f'Amaran Burnout/Drift: EWMA ({ewma_latest:.1f} kes/hari) berada di bawah '
+            f'LCL ({lcl_latest:.1f}) atau masa konsultasi melebihi 18 minit.'
+        )
+    elif is_watch:
+        status = 'WATCH'
+        badge_label = 'Watch • Early Drift'
+        badge_bg, badge_color, badge_border = '#fef3c7', '#d97706', '#fde68a'
+        card_bg, card_border = '#fffdf5', '#fde68a'
+        coaching_msg = (
+            f'Rentak EWMA ({ewma_latest:.1f} kes/hari) atau tempoh konsultasi menunjukkan tanda keletihan awal. '
+            'Jaga rentak klinikal dan berehat seketika jika perlu.'
+        )
+        surveillance_note = (
+            f'Pemerhatian Awal (Watch): EWMA ({ewma_latest:.1f} kes/hari) atau purata konsultasi '
+            f'({avg_consult if avg_consult is not None else "—"} min) mula menyusut.'
+        )
+    else:
+        status = 'IN_CONTROL'
+        badge_label = 'In Control • Optimal'
+        badge_bg, badge_color, badge_border = '#dcfce7', '#16a34a', '#bbf7d0'
+        card_bg, card_border = '#f0fdf4', '#bbf7d0'
+        coaching_msg = (
+            f'Prestasi EWMA ({ewma_latest:.1f} kes/hari) stabil dan seimbang. '
+            'Teruskan momentum kerja yang sihat!'
+        )
+        surveillance_note = (
+            f'Trajektori EWMA ({ewma_latest:.1f} kes/hari) stabil di atas LCL ({lcl_latest:.1f}) '
+            f'dengan masa konsultasi purata {avg_consult if avg_consult is not None else "—"} min/pesakit.'
+        )
+
+    return {
+        'has_data': True,
+        'status': status,
+        'badge_label': badge_label,
+        'badge_bg': badge_bg,
+        'badge_color': badge_color,
+        'badge_border': badge_border,
+        'card_bg': card_bg,
+        'card_border': card_border,
+        'dates': dates,
+        'raw_series': xs,
+        'ewma_series': ewma_series,
+        'lcl_series': lcl_series,
+        'ewma_latest': ewma_latest,
+        'lcl_latest': lcl_latest,
+        'avg_patients': avg_patients,
+        'avg_consult': avg_consult,
+        'punctuality_avg': punctuality_avg,
+        'consult_status': consult_status,
+        'consult_is_ok': consult_is_ok,
+        'coaching_msg': coaching_msg,
+        'surveillance_note': surveillance_note,
+        'observation_count': n,
+        'target': target,
+        'lambda': lam,
+    }
+
+
+def get_productivity_ewma_profile(user, as_of=None, window_days=30):
+    """Tarik log ProductivityLog pegawai dalam tetingkap hari dan kira profil EWMA."""
+    if as_of is None:
+        as_of = timezone.localdate()
+    elif isinstance(as_of, datetime):
+        if timezone.is_naive(as_of):
+            as_of = timezone.make_aware(as_of)
+        as_of = timezone.localtime(as_of).date()
+
+    if user is None:
+        profile = _compute_productivity_ewma([])
+        profile['has_any_records'] = False
+        return profile
+
+    all_productivity = ProductivityLog.objects.filter(officer=user)
+    has_any_records = all_productivity.exists()
+    start_date = as_of - timedelta(days=max(1, window_days) - 1)
+    rows = all_productivity.filter(
+        record_date__gte=start_date,
+        record_date__lte=as_of,
+    ).order_by('record_date', 'id').values_list(
+        'record_date',
+        'patients_cleared',
+        'avg_consult_minutes',
+        'punctuality_rate',
+    )
+
+    by_date = {}
+    for rec_date, cleared, consult_mins, punc_rate in rows:
+        by_date[rec_date] = (
+            rec_date,
+            max(0, cleared or 0),
+            consult_mins,
+            punc_rate,
+        )
+
+    ordered_entries = [by_date[d] for d in sorted(by_date.keys())]
+    profile = _compute_productivity_ewma(ordered_entries)
+    profile['has_any_records'] = has_any_records
+    return profile

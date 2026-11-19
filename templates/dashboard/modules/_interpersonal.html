@@ -339,49 +339,326 @@
                     </div>
                 </div>
 
-                <!-- BORANG MEMBERI KUDOS KEPADA RAKAN SEKERJA -->
-                <div style="background: linear-gradient(135deg, #ffffff 0%, #f3edff 100%); border: 1px solid #e7dff2; border-radius: 16px; padding: 20px; margin-bottom: 25px; box-shadow: 0 4px 15px rgba(21, 10, 53, 0.04);">
+                <!-- KAD DWI-MOD: PAPARAN KOD QR PERIBADI & PENGIMBAS KAMERA (DNA ROYAL PURPLE) -->
+                <div style="background: linear-gradient(135deg, #ffffff 0%, #f3edff 100%); border: 1px solid #e7dff2; border-radius: 16px; padding: 20px; margin-bottom: 22px; box-shadow: 0 4px 15px rgba(21, 10, 53, 0.04);">
+                    <!-- BARIS KEPALA & PENUKAR MOD (MY QR CODE <-> SCAN CAMERA) -->
+                    <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; border-bottom: 1px solid #e7dff2; padding-bottom: 14px; margin-bottom: 16px;">
+                        <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+                            <span style="background: #6d3ec4; color: white; font-size: 10px; font-weight: 800; padding: 4px 10px; border-radius: 10px; text-transform: uppercase; letter-spacing: 0.4px;">
+                                Staff-to-Staff Kudos QR
+                            </span>
+                            <span style="background: #f3edff; color: #6d3ec4; border: 1px solid #d8c7f4; font-size: 10.5px; font-weight: 800; padding: 3px 10px; border-radius: 10px;">
+                                12M Ceiling: {{ teamwork_profile.received_points|default:0 }} / 30 Pts
+                            </span>
+                        </div>
+
+                        <!-- TOGGLE SWITCHER: MY QR CODE VS SCAN CAMERA -->
+                        <div style="display: inline-flex; background: #f3edff; padding: 4px; border-radius: 10px; border: 1px solid #d8c7f4; gap: 4px;">
+                            <button type="button" id="btn-kudos-mode-qr" onclick="switchKudosQrMode('qr')" style="background: #6d3ec4; color: white; border: none; padding: 7px 14px; border-radius: 8px; font-size: 11.5px; font-weight: 800; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; transition: all 0.2s;">
+                                <svg style="width: 14px; height: 14px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z"/></svg>
+                                My QR Code
+                            </button>
+                            <button type="button" id="btn-kudos-mode-scan" onclick="switchKudosQrMode('scan')" style="background: transparent; color: #150a35; border: none; padding: 7px 14px; border-radius: 8px; font-size: 11.5px; font-weight: 800; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; transition: all 0.2s;">
+                                <svg style="width: 14px; height: 14px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                                Scan Camera
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- MOD 1: PAPARAN KOD QR PERIBADI STAF -->
+                    <div id="kudosQrShowPane" style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 20px;">
+                        <div style="display: flex; align-items: center; gap: 16px;">
+                            <div style="background: white; border: 2px solid #e7dff2; padding: 8px; border-radius: 14px; flex-shrink: 0; box-shadow: 0 2px 8px rgba(21, 10, 53, 0.05);">
+                                <img src="https://api.qrserver.com/v1/create-qr-code/?size=110x110&data={{ kudos_qr_url|urlencode }}" alt="Staff Kudos QR Code" style="width: 100px; height: 100px; display: block;">
+                            </div>
+                            <div>
+                                <h4 style="color: #150a35; margin: 0 0 5px 0; font-size: 15.5px; font-weight: 900;">Imbas QR Rakan Sekerja untuk Anugerah Mata FMS</h4>
+                                <p style="margin: 0; font-size: 12px; color: #6f628b; max-width: 440px; line-height: 1.5; font-weight: 500;">
+                                    Tunjukkan kod QR ini kepada rakan sejawat selepas konsultasi subkepakaran, penerimaan rujukan, atau liputan klinik FMS (Had siling <b>30 mata / 12 bulan</b> &bull; 1 imbasan QR / 24 jam).
+                                </p>
+                            </div>
+                        </div>
+
+                        <div style="display: flex; flex-direction: column; gap: 8px; min-width: 195px;">
+                            <button type="button" id="btnCopyKudosQr" onclick="copyKudosQrLink()" style="background: #6d3ec4; color: white; border: none; padding: 10px 16px; border-radius: 10px; font-size: 12px; font-weight: 800; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; box-shadow: 0 4px 10px rgba(109, 62, 196, 0.22);">
+                                <svg style="width: 15px; height: 15px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
+                                <span>Salin Pautan QR</span>
+                            </button>
+                            <div style="font-size: 10.5px; color: #6f628b; text-align: center; font-weight: 700;">Officer ID: <span style="color: #150a35;">{{ doctor_username }}</span></div>
+                        </div>
+                    </div>
+
+                    <!-- MOD 2: PENGIMBAS KAMERA QR RAKAN SEKERJA -->
+                    <div id="kudosQrScanPane" style="display: none;">
+                        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 18px; align-items: center;">
+                            <div style="position: relative; background: #150a35; border: 2px solid #6d3ec4; border-radius: 14px; overflow: hidden; height: 220px; display: flex; align-items: center; justify-content: center;">
+                                <video id="kudosQrVideo" playsinline autoplay muted style="width: 100%; height: 100%; object-fit: cover; display: block;"></video>
+                                <canvas id="kudosQrCanvas" style="display: none;"></canvas>
+                                <!-- Bingkai Sasaran Imbasan Royal Purple -->
+                                <div style="position: absolute; width: 150px; height: 150px; border: 2.5px dashed #a577ff; border-radius: 16px; box-shadow: 0 0 0 9999px rgba(21, 10, 53, 0.35); pointer-events: none;"></div>
+                            </div>
+
+                            <div style="display: flex; flex-direction: column; gap: 10px;">
+                                <span style="background: #f3edff; color: #6d3ec4; border: 1px solid #d8c7f4; font-size: 10.5px; font-weight: 800; padding: 3px 10px; border-radius: 8px; width: fit-content;">
+                                    KAMERA PENGIMBAS AKTIF
+                                </span>
+                                <h4 style="color: #150a35; margin: 0; font-size: 15px; font-weight: 900;">Halakan Kamera ke Kod QR Rakan</h4>
+                                <p id="kudosQrCameraStatus" style="margin: 0; font-size: 12px; color: #6f628b; line-height: 1.5; font-weight: 600;">
+                                    Memulakan kamera peranti... Pastikan kod QR rakan sekerja berada di dalam bingkai ungu.
+                                </p>
+                                <div style="display: flex; gap: 8px; flex-wrap: wrap; margin-top: 4px;">
+                                    <button type="button" onclick="switchKudosQrMode('qr')" style="background: white; color: #6d3ec4; border: 1.5px solid #d8c7f4; padding: 8px 14px; border-radius: 10px; font-size: 11.5px; font-weight: 800; cursor: pointer;">
+                                        ← Kembali ke Paparan QR
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- SEPANDUK PENGESAHAN IMBASAN QR (STATIK DARI URL ATAU DINAMIK DARI KAMERA) -->
+                <div id="kudosQrDynamicBanner" style="{% if not kudos_qr_target and not kudos_qr_self_scan %}display: none;{% else %}display: flex;{% endif %} background: #f3edff; border: 1.5px solid #6d3ec4; color: #150a35; padding: 12px 16px; border-radius: 12px; margin-bottom: 18px; font-size: 12.5px; font-weight: 700; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px;">
+                    <span id="kudosQrDynamicBannerText">
+                        {% if kudos_qr_self_scan %}
+                            ⚠️ Anda mengimbas Kod QR Kudos anda sendiri. Kongsikan kod QR ini kepada rakan sekerja untuk menerima penghargaan.
+                        {% elif kudos_qr_target %}
+                            ✅ <b>QR Scan Verified:</b> Menganugerahkan Kudos kepada
+                            <b>{% if kudos_qr_target.get_full_name %}Dr. {{ kudos_qr_target.get_full_name }}{% else %}Dr. {{ kudos_qr_target.username }}{% endif %}</b>
+                        {% endif %}
+                    </span>
+                    <span id="kudosQrDynamicBannerTag" style="font-size: 10.5px; background: #6d3ec4; color: white; padding: 3px 10px; border-radius: 12px; font-weight: 800;">
+                        {% if kudos_qr_self_scan %}SELF-SCAN BLOCKED{% else %}QR VERIFIED{% endif %}
+                    </span>
+                </div>
+
+                <!-- BORANG MEMBERI KUDOS KEPADA RAKAN SEKERJA (8 AKTIVITI RASMI FMS) -->
+                <div id="kudosAwardFormCard" style="background: linear-gradient(135deg, #ffffff 0%, #f3edff 100%); border: 1px solid #e7dff2; border-radius: 16px; padding: 20px; margin-bottom: 25px; box-shadow: 0 4px 15px rgba(21, 10, 53, 0.04);">
                     <form method="POST">
                         {% csrf_token %}
                         <input type="hidden" name="form_type" value="int_team">
+                        <input type="hidden" id="kudosViaQrInput" name="via_qr" value="{% if kudos_qr_target_id %}1{% else %}0{% endif %}">
 
-                        <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 15px;">
-                            <h4 style="color:#150a35; margin:0; font-size:14px; font-weight: 800;">Send Peer Endorsement & Kudos Points</h4>
+                        <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px; margin-bottom: 15px;">
+                            <h4 style="color:#150a35; margin:0; font-size:14px; font-weight: 800;">Send FMS Peer Collaboration &amp; Kudos Points</h4>
+                            <span style="font-size: 11px; font-weight: 800; color: #6d3ec4;">Max Ceiling: 30 Points / Year</span>
                         </div>
 
                         <div class="grid-2" style="margin-bottom: 15px;">
                             <div>
                                 <label style="margin-top:0; color:#150a35; font-weight:700;">Select Colleague / Peer <span style="color:red;">*</span></label>
-                                <select name="peer_id" required style="background:white; border-color:#d8c7f4; font-weight:600;">
-                                    <option value="" disabled selected>Choose a Staff...</option>
+                                <select id="kudosPeerSelect" name="peer_id" required style="background:white; border-color:#d8c7f4; font-weight:600;">
+                                    <option value="" disabled {% if not kudos_qr_target_id %}selected{% endif %}>Choose a Staff...</option>
                                     {% for peer in peer_staff_list %}
-                                        <option value="{{ peer.id }}">{% if peer.get_full_name %}Dr. {{ peer.get_full_name }}{% else %}Dr. {{ peer.username }}{% endif %} ({{ peer.profile.get_department_display }})</option>
+                                        <option value="{{ peer.id }}" data-username="{{ peer.username }}" {% if kudos_qr_target_id == peer.id %}selected{% endif %}>
+                                            {% if peer.get_full_name %}Dr. {{ peer.get_full_name }}{% else %}Dr. {{ peer.username }}{% endif %} ({{ peer.profile.get_department_display }})
+                                        </option>
                                     {% empty %}
                                         <option value="" disabled>Tiada staf lain tersedia</option>
                                     {% endfor %}
                                 </select>
                             </div>
                             <div>
-                                <label style="margin-top:0; color:#150a35; font-weight:700;">Endorsement Category & Points <span style="color:red;">*</span></label>
-                                <select name="kudos_category" required style="background:white; border-color:#d8c7f4; font-weight:600;">
-                                    <option value="Shift Cover & Ward Relief" style="color: #6d3ec4; font-weight: 700;">💜 Shift Cover & Ward Relief (+10 Pts to Peer)</option>
-                                    <option value="Emergency & On-Call Assistance" style="color: #6d3ec4; font-weight: 700;">🟣 Emergency & On-Call Assistance (+10 Pts to Peer)</option>
-                                    <option value="Clinical Knowledge Sharing & CME" style="color: #6d3ec4; font-weight: 700;">🪻 Clinical Knowledge Sharing & CME (+5 Pts to Peer)</option>
-                                    <option value="Empathy & Team Moral Support" style="color: #6d3ec4; font-weight: 700;">💟 Empathy & Team Moral Support (+5 Pts to Peer)</option>
+                                <label style="margin-top:0; color:#150a35; font-weight:700;">FMS Teamwork Activity &amp; Points <span style="color:red;">*</span></label>
+                                <select id="kudosCategorySelect" name="kudos_category" required style="background:white; border-color:#d8c7f4; font-weight:600;">
+                                    <option value="Consultation based on subspecialty/AOI">1. Consultation based on subspecialty/AOI (+5 Pts)</option>
+                                    <option value="Accepting referrals from other FMS">2. Accepting referrals from other FMS (+5 Pts)</option>
+                                    <option value="Covering inter / intrafacility FMS">3. Covering inter / intrafacility FMS (+5 Pts)</option>
+                                    <option value="Non-clinical consultation">4. Non-clinical consultation (+3 Pts)</option>
+                                    <option value="Research /Innovation related support">5. Research /Innovation related support (+3 Pts)</option>
+                                    <option value="Sharing resources – drugs, staff, lab">6. Sharing resources – drugs, staff, lab (+3 Pts)</option>
+                                    <option value="Clinical-related activities">7. Clinical-related activities (+3 Pts)</option>
+                                    <option value="General clinical consultation">8. General clinical consultation (+3 Pts)</option>
                                 </select>
                             </div>
                         </div>
 
                         <div style="margin-bottom: 15px;">
-                            <label style="margin-top:0; color:#150a35; font-weight:700;">Appreciation Note / Remarks <span style="color:red;">*</span></label>
-                            <input type="text" name="kudos_note" placeholder="e.g. Thanks for helping out during the emergency OT pass-over today!" required style="background:white; border-color:#d8c7f4;">
+                            <label style="margin-top:0; color:#150a35; font-weight:700;">Collaboration Evidence / Remarks <span style="color:red;">*</span></label>
+                            <input type="text" name="kudos_note" placeholder="e.g. Rujukan kes T2DM kompleks & perkongsian protokol klinik FMS..." required style="background:white; border-color:#d8c7f4;">
                         </div>
 
-                        <button type="submit" class="submit-btn" style="background-color: #6d3ec4; margin-top: 10px; display: flex; align-items: center; justify-content: center; gap: 8px; font-weight:800;">
-                            Send Kudos & Award Points
+                        <button type="submit" id="kudosSubmitBtn" class="submit-btn" style="background-color: #6d3ec4; margin-top: 10px; display: flex; align-items: center; justify-content: center; gap: 8px; font-weight:800;">
+                            {% if kudos_qr_target_id %}Confirm QR Scan &amp; Award Points{% else %}Send Kudos &amp; Award Points{% endif %}
                         </button>
                     </form>
                 </div>
+
+                <script>
+                    var kudosQrStream = null;
+                    var kudosQrScanTimer = null;
+                    var kudosCurrentUsername = "{{ doctor_username|escapejs }}";
+
+                    function copyKudosQrLink() {
+                        var urlText = "{{ kudos_qr_url|escapejs }}";
+                        var btn = document.getElementById('btnCopyKudosQr');
+                        if (navigator.clipboard && navigator.clipboard.writeText) {
+                            navigator.clipboard.writeText(urlText);
+                        }
+                        if (btn) {
+                            var span = btn.querySelector('span');
+                            if (span) {
+                                span.textContent = 'Pautan QR Disalin!';
+                                setTimeout(function() { span.textContent = 'Salin Pautan QR'; }, 2200);
+                            }
+                        }
+                    }
+
+                    function stopKudosQrCamera() {
+                        if (kudosQrScanTimer) {
+                            clearInterval(kudosQrScanTimer);
+                            kudosQrScanTimer = null;
+                        }
+                        if (kudosQrStream) {
+                            kudosQrStream.getTracks().forEach(function(track) { track.stop(); });
+                            kudosQrStream = null;
+                        }
+                        var video = document.getElementById('kudosQrVideo');
+                        if (video) { video.srcObject = null; }
+                    }
+
+                    function switchKudosQrMode(mode) {
+                        var qrPane = document.getElementById('kudosQrShowPane');
+                        var scanPane = document.getElementById('kudosQrScanPane');
+                        var btnQr = document.getElementById('btn-kudos-mode-qr');
+                        var btnScan = document.getElementById('btn-kudos-mode-scan');
+                        if (!qrPane || !scanPane) return;
+
+                        if (mode === 'scan') {
+                            qrPane.style.display = 'none';
+                            scanPane.style.display = 'block';
+                            btnScan.style.background = '#6d3ec4';
+                            btnScan.style.color = '#ffffff';
+                            btnQr.style.background = 'transparent';
+                            btnQr.style.color = '#150a35';
+                            startKudosQrCamera();
+                        } else {
+                            stopKudosQrCamera();
+                            scanPane.style.display = 'none';
+                            qrPane.style.display = 'flex';
+                            btnQr.style.background = '#6d3ec4';
+                            btnQr.style.color = '#ffffff';
+                            btnScan.style.background = 'transparent';
+                            btnScan.style.color = '#150a35';
+                        }
+                    }
+
+                    function handleScannedKudosPayload(rawText) {
+                        if (!rawText) return false;
+                        var scannedUsername = rawText.trim();
+                        try {
+                            var parsedUrl = new URL(scannedUsername);
+                            var paramUser = parsedUrl.searchParams.get('kudos_to');
+                            if (paramUser) { scannedUsername = paramUser.trim(); }
+                        } catch (e) {}
+
+                        var banner = document.getElementById('kudosQrDynamicBanner');
+                        var bannerText = document.getElementById('kudosQrDynamicBannerText');
+                        var bannerTag = document.getElementById('kudosQrDynamicBannerTag');
+
+                        if (scannedUsername.toLowerCase() === kudosCurrentUsername.toLowerCase()) {
+                            switchKudosQrMode('qr');
+                            if (banner && bannerText && bannerTag) {
+                                banner.style.display = 'flex';
+                                bannerText.innerHTML = '⚠️ Anda mengimbas Kod QR Kudos anda sendiri. Kongsikan kod QR ini kepada rakan sekerja.';
+                                bannerTag.textContent = 'SELF-SCAN BLOCKED';
+                            }
+                            return true;
+                        }
+
+                        var selectEl = document.getElementById('kudosPeerSelect');
+                        if (!selectEl) return false;
+                        var matchedOption = null;
+                        for (var i = 0; i < selectEl.options.length; i++) {
+                            var optUser = (selectEl.options[i].getAttribute('data-username') || '').toLowerCase();
+                            if (optUser && optUser === scannedUsername.toLowerCase()) {
+                                matchedOption = selectEl.options[i];
+                                break;
+                            }
+                        }
+
+                        if (!matchedOption) return false;
+
+                        selectEl.value = matchedOption.value;
+                        var viaQrInput = document.getElementById('kudosViaQrInput');
+                        if (viaQrInput) { viaQrInput.value = '1'; }
+                        var submitBtn = document.getElementById('kudosSubmitBtn');
+                        if (submitBtn) { submitBtn.textContent = 'Confirm QR Scan & Award Points'; }
+
+                        switchKudosQrMode('qr');
+                        if (banner && bannerText && bannerTag) {
+                            banner.style.display = 'flex';
+                            bannerText.innerHTML = '✅ <b>QR Scan Verified:</b> Menganugerahkan Kudos kepada <b>' + matchedOption.text + '</b>';
+                            bannerTag.textContent = 'QR VERIFIED';
+                        }
+                        var formCard = document.getElementById('kudosAwardFormCard');
+                        if (formCard) { formCard.scrollIntoView({ behavior: 'smooth', block: 'center' }); }
+                        return true;
+                    }
+
+                    function startKudosQrCamera() {
+                        var statusEl = document.getElementById('kudosQrCameraStatus');
+                        var video = document.getElementById('kudosQrVideo');
+                        var canvas = document.getElementById('kudosQrCanvas');
+
+                        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+                            if (statusEl) {
+                                statusEl.innerHTML = 'Kamera tidak disokong pada pelayar ini. Sila pilih nama rakan sekerja secara terus pada senarai di bawah.';
+                            }
+                            return;
+                        }
+
+                        navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } })
+                            .then(function(stream) {
+                                kudosQrStream = stream;
+                                video.srcObject = stream;
+                                if (statusEl) {
+                                    statusEl.textContent = 'Kamera aktif. Halakan Kod QR Kudos rakan sekerja ke dalam bingkai...';
+                                }
+
+                                if ('BarcodeDetector' in window) {
+                                    var detector = new BarcodeDetector({ formats: ['qr_code'] });
+                                    kudosQrScanTimer = setInterval(function() {
+                                        if (video.readyState === video.HAVE_ENOUGH_DATA) {
+                                            detector.detect(video).then(function(codes) {
+                                                if (codes && codes.length > 0) {
+                                                    handleScannedKudosPayload(codes[0].rawValue);
+                                                }
+                                            }).catch(function() {});
+                                        }
+                                    }, 450);
+                                } else {
+                                    var beginJsQrLoop = function() {
+                                        kudosQrScanTimer = setInterval(function() {
+                                            if (window.jsQR && video.readyState === video.HAVE_ENOUGH_DATA && video.videoWidth > 0) {
+                                                canvas.width = video.videoWidth;
+                                                canvas.height = video.videoHeight;
+                                                var ctx = canvas.getContext('2d');
+                                                ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+                                                var imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+                                                var code = window.jsQR(imgData.data, imgData.width, imgData.height);
+                                                if (code && code.data) {
+                                                    handleScannedKudosPayload(code.data);
+                                                }
+                                            }
+                                        }, 450);
+                                    };
+                                    if (window.jsQR) {
+                                        beginJsQrLoop();
+                                    } else {
+                                        var s = document.createElement('script');
+                                        s.src = 'https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js';
+                                        s.onload = beginJsQrLoop;
+                                        document.head.appendChild(s);
+                                    }
+                                }
+                            })
+                            .catch(function() {
+                                if (statusEl) {
+                                    statusEl.innerHTML = 'Akses kamera tidak dibenarkan atau tiada webcam dikesan. Anda masih boleh memilih nama rakan secara terus pada borang di bawah.';
+                                }
+                            });
+                    }
+                </script>
 
                 <!-- LIVE DEPARTMENT PEER KUDOS FEED -->
                 <div style="border-top: 1px dashed #d8c7f4; padding-top: 20px;">
@@ -459,6 +736,27 @@
                     </div>
                 </div>
 
+                <!-- PROGRESS BAR TRAJECTORY 10 JAM MENTORSHIP -->
+                <div style="background: linear-gradient(135deg, #ffffff 0%, #f3edff 100%); border: 1px solid #d8c7f4; border-radius: 14px; padding: 16px 18px; margin-bottom: 22px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; margin-bottom: 8px;">
+                        <div style="font-size: 12.5px; font-weight: 900; color: #150a35;">
+                            🎓 Annual Training &amp; Mentorship Trajectory ({{ mentorship_profile.year|default:mentorship_year }})
+                        </div>
+                        <span style="font-size: 11px; font-weight: 800; padding: 3px 10px; border-radius: 14px; background: {{ mentorship_profile.badge_bg|default:'#f3edff' }}; color: {{ mentorship_profile.badge_color|default:'#6d3ec4' }};">
+                            {{ mentorship_profile.badge_label|default:"No Data" }}
+                        </span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; font-size: 11.5px; font-weight: 700; color: #150a35; margin-bottom: 6px;">
+                        <span>Verified HOD: <b style="color: #16a34a;">{{ mentorship_profile.verified_hours|default:0|floatformat:1 }} Hrs</b> {% if mentorship_profile.pending_hours > 0 %}&bull; Pending HOD: <b style="color: #d97706;">+{{ mentorship_profile.pending_hours|floatformat:1 }} Hrs</b>{% endif %}</span>
+                        <span>Target: <b>10.0 Hours</b> ({{ mentorship_profile.verified_pct|default:0 }}%)</span>
+                    </div>
+                    <div style="background: #e7dff2; height: 10px; border-radius: 8px; overflow: hidden; display: flex; margin-bottom: 8px;">
+                        <div style="background: #16a34a; width: {{ mentorship_profile.verified_pct|default:0 }}%; height: 100%;"></div>
+                        <div style="background: #f59e0b; width: {{ mentorship_profile.pending_pct|default:0 }}%; height: 100%;"></div>
+                    </div>
+                    <div style="font-size: 11.5px; color: #6f628b; font-weight: 600;">{{ mentorship_profile.coaching_msg }}</div>
+                </div>
+
                 <!-- BORANG BAMBINGAN MENTORSHIP TERSTRUKTUR -->
                 <div style="background: linear-gradient(135deg, #ffffff 0%, #f3edff 100%); border: 1px solid #e7dff2; border-radius: 16px; padding: 20px; margin-bottom: 25px; box-shadow: 0 4px 15px rgba(21, 10, 53, 0.04);">
                     <form method="POST">
@@ -492,12 +790,14 @@
                                 </div>
                             </div>
                             <div>
-                                <label style="margin-top:0; color:#150a35; font-weight:700;">Guidance Domain <span style="color:red;">*</span></label>
+                                <label style="margin-top:0; color:#150a35; font-weight:700;">FMS Training Activity &amp; Trainee Level <span style="color:red;">*</span></label>
                                 <select name="mentor_domain" required style="background:white; border-color:#d8c7f4; font-weight:600;">
-                                    <option value="Bedside Clinical Supervision">Bedside Procedural Supervision</option>
-                                    <option value="Postgraduate & Parallel Pathway">Postgraduate Pathway (Master's / MRCP)</option>
-                                    <option value="On-Call Coping & Stress Adaptation">Workplace Adaptation & On-Call Coping</option>
-                                    <option value="Audit & Research Guidance">Clinical Audit & Research Guidance</option>
+                                    <option value="Post-grad students">1. Post-grad students (By individual)</option>
+                                    <option value="SWE">2. SWE — Supervised Work Experience (By individual)</option>
+                                    <option value="Medical students">3. Medical students (Based on group — KIV)</option>
+                                    <option value="Attachment doctors">4. Attachment doctors (By individual)</option>
+                                    <option value="Credentialing & Privileging">5. Credentialing &amp; Privileging (By individual)</option>
+                                    <option value="Others">6. Others (Peer / Junior Upskilling)</option>
                                 </select>
                             </div>
                         </div>

@@ -30,9 +30,16 @@ from .services import (
     MODULE_ORDER,
     _kkm_hba1c_result,
     build_cpd_trajectory,
+    build_department_kudos_leaderboard,
     calculate_cpd_points,
     calculate_pri_score,
+    get_ei_wellness_profile,
+    get_innovation_milestone_profile,
+    get_mentorship_trajectory_profile,
     get_module_scores,
+    get_mypsq_rolling_profile,
+    get_productivity_ewma_profile,
+    get_teamwork_recognition_profile,
 )
 from .models import (
     UserProfile, MyPSQFeedback, ProcedureLog, PolicyDeclaration,
@@ -223,6 +230,11 @@ def _hod_pending_validation_count(staff_users):
         ).count()
         + PolicyDeclaration.objects.filter(
             officer_id__in=staff_ids, is_verified=False
+        ).count()
+        + MentorshipSession.objects.filter(
+            mentor_id__in=staff_ids,
+            participant_role='mentor',
+            is_verified=False,
         ).count()
     )
 
@@ -717,6 +729,44 @@ def hod_dashboard(request):
     top_alerts.sort(key=lambda x: x['last_alert_at'] or timezone.now() - timedelta(days=9999), reverse=True)
     cusum_top_alerts = top_alerts[:5]
     action_urgent_count = cusum_alert_count
+
+    # === EWMA PRODUCTIVITY & BURNOUT SURVEILLANCE (HOD) ===
+    ewma_snapshots = []
+    ewma_in_control = 0
+    ewma_watch = 0
+    ewma_alert = 0
+    ewma_no_data = 0
+    for st_u in sorted(staff_for_kpi, key=lambda u: (u.first_name or '', u.username)):
+        ep = get_productivity_ewma_profile(st_u)
+        st_code = ep['status']
+        if st_code == 'IN_CONTROL':
+            ewma_in_control += 1
+        elif st_code == 'WATCH':
+            ewma_watch += 1
+        elif st_code == 'ALERT':
+            ewma_alert += 1
+        else:
+            ewma_no_data += 1
+
+        fname_e = f"Dr. {st_u.first_name} {st_u.last_name}".strip()
+        disp_e = fname_e if fname_e != "Dr." else f"Dr. {st_u.username}"
+        ewma_snapshots.append({
+            'officer_name': disp_e,
+            'status': st_code,
+            'badge_label': ep['badge_label'],
+            'ewma_latest': ep['ewma_latest'],
+            'lcl_latest': ep['lcl_latest'],
+            'avg_consult': ep['avg_consult'],
+            'observation_count': ep['observation_count'],
+        })
+
+    ewma_summary = {
+        'total': len(ewma_snapshots),
+        'in_control': ewma_in_control,
+        'watch': ewma_watch,
+        'alert': ewma_alert,
+        'no_data': ewma_no_data,
+    }
     kpi_actuals = [actual_clinical, actual_cpd, actual_doc, actual_policy]
 
     fig_kpi = go.Figure()
@@ -999,6 +1049,10 @@ def hod_dashboard(request):
         'cusum_alert_count': cusum_alert_count,
         'cusum_open_episode_count': cusum_open_episode_count,
         'cusum_top_alerts': cusum_top_alerts,
+
+        # --- DATA SEBENAR EWMA PRODUCTIVITY SURVEILLANCE (HOD) ---
+        'ewma_snapshots': ewma_snapshots,
+        'ewma_summary': ewma_summary,
     }
     return render(request, 'dashboard/hod_dashboard.html', context)
 
@@ -1951,64 +2005,31 @@ def operational_view(request):
         'attainment_pct': 0,
     }
 
-    # 1. Tab Productivity: EWMA Burnout & Efficiency Surveillance
+    # 1. Tab Productivity: EWMA Burnout & Efficiency Surveillance (lambda = 0.30)
     if active_tab == 'Productivity':
         target_user = selected_staff
-        prod_logs = (
-            list(ProductivityLog.objects.filter(officer=target_user).order_by('-record_date', '-id')[:20])
-            if target_user else []
-        )
-        prod_logs.reverse()
+        ewma_prof = get_productivity_ewma_profile(target_user, window_days=30)
 
         fig_area = go.Figure()
-        if prod_logs:
-            tarikh_label = [log.record_date.strftime("%d %b") for log in prod_logs]
-            pesakit_harian = [float(log.patients_cleared or 0) for log in prod_logs]
-
-            # Kira siri EWMA (lambda = 0.30) untuk melicinkan turun naik harian & kesan burnout drift
-            lam = 0.30
-            ewma_series = []
-            z_curr = pesakit_harian[0]
-            for val in pesakit_harian:
-                z_curr = round((lam * val) + ((1.0 - lam) * z_curr), 1)
-                ewma_series.append(z_curr)
-
-            avg_pts = round(sum(pesakit_harian) / len(pesakit_harian), 1)
-            avg_cons = round(sum(float(l.avg_consult_minutes or 0) for l in prod_logs) / len(prod_logs), 1)
-            avg_punc = round(sum(float(l.punctuality_rate or 0) for l in prod_logs) / len(prod_logs), 1)
-            latest_ewma = ewma_series[-1]
-            baseline_ewma = sum(ewma_series[:max(1, len(ewma_series) // 2)]) / max(1, len(ewma_series) // 2)
-
-            if avg_cons > 15.0:
-                c_status, c_ok = "Melebihi 15m (Risiko Keletihan)", False
-            elif avg_cons < 8.0 and avg_cons > 0:
-                c_status, c_ok = "Terlalu Singkat (<8m)", False
-            else:
-                c_status, c_ok = "Julat Optimum (10–15m)", True
-
-            # Pengesanan Burnout / Drift melalui EWMA + Masa Konsultasi
-            if (baseline_ewma > 0 and latest_ewma < baseline_ewma * 0.85) or avg_cons > 16.0 or latest_ewma < 28.0:
-                e_status = "WATCH (Burnout / Velocity Drift)"
-                e_bg, e_col = "#fef3c7", "#b45309"
-                e_note = f"EWMA semasa ({latest_ewma} kes/hari) atau purata masa konsultasi ({avg_cons} min) menunjukkan tanda keletihan beban kerja."
-            else:
-                e_status = "IN CONTROL (Balanced)"
-                e_bg, e_col = "#dcfce7", "#15803d"
-                e_note = f"Trajektori EWMA ({latest_ewma} kes/hari) stabil dengan masa konsultasi purata {avg_cons} min/pesakit."
+        if ewma_prof['has_data']:
+            tarikh_label = [d.strftime("%d %b") for d in ewma_prof['dates']]
+            pesakit_harian = ewma_prof['raw_series']
+            ewma_series = ewma_prof['ewma_series']
+            lcl_series = ewma_prof['lcl_series']
 
             prod_metrics = {
                 'has_data': True,
-                'avg_patients': avg_pts,
-                'ewma_latest': latest_ewma,
-                'avg_consult': avg_cons,
-                'consult_status': c_status,
-                'consult_is_ok': c_ok,
-                'punctuality_avg': avg_punc,
-                'ewma_status': e_status,
-                'ewma_badge_bg': e_bg,
-                'ewma_badge_color': e_col,
-                'ewma_note': e_note,
-                'total_logs': len(prod_logs),
+                'avg_patients': ewma_prof['avg_patients'],
+                'ewma_latest': ewma_prof['ewma_latest'],
+                'avg_consult': ewma_prof['avg_consult'] or 0.0,
+                'consult_status': ewma_prof['consult_status'],
+                'consult_is_ok': ewma_prof['consult_is_ok'],
+                'punctuality_avg': ewma_prof['punctuality_avg'] or 0.0,
+                'ewma_status': ewma_prof['badge_label'].upper(),
+                'ewma_badge_bg': ewma_prof['badge_bg'],
+                'ewma_badge_color': ewma_prof['badge_color'],
+                'ewma_note': ewma_prof['surveillance_note'],
+                'total_logs': ewma_prof['observation_count'],
             }
 
             # Plot 1: Garisan EWMA (Primary Smoothed Trajectory)
@@ -2018,11 +2039,26 @@ def operational_view(request):
                 mode='lines+markers',
                 fill='tozeroy',
                 line=dict(color='#6d3ec4', width=3.5, shape='spline', smoothing=0.8),
-                marker=dict(size=8, color='#150a35', line=dict(color='white', width=2)),
+                marker=dict(
+                    size=9,
+                    color=[
+                        '#dc2626' if z < lcl else '#150a35'
+                        for z, lcl in zip(ewma_series, lcl_series)
+                    ],
+                    line=dict(color='white', width=2),
+                ),
                 fillcolor='rgba(109, 62, 196, 0.12)',
                 name='EWMA Velocity (λ=0.3)'
             ))
-            # Plot 2: Bacaan Harian Sebenar (Raw Daily Points)
+            # Plot 2: Garisan Lower Control Limit (LCL Burnout Threshold)
+            fig_area.add_trace(go.Scatter(
+                x=tarikh_label,
+                y=lcl_series,
+                mode='lines',
+                line=dict(color='#dc2626', width=2, dash='dash'),
+                name='Lower Control Limit (LCL)'
+            ))
+            # Plot 3: Bacaan Harian Sebenar (Raw Daily Points)
             fig_area.add_trace(go.Scatter(
                 x=tarikh_label,
                 y=pesakit_harian,
@@ -2040,8 +2076,16 @@ def operational_view(request):
             y_max = 60
 
         fig_area.add_hline(
-            y=38.2, line_dash="dot", line_color="#6d3ec4",
-            annotation_text="MoH Benchmark (38.2/day)"
+            y=48.73, line_dash="dot", line_color="#a577ff",
+            annotation_text="WRVU Upper Bound (48.73)"
+        )
+        fig_area.add_hline(
+            y=38.22, line_dash="dot", line_color="#16a34a",
+            annotation_text="WRVU Mean Benchmark (38.22/day)"
+        )
+        fig_area.add_hline(
+            y=25.09, line_dash="dot", line_color="#d97706",
+            annotation_text="WRVU Lower Bound (25.09)"
         )
         fig_area.update_layout(
             height=300,
@@ -2055,73 +2099,81 @@ def operational_view(request):
         )
         area_chart_html = fig_area.to_html(full_html=False, include_plotlyjs=False, config={'displayModeBar': False})
 
-    # 2. Tab Innovation: Portfolio Wajaran & Pengesahan HOD
-    elif active_tab == 'Innovation':
+    # 2. Tab Innovation: Pending Verification Queue & Category Bar Chart (Surveillance)
+    pending_innov_projects = []
+    verified_innov_projects = []
+    if active_tab == 'Innovation':
         target_user = selected_staff
         officer_projects = (
             list(InnovationProject.objects.filter(officer=target_user).order_by('-submitted_at', '-id'))
             if target_user else []
         )
+        pending_innov_projects = [p for p in officer_projects if not p.is_verified]
+        verified_innov_projects = [p for p in officer_projects if p.is_verified]
 
-        kategori = ['Research', 'Clinical Trial', 'Technology', 'Publication']
-        points_by_type = {k: 0.0 for k in kategori}
-
-        for p in officer_projects:
-            pts = float(p.final_points or p.score or 0.0)
-            itype = (p.innovation_type or '').strip()
-            if itype in points_by_type:
-                points_by_type[itype] += pts
-            else:
-                points_by_type['Technology'] += pts
-
-        total_pts = round(sum(float(p.final_points or 0.0) for p in officer_projects), 1)
-        verified_pts = round(sum(float(p.final_points or 0.0) for p in officer_projects if p.is_verified), 1)
-        verified_cnt = sum(1 for p in officer_projects if p.is_verified)
-        pending_cnt = len(officer_projects) - verified_cnt
+        milestone = get_innovation_milestone_profile(target_user)
+        breakdown = milestone['category_breakdown']
 
         innov_summary = {
-            'total_count': len(officer_projects),
-            'verified_count': verified_cnt,
-            'pending_count': pending_cnt,
-            'total_points': total_pts,
-            'verified_points': verified_pts,
-            'target_points': 20.0,
-            'attainment_pct': min(100, int(round((verified_pts / 20.0) * 100))),
+            'total_count': milestone['total_count'],
+            'verified_count': milestone['verified_count'],
+            'pending_count': milestone['pending_count'],
+            'total_points': milestone['total_points'],
+            'verified_points': milestone['verified_points'],
+            'pending_points': milestone['pending_points'],
+            'target_points': milestone['target_points'],
+            'attainment_pct': milestone['verified_pct'],
+            'total_pct': milestone['total_pct'],
         }
 
-        markah = [round(points_by_type[k], 1) for k in kategori]
-        x_max = max(25.0, max(markah) * 1.25)
+        kategori_keys = ['Research', 'Clinical Trial', 'Technology Adoption', 'Publication']
+        kategori_labels = ['Research', 'Clinical Trial', 'Technology', 'Publication']
+        if breakdown.get('General/Uncategorised', {}).get('total', 0) > 0:
+            kategori_keys.append('General/Uncategorised')
+            kategori_labels.append('General / CQI')
 
-        fig_pop = go.Figure()
-        for i in range(len(kategori)):
-            fig_pop.add_shape(
-                type='line',
-                x0=0, y0=kategori[i], x1=markah[i], y1=kategori[i],
-                line=dict(color='#d8c7f4', width=5)
-            )
+        verified_vals = [breakdown[k]['verified'] for k in kategori_keys]
+        pending_vals = [breakdown[k]['pending'] for k in kategori_keys]
+        totals_per_cat = [v + p for v, p in zip(verified_vals, pending_vals)]
+        y_max = max(25.0, (max(totals_per_cat) * 1.25) if totals_per_cat else 25.0)
 
-        fig_pop.add_trace(go.Scatter(
-            x=markah,
-            y=kategori,
-            mode='markers+text',
-            marker=dict(color='#6d3ec4', size=16, line=dict(color='white', width=2)),
-            text=[f"{m:g} pts" if m > 0 else "0 pts" for m in markah],
-            textposition='middle right',
-            textfont=dict(color='#150a35', size=12, weight='bold'),
-            hoverinfo='none'
+        fig_bar = go.Figure()
+        fig_bar.add_trace(go.Bar(
+            x=kategori_labels,
+            y=verified_vals,
+            name='Verified Points',
+            marker=dict(color='#6d3ec4', cornerradius=6),
+            text=[f"{v:g} pts" if v > 0 else "" for v in verified_vals],
+            textposition='inside',
+            textfont=dict(color='white', size=11, weight='bold'),
         ))
-        fig_pop.add_vline(
-            x=20, line_dash="dot", line_color="#16a34a",
-            annotation_text="Annual Target (20 pts)"
+        fig_bar.add_trace(go.Bar(
+            x=kategori_labels,
+            y=pending_vals,
+            name='Pending Verification',
+            marker=dict(color='#f59e0b', cornerradius=6),
+            text=[f"{p:g} pts" if p > 0 else "" for p in pending_vals],
+            textposition='inside',
+            textfont=dict(color='#150a35', size=11, weight='bold'),
+        ))
+        fig_bar.add_hline(
+            y=20.0,
+            line_dash="dot",
+            line_color="#16a34a",
+            annotation_text="Annual Milestone Target (20 pts)",
         )
-        fig_pop.update_layout(
-            height=290, margin=dict(t=25, b=25, l=10, r=45),
-            paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)',
-            font=dict(color="#150a35"), showlegend=False,
-            xaxis=dict(range=[0, x_max], showgrid=True, gridcolor='#e7dff2', title=dict(text='Weighted Points (Base × Multiplier)', font=dict(color='#150a35'))),
-            yaxis=dict(showgrid=False, tickfont=dict(size=12, color='#150a35', weight='bold'))
+        fig_bar.update_layout(
+            barmode='stack',
+            height=300,
+            margin=dict(t=30, b=25, l=35, r=20),
+            paper_bgcolor='rgba(0,0,0,0)',
+            plot_bgcolor='rgba(0,0,0,0)',
+            font=dict(color="#150a35"),
+            legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1, font=dict(size=10.5)),
+            xaxis=dict(showgrid=False, tickfont=dict(size=11, color='#150a35', weight='bold')),
+            yaxis=dict(range=[0, y_max], showgrid=True, gridcolor='#e7dff2', title=dict(text='Weighted Points', font=dict(size=11, color='#150a35'))),
         )
-        radar_chart_html = fig_pop.to_html(full_html=False, include_plotlyjs=False, config={'displayModeBar': False})
+        radar_chart_html = fig_bar.to_html(full_html=False, include_plotlyjs=False, config={'displayModeBar': False})
 
     context = {
         'sub_module': sub_module,
@@ -2139,6 +2191,8 @@ def operational_view(request):
         'radar_chart_html': radar_chart_html,
         'prod_metrics': prod_metrics,
         'officer_projects': officer_projects,
+        'pending_innov_projects': pending_innov_projects,
+        'verified_innov_projects': verified_innov_projects,
         'innov_summary': innov_summary,
         # --- DATA STATISTIK BAR SISI ---
         'active_facilities': active_facilities,
@@ -2159,6 +2213,73 @@ def operational_view(request):
 # ==========================================
 @login_required(login_url='/login/')
 def interpersonal_view(request):
+    if request.method == 'POST':
+        form_type = (request.POST.get('form_type') or '').strip()
+
+        if form_type == 'verify_mentorship_session':
+            session_id = _parse_int(request.POST.get('session_id'), 0)
+            session_obj = MentorshipSession.objects.filter(id=session_id).select_related('mentor').first()
+            if session_obj and not session_obj.is_verified:
+                session_obj.is_verified = True
+                session_obj.verified_by = request.user
+                session_obj.verified_at = timezone.now()
+                session_obj.save(update_fields=['is_verified', 'verified_by', 'verified_at'])
+                messages.success(
+                    request,
+                    f"✅ Sesi mentorship bersama '{session_obj.mentee_name}' ({session_obj.duration_hours:g} jam) telah disahkan."
+                )
+            elif session_obj:
+                messages.info(request, "ℹ️ Sesi mentorship ini telah pun disahkan sebelum ini.")
+            else:
+                messages.error(request, "❌ Rekod sesi mentorship tidak ditemui.")
+            return redirect(request.get_full_path())
+
+        elif form_type == 'verify_all_mentorship_sessions':
+            target_username = (request.POST.get('target_username') or '').strip()
+            target_doc = User.objects.filter(username=target_username).first()
+            if target_doc:
+                pending_qs = MentorshipSession.objects.filter(
+                    mentor=target_doc,
+                    participant_role='mentor',
+                    is_verified=False,
+                )
+                updated_cnt = pending_qs.update(
+                    is_verified=True,
+                    verified_by=request.user,
+                    verified_at=timezone.now(),
+                )
+                messages.success(
+                    request,
+                    f"✅ {updated_cnt} sesi mentorship tertunggak telah disahkan secara pukal."
+                )
+            else:
+                messages.error(request, "❌ Pegawai tidak ditemui untuk pengesahan pukal.")
+            return redirect(request.get_full_path())
+
+    if request.method == 'POST' and (request.POST.get('form_type') or '').strip() == 'send_hod_feedback':
+        target_username = (request.POST.get('target_username') or '').strip()
+        message_content = (request.POST.get('message_text') or '').strip()
+        mod_ref = (request.POST.get('module_ref') or 'Interpersonal Excellence').strip()
+        severity = (request.POST.get('severity') or 'INFO').strip()
+
+        clean_target = target_username.replace("🟢", "").replace("Dr.", "").split(" (")[0].strip()
+        target_user = User.objects.filter(username__icontains=clean_target).first()
+        if not target_user:
+            target_user = User.objects.filter(first_name__icontains=clean_target).first()
+
+        if target_user and message_content:
+            HODFeedback.objects.create(
+                sender_hod=request.user,
+                receiver_staff=target_user,
+                module_reference=mod_ref,
+                severity=severity,
+                message_text=message_content,
+            )
+            messages.success(request, f"✅ Maklum balas berjaya dihantar kepada Dr. {target_user.first_name or target_user.username}.")
+        else:
+            messages.error(request, "❌ Gagal menghantar maklum balas. Pegawai tidak ditemui atau mesej kosong.")
+        return redirect(request.get_full_path())
+
     sub_module = request.GET.get('sub_module', 'Interpersonal')
     active_tab = request.GET.get('tab', 'Patient')
     
@@ -2220,54 +2341,75 @@ def interpersonal_view(request):
     selected_staff = staff_by_label.get(pilihan_doktor)
 
     # ==========================================
-    # LOGIK INTEGRASI MyPSQ HOD (FASA 4)
+    # LOGIK INTEGRASI MyPSQ HOD (ROLLING 3-MONTH SURVEILLANCE - DATA HONESTY)
     # ==========================================
-    # Gunakan staf sebenar yang telah diselesaikan oleh picker.
     target_user = selected_staff
+    mypsq_rolling = get_mypsq_rolling_profile(target_user, window_days=90, target_pct=80.0)
 
     if target_user:
-        mypsq_feedbacks = MyPSQFeedback.objects.filter(doctor=target_user).order_by('-created_at')
+        window_start = timezone.localdate() - timedelta(days=89)
+        mypsq_feedbacks = MyPSQFeedback.objects.filter(
+            doctor=target_user,
+            created_at__date__gte=window_start,
+        ).order_by('-created_at')
     else:
         mypsq_feedbacks = MyPSQFeedback.objects.none()
 
-    mypsq_count = mypsq_feedbacks.count()
+    mypsq_count = mypsq_rolling['response_count']
+    mypsq_avg_score = mypsq_rolling['avg_score'] if mypsq_rolling['has_data'] else 0.0
+    mypsq_pct = int(round(mypsq_rolling['score_pct'])) if mypsq_rolling['has_data'] else 0
+    dim_scores = mypsq_rolling['dim_scores']
 
-    if mypsq_count > 0:
-        avg_q = sum([f.average_score for f in mypsq_feedbacks]) / mypsq_count
-        mypsq_avg_score = round(avg_q, 1)
-        mypsq_pct = int((avg_q / 5.0) * 100)
-        
-        # Purata bagi 7 Dimensi Teras MyPSQ
-        dim_scores = {
-            'q1': round(sum([f.q1_general for f in mypsq_feedbacks]) / mypsq_count, 1),
-            'q2': round(sum([f.q2_technical for f in mypsq_feedbacks]) / mypsq_count, 1),
-            'q3': round(sum([f.q3_interpersonal for f in mypsq_feedbacks]) / mypsq_count, 1),
-            'q4': round(sum([f.q4_communication for f in mypsq_feedbacks]) / mypsq_count, 1),
-            'q5': round(sum([f.q5_financial for f in mypsq_feedbacks]) / mypsq_count, 1),
-            'q6': round(sum([f.q6_time for f in mypsq_feedbacks]) / mypsq_count, 1),
-            'q7': round(sum([f.q7_accessibility for f in mypsq_feedbacks]) / mypsq_count, 1),
-        }
-    elif target_user:
-        # Fallback rawak terkawal berasaskan seed nama doktor jika DB belum ada entri
-        random.seed(pilihan_doktor + "mypsq_hod")
-        mypsq_avg_score = round(random.uniform(4.2, 4.9), 1)
-        mypsq_pct = int((mypsq_avg_score / 5.0) * 100)
-        mypsq_count = random.randint(12, 38)
-        dim_scores = {
-            'q1': round(random.uniform(4.0, 5.0), 1),
-            'q2': round(random.uniform(4.2, 5.0), 1),
-            'q3': round(random.uniform(4.5, 5.0), 1),
-            'q4': round(random.uniform(4.1, 4.9), 1),
-            'q5': round(random.uniform(4.0, 4.8), 1),
-            'q6': round(random.uniform(3.8, 4.7), 1),
-            'q7': round(random.uniform(4.0, 4.8), 1),
-        }
+    # Lukis Graf Garis (Line Chart) Rolling 3-Month MyPSQ (%) vs Sasaran Jabatan 80%
+    fig_mypsq = go.Figure()
+    fig_mypsq.add_hline(
+        y=80.0,
+        line_dash="dash",
+        line_color="#16a34a",
+        annotation_text="Sasaran Jabatan (80% / 4.0★)",
+    )
+    m_series = mypsq_rolling.get('monthly_series', [])
+    if any(pt['score_pct'] is not None for pt in m_series):
+        x_months = [pt['month_label'] for pt in m_series]
+        y_scores = [pt['score_pct'] for pt in m_series]
+        text_labels = [
+            f"{pt['score_pct']:.0f}% ({pt['avg_score']:.1f}★)"
+            if pt['score_pct'] is not None else "No Data"
+            for pt in m_series
+        ]
+        fig_mypsq.add_trace(go.Scatter(
+            x=x_months,
+            y=y_scores,
+            mode='lines+markers+text',
+            connectgaps=True,
+            text=text_labels,
+            textposition='top center',
+            textfont=dict(color='#150a35', size=11, weight='bold'),
+            line=dict(color='#6d3ec4', width=3.5),
+            marker=dict(size=10, color='#150a35', line=dict(color='white', width=2)),
+            name='MyPSQ Score (%)',
+        ))
     else:
-        # Tiada staf dipilih: jangan reka data MyPSQ.
-        mypsq_avg_score = 0.0
-        mypsq_pct = 0
-        mypsq_count = 0
-        dim_scores = {'q1': 0.0, 'q2': 0.0, 'q3': 0.0, 'q4': 0.0, 'q5': 0.0, 'q6': 0.0, 'q7': 0.0}
+        fig_mypsq.add_trace(go.Scatter(
+            x=[pt['month_label'] for pt in m_series] or ["90-Day Window"],
+            y=[None] * max(1, len(m_series)),
+            mode='markers',
+            name='Tiada Maklum Balas',
+        ))
+
+    fig_mypsq.update_layout(
+        height=235,
+        margin=dict(t=28, b=20, l=35, r=20),
+        paper_bgcolor='rgba(0,0,0,0)',
+        plot_bgcolor='rgba(0,0,0,0)',
+        font=dict(color="#150a35"),
+        yaxis=dict(range=[0, 110], gridcolor='#e7dff2', title='Satisfaction (%)'),
+        xaxis=dict(showgrid=False),
+        showlegend=False,
+    )
+    mypsq_trend_chart_html = fig_mypsq.to_html(
+        full_html=False, include_plotlyjs=False, config={'displayModeBar': False}
+    )
 
     # --- PENGIRAAN STATISTIK DINAMIK ---
     active_facilities = len(klinik_tersedia) if pilihan_klinik == "All Clinics" else 1
@@ -2320,176 +2462,107 @@ def interpersonal_view(request):
     # Gunakan staf sebenar yang telah diselesaikan oleh picker.
     target_user = selected_staff
 
+    ei_wellness = get_ei_wellness_profile(target_user, window_days=365)
+    ei_trend_chart_html = ""
     if active_tab == 'EI':
-        ei_comp = [label for _post_key, _field_name, label in EI_DOMAIN_FIELDS]
-        ei_domain_scores = [None] * len(EI_DOMAIN_FIELDS)
+        ei_comp = [d['label'] for d in ei_wellness['domains']]
+        ei_scores = ei_wellness['domain_values']
 
-        if target_user:
-            reflections = list(
-                EmotionalReflection.objects.filter(officer=target_user)
-            )
-            if reflections:
-                ei_domain_scores = _average_reflection_domains(reflections)
-
-        ei_scores = [
-            score if score is not None else 0
-            for score in ei_domain_scores
-        ]
-
-        warna_palang = ['#fecdd3', '#fda4af', '#e11d48', '#150a35']
-        
-        fig_ei = go.Figure(go.Bar(
-            x=ei_scores, y=ei_comp, orientation='h', 
-            marker_color=warna_palang,
-            text=[
-                f"{score}%" if score is not None else "No Data"
-                for score in ei_domain_scores
-            ],
-            textposition='auto',
-            textfont=dict(color='white', weight='bold')
+        # 1. Radar Chart 4 Domain EI (HOD Surveillance)
+        fig_ei_radar = go.Figure()
+        fig_ei_radar.add_trace(go.Scatterpolar(
+            r=ei_scores + [ei_scores[0]],
+            theta=ei_comp + [ei_comp[0]],
+            fill='toself' if ei_wellness['has_data'] else 'none',
+            fillcolor='rgba(109, 62, 196, 0.20)',
+            line=dict(color='#6d3ec4', width=3),
+            marker=dict(size=9, color='#150a35', line=dict(color='white', width=2)),
+            name='EI Domain Profile',
         ))
-        fig_ei.update_layout(
-            height=220, margin=dict(t=10, b=10, l=0, r=0), 
-            paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)',
-            xaxis=dict(range=[0, 100], showgrid=False)
+        fig_ei_radar.update_layout(
+            polar=dict(
+                bgcolor='#faf8ff',
+                radialaxis=dict(visible=True, range=[0, 100], gridcolor='#e7dff2', tickfont=dict(size=9.5, color='#150a35')),
+                angularaxis=dict(gridcolor='#e7dff2', linecolor='#e7dff2', tickfont=dict(size=11, color='#150a35', weight='bold')),
+            ),
+            showlegend=False,
+            height=280,
+            margin=dict(t=25, b=25, l=45, r=45),
+            paper_bgcolor='rgba(0,0,0,0)',
         )
-        ei_chart_html = fig_ei.to_html(full_html=False, include_plotlyjs=False, config={'displayModeBar': False})
+        ei_chart_html = fig_ei_radar.to_html(
+            full_html=False, include_plotlyjs=False, config={'displayModeBar': False}
+        )
 
-    elif active_tab == 'Teamwork':
-        teamwork_view = request.GET.get('t_view', '360')
-        
-        if teamwork_view == '360':
-            roles = ["Peers", "Support Staff", "Supervisors"]
-            fb_scores = [0, 0, 0]
-
-            if target_user:
-                # Kira Kudos Points (1 Kudos = 5 mata tambahan dari base score 70)
-                kudos_received = PeerKudos.objects.filter(receiver=target_user)
-                if kudos_received.exists():
-                    total_kudos = sum(k.points for k in kudos_received)
-                    base_kudos = min(100, 70 + total_kudos)
-                    fb_scores = [base_kudos, min(100, base_kudos + random.randint(-5, 10)), min(100, base_kudos + random.randint(-8, 12))]
-            
-            fig_team = go.Figure(go.Bar(
-                x=roles, y=fb_scores, marker_color='#6d3ec4', 
-                text=[f"{s}%" if s > 0 else "0%" for s in fb_scores], textposition='auto'
+        # 2. Graf Garis Trend EWMA Kesejahteraan EI (Tanpa Nota Refleksi)
+        fig_ei_trend = go.Figure()
+        fig_ei_trend.add_hline(y=75.0, line_dash="dot", line_color="#16a34a", annotation_text="Resilient Zone (75%)")
+        fig_ei_trend.add_hline(y=60.0, line_dash="dash", line_color="#dc2626", annotation_text="Support Threshold (60%)")
+        if ei_wellness['has_data']:
+            x_ei = [d.strftime("%d %b") for d in ei_wellness['dates']]
+            y_ei = ei_wellness['ewma_series']
+            fig_ei_trend.add_trace(go.Scatter(
+                x=x_ei,
+                y=y_ei,
+                mode='lines+markers',
+                line=dict(color='#6d3ec4', width=3, shape='spline'),
+                marker=dict(size=8, color='#150a35', line=dict(color='white', width=1.5)),
+                name='EWMA EI Trend',
             ))
-            fig_team.update_layout(
-                height=220, margin=dict(t=20, b=20, l=0, r=0), 
-                paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)',
-                yaxis=dict(range=[0, 100])
-            )
-            team_360_html = fig_team.to_html(full_html=False, include_plotlyjs=False, config={'displayModeBar': False})
-            
-        elif teamwork_view == 'Log':
-            categories = ["General Clinical", "Procedural", "Consultation"]
-            color_map = {"General Clinical": "#150a35", "Procedural": "#e11d48", "Consultation": "#fb7185"}
-            fig_scatter = go.Figure()
-
-            if target_user:
-                kudos_list = PeerKudos.objects.filter(receiver=target_user).order_by('sent_at')
-                if kudos_list.exists():
-                    df_contrib = pd.DataFrame([{
-                        "Date": k.sent_at.strftime("%Y-%m-%d"),
-                        "Category": k.category,
-                        "Points": k.points
-                    } for k in kudos_list])
-
-                    pts_gen = df_contrib[df_contrib['Category'] == 'General Clinical']['Points'].sum() * 5
-                    pts_proc = df_contrib[df_contrib['Category'] == 'Procedural']['Points'].sum() * 5
-                    pts_cons = df_contrib[df_contrib['Category'] == 'Consultation']['Points'].sum() * 5
-                    
-                    for cat in categories:
-                        if cat in df_contrib['Category'].values:
-                            cat_df = df_contrib[df_contrib['Category'] == cat]
-                            fig_scatter.add_trace(go.Scatter(
-                                x=cat_df['Date'], y=cat_df['Points'], mode='markers', name=cat,
-                                marker=dict(size=12, color=color_map[cat], line=dict(width=1, color='white'))
-                            ))
-            else:
-                pts_gen, pts_proc, pts_cons = 0, 0, 0
-                
-            fig_scatter.update_layout(
-                height=260, margin=dict(l=0, r=0, t=30, b=0),
-                paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)',
-                yaxis_title="Points per Event", yaxis=dict(range=[0, 10], showgrid=True, gridcolor='#e2e8f0'),
-                xaxis=dict(showgrid=False),
-                legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="center", x=0.5, font=dict(size=11))
-            )
-            team_scatter_html = fig_scatter.to_html(full_html=False, include_plotlyjs=False, config={'displayModeBar': False})
-
-    elif active_tab == 'Teamwork':
-        teamwork_view = request.GET.get('t_view', '360')
-        
-        if teamwork_view == '360':
-            np.random.seed(len(pilihan_doktor) + 20)
-            roles = ["Peers", "Support Staff", "Supervisors"]
-            fb_scores = [np.random.randint(80, 98) for _ in range(3)]
-            
-            fig_team = go.Figure(go.Bar(
-                x=roles, y=fb_scores, marker_color='#6d3ec4', text=fb_scores, textposition='auto'
+        else:
+            fig_ei_trend.add_trace(go.Scatter(
+                x=["Tiada Data"], y=[None], mode='markers', name='No Data'
             ))
-            fig_team.update_layout(
-                height=220, margin=dict(t=20, b=20, l=0, r=0), 
-                paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)',
-                yaxis=dict(range=[0, 100])
-            )
-            team_360_html = fig_team.to_html(full_html=False, include_plotlyjs=False, config={'displayModeBar': False})
-            
-        elif teamwork_view == 'Log':
-            t_filter = request.GET.get('t_filter', 'Month')
-            np.random.seed(len(pilihan_doktor) + len(t_filter))
-            
-            if t_filter == 'Week':
-                dates = pd.date_range(start="2026-02-20", end="2026-02-26", freq='D')
-                num_dots = np.random.randint(3, 7) # Kurangkan had maksimum untuk mingguan
-            elif t_filter == 'Month':
-                dates = pd.date_range(start="2026-02-01", end="2026-02-28", freq='D')
-                num_dots = np.random.randint(15, 25)
-            else: 
-                dates = pd.date_range(start="2025-03-01", end="2026-02-28", freq='5D')
-                num_dots = np.random.randint(30, 50)
-                
-            # PENYELAMAT: Pastikan titik tidak melebihi saiz tarikh yang ada
-            num_dots = min(num_dots, len(dates))
-            selected_dates = np.random.choice(dates, num_dots, replace=False)
-            categories = ["General Clinical", "Procedural", "Consultation"]
-            
-            # Guna markah 1 hingga 9 sahaja supaya titik lebih kemas seperti asal
-            df_contrib = pd.DataFrame({
-                "Date": selected_dates,
-                "Category": np.random.choice(categories, num_dots),
-                "Points": np.random.randint(1, 10, num_dots) 
-            }).sort_values("Date")
-            
-            # Darab dengan 5 untuk panel tepi supaya nampak markah keseluruhan yang logik
-            pts_gen = df_contrib[df_contrib['Category'] == 'General Clinical']['Points'].sum() * 5
-            pts_proc = df_contrib[df_contrib['Category'] == 'Procedural']['Points'].sum() * 5
-            pts_cons = df_contrib[df_contrib['Category'] == 'Consultation']['Points'].sum() * 5
-            
-            # Scatter Plot 
-            fig_scatter = go.Figure()
-            color_map = {"General Clinical": "#150a35", "Procedural": "#e11d48", "Consultation": "#fb7185"}
-            
-            for cat in categories:
-                cat_df = df_contrib[df_contrib['Category'] == cat]
-                fig_scatter.add_trace(go.Scatter(
-                    x=cat_df['Date'], y=cat_df['Points'], mode='markers', name=cat,
-                    # KUNCI UTAMA: Saiz titik dikunci kepada saiz 8 (Bukan mengembang ikut markah)
-                    marker=dict(size=8, color=color_map[cat], line=dict(width=1, color='white'))
-                ))
-            
-            fig_scatter.update_layout(
-                height=260, margin=dict(l=0, r=0, t=30, b=0),
-                paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)',
-                yaxis_title="Points per Event",
-                # Paksa y-axis dari 0 hingga 10 supaya jaraknya teratur
-                yaxis=dict(range=[0, 10], showgrid=True, gridcolor='#e2e8f0'),
-                xaxis=dict(showgrid=False),
-                # Letak legend (petunjuk) di tengah-tengah atas seperti gambar lama
-                legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="center", x=0.5, font=dict(size=11))
-            )
-            team_scatter_html = fig_scatter.to_html(full_html=False, include_plotlyjs=False, config={'displayModeBar': False})
+        fig_ei_trend.update_layout(
+            height=210,
+            margin=dict(t=25, b=15, l=35, r=20),
+            paper_bgcolor='rgba(0,0,0,0)',
+            plot_bgcolor='rgba(0,0,0,0)',
+            yaxis=dict(range=[0, 105], gridcolor='#e7dff2', title='Composite (%)'),
+            xaxis=dict(showgrid=False),
+            showlegend=False,
+        )
+        ei_trend_chart_html = fig_ei_trend.to_html(
+            full_html=False, include_plotlyjs=False, config={'displayModeBar': False}
+        )
+
+    teamwork_profile = get_teamwork_recognition_profile(target_user, window_days=365)
+    kudos_leaderboard = []
+    if active_tab == 'Teamwork':
+        kudos_leaderboard = build_department_kudos_leaderboard(
+            staff_by_label.values(),
+            selected_user=target_user,
+            window_days=365,
+            target_points=30.0,
+        )
+
+        cat_items = list(reversed(teamwork_profile['category_breakdown']))
+        cat_labels = [item['label'] for item in cat_items]
+        cat_pts = [item['points'] for item in cat_items]
+        x_max_tw = max(15, (max(cat_pts) + 5) if cat_pts else 15)
+
+        fig_team = go.Figure(go.Bar(
+            x=cat_pts,
+            y=cat_labels,
+            orientation='h',
+            marker=dict(color='#6d3ec4', cornerradius=5),
+            text=[f"{p} pts" if p > 0 else "0" for p in cat_pts],
+            textposition='outside',
+            textfont=dict(color='#150a35', size=10.5, weight='bold'),
+        ))
+        fig_team.update_layout(
+            height=290,
+            margin=dict(t=15, b=25, l=10, r=40),
+            paper_bgcolor='rgba(0,0,0,0)',
+            plot_bgcolor='rgba(0,0,0,0)',
+            font=dict(color="#150a35"),
+            xaxis=dict(range=[0, x_max_tw], showgrid=True, gridcolor='#e7dff2', title='Kudos Points (Ceiling: 30 Pts)'),
+            yaxis=dict(showgrid=False, tickfont=dict(size=10, color='#150a35', weight='bold')),
+            showlegend=False,
+        )
+        team_360_html = fig_team.to_html(
+            full_html=False, include_plotlyjs=False, config={'displayModeBar': False}
+        )
 
     context = {
         'sub_module': sub_module,
@@ -2521,7 +2594,34 @@ def interpersonal_view(request):
         'hod_name': hod_name,
         'hod_facility_label': hod_facility_label,
         
-        # --- DATA MyPSQ UNTUK PORTAL HOD ---
+        # --- DATA MyPSQ, EI, TEAMWORK & MENTORSHIP SURVEILLANCE UNTUK PORTAL HOD ---
+        'mentorship_profile': get_mentorship_trajectory_profile(target_user),
+        'pending_mentorship_sessions': (
+            list(
+                MentorshipSession.objects.filter(
+                    mentor=target_user,
+                    participant_role='mentor',
+                    is_verified=False,
+                ).order_by('-session_date', '-id')
+            )
+            if target_user else []
+        ),
+        'verified_mentorship_sessions': (
+            list(
+                MentorshipSession.objects.filter(
+                    mentor=target_user,
+                    participant_role='mentor',
+                    is_verified=True,
+                ).order_by('-session_date', '-id')[:10]
+            )
+            if target_user else []
+        ),
+        'teamwork_profile': teamwork_profile,
+        'kudos_leaderboard': kudos_leaderboard,
+        'ei_wellness': ei_wellness,
+        'ei_trend_chart_html': ei_trend_chart_html,
+        'mypsq_rolling': mypsq_rolling,
+        'mypsq_trend_chart_html': mypsq_trend_chart_html,
         'mypsq_avg_score': mypsq_avg_score,
         'mypsq_pct': mypsq_pct,
         'mypsq_count': mypsq_count,
@@ -2665,15 +2765,32 @@ def _validate_cpd_certificate(uploaded_file):
         )
 
 
+FMS_KUDOS_POINT_MAP = {
+    'Consultation based on subspecialty/AOI': 5,
+    'Accepting referrals from other FMS': 5,
+    'Covering inter / intrafacility FMS': 5,
+    'Non-clinical consultation': 3,
+    'Research /Innovation related support': 3,
+    'Sharing resources – drugs, staff, lab': 3,
+    'Clinical-related activities': 3,
+    'General clinical consultation': 3,
+}
+
+
 def _kudos_category_points(value):
-    """Pulangkan (kategori, mata) berdasarkan pilihan dropdown Teamwork."""
-    mapping = {
-        'Shift Cover & Ward Relief': 10,
-        'Emergency & On-Call Assistance': 10,
-        'Clinical Knowledge Sharing & CME': 5,
-        'Empathy & Team Moral Support': 5,
+    """Pulangkan (kategori FMS rasmi, mata) dengan sokongan rekod terdahulu."""
+    legacy_mapping = {
+        'Shift Cover & Ward Relief': 5,
+        'Emergency & On-Call Assistance': 5,
+        'Clinical Knowledge Sharing & CME': 3,
+        'Empathy & Team Moral Support': 3,
     }
-    return (value or 'Peer Endorsement')[:50], mapping.get(value, 5)
+    cleaned = (value or '').strip()
+    if cleaned in FMS_KUDOS_POINT_MAP:
+        return cleaned[:50], FMS_KUDOS_POINT_MAP[cleaned]
+    if cleaned in legacy_mapping:
+        return cleaned[:50], legacy_mapping[cleaned]
+    return (cleaned or 'General clinical consultation')[:50], 3
 
 
 MENTORSHIP_DURATION_HOURS = {
@@ -2807,6 +2924,12 @@ MENTORSHIP_ROLES = tuple(
     value for value, _label in MentorshipSession.ROLE_CHOICES
 )
 MENTORSHIP_DOMAINS = (
+    'Post-grad students',
+    'SWE',
+    'Medical students',
+    'Attachment doctors',
+    'Credentialing & Privileging',
+    'Others',
     'Bedside Clinical Supervision',
     'Postgraduate & Parallel Pathway',
     'On-Call Coping & Stress Adaptation',
@@ -3275,15 +3398,26 @@ def _save_mentorship_session(request):
         'Action Plan & Discussion Summary',
     )
 
+    trainee_mode_map = {
+        'Post-grad students': 'By individual',
+        'SWE': 'By individual',
+        'Medical students': 'Based on group (KIV)',
+        'Attachment doctors': 'By individual',
+        'Credentialing & Privileging': 'By individual',
+    }
+    mode_tag = trainee_mode_map.get(topic)
+    formatted_notes = f"[{mode_tag}] {notes}" if mode_tag else notes
+
     with transaction.atomic():
         return MentorshipSession.objects.create(
             mentor=request.user,
             participant_role=participant_role,
             mentee_name=mentee_name,
             topic=topic,
-            notes=notes,
+            notes=formatted_notes,
             session_date=session_date,
             duration_hours=duration_hours,
+            is_verified=False,
         )
 
 
@@ -3320,7 +3454,12 @@ def _save_productivity_log(request):
         'Clinic Start Punctuality',
     )
     punctuality_rate = PRODUCTIVITY_PUNCTUALITY_RATES[punctuality_status]
-    operational_notes = _optional_text(request.POST.get('prod_notes'))
+    activity_cat = _optional_text(request.POST.get('ops_activity_cat'), max_length=80)
+    raw_notes = _optional_text(request.POST.get('prod_notes'))
+    if activity_cat and activity_cat != 'Full Clinical Duty':
+        operational_notes = f"[{activity_cat}] {raw_notes}" if raw_notes else f"[{activity_cat}]"
+    else:
+        operational_notes = raw_notes
 
     with transaction.atomic():
         return ProductivityLog.objects.create(
@@ -4892,29 +5031,70 @@ def staff_dashboard_view(request):
 
         elif form_type == 'int_team':
             peer_id = _parse_int(request.POST.get('peer_id'), 0)
+            via_qr = (request.POST.get('via_qr') or '').strip() == '1'
             category, points_awarded = _kudos_category_points(request.POST.get('kudos_category', ''))
             message = (request.POST.get('kudos_note') or '').strip()
 
             receiver_user = User.objects.filter(id=peer_id, profile__role='STAFF').first()
             if not receiver_user:
                 messages.error(request, "❌ Rakan sekerja tidak sah. Sila pilih staf daripada senarai.")
-                return redirect(f'/staff/?section={section}')
+                return redirect(f'/staff/?section={section}&tab=teamwork')
             if receiver_user.id == request.user.id:
-                messages.error(request, "❌ Anda tidak boleh memberi kudos kepada diri sendiri.")
-                return redirect(f'/staff/?section={section}')
+                messages.error(request, "❌ Anda tidak boleh memberi kudos atau mengimbas QR diri sendiri.")
+                return redirect(f'/staff/?section={section}&tab=teamwork')
+
+            receiver_name = receiver_user.get_full_name() or receiver_user.username
+
+            # Kawalan Anti-Gaming 24 jam bagi penghantaran melalui imbasan QR
+            if via_qr:
+                cutoff_24h = timezone.now() - timedelta(hours=24)
+                already_scanned_today = PeerKudos.objects.filter(
+                    sender=request.user,
+                    receiver=receiver_user,
+                    sent_at__gte=cutoff_24h,
+                ).exists()
+                if already_scanned_today:
+                    messages.warning(
+                        request,
+                        f"⏳ Had Imbasan QR: Anda telah menganugerahkan Kudos kepada Dr. {receiver_name} "
+                        "dalam tempoh 24 jam terakhir."
+                    )
+                    return redirect(f'/staff/?section={section}&tab=teamwork')
+
+            # Penguatkuasaan Had Siling (Ceiling = 30 Mata dalam 365 hari terakhir)
+            window_start = timezone.localdate() - timedelta(days=364)
+            current_12m_pts = sum(
+                max(0, p or 0)
+                for p in PeerKudos.objects.filter(
+                    receiver=receiver_user,
+                    sent_at__date__gte=window_start,
+                ).values_list('points', flat=True)
+            )
+            if current_12m_pts >= 30:
+                messages.info(
+                    request,
+                    f"ℹ️ Dr. {receiver_name} telah mencapai had siling maksimum (30/30 mata Kudos) "
+                    "untuk tempoh 12 bulan semasa."
+                )
+                return redirect(f'/staff/?section={section}&tab=teamwork')
+
+            actual_awarded = min(points_awarded, 30 - current_12m_pts)
+            tagged_message = f"[QR Scan] {message}" if via_qr and message else message
 
             PeerKudos.objects.create(
                 sender=request.user,
                 receiver=receiver_user,
                 category=category,
-                points=points_awarded,
-                message=message,
+                points=actual_awarded,
+                message=tagged_message,
             )
-            receiver_name = receiver_user.get_full_name() or receiver_user.username
+            new_total = current_12m_pts + actual_awarded
+            ceiling_note = " (Had Siling 30/30 Mata Dicapai!)" if new_total >= 30 else ""
             messages.success(
                 request,
-                f"✅ {points_awarded} mata Kudos diberikan kepada Dr. {receiver_name}."
+                f"✅ +{actual_awarded} mata Kudos ({category}) diberikan kepada Dr. {receiver_name}.{ceiling_note}"
             )
+            return redirect(f'/staff/?section={section}&tab=teamwork')
 
         elif form_type == 'int_mentor':
             try:
@@ -4988,6 +5168,12 @@ def staff_dashboard_view(request):
     module_scores = None
     module_results = []
     scorable_modules_count = 0
+    productivity_ewma = get_productivity_ewma_profile(request.user, window_days=30)
+    innovation_milestone = get_innovation_milestone_profile(request.user)
+    mypsq_rolling = get_mypsq_rolling_profile(request.user, window_days=90)
+    ei_wellness = get_ei_wellness_profile(request.user, window_days=365)
+    teamwork_profile = get_teamwork_recognition_profile(request.user, window_days=365)
+    mentorship_profile = get_mentorship_trajectory_profile(request.user, target_hours=10.0)
     bento_cards = []
     home_alert_count = 0
     recent_activities = []
@@ -5254,6 +5440,18 @@ def staff_dashboard_view(request):
                     hint = f"CUSUM In Control ({doc_snap.cusum_value:.4f}) • {doc_snap.observation_count} log."
                 elif key == 'cpd':
                     hint = f"{int(mod['raw_value'] or 0)} / 50 mata CPD diluluskan."
+                elif key == 'productivity' and productivity_ewma.get('has_data'):
+                    hint = f"EWMA {productivity_ewma['ewma_latest']:.1f} kes/hari • {productivity_ewma['badge_label']}."
+                elif key == 'innovation' and innovation_milestone.get('has_data'):
+                    hint = f"{innovation_milestone['verified_points']:g} / 20 mata disahkan ({innovation_milestone['verified_pct']}%)."
+                elif key == 'mypsq' and mypsq_rolling.get('has_data'):
+                    hint = f"Purata 3 bln: {mypsq_rolling['avg_score']:.1f}/5.0 ({mypsq_rolling['response_count']} maklum balas)."
+                elif key == 'emotional_intelligence' and ei_wellness.get('has_data'):
+                    hint = f"EWMA EI: {ei_wellness['ewma_latest']:.1f}% • {ei_wellness['badge_label']}."
+                elif key == 'teamwork' and teamwork_profile.get('has_data'):
+                    hint = f"Kudos 12 bln: {teamwork_profile['received_points']}/30 mata ({teamwork_profile['attainment_pct']}%)."
+                elif key == 'mentorship' and mentorship_profile.get('has_data'):
+                    hint = f"{mentorship_profile['verified_hours']:g} / 10 jam disahkan ({mentorship_profile['verified_pct']}%)."
                 else:
                     hint = 'Prestasi berada pada tahap sasaran cemerlang.'
 
@@ -5451,6 +5649,25 @@ def staff_dashboard_view(request):
 
     doctor_username = staff_user.username if staff_user else 'admin'
     qr_eval_url = request.build_absolute_uri(f'/evaluate/{doctor_username}/')
+    kudos_qr_url = request.build_absolute_uri(
+        f'/staff/?section=Interpersonal&tab=teamwork&kudos_to={urllib.parse.quote(doctor_username)}'
+    )
+
+    kudos_to_param = (request.GET.get('kudos_to') or '').strip()
+    kudos_qr_target = None
+    kudos_qr_target_id = None
+    kudos_qr_self_scan = False
+    if kudos_to_param:
+        scanned_peer = User.objects.filter(
+            username=kudos_to_param,
+            profile__role='STAFF',
+        ).first()
+        if scanned_peer:
+            if scanned_peer.id == request.user.id:
+                kudos_qr_self_scan = True
+            else:
+                kudos_qr_target = scanned_peer
+                kudos_qr_target_id = scanned_peer.id
 
     # ==========================================
     # PROMOTION READINESS INDEX (PRI) CALCULATION (LIVE DB INTEGRATION)
@@ -5646,6 +5863,24 @@ def staff_dashboard_view(request):
         'cusum_pct': locals().get('cusum_pct', 85),
         'policy_pct': locals().get('policy_pct', 90),
 
+        # --- DATA SEBENAR EWMA PRODUCTIVITY COACHING (STAFF) ---
+        'productivity_ewma': productivity_ewma,
+
+        # --- DATA SEBENAR INNOVATION MILESTONE (STAFF) ---
+        'innovation_milestone': innovation_milestone,
+
+        # --- DATA SEBENAR MyPSQ ROLLING 3-MONTH COACHING (STAFF) ---
+        'mypsq_rolling': mypsq_rolling,
+
+        # --- DATA SEBENAR EI WELLNESS CHECK-IN (STAFF) ---
+        'ei_wellness': ei_wellness,
+
+        # --- DATA SEBENAR TEAMWORK & KUDOS RECOGNITION (STAFF) ---
+        'teamwork_profile': teamwork_profile,
+
+        # --- DATA SEBENAR TRAINING & MENTORSHIP TRAJECTORY (STAFF) ---
+        'mentorship_profile': mentorship_profile,
+
         # --- DATA SEBENAR CUSUM SHADOW MODE (STAFF) ---
         'cusum_snapshot': locals().get('snap', None),
         'cusum_state': locals().get('cusum_state', 'INSUFFICIENT_DATA'),
@@ -5674,8 +5909,12 @@ def staff_dashboard_view(request):
         'promotion_color': promotion_color,
         'next_grade': next_grade,
         
-        # --- DATA MyPSQ UNTUK PORTAL STAF ---
+        # --- DATA MyPSQ & STAFF KUDOS QR UNTUK PORTAL STAF ---
         'qr_eval_url': qr_eval_url,
+        'kudos_qr_url': kudos_qr_url,
+        'kudos_qr_target': kudos_qr_target,
+        'kudos_qr_target_id': kudos_qr_target_id,
+        'kudos_qr_self_scan': kudos_qr_self_scan,
         'doctor_username': doctor_username,
     }
     return render(request, 'dashboard/staff_dashboard.html', context)

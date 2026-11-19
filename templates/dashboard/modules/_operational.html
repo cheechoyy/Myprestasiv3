@@ -121,9 +121,22 @@
                             </div>
                         </div>
 
-                        <div style="margin-bottom: 15px;">
-                            <label style="margin-top:0; color:#150a35; font-weight:700;">Operational Bottlenecks / Remarks (Fasa 1)</label>
-                            <input type="text" name="prod_notes" placeholder="e.g. Clinic delayed due to emergency RED zone resuscitation in ED..." style="background:white; border-color:#d8c7f4;">
+                        <div class="grid-2" style="margin-bottom: 15px;">
+                            <div>
+                                <label style="margin-top:0; color:#150a35; font-weight:700;">Operational / Admin Activity Category (HPU Spec 2–6)</label>
+                                <select name="ops_activity_cat" style="background:white; border-color:#d8c7f4; font-weight:600;">
+                                    <option value="Full Clinical Duty">1. Full Clinical Duty (Patient Care)</option>
+                                    <option value="Admin (TWG / CPG / Team Development)">2. Admin — TWG / CPG / Team Development</option>
+                                    <option value="Meetings & Coordination">3. Meetings &amp; Coordination</option>
+                                    <option value="Audit & Quality">4. Audit &amp; Quality</option>
+                                    <option value="Operational & Clerical Administration">5. Operational &amp; Clerical Administration</option>
+                                    <option value="Community Program & Outreach">6. Community Program &amp; Outreach</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label style="margin-top:0; color:#150a35; font-weight:700;">Operational Bottlenecks / Remarks</label>
+                                <input type="text" name="prod_notes" placeholder="e.g. National CPG TWG meeting / ED emergency support..." style="background:white; border-color:#d8c7f4;">
+                            </div>
                         </div>
 
                         <button type="submit" class="submit-btn" style="background-color: #6d3ec4; margin-top: 10px; display: flex; align-items: center; justify-content: center; gap: 8px; font-weight:800;">
@@ -225,6 +238,27 @@
                         <div style="font-size: 24px; font-weight: 900; color: #150a35;">{{ ops_publication_count }}</div>
                         <div style="font-size: 10px; color: #64748b; margin-top: 2px;">Publication records this year</div>
                     </div>
+                </div>
+
+                <!-- MILESTONE PROGRESS BAR (SASARAN 20 MATA INOVASI) -->
+                <div style="background: linear-gradient(135deg, #ffffff 0%, #faf8ff 100%); border: 1.5px solid #d8c7f4; border-radius: 12px; padding: 16px 18px; margin-bottom: 20px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; margin-bottom: 8px;">
+                        <div style="font-size: 12.5px; font-weight: 900; color: #150a35;">
+                            🎯 Annual Innovation Milestone Progress ({{ innovation_milestone.year|default:ops_current_year }})
+                        </div>
+                        <span style="font-size: 11px; font-weight: 800; padding: 3px 10px; border-radius: 14px; background: {{ innovation_milestone.badge_bg|default:'#f3edff' }}; color: {{ innovation_milestone.badge_color|default:'#6d3ec4' }};">
+                            {{ innovation_milestone.badge_label|default:"No Data" }}
+                        </span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; font-size: 11.5px; font-weight: 700; color: #150a35; margin-bottom: 6px;">
+                        <span>Verified: <b style="color: #16a34a;">{{ innovation_milestone.verified_points|default:0|floatformat:1 }} pts</b> {% if innovation_milestone.pending_points > 0 %}&bull; Pending HOD: <b style="color: #d97706;">+{{ innovation_milestone.pending_points|floatformat:1 }} pts</b>{% endif %}</span>
+                        <span>Target: <b>20.0 Pts</b> ({{ innovation_milestone.verified_pct|default:0 }}%)</span>
+                    </div>
+                    <div style="background: #e7dff2; height: 10px; border-radius: 8px; overflow: hidden; display: flex; margin-bottom: 8px;">
+                        <div style="background: #16a34a; width: {{ innovation_milestone.verified_pct|default:0 }}%; height: 100%;"></div>
+                        <div style="background: #f59e0b; width: {{ innovation_milestone.pending_pct|default:0 }}%; height: 100%;"></div>
+                    </div>
+                    <div style="font-size: 11.5px; color: #6f628b; font-weight: 600;">{{ innovation_milestone.coaching_msg }}</div>
                 </div>
 
                 {% if ops_uncategorised_count %}

@@ -2,7 +2,7 @@
 <div class="perf-grid" style="display: grid; grid-template-columns: 280px 1fr 1fr; gap: 20px;">
 
     <!-- UPDATE TRACKER (10 MODUL MEREGANG SEPENUHNYA TANPA SCROLLBAR) -->
-    <div class="card perf-tracker" style="grid-row: span 2; margin-bottom: 0; display: flex; flex-direction: column; justify-content: space-between; padding: 22px 18px;">
+    <div class="card perf-tracker" style="grid-row: span 3; margin-bottom: 0; display: flex; flex-direction: column; justify-content: space-between; padding: 22px 18px;">
         <div style="display: flex; flex-direction: column; flex-grow: 1;">
             <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px;">
                 <div style="display: flex; align-items: center; gap: 8px;">
@@ -258,7 +258,268 @@
         </div>
     </div>
 
+    <!-- PRODUCTIVITY EWMA COACHING CARD (BURNOUT & VELOCITY MONITOR) -->
+    <div class="card" style="grid-column: span 2; margin-bottom: 0; display: flex; flex-direction: column; justify-content: space-between; border: 1.5px solid {{ productivity_ewma.card_border|default:'#e7dff2' }}; background: {{ productivity_ewma.card_bg|default:'#ffffff' }};">
+        <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; margin-bottom: 12px;">
+            <div style="display: flex; align-items: center; gap: 10px;">
+                <div style="width: 30px; height: 30px; background: #f3edff; border: 1px solid #e7dff2; border-radius: 8px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                    <svg style="width: 16px; height: 16px; color: #6d3ec4;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+                </div>
+                <div>
+                    <h3 style="color:#150a35; margin:0; font-size:13px; font-weight: 800; letter-spacing: 0.5px; text-transform: uppercase;">Productivity EWMA Burnout Monitor (&lambda; = 0.30)</h3>
+                    <p style="margin: 2px 0 0 0; font-size: 11px; color: #6f628b; font-weight: 600;">30-Day Exponentially Weighted Moving Average &bull; MoH Target: 38.2 cases/day</p>
+                </div>
+            </div>
+
+            <span style="font-size: 11px; font-weight: 800; padding: 4px 12px; border-radius: 20px; background: {{ productivity_ewma.badge_bg|default:'#f1f5f9' }}; color: {{ productivity_ewma.badge_color|default:'#64748b' }}; border: 1px solid {{ productivity_ewma.badge_border|default:'#cbd5e1' }};">
+                ● {{ productivity_ewma.badge_label|default:"No Data" }}
+            </span>
+        </div>
+
+        {% if productivity_ewma.has_data %}
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; margin-bottom: 12px;">
+                <div style="background: white; border: 1px solid #e7dff2; border-radius: 10px; padding: 10px 14px;">
+                    <div style="font-size: 10px; font-weight: 800; color: #6f628b; text-transform: uppercase;">Current EWMA Velocity</div>
+                    <div style="font-size: 20px; font-weight: 900; color: #150a35; margin-top: 2px;">{{ productivity_ewma.ewma_latest|floatformat:1 }} <span style="font-size: 11px; font-weight: 700; color: #6d3ec4;">cases/day</span></div>
+                </div>
+                <div style="background: white; border: 1px solid #e7dff2; border-radius: 10px; padding: 10px 14px;">
+                    <div style="font-size: 10px; font-weight: 800; color: #6f628b; text-transform: uppercase;">Lower Control Limit (LCL)</div>
+                    <div style="font-size: 20px; font-weight: 900; color: #150a35; margin-top: 2px;">{{ productivity_ewma.lcl_latest|floatformat:1 }} <span style="font-size: 11px; font-weight: 700; color: #64748b;">min threshold</span></div>
+                </div>
+                <div style="background: white; border: 1px solid #e7dff2; border-radius: 10px; padding: 10px 14px;">
+                    <div style="font-size: 10px; font-weight: 800; color: #6f628b; text-transform: uppercase;">Avg Consult Duration</div>
+                    <div style="font-size: 20px; font-weight: 900; color: {% if productivity_ewma.consult_is_ok %}#16a34a{% else %}#d97706{% endif %}; margin-top: 2px;">
+                        {% if productivity_ewma.avg_consult %}{{ productivity_ewma.avg_consult|floatformat:1 }} min{% else %}No data{% endif %}
+                    </div>
+                </div>
+            </div>
+        {% endif %}
+
+        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; background: white; border: 1px solid #e7dff2; border-radius: 10px; padding: 10px 14px;">
+            <span style="font-size: 12px; font-weight: 600; color: #150a35;">{{ productivity_ewma.coaching_msg }}</span>
+            <a href="?section=Operational&tab=productivity" style="font-size: 11.5px; font-weight: 800; color: #6d3ec4; text-decoration: none; white-space: nowrap;">
+                Log / Semak Produktiviti ➔
+            </a>
+        </div>
+    </div>
+
 </div>
+
+    <!-- INNOVATION MILESTONE TRACKER CARD (SASARAN 20 MATA) -->
+    <div class="card" style="margin-top: 20px; margin-bottom: 0; border: 1px solid #e7dff2;">
+        <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; margin-bottom: 12px;">
+            <div style="display: flex; align-items: center; gap: 10px;">
+                <div style="width: 30px; height: 30px; background: #f3edff; border: 1px solid #e7dff2; border-radius: 8px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                    <svg style="width: 16px; height: 16px; color: #6d3ec4;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/></svg>
+                </div>
+                <div>
+                    <h3 style="color:#150a35; margin:0; font-size:13px; font-weight: 800; letter-spacing: 0.5px; text-transform: uppercase;">Innovation &amp; Research Milestone ({{ innovation_milestone.year }})</h3>
+                    <p style="margin: 2px 0 0 0; font-size: 11px; color: #6f628b; font-weight: 600;">Sasaran Tahunan: 20.0 Mata Wajaran (Base Points &times; Multiplier)</p>
+                </div>
+            </div>
+
+            <span style="font-size: 11px; font-weight: 800; padding: 4px 12px; border-radius: 20px; background: {{ innovation_milestone.badge_bg|default:'#f1f5f9' }}; color: {{ innovation_milestone.badge_color|default:'#64748b' }}; border: 1px solid {{ innovation_milestone.badge_border|default:'#cbd5e1' }};">
+                ● {{ innovation_milestone.badge_label|default:"No Data" }}
+            </span>
+        </div>
+
+        <div style="display: flex; justify-content: space-between; align-items: baseline; font-size: 12px; font-weight: 800; color: #150a35; margin-bottom: 6px;">
+            <span>
+                Disahkan HOD: <b style="color: #16a34a;">{{ innovation_milestone.verified_points|default:0|floatformat:1 }} pts</b>
+                {% if innovation_milestone.pending_points > 0 %}
+                    &bull; Menunggu Sah: <b style="color: #d97706;">+{{ innovation_milestone.pending_points|floatformat:1 }} pts</b>
+                {% endif %}
+            </span>
+            <span style="color: #6d3ec4;">{{ innovation_milestone.verified_pct|default:0 }}% / 20.0 Pts</span>
+        </div>
+
+        <!-- PROGRESS BAR DWI-SEGMEN (VERIFIED HIJAU + PENDING AMBER) -->
+        <div style="background: #f3edff; border: 1px solid #e7dff2; height: 12px; border-radius: 10px; overflow: hidden; display: flex; margin-bottom: 12px;">
+            <div style="background: #16a34a; width: {{ innovation_milestone.verified_pct|default:0 }}%; height: 100%; transition: width 0.6s ease;" title="Verified Points"></div>
+            <div style="background: #f59e0b; width: {{ innovation_milestone.pending_pct|default:0 }}%; height: 100%; transition: width 0.6s ease;" title="Pending Verification"></div>
+        </div>
+
+        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; background: #faf8ff; border: 1px solid #e7dff2; border-radius: 10px; padding: 10px 14px;">
+            <span style="font-size: 12px; font-weight: 600; color: #150a35;">{{ innovation_milestone.coaching_msg }}</span>
+            <a href="?section=Operational&tab=innovation" style="font-size: 11.5px; font-weight: 800; color: #6d3ec4; text-decoration: none; white-space: nowrap;">
+                Buka Portfolio Inovasi ➔
+            </a>
+        </div>
+    </div>
+
+    <!-- PATIENT SATISFACTION (MyPSQ - ROLLING 3-MONTH COACHING CARD) -->
+    <div class="card" style="margin-top: 20px; margin-bottom: 0; border: 1.5px solid {{ mypsq_rolling.card_border|default:'#e7dff2' }}; background: {{ mypsq_rolling.card_bg|default:'#ffffff' }};">
+        <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; margin-bottom: 12px;">
+            <div style="display: flex; align-items: center; gap: 10px;">
+                <div style="width: 30px; height: 30px; background: #f3edff; border: 1px solid #e7dff2; border-radius: 8px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                    <svg style="width: 16px; height: 16px; color: #6d3ec4;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.828 14.828a4 4 0 01-5.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                </div>
+                <div>
+                    <h3 style="color:#150a35; margin:0; font-size:13px; font-weight: 800; letter-spacing: 0.5px; text-transform: uppercase;">Patient Satisfaction (MyPSQ &bull; Rolling 3-Month)</h3>
+                    <p style="margin: 2px 0 0 0; font-size: 11px; color: #6f628b; font-weight: 600;">Purata 90 hari terakhir merentas 7 dimensi pengalaman pesakit &bull; Sasaran: 80% (4.0/5.0)</p>
+                </div>
+            </div>
+
+            <span style="font-size: 11px; font-weight: 800; padding: 4px 12px; border-radius: 20px; background: {{ mypsq_rolling.badge_bg|default:'#f1f5f9' }}; color: {{ mypsq_rolling.badge_color|default:'#64748b' }}; border: 1px solid {{ mypsq_rolling.badge_border|default:'#cbd5e1' }};">
+                ● {{ mypsq_rolling.badge_label|default:"No Data" }}
+            </span>
+        </div>
+
+        {% if mypsq_rolling.has_data %}
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px; margin-bottom: 12px;">
+                <div style="background: white; border: 1px solid #e7dff2; border-radius: 10px; padding: 10px 14px;">
+                    <div style="font-size: 10px; font-weight: 800; color: #6f628b; text-transform: uppercase;">3-Month Star Rating</div>
+                    <div style="font-size: 18px; font-weight: 900; color: #f59e0b; letter-spacing: 1px; margin-top: 2px;">
+                        {{ mypsq_rolling.stars_display }}
+                        <span style="font-size: 14px; color: #150a35; letter-spacing: 0; margin-left: 4px;">{{ mypsq_rolling.avg_score|floatformat:1 }}/5.0</span>
+                    </div>
+                </div>
+                <div style="background: white; border: 1px solid #e7dff2; border-radius: 10px; padding: 10px 14px;">
+                    <div style="font-size: 10px; font-weight: 800; color: #6f628b; text-transform: uppercase;">Target Attainment</div>
+                    <div style="font-size: 20px; font-weight: 900; color: #6d3ec4; margin-top: 2px;">{{ mypsq_rolling.score_pct|floatformat:0 }}% <span style="font-size: 11px; font-weight: 700; color: #64748b;">(Target: 80%)</span></div>
+                </div>
+                <div style="background: white; border: 1px solid #e7dff2; border-radius: 10px; padding: 10px 14px;">
+                    <div style="font-size: 10px; font-weight: 800; color: #6f628b; text-transform: uppercase;">90-Day Responses</div>
+                    <div style="font-size: 20px; font-weight: 900; color: #150a35; margin-top: 2px;">{{ mypsq_rolling.response_count }} <span style="font-size: 11px; font-weight: 700; color: #16a34a;">pesakit</span></div>
+                </div>
+            </div>
+        {% endif %}
+
+        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; background: white; border: 1px solid #e7dff2; border-radius: 10px; padding: 10px 14px;">
+            <span style="font-size: 12px; font-weight: 600; color: #150a35;">{{ mypsq_rolling.coaching_msg }}</span>
+            <a href="?section=Interpersonal&tab=patient" style="font-size: 11.5px; font-weight: 800; color: #6d3ec4; text-decoration: none; white-space: nowrap;">
+                Kod QR &amp; Komen Pesakit ➔
+            </a>
+        </div>
+    </div>
+
+    <!-- STRESS MANAGEMENT & WELLNESS CHECK-IN CARD (EI EWMA TREND) -->
+    <div class="card" style="margin-top: 20px; margin-bottom: 0; border: 1.5px solid {{ ei_wellness.card_border|default:'#e7dff2' }}; background: {{ ei_wellness.card_bg|default:'#ffffff' }};">
+        <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; margin-bottom: 12px;">
+            <div style="display: flex; align-items: center; gap: 10px;">
+                <div style="width: 30px; height: 30px; background: #f3edff; border: 1px solid #e7dff2; border-radius: 8px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                    <svg style="width: 16px; height: 16px; color: #6d3ec4;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"/></svg>
+                </div>
+                <div>
+                    <h3 style="color:#150a35; margin:0; font-size:13px; font-weight: 800; letter-spacing: 0.5px; text-transform: uppercase;">Wellness Check-In &amp; Stress Management (EI EWMA)</h3>
+                    <p style="margin: 2px 0 0 0; font-size: 11px; color: #6f628b; font-weight: 600;">Pemantauan kesejahteraan emosi 4 domain &bull; Nota refleksi peribadi kekal sulit (Private)</p>
+                </div>
+            </div>
+
+            <span style="font-size: 11px; font-weight: 800; padding: 4px 12px; border-radius: 20px; background: {{ ei_wellness.badge_bg|default:'#f1f5f9' }}; color: {{ ei_wellness.badge_color|default:'#64748b' }}; border: 1px solid {{ ei_wellness.badge_border|default:'#cbd5e1' }};">
+                ● {{ ei_wellness.badge_label|default:"No Data" }}
+            </span>
+        </div>
+
+        {% if ei_wellness.has_data %}
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(135px, 1fr)); gap: 10px; margin-bottom: 12px;">
+                <div style="background: white; border: 1px solid #e7dff2; border-radius: 10px; padding: 10px 12px;">
+                    <div style="font-size: 9.5px; font-weight: 800; color: #6d3ec4; text-transform: uppercase;">EWMA Resilience</div>
+                    <div style="font-size: 20px; font-weight: 900; color: #150a35; margin-top: 2px;">{{ ei_wellness.ewma_latest|floatformat:1 }}%</div>
+                </div>
+                {% for dom in ei_wellness.domains %}
+                <div style="background: white; border: 1px solid #e7dff2; border-radius: 10px; padding: 10px 12px;">
+                    <div style="font-size: 9.5px; font-weight: 800; color: #6f628b; text-transform: uppercase;">{{ dom.label }}</div>
+                    <div style="font-size: 18px; font-weight: 900; color: #150a35; margin-top: 2px;">{{ dom.display }}</div>
+                </div>
+                {% endfor %}
+            </div>
+        {% endif %}
+
+        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; background: white; border: 1px solid #e7dff2; border-radius: 10px; padding: 10px 14px;">
+            <span style="font-size: 12px; font-weight: 600; color: #150a35;">{{ ei_wellness.coaching_msg }}</span>
+            <a href="?section=Interpersonal&tab=stress" style="font-size: 11.5px; font-weight: 800; color: #6d3ec4; text-decoration: none; white-space: nowrap;">
+                Log Refleksi EI ➔
+            </a>
+        </div>
+    </div>
+
+    <!-- TEAMWORK & KUDOS RECOGNITION CARD (ROLLING 12-MONTH INDEX) -->
+    <div class="card" style="margin-top: 20px; margin-bottom: 0; border: 1.5px solid {{ teamwork_profile.card_border|default:'#e7dff2' }}; background: {{ teamwork_profile.card_bg|default:'#ffffff' }};">
+        <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; margin-bottom: 12px;">
+            <div style="display: flex; align-items: center; gap: 10px;">
+                <div style="width: 30px; height: 30px; background: #f3edff; border: 1px solid #e7dff2; border-radius: 8px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                    <svg style="width: 16px; height: 16px; color: #6d3ec4;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                </div>
+                <div>
+                    <h3 style="color:#150a35; margin:0; font-size:13px; font-weight: 800; letter-spacing: 0.5px; text-transform: uppercase;">Teamwork &amp; Peer Kudos (Rolling 12-Month Index)</h3>
+                    <p style="margin: 2px 0 0 0; font-size: 11px; color: #6f628b; font-weight: 600;">Pengiktirafan rakan sekerja dalam 365 hari terakhir &bull; Sasaran: 30 Mata</p>
+                </div>
+            </div>
+
+            <span style="font-size: 11px; font-weight: 800; padding: 4px 12px; border-radius: 20px; background: {{ teamwork_profile.badge_bg|default:'#f1f5f9' }}; color: {{ teamwork_profile.badge_color|default:'#64748b' }}; border: 1px solid {{ teamwork_profile.badge_border|default:'#cbd5e1' }};">
+                ● {{ teamwork_profile.badge_label|default:"No Data" }}
+            </span>
+        </div>
+
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(145px, 1fr)); gap: 10px; margin-bottom: 12px;">
+            <div style="background: white; border: 1px solid #e7dff2; border-radius: 10px; padding: 10px 12px;">
+                <div style="font-size: 9.5px; font-weight: 800; color: #6d3ec4; text-transform: uppercase;">Kudos Received (12M)</div>
+                <div style="font-size: 20px; font-weight: 900; color: #150a35; margin-top: 2px;">{{ teamwork_profile.received_points|default:0 }} <span style="font-size: 11px; font-weight: 700; color: #64748b;">/ 30 pts</span></div>
+            </div>
+            <div style="background: white; border: 1px solid #e7dff2; border-radius: 10px; padding: 10px 12px;">
+                <div style="font-size: 9.5px; font-weight: 800; color: #15803d; text-transform: uppercase;">Kudos Given (12M)</div>
+                <div style="font-size: 20px; font-weight: 900; color: #16a34a; margin-top: 2px;">{{ teamwork_profile.given_points|default:0 }} <span style="font-size: 11px; font-weight: 700; color: #64748b;">pts ({{ teamwork_profile.given_count|default:0 }}x)</span></div>
+            </div>
+            <div style="background: white; border: 1px solid #e7dff2; border-radius: 10px; padding: 10px 12px;">
+                <div style="font-size: 9.5px; font-weight: 800; color: #6f628b; text-transform: uppercase;">Collaborating Peers</div>
+                <div style="font-size: 20px; font-weight: 900; color: #150a35; margin-top: 2px;">{{ teamwork_profile.unique_peers|default:0 }} <span style="font-size: 11px; font-weight: 700; color: #64748b;">rakan</span></div>
+            </div>
+        </div>
+
+        <div style="background: #e7dff2; height: 9px; border-radius: 8px; overflow: hidden; margin-bottom: 12px;">
+            <div style="background: linear-gradient(90deg, #6d3ec4, #16a34a); width: {{ teamwork_profile.attainment_pct|default:0 }}%; height: 100%; transition: width 0.6s ease;"></div>
+        </div>
+
+        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; background: white; border: 1px solid #e7dff2; border-radius: 10px; padding: 10px 14px;">
+            <span style="font-size: 12px; font-weight: 600; color: #150a35;">{{ teamwork_profile.coaching_msg }}</span>
+            <a href="?section=Interpersonal&tab=teamwork" style="font-size: 11.5px; font-weight: 800; color: #6d3ec4; text-decoration: none; white-space: nowrap;">
+                Buka Suapan Kudos &amp; Beri Penghargaan ➔
+            </a>
+        </div>
+    </div>
+
+    <!-- TRAINING & MENTORSHIP TRAJECTORY CARD (JAM / 10 JAM) -->
+    <div class="card" style="margin-top: 20px; margin-bottom: 0; border: 1.5px solid {{ mentorship_profile.card_border|default:'#e7dff2' }}; background: {{ mentorship_profile.card_bg|default:'#ffffff' }};">
+        <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; margin-bottom: 12px;">
+            <div style="display: flex; align-items: center; gap: 10px;">
+                <div style="width: 30px; height: 30px; background: #f3edff; border: 1px solid #e7dff2; border-radius: 8px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                    <svg style="width: 16px; height: 16px; color: #6d3ec4;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 14l9-5-9-5-9 5 9 5z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 14l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14z"/></svg>
+                </div>
+                <div>
+                    <h3 style="color:#150a35; margin:0; font-size:13px; font-weight: 800; letter-spacing: 0.5px; text-transform: uppercase;">Training &amp; Mentorship Trajectory ({{ mentorship_profile.year }})</h3>
+                    <p style="margin: 2px 0 0 0; font-size: 11px; color: #6f628b; font-weight: 600;">Sasaran Tahunan: 10.0 Jam Bimbingan Disahkan HOD &bull; Pelatih Individu: {{ mentorship_profile.individual_trainees_count|default:0 }}</p>
+                </div>
+            </div>
+
+            <span style="font-size: 11px; font-weight: 800; padding: 4px 12px; border-radius: 20px; background: {{ mentorship_profile.badge_bg|default:'#f1f5f9' }}; color: {{ mentorship_profile.badge_color|default:'#64748b' }}; border: 1px solid {{ mentorship_profile.badge_border|default:'#cbd5e1' }};">
+                ● {{ mentorship_profile.badge_label|default:"No Data" }}
+            </span>
+        </div>
+
+        <div style="display: flex; justify-content: space-between; align-items: baseline; font-size: 12px; font-weight: 800; color: #150a35; margin-bottom: 6px;">
+            <span>
+                Disahkan HOD: <b style="color: #16a34a;">{{ mentorship_profile.verified_hours|default:0|floatformat:1 }} Jam</b>
+                {% if mentorship_profile.pending_hours > 0 %}
+                    &bull; Menunggu Sah: <b style="color: #d97706;">+{{ mentorship_profile.pending_hours|floatformat:1 }} Jam</b>
+                {% endif %}
+            </span>
+            <span style="color: #6d3ec4;">{{ mentorship_profile.verified_pct|default:0 }}% / 10.0 Jam</span>
+        </div>
+
+        <!-- PROGRESS BAR TRAJECTORY (VERIFIED HIJAU + PENDING AMBER) -->
+        <div style="background: #f3edff; border: 1px solid #e7dff2; height: 12px; border-radius: 10px; overflow: hidden; display: flex; margin-bottom: 12px;">
+            <div style="background: #16a34a; width: {{ mentorship_profile.verified_pct|default:0 }}%; height: 100%; transition: width 0.6s ease;" title="Verified Hours"></div>
+            <div style="background: #f59e0b; width: {{ mentorship_profile.pending_pct|default:0 }}%; height: 100%; transition: width 0.6s ease;" title="Pending HOD Verification"></div>
+        </div>
+
+        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; background: white; border: 1px solid #e7dff2; border-radius: 10px; padding: 10px 14px;">
+            <span style="font-size: 12px; font-weight: 600; color: #150a35;">{{ mentorship_profile.coaching_msg }}</span>
+            <a href="?section=Interpersonal&tab=mentorship" style="font-size: 11.5px; font-weight: 800; color: #6d3ec4; text-decoration: none; white-space: nowrap;">
+                Log Sesi Latihan &amp; Mentorship ➔
+            </a>
+        </div>
+    </div>
 
     <!-- MODULE READINESS: audit trail 10 modul berasaskan enjin skor -->
     <div class="card" style="margin-top: 20px; margin-bottom: 0;">
